@@ -5,6 +5,7 @@ import re
 import time
 import zlib
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import quote, urljoin, urlparse, parse_qsl
 from urllib.request import Request, urlopen
 
@@ -78,6 +79,49 @@ def internal_episode_id(anime_id, number):
 
 def parse_slug(url):
     return urlparse(url).path.rsplit("/", 1)[-1].replace(".html", "")
+
+
+def catalog_year_url(year, page=1):
+    if page == 1:
+        return f"{BASE_URL}/catalog/{year}/"
+    return f"{BASE_URL}/catalog/{year}/page/{page}/"
+
+
+def parse_catalog_listing(html_text, page_url):
+    soup = BeautifulSoup(html_text, "lxml")
+    urls = []
+    for link in soup.select("#dle-content .movie-item__link[href]"):
+        url = urljoin(page_url, link.get("href"))
+        if re.search(r"/\d+-.+\.html$", urlparse(url).path):
+            urls.append(url)
+    return urls
+
+
+def collect_catalog_urls(years, max_pages, delay=0.0):
+    urls = []
+    seen_urls = set()
+    for year in years:
+        year_count = 0
+        for page in range(1, max_pages + 1):
+            page_url = catalog_year_url(year, page)
+            try:
+                page_html = fetch_text(page_url, delay=delay)
+            except HTTPError as exc:
+                if exc.code == 404:
+                    print(f"catalog {year} page {page}: 404, stopping")
+                    break
+                raise
+            page_urls = parse_catalog_listing(page_html, page_url)
+            new_urls = [url for url in page_urls if url not in seen_urls]
+            for url in new_urls:
+                seen_urls.add(url)
+                urls.append(url)
+            year_count += len(new_urls)
+            print(f"catalog {year} page {page}: {len(new_urls)} new titles")
+            if not page_urls or not new_urls:
+                break
+        print(f"catalog {year}: {year_count} collected titles")
+    return urls
 
 
 def asset_url(url):
@@ -367,9 +411,9 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
     return item, detail, episodes, providers
 
 
-def parse_detail(page_url, html_text, include_embed_urls=True, delay=0.0):
+def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False, delay=0.0):
     if is_modern_yummyani_url(page_url):
-        return parse_modern_detail(page_url, include_embed_urls=include_embed_urls, delay=delay)
+        return parse_modern_detail(page_url, include_embed_urls=include_embed_urls and not skip_player, delay=delay)
 
     soup = BeautifulSoup(html_text, "lxml")
     title = clean_text(soup.select_one("h1"))
@@ -403,21 +447,22 @@ def parse_detail(page_url, html_text, include_embed_urls=True, delay=0.0):
     anime_id = internal_anime_id(source_id)
 
     providers = []
-    for player in parse_player_params(soup):
-        embed_url = fetch_player_url(player, page_url, delay=delay)
-        if not embed_url:
-            continue
-        providers.append(
-            {
-                "provider_id": player["provider_id"],
-                "provider_title": player["provider_title"],
-                "translation_id": YUMMY_TRANSLATION_ID,
-                "translation_title": "YummyAnime",
-                "embed_url": embed_url,
-                "embed_url_redacted": redact_embed_url(embed_url),
-                "embed_host": embed_host(embed_url),
-            }
-        )
+    if not skip_player:
+        for player in parse_player_params(soup):
+            embed_url = fetch_player_url(player, page_url, delay=delay)
+            if not embed_url:
+                continue
+            providers.append(
+                {
+                    "provider_id": player["provider_id"],
+                    "provider_title": player["provider_title"],
+                    "translation_id": YUMMY_TRANSLATION_ID,
+                    "translation_title": "YummyAnime",
+                    "embed_url": embed_url,
+                    "embed_url_redacted": redact_embed_url(embed_url),
+                    "embed_host": embed_host(embed_url),
+                }
+            )
 
     item = {
         "id": anime_id,
@@ -467,6 +512,16 @@ def parse_detail(page_url, html_text, include_embed_urls=True, delay=0.0):
 
 
 def scrape(args):
+    if args.catalog_years or args.from_year or args.to_year:
+        if args.catalog_years:
+            years = sorted(set(args.catalog_years), reverse=True)
+        else:
+            if not args.from_year or not args.to_year:
+                raise ValueError("--from-year and --to-year must be used together")
+            years = list(range(args.to_year, args.from_year - 1, -1))
+        args.urls = collect_catalog_urls(years, args.max_pages, delay=args.delay)
+        args.run_source = f"yummyanime:catalog:{min(years)}-{max(years)}"
+
     con = init_db(args.db)
     scraped_at = now_iso()
     source_count = 0
@@ -480,10 +535,16 @@ def scrape(args):
             page_url,
             html_text,
             include_embed_urls=not args.no_embed_urls,
+            skip_player=args.skip_player,
             delay=args.delay,
         )
         print(f"  {item['title']}: {len(episodes)} episodes, {len(providers)} providers")
         upsert_anime(con, item, detail, scraped_at)
+
+        if args.skip_player:
+            con.commit()
+            imported += 1
+            continue
 
         for episode in episodes:
             episode_providers = [
@@ -511,7 +572,14 @@ def scrape(args):
         insert into scrape_runs(start_url, created_at, anime_count, episode_count, video_source_count, include_embed_urls)
         values (?, ?, ?, ?, ?, ?)
         """,
-        (",".join(args.urls), scraped_at, imported, episode_count, source_count, 0 if args.no_embed_urls else 1),
+        (
+            getattr(args, "run_source", None) or ",".join(args.urls),
+            scraped_at,
+            imported,
+            episode_count,
+            source_count,
+            0 if args.no_embed_urls or args.skip_player else 1,
+        ),
     )
     con.commit()
     con.close()
@@ -523,6 +591,11 @@ def main():
     parser.add_argument("--db", default="data/animego.sqlite")
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--no-embed-urls", action="store_true")
+    parser.add_argument("--skip-player", action="store_true")
+    parser.add_argument("--catalog-years", nargs="+", type=int)
+    parser.add_argument("--from-year", type=int)
+    parser.add_argument("--to-year", type=int)
+    parser.add_argument("--max-pages", type=int, default=100)
     parser.add_argument("urls", nargs="*", default=DEFAULT_URLS)
     args = parser.parse_args()
     scrape(args)

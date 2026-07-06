@@ -46,13 +46,15 @@ Returns a simple health payload.
 
 `GET /api/anime`
 
-Returns the full catalog list. Optional `q` performs a simple SQL title/subtitle
-filter, but the current UI normally loads the full list and filters client-side.
+Returns the canonical catalog list. Source-specific AnimeGO/YummyAnime rows can
+be merged into one visible item with `source_variants`. Optional `q` filters the
+canonical list across primary and variant titles.
 
 `GET /api/anime/<id>`
 
-Returns one title with genres, dubbings, fields, episodes, video sources grouped
-by episode, and user state.
+Returns one canonical title with genres, dubbings, fields, source variants,
+episodes, video sources grouped by episode, and user state. Requests for a
+merged YummyAnime variant ID resolve to the AnimeGO-primary canonical detail.
 
 `GET /api/recommendations`
 
@@ -82,9 +84,12 @@ Updates local user state. Supported fields:
 4. `server.py` reads SQLite and emits JSON.
 5. `static/app.js` loads `/api/anime` and `/api/recommendations`, renders the
    sidebar, and fetches detail JSON when a title is selected.
-6. The player iframe receives the selected source's `embed_url`.
-7. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
-8. Recommendation data is reloaded after favorite/progress/watched changes.
+6. The user can choose the source variant, translation, and provider; the player
+   iframe receives the selected provider's `embed_url`.
+7. The browser URL is synchronized with the right-pane state using query params:
+   `anime`, `episode`, `source`, `translation`, and `provider`.
+8. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
+9. Recommendation data is reloaded after favorite/progress/watched changes.
 
 ## Scraper Notes
 
@@ -120,6 +125,9 @@ Current filters:
 - Status.
 - Source.
 - Video availability.
+
+The source filter matches any source variant inside a canonical item, not only
+the primary source.
 
 Current sorts:
 
@@ -160,6 +168,14 @@ The PiP button uses `window.documentPictureInPicture` when the browser supports
 it. If unavailable or blocked, the UI reports that PiP is available inside the
 embedded player. The local app cannot directly control a cross-origin player's
 internal video element.
+
+## Shared Links
+
+Right-pane state is shareable through the address bar. Opening a URL such as
+`/?anime=3500&episode=43793&source=animego&translation=95&provider=110`
+restores that canonical title, episode, source variant, translation, and
+provider. Invalid or stale params fall back to the closest available option and
+the address bar is normalized to the actual current state.
 
 ## Verification
 

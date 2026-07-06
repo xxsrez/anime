@@ -9,6 +9,7 @@ const DEFAULT_FILTERS = {
 const DEFAULT_SORT_BY = "rating_best";
 const DEFAULT_SORT_DIR = "desc";
 const RECOMMENDATION_LIMIT = 20;
+const LINK_PARAM_KEYS = ["anime", "episode", "source", "translation", "provider"];
 
 const state = {
   anime: [],
@@ -18,6 +19,7 @@ const state = {
   selectedAnimeId: null,
   detail: null,
   selectedEpisodeId: null,
+  selectedContentSource: null,
   selectedTranslation: null,
   selectedSourceId: null,
   viewMode: "all",
@@ -28,6 +30,7 @@ const state = {
   filterControls: {},
   savingState: false,
   pendingStateSave: null,
+  urlSyncSuspended: false,
 };
 
 const el = {
@@ -55,6 +58,7 @@ const el = {
   description: document.getElementById("description"),
   fields: document.getElementById("fields"),
   episodes: document.getElementById("episodes"),
+  contentSource: document.getElementById("content-source"),
   translation: document.getElementById("translation"),
   provider: document.getElementById("provider"),
   fullscreenToggle: document.getElementById("fullscreen-toggle"),
@@ -81,9 +85,55 @@ function searchText(value) {
   return String(value || "").toLocaleLowerCase("ru").replaceAll("ё", "е").replaceAll("э", "е");
 }
 
+function normalizeLinkValue(value) {
+  const text = value == null ? "" : String(value).trim();
+  return text || null;
+}
+
+function readLinkState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    animeId: normalizeLinkValue(params.get("anime")),
+    episodeId: normalizeLinkValue(params.get("episode")),
+    contentSource: normalizeLinkValue(params.get("source")),
+    translation: normalizeLinkValue(params.get("translation")),
+    provider: normalizeLinkValue(params.get("provider")),
+  };
+}
+
+function setOptionalParam(params, key, value) {
+  const normalized = normalizeLinkValue(value);
+  if (normalized) {
+    params.set(key, normalized);
+  } else {
+    params.delete(key);
+  }
+}
+
+function syncUrlFromDetail({ replace = true } = {}) {
+  if (state.urlSyncSuspended || !state.selectedAnimeId) return;
+
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+  setOptionalParam(params, "anime", state.selectedAnimeId);
+  setOptionalParam(params, "episode", state.selectedEpisodeId);
+  setOptionalParam(params, "source", state.selectedContentSource);
+  setOptionalParam(params, "translation", state.selectedTranslation);
+  setOptionalParam(params, "provider", state.selectedSourceId);
+
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next === current) return;
+
+  const statePayload = Object.fromEntries(LINK_PARAM_KEYS.map(key => [key, params.get(key)]));
+  window.history[replace ? "replaceState" : "pushState"](statePayload, "", next);
+}
+
 function sourcesForEpisode(episodeId) {
   const sources = state.detail?.sources_by_episode?.[episodeId] || [];
-  return sources.filter(source => source.embed_url);
+  return sources
+    .filter(source => source.embed_url)
+    .filter(source => !state.selectedContentSource || source.source === state.selectedContentSource);
 }
 
 function activeEpisode() {
@@ -124,6 +174,53 @@ function sourceLabel(source) {
   if (source === "yummyanime") return "YummyAnime";
   if (source === "animego") return "AnimeGO";
   return source ? String(source) : "";
+}
+
+function itemSources(item) {
+  const values = Array.isArray(item?.sources) && item.sources.length
+    ? item.sources
+    : [item?.source].filter(Boolean);
+  return [...new Set(values.filter(Boolean))];
+}
+
+function sourceLabelList(item) {
+  return itemSources(item).map(sourceLabel).filter(Boolean).join(" · ");
+}
+
+function sourceVariants(detail) {
+  const variants = Array.isArray(detail?.source_variants) ? detail.source_variants : [];
+  if (variants.length) return variants;
+  return detail?.source ? [{ source: detail.source, source_count: detail.source_count || 0 }] : [];
+}
+
+function preferredContentSource(detail) {
+  const variants = sourceVariants(detail);
+  const withVideo = variants.find(variant => (variant.source_count || 0) > 0);
+  return (withVideo || variants[0] || {}).source || detail?.source || null;
+}
+
+function matchingEpisodeId(episodeId) {
+  if (!episodeId) return null;
+  const episode = state.detail?.episodes?.find(item => String(item.id) === String(episodeId));
+  return episode ? episode.id : null;
+}
+
+function matchingContentSource(source) {
+  if (!source) return null;
+  return sourceVariants(state.detail).some(variant => variant.source === source) ? source : null;
+}
+
+function applyDetailLinkState(linkState = {}) {
+  state.selectedContentSource = matchingContentSource(linkState.contentSource)
+    || preferredContentSource(state.detail);
+
+  const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
+  state.selectedEpisodeId = matchingEpisodeId(linkState.episodeId)
+    || (firstAvailable || state.detail.episodes[0] || {}).id
+    || null;
+
+  state.selectedTranslation = linkState.translation || null;
+  state.selectedSourceId = linkState.provider || null;
 }
 
 function numericValue(value) {
@@ -225,8 +322,8 @@ const filterDefinitions = [
     id: "source",
     label: "Источник",
     allLabel: "Все источники",
-    options: items => countedOptions(items, item => item.source, sourceLabel),
-    match: (item, value) => !value || item.source === value,
+    options: items => countedOptions(items, item => itemSources(item), sourceLabel),
+    match: (item, value) => !value || itemSources(item).includes(value),
   },
   {
     id: "video",
@@ -506,7 +603,7 @@ function renderList() {
     const available = item.available_episode_count || 0;
     const score = formatScore(bestScore(item));
     const watch = progressText(item);
-    const source = sourceLabel(item.source);
+    const source = sourceLabelList(item);
     if (isRecommendationView()) {
       const recScore = formatPercent(item.recommendation_score);
       const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
@@ -560,7 +657,7 @@ function renderDetail() {
   const scoreText = formattedScore
     ? `${formattedScore}${detail.aggregate_count ? ` (${detail.aggregate_count})` : ""}`
     : null;
-  el.meta.textContent = [detail.kind, detail.status, detail.episodes_text, scoreText, sourceLabel(detail.source)].filter(Boolean).join(" · ");
+  el.meta.textContent = [detail.kind, detail.status, detail.episodes_text, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
   el.description.textContent = detail.description || "";
@@ -668,21 +765,53 @@ function uniqueTranslations(sources) {
   return [...map.entries()].map(([id, title]) => ({ id: String(id), title }));
 }
 
+function renderContentSourceOptions() {
+  const variants = sourceVariants(state.detail);
+  el.contentSource.replaceChildren();
+
+  if (!variants.length) {
+    state.selectedContentSource = null;
+    el.contentSource.disabled = true;
+    return;
+  }
+
+  if (!variants.some(variant => variant.source === state.selectedContentSource)) {
+    state.selectedContentSource = preferredContentSource(state.detail);
+  }
+
+  for (const variant of variants) {
+    const option = document.createElement("option");
+    option.value = variant.source;
+    const available = variant.available_episode_count || 0;
+    option.textContent = `${sourceLabel(variant.source)} · ${available} видео`;
+    option.selected = variant.source === state.selectedContentSource;
+    el.contentSource.append(option);
+  }
+  el.contentSource.disabled = variants.length < 2;
+}
+
 function renderSources() {
   const episode = activeEpisode();
+  renderContentSourceOptions();
   const sources = sourcesForEpisode(state.selectedEpisodeId);
   const translations = uniqueTranslations(sources);
 
   el.translation.replaceChildren();
   el.provider.replaceChildren();
+  el.translation.disabled = !sources.length;
+  el.provider.disabled = !sources.length;
 
   if (!episode) {
     clearPlayer("-");
+    syncUrlFromDetail();
     return;
   }
 
   if (!sources.length) {
     clearPlayer(episode.unavailable_reason || "Видео недоступно");
+    state.selectedTranslation = null;
+    state.selectedSourceId = null;
+    syncUrlFromDetail();
     return;
   }
 
@@ -717,6 +846,7 @@ function renderSources() {
   } else {
     clearPlayer("Источник недоступен");
   }
+  syncUrlFromDetail();
 }
 
 function setPlayer(source, episode) {
@@ -816,15 +946,17 @@ async function openPictureInPicture() {
   setPlayerActionState("PiP доступен в самом плеере", "warn");
 }
 
-async function selectAnime(id) {
-  state.selectedAnimeId = id;
+async function selectAnime(id, options = {}) {
   state.detail = await api(`/api/anime/${id}`);
-  const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
-  state.selectedEpisodeId = (firstAvailable || state.detail.episodes[0] || {}).id || null;
-  state.selectedTranslation = null;
-  state.selectedSourceId = null;
+  state.selectedAnimeId = state.detail.id;
+  applyDetailLinkState(options.linkState || {});
+
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = previousUrlSync || options.updateUrl === false;
   renderList();
   renderDetail();
+  state.urlSyncSuspended = previousUrlSync;
+  if (options.updateUrl !== false) syncUrlFromDetail();
 }
 
 async function selectEpisode(id) {
@@ -834,6 +966,7 @@ async function selectEpisode(id) {
   const episode = activeEpisode();
   const number = numberFrom(episode?.number);
   if (number != null) {
+    renderDetail();
     await saveUserState({ progress_episode_number: number, watched: false });
     return;
   }
@@ -888,14 +1021,20 @@ function applyFilter({ selectFirst = false } = {}) {
   const query = searchText(el.search.value.trim());
   const baseItems = baseItemsForView();
   state.filtered = baseItems.filter(item => {
+    const variantText = (item.source_variants || []).flatMap(variant => [
+      variant.title,
+      variant.subtitle,
+      sourceLabel(variant.source),
+    ]);
     const haystack = searchText([
       item.title,
       item.subtitle,
       item.kind,
       item.status,
       item.year,
-      sourceLabel(item.source),
+      sourceLabelList(item),
       ...(item.genres || []),
+      ...variantText,
     ].join(" "));
     const queryMatch = haystack.includes(query);
     const viewMatch =
@@ -974,6 +1113,12 @@ el.watchedToggle.addEventListener("change", () => {
   if (!state.detail) return;
   saveUserState({ watched: el.watchedToggle.checked }).catch(console.error);
 });
+el.contentSource.addEventListener("change", event => {
+  state.selectedContentSource = event.target.value || null;
+  state.selectedTranslation = null;
+  state.selectedSourceId = null;
+  renderSources();
+});
 el.translation.addEventListener("change", event => {
   state.selectedTranslation = event.target.value;
   state.selectedSourceId = null;
@@ -990,6 +1135,27 @@ el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(console.error);
 });
 document.addEventListener("fullscreenchange", updateFullscreenControl);
+window.addEventListener("popstate", () => {
+  const linkState = readLinkState();
+  if (linkState.animeId) {
+    selectAnime(linkState.animeId, { linkState, updateUrl: false }).catch(console.error);
+  }
+});
+
+async function selectInitialAnime() {
+  const linkState = readLinkState();
+  if (linkState.animeId) {
+    try {
+      await selectAnime(linkState.animeId, { linkState });
+      return;
+    } catch (error) {
+      console.warn("Failed to open shared anime link", error);
+    }
+  }
+
+  const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
+  if (first) await selectAnime(first.id);
+}
 
 async function boot() {
   const payload = await api("/api/anime");
@@ -998,8 +1164,7 @@ async function boot() {
   renderFilterControls();
   renderSortControls();
   applyFilter();
-  const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
-  if (first) await selectAnime(first.id);
+  await selectInitialAnime();
 }
 
 boot().catch(error => {

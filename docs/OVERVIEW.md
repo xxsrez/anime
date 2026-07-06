@@ -28,19 +28,19 @@ choosing a provider/translation, and tracking personal progress.
 The project currently knows about two source families:
 
 - AnimeGO metadata and player metadata.
-- YummyAnime/YummyAni title metadata for selected titles, including the
-  Mushoku Tensei / `Реинкарнация безработного` pages that were imported into
-  the same catalog model.
+- YummyAnime/YummyAni title metadata imported into the same catalog model.
+- A canonical API layer merges conservative AnimeGO/YummyAnime duplicate
+  matches into one visible title with multiple source variants.
 
 As of the current local SQLite snapshot on 2026-07-06, the database contains:
 
-- 366 titles.
-- 361 AnimeGO titles.
-- 5 YummyAnime/YummyAni titles.
+- 4,036 source title rows, exposed as 3,202 canonical catalog titles.
+- 1,170 AnimeGO source titles.
+- 2,866 YummyAnime/YummyAni source titles.
 - 212 episode rows.
 - 175 video source rows.
-- 1,364 genre rows.
-- 15 user progress/favorite rows.
+- 16,011 genre rows.
+- 24 user progress/favorite rows.
 
 The committed recovery snapshot is in `backups/current/`. It includes a full
 SQLite backup and readable exports of favorites/progress/watched state.

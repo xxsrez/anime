@@ -7,7 +7,9 @@ data and local user state.
 
 `anime`
 
-One row per title. Important fields:
+One row per scraped source title, not necessarily one visible catalog title.
+AnimeGO and YummyAnime rows can describe the same anime and are kept separate
+so scraper refreshes remain source-specific. Important fields:
 
 - `id` - internal title ID.
 - `source` - source namespace, for example `animego` or `yummyanime`.
@@ -80,6 +82,22 @@ Local mutable state:
 The recommendation endpoint reads this table as the taste profile. Favorites
 are strongest, watched titles are weaker, and in-progress titles also count.
 Recommendations themselves are computed at request time and are not persisted.
+
+## Canonical Title View
+
+The API presents a canonical catalog view over the source-specific `anime` rows.
+When one AnimeGO row and one YummyAnime row have the same normalized title and
+year, they are exposed as one catalog item with `source_variants`.
+
+- AnimeGO is the primary variant when present. The visible `id`, title,
+  metadata, and default detail page come from that AnimeGO row.
+- YummyAnime remains available as a source variant for source selection and
+  player/source aggregation.
+- Auto-merge is intentionally conservative: ambiguous buckets with more than
+  one row per source are left as separate rows until they can be reviewed.
+- User state is written to the canonical primary row. If state was previously
+  attached to a duplicate variant, the API aggregates it and moves future
+  updates to the primary row.
 
 The current committed recovery snapshot lives in `backups/current/` and includes
 both the full SQLite database backup and user-state SQL/JSON/CSV exports.

@@ -111,12 +111,19 @@ class LocalAppTest(unittest.TestCase):
     def test_player_markup_allows_fullscreen_and_picture_in_picture(self):
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('id="player"', html)
+        self.assertIn('id="content-source"', html)
         self.assertIn("allowfullscreen", html)
         self.assertIn("fullscreen", html)
         self.assertIn("picture-in-picture", html)
         self.assertIn('id="fullscreen-toggle"', html)
         self.assertIn('id="pip-toggle"', html)
         self.assertIn('id="recommendation-meta"', html)
+
+    def test_right_pane_deep_links_are_supported(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        self.assertIn("readLinkState", js)
+        self.assertIn("syncUrlFromDetail", js)
+        self.assertIn("window.history", js)
 
     def test_yummyanime_mushoku_titles_are_available(self):
         items = server.get_anime_list()
@@ -139,6 +146,30 @@ class LocalAppTest(unittest.TestCase):
         self.assertTrue(source_rows)
         self.assertEqual(source_rows[0]["provider_title"], "Kodik")
         self.assertFalse(any(source["provider_title"] == "Alloha" for source in source_rows))
+
+    def test_duplicate_sources_are_exposed_as_canonical_titles(self):
+        items = server.get_anime_list()
+        merged = [
+            item
+            for item in items
+            if {"animego", "yummyanime"}.issubset(set(item.get("sources") or []))
+        ]
+        self.assertGreaterEqual(len(merged), 10)
+
+        item = merged[0]
+        self.assertEqual(item["source"], "animego")
+        self.assertEqual(item["source_variant_count"], 2)
+
+        detail = server.get_anime_detail(item["id"])
+        self.assertEqual(detail["id"], item["id"])
+        self.assertEqual(detail["source"], "animego")
+        self.assertIn("animego", detail["sources"])
+        self.assertIn("yummyanime", detail["sources"])
+
+        yummy_variant = next(variant for variant in detail["source_variants"] if variant["source"] == "yummyanime")
+        same_detail = server.get_anime_detail(yummy_variant["id"])
+        self.assertEqual(same_detail["id"], item["id"])
+        self.assertEqual(same_detail["source"], "animego")
 
 
 if __name__ == "__main__":

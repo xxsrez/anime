@@ -5,6 +5,7 @@ import json
 import math
 import mimetypes
 import os
+import re
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -16,6 +17,11 @@ DEFAULT_DB = ROOT / "data" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
+SOURCE_PRIORITY = {
+    "animego": 0,
+    "yummyanime": 1,
+}
+MERGEABLE_SOURCES = {"animego", "yummyanime"}
 
 
 def now_iso():
@@ -113,6 +119,12 @@ def normalize_key(value):
     return str(value or "").strip().casefold().replace("ё", "е").replace("э", "е")
 
 
+def normalize_match_title(value):
+    text = normalize_key(value)
+    text = re.sub(r"[^\w\s]+", " ", text, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def best_score(item):
     aggregate = numeric(item.get("aggregate_score"))
     if aggregate is not None:
@@ -128,6 +140,154 @@ def year_number(item):
     if len(published) >= 4 and published[:4].isdigit():
         return int(published[:4])
     return None
+
+
+def source_priority(source):
+    return SOURCE_PRIORITY.get(source or "", 99)
+
+
+def canonical_match_key(item):
+    if item.get("source") not in MERGEABLE_SOURCES:
+        return None
+    title_key = normalize_match_title(item.get("title"))
+    year = year_number(item)
+    if not title_key or year is None:
+        return None
+    return (year, title_key)
+
+
+def variant_from_item(item):
+    return {
+        "id": item["id"],
+        "source": item.get("source"),
+        "source_id": item.get("source_id"),
+        "title": item.get("title"),
+        "subtitle": item.get("subtitle"),
+        "url": item.get("url"),
+        "year": item.get("year"),
+        "source_count": item.get("source_count") or 0,
+        "available_episode_count": item.get("available_episode_count") or 0,
+    }
+
+
+def source_sort_key(item):
+    return (
+        source_priority(item.get("source")),
+        0 if (numeric(item.get("source_count")) or 0) > 0 else 1,
+        -(best_score(item) or 0),
+        str(item.get("title") or ""),
+        item.get("id") or 0,
+    )
+
+
+def unique_values(items, getter):
+    values = []
+    seen = set()
+    for item in items:
+        raw_values = getter(item)
+        if not isinstance(raw_values, list):
+            raw_values = [raw_values]
+        for value in raw_values:
+            key = normalize_key(value)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            values.append(value)
+    return values
+
+
+def aggregate_item_state(item, variants):
+    item["is_favorite"] = any(bool(variant.get("is_favorite")) for variant in variants)
+    item["watched"] = any(bool(variant.get("watched")) for variant in variants)
+    progress_values = [
+        variant.get("progress_episode_number")
+        for variant in variants
+        if variant.get("progress_episode_number") is not None
+    ]
+    item["progress_episode_number"] = max(progress_values) if progress_values else None
+    item["state_updated_at"] = max(
+        (variant.get("state_updated_at") for variant in variants if variant.get("state_updated_at")),
+        default=None,
+    )
+    return item
+
+
+def merge_canonical_items(items):
+    sorted_items = sorted(items, key=source_sort_key)
+    primary = sorted_items[0]
+    merged = dict(primary)
+    variants = [variant_from_item(item) for item in sorted_items]
+    sources = unique_values(sorted_items, lambda item: item.get("source"))
+
+    merged["id"] = primary["id"]
+    merged["source"] = primary.get("source")
+    merged["source_id"] = primary.get("source_id")
+    merged["source_variants"] = variants
+    merged["source_variant_count"] = len(variants)
+    merged["sources"] = sources
+    merged["source_member_ids"] = [variant["id"] for variant in variants]
+    merged["source_count"] = sum((item.get("source_count") or 0) for item in sorted_items)
+    merged["available_episode_count"] = max((item.get("available_episode_count") or 0) for item in sorted_items)
+    merged["episode_count"] = max((item.get("episode_count") or 0) for item in sorted_items)
+    merged["genres"] = unique_values(sorted_items, lambda item: item.get("genres") or [])
+
+    for field in ("subtitle", "cover_url", "listing_score", "aggregate_score", "aggregate_count", "kind", "year", "status", "episodes_text"):
+        if merged.get(field) in (None, ""):
+            merged[field] = next((item.get(field) for item in sorted_items if item.get(field) not in (None, "")), merged.get(field))
+
+    return aggregate_item_state(merged, sorted_items)
+
+
+def canonicalize_items(items):
+    buckets = {}
+    groups = []
+    for item in items:
+        key = canonical_match_key(item)
+        if key is None:
+            groups.append(merge_canonical_items([item]))
+            continue
+        buckets.setdefault(key, []).append(item)
+
+    for bucket in buckets.values():
+        source_counts = {}
+        for item in bucket:
+            source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
+        title_key = normalize_match_title(bucket[0].get("title"))
+        subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
+        short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
+        if len(source_counts) > 1 and all(count == 1 for count in source_counts.values()) and short_title_has_matching_subtitle:
+            groups.append(merge_canonical_items(bucket))
+        else:
+            groups.extend(merge_canonical_items([item]) for item in bucket)
+
+    groups.sort(key=lambda item: ((numeric(item.get("source_count")) or 0) <= 0, -(item.get("id") or 0)))
+    return groups
+
+
+def item_matches_query(item, query):
+    if not query:
+        return True
+    variant_text = []
+    for variant in item.get("source_variants") or []:
+        variant_text.extend([variant.get("title"), variant.get("subtitle"), variant.get("source")])
+    haystack = normalize_key(
+        " ".join(
+            str(part)
+            for part in [
+                item.get("title"),
+                item.get("subtitle"),
+                item.get("kind"),
+                item.get("status"),
+                item.get("year"),
+                item.get("source"),
+                *item.get("sources", []),
+                *item.get("genres", []),
+                *variant_text,
+            ]
+            if part
+        )
+    )
+    return normalize_key(query) in haystack
 
 
 def format_number(value):
@@ -411,21 +571,14 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
     }
 
 
-def get_anime_list(db_path=None, q=None):
-    con = connect(db_path)
-    params = []
-    where = ""
-    if q:
-        where = "where a.title like ? or coalesce(a.subtitle, '') like ?"
-        needle = f"%{q}%"
-        params.extend([needle, needle])
-
+def get_source_anime_items(con):
     rows = con.execute(
-        f"""
+        """
         select
             a.id,
             a.title,
             a.subtitle,
+            a.url,
             a.cover_url,
             a.source,
             a.source_id,
@@ -450,13 +603,10 @@ def get_anime_list(db_path=None, q=None):
         left join episodes e on e.anime_id = a.id
         left join video_sources vs on vs.anime_id = a.id
         left join anime_genres g on g.anime_id = a.id
-        {where}
         group by a.id
         order by source_count > 0 desc, a.id desc
         """,
-        params,
     ).fetchall()
-    con.close()
 
     items = rows_to_dicts(rows)
     for item in items:
@@ -466,78 +616,235 @@ def get_anime_list(db_path=None, q=None):
     return items
 
 
+def get_anime_list(db_path=None, q=None):
+    con = connect(db_path)
+    items = canonicalize_items(get_source_anime_items(con))
+    con.close()
+    return [item for item in items if item_matches_query(item, q)]
+
+
+def sql_placeholders(values):
+    return ",".join("?" for _ in values)
+
+
+def canonical_group_for_anime_id(con, anime_id):
+    for item in canonicalize_items(get_source_anime_items(con)):
+        member_ids = [variant["id"] for variant in item.get("source_variants") or []]
+        if int(anime_id) in member_ids:
+            return item
+    return None
+
+
+def aggregate_state_rows(rows):
+    if not rows:
+        return normalize_state(None)
+    progress_values = [
+        row["progress_episode_number"]
+        for row in rows
+        if row["progress_episode_number"] is not None
+    ]
+    return {
+        "is_favorite": any(bool(row["is_favorite"]) for row in rows),
+        "progress_episode_number": max(progress_values) if progress_values else None,
+        "watched": any(bool(row["watched"]) for row in rows),
+        "updated_at": max((row["updated_at"] for row in rows if row["updated_at"]), default=None),
+    }
+
+
+def get_group_state(con, anime_ids):
+    if not anime_ids:
+        return normalize_state(None)
+    rows = con.execute(
+        f"select * from user_title_state where anime_id in ({sql_placeholders(anime_ids)})",
+        anime_ids,
+    ).fetchall()
+    return aggregate_state_rows(rows)
+
+
+def episode_number_key(value, fallback):
+    raw = str(value or "").strip()
+    number = numeric(raw)
+    if number is not None:
+        return f"n:{int(number)}" if float(number).is_integer() else f"n:{number}"
+    key = normalize_key(raw)
+    return f"s:{key}" if key else f"id:{fallback}"
+
+
+def episode_key(episode):
+    return episode_number_key(episode.get("number"), episode.get("id"))
+
+
+def episode_sort_key(episode):
+    number = numeric(episode.get("number"))
+    return (
+        number is None,
+        number if number is not None else normalize_key(episode.get("number")),
+        source_priority(episode.get("anime_source")),
+        episode.get("id") or 0,
+    )
+
+
+def source_row_sort_key(source):
+    return (
+        source.get("episode_id") or 0,
+        source_priority(source.get("source")),
+        source.get("translation_title") or "",
+        0 if normalize_key(source.get("provider_title")) == "kodik" else 1,
+        source.get("provider_title") or "",
+    )
+
+
 def get_anime_detail(anime_id, db_path=None):
     con = connect(db_path)
-    anime = con.execute("select * from anime where id = ?", (anime_id,)).fetchone()
+    group = canonical_group_for_anime_id(con, anime_id)
+    if not group:
+        con.close()
+        return None
+
+    member_ids = [variant["id"] for variant in group.get("source_variants") or []]
+    primary_id = group["id"]
+    member_sql = sql_placeholders(member_ids)
+
+    anime = con.execute("select * from anime where id = ?", (primary_id,)).fetchone()
     if not anime:
         con.close()
         return None
 
     genres = rows_to_dicts(
-        con.execute("select genre from anime_genres where anime_id = ? order by genre", (anime_id,)).fetchall()
+        con.execute(
+            f"""
+            select distinct g.genre
+            from anime_genres g
+            join anime a on a.id = g.anime_id
+            where g.anime_id in ({member_sql})
+            order by case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end, g.genre
+            """,
+            member_ids,
+        ).fetchall()
     )
     dubbings = rows_to_dicts(
-        con.execute("select dubbing from anime_dubbings where anime_id = ? order by dubbing", (anime_id,)).fetchall()
-    )
-    episodes = rows_to_dicts(
         con.execute(
-            """
+            f"""
+            select distinct d.dubbing
+            from anime_dubbings d
+            join anime a on a.id = d.anime_id
+            where d.anime_id in ({member_sql})
+            order by case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end, d.dubbing
+            """,
+            member_ids,
+        ).fetchall()
+    )
+    episode_rows = rows_to_dicts(
+        con.execute(
+            f"""
             select
                 e.*,
+                a.source as anime_source,
+                a.source_id as anime_source_id,
                 count(vs.id) as source_count
             from episodes e
+            join anime a on a.id = e.anime_id
             left join video_sources vs on vs.episode_id = e.id
-            where e.anime_id = ?
+            where e.anime_id in ({member_sql})
             group by e.id
             order by cast(e.number as integer), e.id
             """,
-            (anime_id,),
+            member_ids,
         ).fetchall()
     )
-    sources = rows_to_dicts(
+    source_rows = rows_to_dicts(
         con.execute(
-            """
+            f"""
             select
-                id,
-                episode_id,
-                provider_id,
-                provider_title,
-                translation_id,
-                translation_title,
-                embed_host,
-                embed_url,
-                embed_url_redacted
-            from video_sources
-            where anime_id = ?
+                vs.id,
+                vs.anime_id as source_anime_id,
+                vs.episode_id,
+                vs.provider_id,
+                vs.provider_title,
+                vs.translation_id,
+                vs.translation_title,
+                vs.embed_host,
+                vs.embed_url,
+                vs.embed_url_redacted,
+                a.source,
+                a.source_id,
+                e.number as episode_number
+            from video_sources vs
+            join anime a on a.id = vs.anime_id
+            join episodes e on e.id = vs.episode_id
+            where vs.anime_id in ({member_sql})
             order by
-                episode_id,
-                translation_title,
-                case when lower(provider_title) = 'kodik' then 0 else 1 end,
-                provider_title
+                cast(e.number as integer),
+                vs.episode_id,
+                case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
+                vs.translation_title,
+                case when lower(vs.provider_title) = 'kodik' then 0 else 1 end,
+                vs.provider_title
             """,
-            (anime_id,),
+            member_ids,
         ).fetchall()
     )
     fields = rows_to_dicts(
         con.execute(
             "select label, value from anime_fields where anime_id = ? order by label",
-            (anime_id,),
+            (primary_id,),
         ).fetchall()
     )
-    state = con.execute("select * from user_title_state where anime_id = ?", (anime_id,)).fetchone()
+    state = get_group_state(con, member_ids)
     con.close()
 
+    episode_buckets = {}
+    for episode in episode_rows:
+        episode_buckets.setdefault(episode_key(episode), []).append(episode)
+
+    episodes = []
+    episode_id_by_key = {}
+    for key, bucket in sorted(episode_buckets.items(), key=lambda item: episode_sort_key(sorted(item[1], key=episode_sort_key)[0])):
+        selected = sorted(
+            bucket,
+            key=lambda episode: (
+                0 if episode.get("anime_id") == primary_id else 1,
+                source_priority(episode.get("anime_source")),
+                0 if (episode.get("source_count") or 0) > 0 else 1,
+                episode.get("id") or 0,
+            ),
+        )[0]
+        episode = dict(selected)
+        episode["source_count"] = 0
+        episode.pop("anime_source", None)
+        episode.pop("anime_source_id", None)
+        episodes.append(episode)
+        episode_id_by_key[key] = episode["id"]
+
     by_episode = {}
-    for source in sources:
-        by_episode.setdefault(source["episode_id"], []).append(source)
+    for source in source_rows:
+        key = episode_number_key(source.get("episode_number"), source.get("episode_id"))
+        canonical_episode_id = episode_id_by_key.get(key)
+        if canonical_episode_id is None:
+            continue
+        source = dict(source)
+        source["episode_id"] = canonical_episode_id
+        source.pop("episode_number", None)
+        by_episode.setdefault(canonical_episode_id, []).append(source)
+
+    for episode in episodes:
+        episode["source_count"] = len(by_episode.get(episode["id"], []))
+    for sources in by_episode.values():
+        sources.sort(key=source_row_sort_key)
 
     detail = dict(anime)
-    detail.update(normalize_state(state))
+    detail.update(state)
     detail["genres"] = [row["genre"] for row in genres]
     detail["dubbings"] = [row["dubbing"] for row in dubbings]
     detail["fields"] = fields
     detail["episodes"] = episodes
     detail["sources_by_episode"] = by_episode
+    detail["source_variants"] = group.get("source_variants") or []
+    detail["source_variant_count"] = group.get("source_variant_count") or 1
+    detail["sources"] = group.get("sources") or [detail.get("source")]
+    detail["source_member_ids"] = member_ids
+    detail["source_count"] = sum(len(sources) for sources in by_episode.values())
+    detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
     return detail
 
 
@@ -548,7 +855,10 @@ def update_user_state(anime_id, patch, db_path=None):
         con.close()
         return None
 
-    current = normalize_state(con.execute("select * from user_title_state where anime_id = ?", (anime_id,)).fetchone())
+    group = canonical_group_for_anime_id(con, anime_id)
+    target_id = group["id"] if group else anime_id
+    member_ids = [variant["id"] for variant in group.get("source_variants") or []] if group else [anime_id]
+    current = get_group_state(con, member_ids)
     next_state = dict(current)
 
     if "is_favorite" in patch:
@@ -584,13 +894,19 @@ def update_user_state(anime_id, patch, db_path=None):
             updated_at = excluded.updated_at
         """,
         (
-            anime_id,
+            target_id,
             1 if next_state["is_favorite"] else 0,
             next_state["progress_episode_number"],
             1 if next_state["watched"] else 0,
             next_state["updated_at"],
         ),
     )
+    duplicate_state_ids = [item for item in member_ids if item != target_id]
+    if duplicate_state_ids:
+        con.execute(
+            f"delete from user_title_state where anime_id in ({sql_placeholders(duplicate_state_ids)})",
+            duplicate_state_ids,
+        )
     con.commit()
     con.close()
     return next_state
