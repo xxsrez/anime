@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 import server
 
@@ -37,14 +38,14 @@ class LocalAppTest(unittest.TestCase):
         finally:
             con.close()
 
-    def request_test_server(self, db_path, method, path, headers=None):
+    def request_test_server(self, db_path, method, path, headers=None, body=None):
         httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.AnimeHandler)
         httpd.db_path = db_path
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
         try:
             conn = http.client.HTTPConnection("127.0.0.1", httpd.server_port, timeout=5)
-            conn.request(method, path, headers=headers or {})
+            conn.request(method, path, body=body, headers=headers or {})
             response = conn.getresponse()
             body = response.read()
             return response.status, dict(response.getheaders()), body
@@ -232,6 +233,56 @@ class LocalAppTest(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
 
+    def test_google_redirect_post_sets_session_cookie(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            body = "credential=fake-token&g_csrf_token=csrf-token&state=%2Fsome-title"
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Cookie": "g_csrf_token=csrf-token",
+            }
+            auth = {
+                "user": {"id": 10, "email": "one@example.com", "name": "One", "picture_url": None},
+                "token": "session-token",
+                "expires_at": "2030-01-01T00:00:00+00:00",
+            }
+
+            with patch.object(server, "authenticate_google_credential", return_value=auth) as authenticate:
+                status, headers, _ = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/auth/google",
+                    headers=headers,
+                    body=body,
+                )
+
+            self.assertEqual(status, 302)
+            self.assertEqual(headers["Location"], "/some-title")
+            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            authenticate.assert_called_once_with("fake-token", db_path)
+
+    def test_google_redirect_post_rejects_csrf_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            body = "credential=fake-token&g_csrf_token=csrf-token"
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Cookie": "g_csrf_token=other-token",
+            }
+
+            status, _, response_body = self.request_test_server(
+                db_path,
+                "POST",
+                "/api/auth/google",
+                headers=headers,
+                body=body,
+            )
+
+            self.assertEqual(status, 401)
+            self.assertIn(b"invalid Google CSRF token", response_body)
+
     def test_user_state_is_scoped_per_google_user(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -347,13 +398,15 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('id="google-button"', html)
         self.assertIn("google.accounts.id.prompt", js)
         self.assertIn("auto_select: true", js)
-        self.assertIn('ux_mode: "popup"', js)
+        self.assertIn('ux_mode: "redirect"', js)
+        self.assertIn('login_uri: `${window.location.origin}/api/auth/google`', js)
         self.assertNotIn("use_fedcm_for_button", js)
         self.assertNotIn("button_auto_select", js)
         self.assertIn("google.accounts.id.renderButton", js)
         self.assertIn('const GOOGLE_LOCALE = "ru"', js)
         self.assertIn("locale: GOOGLE_LOCALE", js)
         self.assertIn("click_listener: handleGoogleButtonClick", js)
+        self.assertIn("state: nextPath()", js)
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)

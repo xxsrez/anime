@@ -110,7 +110,8 @@ async function bootLogin() {
   google.accounts.id.initialize({
     client_id: config.client_id,
     callback: handleCredential,
-    ux_mode: "popup",
+    ux_mode: "redirect",
+    login_uri: `${window.location.origin}/api/auth/google`,
     auto_select: true,
     prompt_parent_id: el.oneTapAnchor?.id,
   });
@@ -122,6 +123,7 @@ async function bootLogin() {
     text: "signin_with",
     locale: GOOGLE_LOCALE,
     click_listener: handleGoogleButtonClick,
+    state: nextPath(),
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
   maybeShowOneTap(google);

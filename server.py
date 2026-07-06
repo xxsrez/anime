@@ -1903,6 +1903,23 @@ class AnimeHandler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length).decode("utf-8")
         return json.loads(raw or "{}")
 
+    def read_google_auth_body(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if not length:
+            return {}, False
+        raw = self.rfile.read(length).decode("utf-8")
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if content_type == "application/x-www-form-urlencoded":
+            params = parse_qs(raw, keep_blank_values=True)
+            csrf_body = params.get("g_csrf_token", [""])[0]
+            cookie = SimpleCookie()
+            cookie.load(self.headers.get("Cookie") or "")
+            csrf_cookie = cookie.get("g_csrf_token")
+            if not csrf_body or not csrf_cookie or csrf_cookie.value != csrf_body:
+                raise AuthError("invalid Google CSRF token")
+            return {key: values[0] for key, values in params.items()}, True
+        return json.loads(raw or "{}"), False
+
     def send_static(self, path):
         safe_path = path.lstrip("/") or "index.html"
         if safe_path == "":
@@ -2050,7 +2067,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path == "/api/auth/google":
             try:
-                payload = self.read_json_body()
+                payload, is_redirect_flow = self.read_google_auth_body()
                 auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
             except json.JSONDecodeError:
                 self.send_json({"error": "invalid json"}, 400)
@@ -2062,6 +2079,12 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_json({"error": str(exc)}, 401)
                 return
             cookie_header = self.session_cookie_header(auth["token"])
+            if is_redirect_flow:
+                self.send_redirect(
+                    safe_next_path(payload.get("state") or "/"),
+                    headers=[("Set-Cookie", cookie_header)],
+                )
+                return
             self.send_json(
                 {"user": auth["user"]},
                 headers=[("Set-Cookie", cookie_header)],
