@@ -23,6 +23,16 @@ SOURCE_PRIORITY = {
     "yummyanime": 1,
 }
 MERGEABLE_SOURCES = {"animego", "yummyanime"}
+PINNED_TRANSLATION_KEYS = {"dream cast"}
+GENERIC_TRANSLATION_KEYS = {"", "unknown", "yummyanime"}
+SUBTITLE_TRANSLATION_KEYS = {"субтитры", "subtitles"}
+TRANSLATION_KEY_ALIASES = {
+    "dreamcast": "dream cast",
+    "dream cast": "dream cast",
+    "light family": "lightfamily",
+}
+TRANSLATION_PREFIXES = ("озвучка ",)
+UNKNOWN_TRANSLATION_RANK = 9999
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
 SLUG_TRANSLIT = {
@@ -217,6 +227,16 @@ def normalize_match_title(value):
     text = normalize_key(value)
     text = re.sub(r"[^\w\s]+", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def translation_key(value):
+    key = normalize_match_title(value)
+    for prefix in TRANSLATION_PREFIXES:
+        if key.startswith(prefix):
+            key = key[len(prefix):].strip()
+            break
+    compact = key.replace(" ", "")
+    return TRANSLATION_KEY_ALIASES.get(key) or TRANSLATION_KEY_ALIASES.get(compact) or key
 
 
 def base36(value):
@@ -824,6 +844,41 @@ def get_source_anime_items(con):
     return items
 
 
+def build_translation_rankings(con):
+    rows = con.execute(
+        """
+        select distinct
+            vs.anime_id,
+            vs.translation_title
+        from video_sources vs
+        where vs.embed_url is not null
+          and vs.translation_title is not null
+        """
+    ).fetchall()
+
+    anime_ids_by_key = {}
+    label_by_key = {}
+    for row in rows:
+        key = translation_key(row["translation_title"])
+        if key in GENERIC_TRANSLATION_KEYS:
+            continue
+        anime_ids_by_key.setdefault(key, set()).add(row["anime_id"])
+        label_by_key.setdefault(key, row["translation_title"])
+
+    ranked_keys = sorted(
+        anime_ids_by_key,
+        key=lambda key: (-len(anime_ids_by_key[key]), label_by_key.get(key) or key),
+    )
+    return {
+        key: {
+            "rank": index,
+            "title_count": len(anime_ids_by_key[key]),
+            "label": label_by_key.get(key) or key,
+        }
+        for index, key in enumerate(ranked_keys)
+    }
+
+
 def get_anime_list(db_path=None, q=None):
     items = clone_catalog_items(get_catalog_items(db_path))
     return [item for item in items if item_matches_query(item, q)]
@@ -851,6 +906,7 @@ def build_catalog_cache(db_path=None):
     con = connect(path)
     try:
         items = canonicalize_items(get_source_anime_items(con))
+        translation_rankings = build_translation_rankings(con)
     finally:
         con.close()
 
@@ -867,6 +923,7 @@ def build_catalog_cache(db_path=None):
         "items": items,
         "id_map": id_map,
         "slug_map": slug_map,
+        "translation_rankings": translation_rankings,
     }
 
 
@@ -958,13 +1015,76 @@ def episode_sort_key(episode):
     )
 
 
-def source_row_sort_key(source):
+def provider_sort_key(source):
+    provider = normalize_key(source.get("provider_title"))
+    host = normalize_key(source.get("embed_host"))
+    if provider.startswith("kodik"):
+        priority = 0
+    elif provider == "aniboom":
+        priority = 1
+    elif provider == "cvh":
+        priority = 2
+    elif provider == "sibnet":
+        priority = 3
+    else:
+        priority = 50
+    return (
+        priority,
+        source.get("provider_title") or "",
+        host,
+        source.get("id") or 0,
+    )
+
+
+def build_source_ranking_context(by_episode, translation_rankings):
+    episode_counts_by_key = {}
+    providers_by_key = {}
+
+    for episode_id, sources in by_episode.items():
+        episode_translation_keys = set()
+        for source in sources:
+            key = translation_key(source.get("translation_title"))
+            episode_translation_keys.add(key)
+            providers_by_key.setdefault(key, set()).add(
+                (
+                    normalize_key(source.get("provider_title")),
+                    normalize_key(source.get("embed_host")),
+                )
+            )
+        for key in episode_translation_keys:
+            episode_counts_by_key[key] = episode_counts_by_key.get(key, 0) + 1
+
+    return {
+        "translation_rankings": translation_rankings or {},
+        "episode_counts_by_key": episode_counts_by_key,
+        "providers_by_key": providers_by_key,
+    }
+
+
+def translation_sort_key(source, context=None):
+    context = context or {}
+    key = translation_key(source.get("translation_title"))
+    ranking = context.get("translation_rankings", {}).get(key) or {}
+    episode_count = context.get("episode_counts_by_key", {}).get(key, 0)
+    provider_count = len(context.get("providers_by_key", {}).get(key, set()))
+
+    return (
+        0 if key in PINNED_TRANSLATION_KEYS else 1,
+        1 if key in GENERIC_TRANSLATION_KEYS else 0,
+        1 if key in SUBTITLE_TRANSLATION_KEYS else 0,
+        -episode_count,
+        ranking.get("rank", UNKNOWN_TRANSLATION_RANK),
+        -provider_count,
+        source.get("translation_title") or "",
+    )
+
+
+def source_row_sort_key(source, context=None):
     return (
         source.get("episode_id") or 0,
+        *translation_sort_key(source, context),
         source_priority(source.get("source")),
-        source.get("translation_title") or "",
-        0 if normalize_key(source.get("provider_title")) == "kodik" else 1,
-        source.get("provider_title") or "",
+        *provider_sort_key(source),
     )
 
 
@@ -1066,6 +1186,8 @@ def get_anime_detail(anime_ref, db_path=None):
         ).fetchall()
     )
     state = get_group_state(con, member_ids)
+    db_file = con.execute("pragma database_list").fetchone()["file"]
+    translation_rankings = get_catalog_cache(db_file).get("translation_rankings") or {}
     con.close()
 
     episode_buckets = {}
@@ -1104,8 +1226,9 @@ def get_anime_detail(anime_ref, db_path=None):
 
     for episode in episodes:
         episode["source_count"] = len(by_episode.get(episode["id"], []))
+    source_ranking_context = build_source_ranking_context(by_episode, translation_rankings)
     for sources in by_episode.values():
-        sources.sort(key=source_row_sort_key)
+        sources.sort(key=lambda source: source_row_sort_key(source, source_ranking_context))
 
     detail = dict(anime)
     detail.update(state)

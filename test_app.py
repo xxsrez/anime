@@ -8,6 +8,16 @@ import server
 
 
 class LocalAppTest(unittest.TestCase):
+    def source_row(self, translation, provider="Kodik", episode_id=1, source="animego", row_id=1):
+        return {
+            "id": row_id,
+            "episode_id": episode_id,
+            "source": source,
+            "translation_title": translation,
+            "provider_title": provider,
+            "embed_host": "kodikplayer.com" if provider.startswith("Kodik") else "example.test",
+        }
+
     def test_catalog_has_scraped_titles(self):
         items = server.get_anime_list()
         self.assertGreaterEqual(len(items), 10)
@@ -38,6 +48,67 @@ class LocalAppTest(unittest.TestCase):
         ]
         self.assertTrue(any(source["embed_url"] for source in source_rows))
         self.assertTrue(any(source["translation_title"] for source in source_rows))
+
+    def test_source_sort_pins_dream_cast_above_popular_translations(self):
+        sources = [
+            self.source_row("AniStar", row_id=1),
+            self.source_row("Dreamcast", row_id=2),
+            self.source_row("AniDUB", row_id=3),
+        ]
+        rankings = {
+            "anistar": {"rank": 0},
+            "anidub": {"rank": 1},
+            "dream cast": {"rank": 20},
+        }
+        context = server.build_source_ranking_context({1: sources}, rankings)
+
+        sorted_sources = sorted(sources, key=lambda source: server.source_row_sort_key(source, context))
+
+        self.assertEqual(sorted_sources[0]["translation_title"], "Dreamcast")
+
+    def test_source_sort_demotes_subtitles_and_generic_labels(self):
+        sources = [
+            self.source_row("YummyAnime", row_id=1, source="yummyanime"),
+            self.source_row("Субтитры", row_id=2),
+            self.source_row("AnimeVost", row_id=3),
+        ]
+        rankings = {
+            "субтитры": {"rank": 0},
+            "animevost": {"rank": 5},
+        }
+        context = server.build_source_ranking_context({1: sources}, rankings)
+
+        sorted_sources = sorted(sources, key=lambda source: server.source_row_sort_key(source, context))
+
+        self.assertEqual([source["translation_title"] for source in sorted_sources], ["AnimeVost", "Субтитры", "YummyAnime"])
+
+    def test_source_sort_prefers_title_wide_translation_coverage(self):
+        episode_one = [
+            self.source_row("AniStar", episode_id=1, row_id=1),
+            self.source_row("SHIZA Project", episode_id=1, row_id=2),
+        ]
+        episode_two = [
+            self.source_row("SHIZA Project", episode_id=2, row_id=3),
+        ]
+        rankings = {
+            "anistar": {"rank": 0},
+            "shiza project": {"rank": 10},
+        }
+        context = server.build_source_ranking_context({1: episode_one, 2: episode_two}, rankings)
+
+        sorted_sources = sorted(episode_one, key=lambda source: server.source_row_sort_key(source, context))
+
+        self.assertEqual(sorted_sources[0]["translation_title"], "SHIZA Project")
+
+    def test_translation_rankings_exclude_generic_source_labels(self):
+        con = server.connect()
+        try:
+            rankings = server.build_translation_rankings(con)
+        finally:
+            con.close()
+
+        self.assertIn("dream cast", rankings)
+        self.assertNotIn("yummyanime", rankings)
 
     def test_year_metadata_fields_are_available(self):
         items = server.get_anime_list()
