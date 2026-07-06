@@ -4,6 +4,12 @@ const el = {
   state: document.getElementById("login-state"),
 };
 const GOOGLE_LOCALE = "ru";
+const LOGIN_RECOVERY_STARTED_KEY = "anime-login-recovery-started-at";
+const LOGIN_RECOVERY_RELOADS_KEY = "anime-login-recovery-reloads";
+const LOGIN_RECOVERY_MAX_AGE_MS = 60_000;
+const LOGIN_RECOVERY_MAX_RELOADS = 2;
+const LOGIN_RECOVERY_CHECK_ATTEMPTS = 20;
+const LOGIN_RECOVERY_CHECK_DELAY_MS = 150;
 
 function setLoginState(message, tone = "") {
   el.state.textContent = message || "";
@@ -38,6 +44,90 @@ function nextPath() {
 function authError() {
   const raw = new URLSearchParams(window.location.search).get("auth_error");
   return raw ? raw.trim() : "";
+}
+
+function authComplete() {
+  return new URLSearchParams(window.location.search).get("auth_complete") === "1";
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function markLoginRecovery() {
+  try {
+    window.sessionStorage.setItem(LOGIN_RECOVERY_STARTED_KEY, String(Date.now()));
+    window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, "0");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function clearLoginRecovery() {
+  try {
+    window.sessionStorage.removeItem(LOGIN_RECOVERY_STARTED_KEY);
+    window.sessionStorage.removeItem(LOGIN_RECOVERY_RELOADS_KEY);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function hasRecentLoginRecovery() {
+  if (authComplete()) return true;
+  try {
+    const startedAt = Number(window.sessionStorage.getItem(LOGIN_RECOVERY_STARTED_KEY) || 0);
+    return startedAt > 0 && Date.now() - startedAt < LOGIN_RECOVERY_MAX_AGE_MS;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+function loginRecoveryReloadCount() {
+  try {
+    return Number(window.sessionStorage.getItem(LOGIN_RECOVERY_RELOADS_KEY) || 0);
+  } catch (error) {
+    console.error(error);
+    return LOGIN_RECOVERY_MAX_RELOADS;
+  }
+}
+
+function bumpLoginRecoveryReloadCount(value) {
+  try {
+    window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, String(value));
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function recoverExistingSession() {
+  if (!hasRecentLoginRecovery()) return false;
+  setLoginState("Завершаю вход...", "ok");
+  for (let attempt = 0; attempt < LOGIN_RECOVERY_CHECK_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch("/api/me", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (response.ok) {
+        clearLoginRecovery();
+        window.location.replace(nextPath());
+        return true;
+      }
+    } catch (error) {
+      // A reload below is the recovery path for transient cookie timing issues.
+    }
+    await delay(LOGIN_RECOVERY_CHECK_DELAY_MS);
+  }
+
+  const reloadCount = loginRecoveryReloadCount();
+  if (reloadCount < LOGIN_RECOVERY_MAX_RELOADS) {
+    bumpLoginRecoveryReloadCount(reloadCount + 1);
+    window.location.reload();
+    return true;
+  }
+  setLoginState("Вход выполнен. Обновите страницу, если приложение не открылось.", "warn");
+  return false;
 }
 
 function waitForGoogle() {
@@ -78,11 +168,13 @@ async function submitCredential(response) {
   if (!payload.complete_url) {
     throw new Error("Сервер не вернул завершение входа");
   }
+  markLoginRecovery();
   window.location.replace(payload.complete_url);
 }
 
 function handleCredential(response) {
   submitCredential(response).catch(error => {
+    clearLoginRecovery();
     setLoginState(error.message || "Не удалось войти", "warn");
     console.error(error);
   });
@@ -111,6 +203,8 @@ async function bootLogin() {
   const redirectError = authError();
   if (redirectError) {
     setLoginState(redirectError, "warn");
+  } else {
+    recoverExistingSession();
   }
 
   const configResponse = await fetch(`/api/auth/config?next=${encodeURIComponent(nextPath())}`);

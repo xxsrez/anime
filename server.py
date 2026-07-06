@@ -2100,6 +2100,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
         next_path = safe_next_path(next_path)
         next_js = json.dumps(next_path, ensure_ascii=False)
         next_href = html.escape(next_path, quote=True)
+        recovery_path = f"/login?{urlencode({'next': next_path, 'auth_complete': '1'})}"
+        recovery_js = json.dumps(recovery_path, ensure_ascii=False)
         self.send_html(
             f"""<!doctype html>
 <html lang=\"ru\">
@@ -2133,7 +2135,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
         await delay(100);
       }}
       state.textContent = "Вход выполнен. Открываю приложение...";
-      window.location.replace(nextPath);
+      window.location.replace({recovery_js});
     }}
 
     waitForSession();

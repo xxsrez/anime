@@ -282,6 +282,7 @@ class LocalAppTest(unittest.TestCase):
             self.assertIn(b'credentials: "same-origin"', response_body)
             self.assertIn(b"window.location.replace", response_body)
             self.assertIn(b"/some-title", response_body)
+            self.assertIn(b"auth_complete", response_body)
 
             status, headers, _ = self.request_test_server(
                 db_path,
@@ -332,6 +333,7 @@ class LocalAppTest(unittest.TestCase):
             self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
             self.assertIn(b"waitForSession", response_body)
             self.assertIn(b"/wanted", response_body)
+            self.assertIn(b"auth_complete", response_body)
 
     def test_auth_config_returns_signed_google_state(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -551,6 +553,10 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('fetch("/api/auth/google"', js)
         self.assertIn('credentials: "same-origin"', js)
         self.assertIn("complete_url", js)
+        self.assertIn("authComplete()", js)
+        self.assertIn("recoverExistingSession", js)
+        self.assertIn("window.location.reload()", js)
+        self.assertIn("sessionStorage.setItem(LOGIN_RECOVERY_STARTED_KEY", js)
         self.assertNotIn('ux_mode: "redirect"', js)
         self.assertNotIn("login_uri:", js)
         self.assertNotIn("use_fedcm_for_button", js)
