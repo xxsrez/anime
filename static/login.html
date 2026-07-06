@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121416">
+  <title>Вход - Anime Local</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="login-brand">
+        <div>
+          <h1 id="login-title">Anime Local</h1>
+          <p>Вход через Google</p>
+        </div>
+        <span class="status-dot" aria-hidden="true"></span>
+      </div>
+      <div id="google-button" class="google-button-wrap"></div>
+      <p id="login-state" class="login-state" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="/static/login.js"></script>
+</body>
+</html>

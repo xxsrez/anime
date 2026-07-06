@@ -15,6 +15,7 @@ const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
 
 const state = {
+  user: null,
   anime: [],
   recommendations: [],
   recommendationProfile: null,
@@ -39,6 +40,11 @@ const state = {
 
 const el = {
   count: document.getElementById("catalog-count"),
+  accountRow: document.getElementById("account-row"),
+  accountAvatar: document.getElementById("account-avatar"),
+  accountName: document.getElementById("account-name"),
+  accountEmail: document.getElementById("account-email"),
+  logoutButton: document.getElementById("logout-button"),
   search: document.getElementById("search"),
   filterGrid: document.getElementById("filter-grid"),
   activeFilters: document.getElementById("active-filters"),
@@ -81,12 +87,45 @@ let titleTooltipTarget = null;
 
 async function api(path, options = {}) {
   const response = await fetch(path, options);
+  if (response.status === 401) {
+    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(`/login?next=${encodeURIComponent(next)}`);
+    throw new Error("authentication required");
+  }
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.json();
 }
 
 function text(value, fallback = "") {
   return value == null || value === "" ? fallback : String(value);
+}
+
+function userInitials(user) {
+  const source = user?.name || user?.email || "";
+  const parts = source.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length >= 2
+    ? [parts[0][0], parts[1][0]]
+    : [source.trim()[0] || "?"];
+  return letters.join("").toLocaleUpperCase("ru");
+}
+
+function renderAccount() {
+  if (!state.user || !el.accountRow) return;
+  el.accountName.textContent = state.user.name || state.user.email || "Google user";
+  el.accountEmail.textContent = state.user.email || "";
+  el.accountRow.hidden = false;
+  if (state.user.picture_url) {
+    el.accountAvatar.textContent = "";
+    el.accountAvatar.style.backgroundImage = `url(${JSON.stringify(state.user.picture_url)})`;
+  } else {
+    el.accountAvatar.style.backgroundImage = "";
+    el.accountAvatar.textContent = userInitials(state.user);
+  }
+}
+
+async function logout() {
+  await api("/api/logout", { method: "POST" });
+  window.location.replace("/login");
 }
 
 function searchText(value) {
@@ -1387,6 +1426,9 @@ el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
   saveUserState({ is_favorite: !state.detail.is_favorite }).catch(console.error);
 });
+el.logoutButton.addEventListener("click", () => {
+  logout().catch(console.error);
+});
 el.progressEpisode.addEventListener("change", () => {
   if (!state.detail) return;
   saveUserState({
@@ -1452,6 +1494,9 @@ async function selectInitialAnime() {
 
 async function boot() {
   configurePlayerIframe(el.player);
+  const me = await api("/api/me");
+  state.user = me.user;
+  renderAccount();
   const payload = await api("/api/anime");
   state.anime = payload.items || [];
   await loadRecommendations();

@@ -8,6 +8,8 @@ choosing a provider/translation, and tracking personal progress.
 ## Current User Workflows
 
 - Browse all scraped titles.
+- Sign in with a Google account and see the active account in the sidebar.
+- Sign out from the sidebar account control.
 - Search by title, subtitle, source, type, status, year, or genre.
 - Filter by genre, year, type, status, source, and whether video is available.
 - Sort by best rating, site rating, listing rating, rating count, year, video
@@ -40,7 +42,7 @@ As of the current local SQLite snapshot on 2026-07-06, the database contains:
 - 212 episode rows.
 - 175 video source rows.
 - 16,011 genre rows.
-- 24 user progress/favorite rows.
+- 24 legacy user progress/favorite rows before first Google account adoption.
 
 The committed recovery snapshot is in `backups/current/`. It includes a full
 SQLite backup and readable exports of favorites/progress/watched state.
@@ -63,18 +65,20 @@ to the embedded player's own PiP controls.
 
 ## Recommendation Model
 
-Recommendations are computed on demand from local data. Favorites have the
-highest profile weight; watched titles and titles with progress also contribute.
-The score combines genre similarity, similarity to known titles, rating quality,
-source availability, popularity, recency, and title type. Known titles already
-favorited, watched, or in progress are excluded.
+Recommendations are computed on demand from local data for the current Google
+user. Favorites have the highest profile weight; watched titles and titles with
+progress also contribute. The score combines genre similarity, similarity to
+known titles, rating quality, source availability, popularity, recency, and
+title type. Known titles already favorited, watched, or in progress are
+excluded.
 
 When no taste profile exists yet, the same endpoint falls back to a popularity
 and availability ranking.
 
 ## Known Limitations
 
-- The app is a local prototype, not an authenticated multi-user service.
+- The app uses local Google Sign-In sessions, but it is still a local prototype
+  rather than a hardened public multi-user service.
 - Filtering and sorting are client-side because the catalog size is currently
   small enough for the full list to load at once.
 - Recommendations use only local metadata and user state; there is no external

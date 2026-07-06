@@ -16,9 +16,7 @@ DEFAULT_OUT = ROOT / "backups" / "current"
 
 
 def connect(db_path):
-    con = sqlite3.connect(db_path)
-    con.row_factory = sqlite3.Row
-    return con
+    return server.connect(db_path)
 
 
 def scalar(con, sql, params=()):
@@ -43,6 +41,8 @@ def user_state_rows(con):
         for row in con.execute(
             """
             select
+                us.user_id,
+                coalesce(u.email, u.name, u.google_sub) as user_label,
                 us.anime_id,
                 a.title,
                 a.source,
@@ -52,8 +52,9 @@ def user_state_rows(con):
                 us.watched,
                 us.updated_at
             from user_title_state us
+            left join users u on u.id = us.user_id
             left join anime a on a.id = us.anime_id
-            order by coalesce(a.title, ''), us.anime_id
+            order by coalesce(u.email, u.name, u.google_sub, ''), coalesce(a.title, ''), us.anime_id
             """
         )
     ]
@@ -62,25 +63,27 @@ def user_state_rows(con):
 def write_user_state_sql(con, out_dir):
     rows = con.execute(
         """
-        select anime_id, is_favorite, progress_episode_number, watched, updated_at
+        select user_id, anime_id, is_favorite, progress_episode_number, watched, updated_at
         from user_title_state
-        order by anime_id
+        order by user_id, anime_id
         """
     ).fetchall()
     dump = sqlite3.connect(":memory:")
     dump.execute(
         """
         create table user_title_state (
-            anime_id integer primary key,
+            user_id integer not null,
+            anime_id integer not null,
             is_favorite integer not null default 0,
             progress_episode_number integer,
             watched integer not null default 0,
-            updated_at text not null
+            updated_at text not null,
+            primary key (user_id, anime_id)
         )
         """
     )
     dump.executemany(
-        "insert into user_title_state values (?, ?, ?, ?, ?)",
+        "insert into user_title_state values (?, ?, ?, ?, ?, ?)",
         [tuple(row) for row in rows],
     )
     sql = "\n".join(dump.iterdump()) + "\n"
@@ -99,6 +102,8 @@ def write_user_state_json(rows, out_dir):
 def write_user_state_csv(rows, out_dir):
     path = out_dir / "user_title_state.csv"
     fields = [
+        "user_id",
+        "user_label",
         "anime_id",
         "title",
         "source",
@@ -109,7 +114,7 @@ def write_user_state_csv(rows, out_dir):
         "updated_at",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     return path

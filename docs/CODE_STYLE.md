@@ -73,13 +73,16 @@ or used as scratch unless the user explicitly asks for a prod operation.
 For code changes, run:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py test_app.py
+python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
+node --check static/login.js
 ```
 
 For UI changes, also verify in a browser:
 
+- Unauthenticated app routes redirect to `/login`.
+- Google-authenticated sessions show the account row and logout works.
 - Catalog loads.
 - Search works.
 - Filters narrow the list.

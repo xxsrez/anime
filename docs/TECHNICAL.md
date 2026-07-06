@@ -3,7 +3,9 @@
 ## Runtime Stack
 
 - Python standard library HTTP server.
-- SQLite for catalog, episodes, player metadata, and local user state.
+- SQLite for catalog, episodes, player metadata, auth sessions, and per-user
+  local state.
+- Google Identity Services ID tokens, verified server-side with `google-auth`.
 - `beautifulsoup4` and `lxml` for scraping/parsing.
 - Plain HTML, CSS, and JavaScript for the frontend.
 - No frontend build step.
@@ -38,6 +40,22 @@ python3 server.py --db /path/to/animego.sqlite
 
 or with the `ANIMEGO_DB` environment variable for internal helper calls.
 
+Authentication requires:
+
+```bash
+export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
+```
+
+Optional restrictions:
+
+```bash
+export ANIME_AUTH_ALLOWED_EMAILS="one@example.com,two@example.com"
+export ANIME_AUTH_ALLOWED_DOMAINS="example.com"
+```
+
+Sessions use an opaque `HttpOnly` cookie and are stored as SHA-256 hashes in
+SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
+
 Production is a separate localhost environment at `http://127.0.0.1:8766/`.
 Do not use it for development, scraping, indexing, or performance work. See
 `ENVIRONMENTS.md` for the fixed port map and release workflow.
@@ -48,23 +66,42 @@ Do not use it for development, scraping, indexing, or performance work. See
 
 Returns a simple health payload.
 
+`GET /api/auth/config`
+
+Returns the public Google client ID configuration for the login page.
+
+`GET /api/me`
+
+Returns the current authenticated user. Requires a valid session cookie.
+
+`POST /api/auth/google`
+
+Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
+verifies it server-side, upserts the local user, and sets the session cookie.
+
+`POST /api/logout`
+
+Revokes the current session and clears the session cookie.
+
 `GET /api/anime`
 
-Returns the canonical catalog list. Source-specific AnimeGO/YummyAnime rows can
-be merged into one visible item with `source_variants`. Optional `q` filters the
-canonical list across primary and variant titles.
+Requires authentication. Returns the canonical catalog list with state for the
+current user. Source-specific AnimeGO/YummyAnime rows can be merged into one
+visible item with `source_variants`. Optional `q` filters the canonical list
+across primary and variant titles.
 
 `GET /api/anime/<id-or-slug>`
 
-Returns one canonical title with genres, dubbings, fields, source variants,
-episodes, video sources grouped by episode, and user state. Requests for a
-canonical `slug`/`internal_id` or a merged YummyAnime variant ID resolve to the
-same AnimeGO-primary canonical detail.
+Requires authentication. Returns one canonical title with genres, dubbings,
+fields, source variants, episodes, video sources grouped by episode, and
+current-user state. Requests for a canonical `slug`/`internal_id` or a merged
+YummyAnime variant ID resolve to the same AnimeGO-primary canonical detail.
 
 `GET /api/recommendations`
 
-Returns recommended titles plus profile metadata. Optional `limit` defaults to
-20 and is clamped to 1..50. Response fields include:
+Requires authentication. Returns recommended titles plus current-user profile
+metadata. Optional `limit` defaults to 20 and is clamped to 1..50. Response
+fields include:
 
 - `items` - ranked title rows with `recommendation_score`,
   `recommendation_rank`, `recommendation_confidence`, `recommendation_reasons`,
@@ -75,7 +112,8 @@ Returns recommended titles plus profile metadata. Optional `limit` defaults to
 
 `PATCH /api/anime/<id>/state`
 
-Updates local user state. Supported fields:
+Requires authentication. Updates local state for the current user. Supported
+fields:
 
 - `is_favorite`
 - `progress_episode_number`
@@ -87,15 +125,17 @@ Updates local user state. Supported fields:
 2. Scrapers normalize title, metadata, episodes, translations, and providers.
 3. Scrapers upsert rows into SQLite.
 4. `server.py` reads SQLite and emits JSON.
-5. `static/app.js` loads `/api/anime` and `/api/recommendations`, renders the
-   sidebar, and fetches detail JSON when a title is selected.
-6. The user can choose the source variant, translation, and provider; the player
+5. `/login` renders the Google button. `/api/auth/google` verifies the ID token
+   and creates a local session cookie.
+6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
+   renders the sidebar, and fetches detail JSON when a title is selected.
+7. The user can choose the source variant, translation, and provider; the player
    iframe receives the selected provider's `embed_url`.
-7. The browser URL is synchronized with the right-pane state using the canonical
+8. The browser URL is synchronized with the right-pane state using the canonical
    title slug in the path and query params for `episode`, `source`,
    `translation`, and `provider`.
-8. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
-9. Recommendation data is reloaded after favorite/progress/watched changes.
+9. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
+10. Recommendation data is reloaded after favorite/progress/watched changes.
 
 ## Scraper Notes
 
@@ -156,7 +196,8 @@ the scraped tag `Исэкай`.
 
 ## Recommendations
 
-Recommendation scoring lives in `server.py` and is intentionally explainable:
+Recommendation scoring lives in `server.py` and is intentionally explainable.
+It is scoped to the current authenticated user:
 
 - Favorites count most strongly as taste seeds.
 - Watched titles and titles with progress count as weaker seeds.

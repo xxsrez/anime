@@ -71,19 +71,40 @@ Translation labels discovered by the AnimeGO scraper.
 
 Audit table for scraper runs.
 
+`users`
+
+One row per authenticated Google account plus an internal legacy local profile
+used only for migration/function-level tests:
+
+- `id` - local user ID.
+- `google_sub` - stable Google subject ID, unique. Google `sub` is the durable
+  identity key; email is not used as the primary identity.
+- `email`, `email_verified`, `name`, `picture_url`.
+- `created_at`, `last_login_at`.
+
+`sessions`
+
+Opaque local sessions:
+
+- `token_hash` - SHA-256 hash of the browser session token.
+- `user_id`.
+- `created_at`, `expires_at`, `revoked_at`, `last_seen_at`.
+
 `user_title_state`
 
-Local mutable state:
+Per-user mutable state:
 
+- `user_id`.
 - `anime_id`.
 - `is_favorite`.
 - `progress_episode_number`.
 - `watched`.
 - `updated_at`.
 
-The recommendation endpoint reads this table as the taste profile. Favorites
-are strongest, watched titles are weaker, and in-progress titles also count.
-Recommendations themselves are computed at request time and are not persisted.
+The primary key is `(user_id, anime_id)`. The recommendation endpoint reads
+this table for the current user as the taste profile. Favorites are strongest,
+watched titles are weaker, and in-progress titles also count. Recommendations
+themselves are computed at request time and are not persisted.
 
 ## Canonical Title View
 
@@ -100,9 +121,9 @@ year, they are exposed as one catalog item with `source_variants`.
   player/source aggregation.
 - Auto-merge is intentionally conservative: ambiguous buckets with more than
   one row per source are left as separate rows until they can be reviewed.
-- User state is written to the canonical primary row. If state was previously
-  attached to a duplicate variant, the API aggregates it and moves future
-  updates to the primary row.
+- User state is written to the canonical primary row for the current user. If
+  state was previously attached to a duplicate variant, the API aggregates that
+  user's rows and moves future updates to the primary row.
 
 The current committed recovery snapshot lives in `backups/current/` and includes
 both the full SQLite database backup and user-state SQL/JSON/CSV exports.

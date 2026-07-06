@@ -16,6 +16,7 @@ and player prototype.
 Run the dev/test site:
 
 ```bash
+export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
 python3 server.py --port 8765
 ```
 
@@ -30,6 +31,7 @@ Run the current verification set:
 python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
+node --check static/login.js
 ```
 
 After frontend or API changes, restart any already-running `server.py` process.
@@ -39,9 +41,11 @@ long-running process.
 ## Important boundaries
 
 - The project stores catalog/player metadata in local SQLite.
+- The browser app requires Google Sign-In; API/catalog/player routes require a
+  valid local session cookie.
 - Dev/test/scratch is `8765`; prod is `8766`; port `8776` is retired.
-- The recommendation list is computed locally from `user_title_state` and
-  catalog metadata.
+- The recommendation list is computed locally from current-user
+  `user_title_state` and catalog metadata.
 - The project does not download or host anime video streams.
 - Playback uses third-party embed URLs saved in SQLite. The main catalog should
   not contain titles that have no playable `embed_url`.

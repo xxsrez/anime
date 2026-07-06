@@ -18,6 +18,7 @@ unless the user explicitly changes the scheme again.
 Run and test the current working tree on dev:
 
 ```bash
+export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
 python3 server.py --host 127.0.0.1 --port 8765
 ```
 
@@ -61,8 +62,8 @@ refuses dirty worktrees by default; `--allow-dirty` must be explicit and should
 only be used when the user accepts that uncommitted work is ignored.
 
 During release, the production catalog database is refreshed from the released
-backup database while `user_title_state` is preserved when referenced titles
-still exist.
+backup database while `users`, `sessions`, and per-user `user_title_state` are
+preserved when referenced titles still exist.
 
 ## Normal Workflow
 

@@ -1,0 +1,90 @@
+const el = {
+  googleButton: document.getElementById("google-button"),
+  state: document.getElementById("login-state"),
+};
+
+function setLoginState(message, tone = "") {
+  el.state.textContent = message || "";
+  if (tone) {
+    el.state.dataset.tone = tone;
+  } else {
+    delete el.state.dataset.tone;
+  }
+}
+
+function nextPath() {
+  const raw = new URLSearchParams(window.location.search).get("next") || "/";
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch (error) {
+    return "/";
+  }
+}
+
+function waitForGoogle() {
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (window.google?.accounts?.id) {
+        window.clearInterval(timer);
+        resolve(window.google);
+      } else if (Date.now() - startedAt > 8000) {
+        window.clearInterval(timer);
+        reject(new Error("Google Sign-In не загрузился"));
+      }
+    }, 80);
+  });
+}
+
+async function submitCredential(response) {
+  if (!response?.credential) {
+    setLoginState("Google не вернул credential", "warn");
+    return;
+  }
+  setLoginState("Проверяю вход...", "ok");
+  const authResponse = await fetch("/api/auth/google", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential: response.credential }),
+  });
+  if (!authResponse.ok) {
+    const payload = await authResponse.json().catch(() => ({}));
+    throw new Error(payload.error || `${authResponse.status} ${authResponse.statusText}`);
+  }
+  window.location.replace(nextPath());
+}
+
+async function bootLogin() {
+  const configResponse = await fetch("/api/auth/config");
+  const config = await configResponse.json();
+  if (!config.configured || !config.client_id) {
+    setLoginState("GOOGLE_CLIENT_ID не настроен", "warn");
+    return;
+  }
+
+  const google = await waitForGoogle();
+  google.accounts.id.initialize({
+    client_id: config.client_id,
+    callback: credential => {
+      submitCredential(credential).catch(error => {
+        setLoginState(error.message || "Не удалось войти", "warn");
+        console.error(error);
+      });
+    },
+  });
+  google.accounts.id.renderButton(el.googleButton, {
+    theme: "filled_black",
+    size: "large",
+    type: "standard",
+    shape: "rectangular",
+    text: "signin_with",
+    width: Math.min(360, el.googleButton.clientWidth || 360),
+  });
+}
+
+bootLogin().catch(error => {
+  setLoginState(error.message || "Не удалось открыть вход", "warn");
+  console.error(error);
+});

@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 import argparse
 import datetime as dt
+import hashlib
 import json
 import math
 import mimetypes
 import os
 import re
+import secrets
 import sqlite3
 import threading
 import unicodedata
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
@@ -21,6 +24,11 @@ DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
+LEGACY_USER_SUB = "local:legacy"
+LEGACY_USER_NAME = "Локальный профиль"
+SESSION_COOKIE_NAME = "anime_session"
+SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
+GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 EXTERNAL_RATING_SOURCES = {
     "tal": ("TAL", 0),
     "myanimelist": ("MAL", 1),
@@ -87,25 +95,173 @@ def now_iso():
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
 
-def ensure_user_state_schema(con):
-    exists = con.execute(
-        "select 1 from sqlite_master where type = 'table' and name = 'user_title_state'"
+class AuthError(Exception):
+    pass
+
+
+class AuthConfigError(Exception):
+    pass
+
+
+def env_list(name):
+    return [
+        item.strip().lower()
+        for item in os.environ.get(name, "").split(",")
+        if item.strip()
+    ]
+
+
+def ensure_legacy_user(con):
+    existing = con.execute(
+        "select id from users where google_sub = ?",
+        (LEGACY_USER_SUB,),
     ).fetchone()
-    if exists:
-        return False
+    if existing:
+        return existing["id"]
+
+    now = now_iso()
+    con.execute(
+        """
+        insert into users (google_sub, email, email_verified, name, picture_url, created_at, last_login_at)
+        values (?, null, 0, ?, null, ?, null)
+        """,
+        (LEGACY_USER_SUB, LEGACY_USER_NAME, now),
+    )
+    return con.execute(
+        "select id from users where google_sub = ?",
+        (LEGACY_USER_SUB,),
+    ).fetchone()["id"]
+
+
+def ensure_auth_schema(con):
+    changed = False
+    if not con.execute("select 1 from sqlite_master where type = 'table' and name = 'users'").fetchone():
+        con.execute(
+            """
+            create table users (
+                id integer primary key autoincrement,
+                google_sub text not null unique,
+                email text,
+                email_verified integer not null default 0,
+                name text,
+                picture_url text,
+                created_at text not null,
+                last_login_at text
+            )
+            """
+        )
+        changed = True
+
+    if not con.execute("select 1 from sqlite_master where type = 'table' and name = 'sessions'").fetchone():
+        con.execute(
+            """
+            create table sessions (
+                token_hash text primary key,
+                user_id integer not null,
+                created_at text not null,
+                expires_at text not null,
+                revoked_at text,
+                last_seen_at text,
+                foreign key (user_id) references users(id) on delete cascade
+            )
+            """
+        )
+        changed = True
+
+    changed |= ensure_index(
+        con,
+        "idx_sessions_user_id",
+        "create index idx_sessions_user_id on sessions(user_id)",
+    )
+    changed |= ensure_index(
+        con,
+        "idx_sessions_expires_at",
+        "create index idx_sessions_expires_at on sessions(expires_at)",
+    )
+
+    before = con.total_changes
+    ensure_legacy_user(con)
+    return changed or con.total_changes != before
+
+
+def create_user_title_state_table(con):
     con.execute(
         """
         create table user_title_state (
-            anime_id integer primary key,
+            user_id integer not null,
+            anime_id integer not null,
             is_favorite integer not null default 0,
             progress_episode_number integer,
             watched integer not null default 0,
             updated_at text not null,
+            primary key (user_id, anime_id),
+            foreign key (user_id) references users(id) on delete cascade,
             foreign key (anime_id) references anime(id) on delete cascade
         )
         """
     )
+
+
+def user_title_state_needs_rebuild(con):
+    rows = con.execute("pragma table_info(user_title_state)").fetchall()
+    if not rows:
+        return False
+    columns = {row[1] for row in rows}
+    pk_columns = [row[1] for row in sorted((row for row in rows if row[5]), key=lambda row: row[5])]
+    return "user_id" not in columns or pk_columns != ["user_id", "anime_id"]
+
+
+def ensure_user_state_schema(con):
+    exists = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_title_state'"
+    ).fetchone()
+    if not exists:
+        create_user_title_state_table(con)
+        return True
+
+    if not user_title_state_needs_rebuild(con):
+        return False
+
+    legacy_user_id = ensure_legacy_user(con)
+    old_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
+    con.execute("alter table user_title_state rename to user_title_state_old")
+    create_user_title_state_table(con)
+
+    if "user_id" in old_columns:
+        user_id_expr = "coalesce(user_id, ?)"
+        params = (legacy_user_id,)
+    else:
+        user_id_expr = "?"
+        params = (legacy_user_id,)
+
+    con.execute(
+        f"""
+        insert or replace into user_title_state (
+            user_id,
+            anime_id,
+            is_favorite,
+            progress_episode_number,
+            watched,
+            updated_at
+        )
+        select
+            {user_id_expr},
+            anime_id,
+            coalesce(is_favorite, 0),
+            progress_episode_number,
+            coalesce(watched, 0),
+            coalesce(updated_at, ?)
+        from user_title_state_old
+        where anime_id is not null
+        """,
+        (*params, now_iso()),
+    )
+    con.execute("drop table user_title_state_old")
     return True
+
+
+def default_user_id(con):
+    return ensure_legacy_user(con)
 
 
 def ensure_columns(con, table, columns):
@@ -182,6 +338,7 @@ def connect(db_path=None):
     con.execute("pragma busy_timeout=30000")
     con.row_factory = sqlite3.Row
     changed = ensure_catalog_schema(con)
+    changed |= ensure_auth_schema(con)
     changed |= ensure_user_state_schema(con)
     changed |= ensure_runtime_indexes(con)
     if changed:
@@ -215,6 +372,10 @@ def apply_state_fields(item):
     item["progress_episode_number"] = item.get("progress_episode_number")
     item["state_updated_at"] = item.get("state_updated_at")
     return item
+
+
+def resolved_user_id(con, user_id=None):
+    return int(user_id) if user_id is not None else default_user_id(con)
 
 
 def numeric(value):
@@ -841,9 +1002,9 @@ def recommendation_reasons(item, matched_genres, based_on):
     return reasons[:4]
 
 
-def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
+def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT, user_id=None):
     limit = normalize_recommendation_limit(limit or DEFAULT_RECOMMENDATION_LIMIT)
-    items = get_anime_list(db_path)
+    items = get_anime_list(db_path, user_id=user_id)
     profile = build_recommendation_profile(items)
     has_profile = profile["seed_count"] > 0
     candidate_items = [
@@ -929,7 +1090,8 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
     }
 
 
-def get_source_anime_items(con):
+def get_source_anime_items(con, user_id=None):
+    user_id = resolved_user_id(con, user_id)
     rows = con.execute(
         """
         with
@@ -981,13 +1143,14 @@ def get_source_anime_items(con):
             coalesce(sc.source_count, 0) as source_count,
             gl.genres
         from anime a
-        left join user_title_state us on us.anime_id = a.id
+        left join user_title_state us on us.anime_id = a.id and us.user_id = ?
         left join episode_counts ec on ec.anime_id = a.id
         left join available_episode_counts aec on aec.anime_id = a.id
         left join source_counts sc on sc.anime_id = a.id
         left join genre_lists gl on gl.anime_id = a.id
         order by source_count > 0 desc, a.id desc
         """,
+        (user_id,),
     ).fetchall()
 
     items = rows_to_dicts(rows)
@@ -1034,8 +1197,8 @@ def build_translation_rankings(con):
     }
 
 
-def get_anime_list(db_path=None, q=None):
-    items = clone_catalog_items(get_catalog_items(db_path))
+def get_anime_list(db_path=None, q=None, user_id=None):
+    items = clone_catalog_items(get_catalog_items(db_path, user_id))
     return [item for item in items if item_matches_query(item, q)]
 
 
@@ -1056,11 +1219,12 @@ def clone_catalog_items(items):
     return [clone_catalog_item(item) for item in items]
 
 
-def build_catalog_cache(db_path=None):
+def build_catalog_cache(db_path=None, user_id=None):
     path = resolve_db_path(db_path)
     con = connect(path)
     try:
-        items = canonicalize_items(get_source_anime_items(con))
+        user_id = resolved_user_id(con, user_id)
+        items = canonicalize_items(get_source_anime_items(con, user_id))
         translation_rankings = build_translation_rankings(con)
     finally:
         con.close()
@@ -1082,43 +1246,45 @@ def build_catalog_cache(db_path=None):
     }
 
 
-def get_catalog_cache(db_path=None):
+def get_catalog_cache(db_path=None, user_id=None):
     path = resolve_db_path(db_path)
-    key = str(path.resolve())
+    key = (str(path.resolve()), int(user_id) if user_id is not None else None)
     signature = db_signature(path)
     with CATALOG_CACHE_LOCK:
         cached = CATALOG_CACHE.get(key)
         if cached and cached.get("signature") == signature:
             return cached
-        cached = build_catalog_cache(path)
+        cached = build_catalog_cache(path, user_id)
         CATALOG_CACHE[key] = cached
         return cached
 
 
 def invalidate_catalog_cache(db_path=None):
     path = resolve_db_path(db_path)
-    key = str(path.resolve())
+    prefix = str(path.resolve())
     with CATALOG_CACHE_LOCK:
-        CATALOG_CACHE.pop(key, None)
+        for key in list(CATALOG_CACHE):
+            if key == prefix or (isinstance(key, tuple) and key[0] == prefix):
+                CATALOG_CACHE.pop(key, None)
 
 
-def get_catalog_items(db_path=None):
-    return get_catalog_cache(db_path)["items"]
+def get_catalog_items(db_path=None, user_id=None):
+    return get_catalog_cache(db_path, user_id)["items"]
 
 
-def canonical_group_for_anime_id(con, anime_id):
+def canonical_group_for_anime_id(con, anime_id, user_id=None):
     db_path = con.execute("pragma database_list").fetchone()["file"]
-    return get_catalog_cache(db_path)["id_map"].get(int(anime_id))
+    return get_catalog_cache(db_path, user_id)["id_map"].get(int(anime_id))
 
 
-def canonical_group_for_anime_ref(con, anime_ref):
+def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
     value = str(anime_ref or "").strip()
     if not value:
         return None
     if value.isdigit():
-        return canonical_group_for_anime_id(con, int(value))
+        return canonical_group_for_anime_id(con, int(value), user_id)
     db_path = con.execute("pragma database_list").fetchone()["file"]
-    return get_catalog_cache(db_path)["slug_map"].get(value)
+    return get_catalog_cache(db_path, user_id)["slug_map"].get(value)
 
 
 def aggregate_state_rows(rows):
@@ -1137,12 +1303,18 @@ def aggregate_state_rows(rows):
     }
 
 
-def get_group_state(con, anime_ids):
+def get_group_state(con, anime_ids, user_id=None):
     if not anime_ids:
         return normalize_state(None)
+    user_id = resolved_user_id(con, user_id)
     rows = con.execute(
-        f"select * from user_title_state where anime_id in ({sql_placeholders(anime_ids)})",
-        anime_ids,
+        f"""
+        select *
+        from user_title_state
+        where user_id = ?
+          and anime_id in ({sql_placeholders(anime_ids)})
+        """,
+        (user_id, *anime_ids),
     ).fetchall()
     return aggregate_state_rows(rows)
 
@@ -1243,9 +1415,10 @@ def source_row_sort_key(source, context=None):
     )
 
 
-def get_anime_detail(anime_ref, db_path=None):
+def get_anime_detail(anime_ref, db_path=None, user_id=None):
     con = connect(db_path)
-    group = canonical_group_for_anime_ref(con, anime_ref)
+    user_id = resolved_user_id(con, user_id)
+    group = canonical_group_for_anime_ref(con, anime_ref, user_id)
     if not group:
         con.close()
         return None
@@ -1340,9 +1513,9 @@ def get_anime_detail(anime_ref, db_path=None):
             (primary_id,),
         ).fetchall()
     )
-    state = get_group_state(con, member_ids)
+    state = get_group_state(con, member_ids, user_id)
     db_file = con.execute("pragma database_list").fetchone()["file"]
-    translation_rankings = get_catalog_cache(db_file).get("translation_rankings") or {}
+    translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     con.close()
 
     episode_buckets = {}
@@ -1405,16 +1578,17 @@ def get_anime_detail(anime_ref, db_path=None):
     return detail
 
 
-def update_user_state(anime_ref, patch, db_path=None):
+def update_user_state(anime_ref, patch, db_path=None, user_id=None):
     con = connect(db_path)
-    group = canonical_group_for_anime_ref(con, anime_ref)
+    user_id = resolved_user_id(con, user_id)
+    group = canonical_group_for_anime_ref(con, anime_ref, user_id)
     if not group:
         con.close()
         return None
 
     target_id = group["id"]
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
-    current = get_group_state(con, member_ids)
+    current = get_group_state(con, member_ids, user_id)
     next_state = dict(current)
 
     if "is_favorite" in patch:
@@ -1436,20 +1610,22 @@ def update_user_state(anime_ref, patch, db_path=None):
     con.execute(
         """
         insert into user_title_state (
+            user_id,
             anime_id,
             is_favorite,
             progress_episode_number,
             watched,
             updated_at
         )
-        values (?, ?, ?, ?, ?)
-        on conflict(anime_id) do update set
+        values (?, ?, ?, ?, ?, ?)
+        on conflict(user_id, anime_id) do update set
             is_favorite = excluded.is_favorite,
             progress_episode_number = excluded.progress_episode_number,
             watched = excluded.watched,
             updated_at = excluded.updated_at
         """,
         (
+            user_id,
             target_id,
             1 if next_state["is_favorite"] else 0,
             next_state["progress_episode_number"],
@@ -1460,13 +1636,239 @@ def update_user_state(anime_ref, patch, db_path=None):
     duplicate_state_ids = [item for item in member_ids if item != target_id]
     if duplicate_state_ids:
         con.execute(
-            f"delete from user_title_state where anime_id in ({sql_placeholders(duplicate_state_ids)})",
-            duplicate_state_ids,
+            f"""
+            delete from user_title_state
+            where user_id = ?
+              and anime_id in ({sql_placeholders(duplicate_state_ids)})
+            """,
+            (user_id, *duplicate_state_ids),
         )
     con.commit()
     con.close()
     invalidate_catalog_cache(db_path)
     return next_state
+
+
+def public_user(row):
+    if row is None:
+        return None
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "name": row["name"] or row["email"] or "Google user",
+        "picture_url": row["picture_url"],
+    }
+
+
+def session_token_hash(token):
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def google_client_id():
+    return os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+
+
+def session_cookie_secure():
+    return os.environ.get("ANIME_SESSION_SECURE", "").strip().lower() in {"1", "true", "yes"}
+
+
+def verify_google_credential(credential):
+    client_id = google_client_id()
+    if not client_id:
+        raise AuthConfigError("GOOGLE_CLIENT_ID is not configured")
+    if not credential:
+        raise AuthError("missing Google credential")
+
+    try:
+        from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token
+    except ImportError as exc:
+        raise AuthConfigError("google-auth is not installed") from exc
+
+    try:
+        payload = id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            client_id,
+        )
+    except ValueError as exc:
+        raise AuthError("invalid Google credential") from exc
+
+    if payload.get("iss") not in GOOGLE_ISSUERS:
+        raise AuthError("invalid Google issuer")
+    if not payload.get("sub"):
+        raise AuthError("Google credential has no subject")
+    if not payload.get("email_verified"):
+        raise AuthError("Google email is not verified")
+
+    email = str(payload.get("email") or "").strip().lower()
+    allowed_emails = env_list("ANIME_AUTH_ALLOWED_EMAILS")
+    if allowed_emails and email not in allowed_emails:
+        raise AuthError("this Google account is not allowed")
+
+    allowed_domains = env_list("ANIME_AUTH_ALLOWED_DOMAINS")
+    if allowed_domains:
+        domain = str(payload.get("hd") or email.rsplit("@", 1)[-1]).strip().lower()
+        if domain not in allowed_domains:
+            raise AuthError("this Google domain is not allowed")
+
+    return payload
+
+
+def upsert_google_user(con, profile):
+    now = now_iso()
+    google_sub = str(profile["sub"])
+    email = str(profile.get("email") or "").strip().lower() or None
+    name = profile.get("name") or email or "Google user"
+    picture_url = profile.get("picture")
+    con.execute(
+        """
+        insert into users (
+            google_sub,
+            email,
+            email_verified,
+            name,
+            picture_url,
+            created_at,
+            last_login_at
+        )
+        values (?, ?, ?, ?, ?, ?, ?)
+        on conflict(google_sub) do update set
+            email = excluded.email,
+            email_verified = excluded.email_verified,
+            name = excluded.name,
+            picture_url = excluded.picture_url,
+            last_login_at = excluded.last_login_at
+        """,
+        (
+            google_sub,
+            email,
+            1 if profile.get("email_verified") else 0,
+            name,
+            picture_url,
+            now,
+            now,
+        ),
+    )
+    return con.execute(
+        "select * from users where google_sub = ?",
+        (google_sub,),
+    ).fetchone()
+
+
+def adopt_legacy_state_if_first_google_user(con, user_id):
+    legacy_user_id = ensure_legacy_user(con)
+    if user_id == legacy_user_id:
+        return False
+
+    google_user_count = con.execute(
+        "select count(*) from users where google_sub != ?",
+        (LEGACY_USER_SUB,),
+    ).fetchone()[0]
+    if google_user_count != 1:
+        return False
+
+    target_count = con.execute(
+        "select count(*) from user_title_state where user_id = ?",
+        (user_id,),
+    ).fetchone()[0]
+    legacy_count = con.execute(
+        "select count(*) from user_title_state where user_id = ?",
+        (legacy_user_id,),
+    ).fetchone()[0]
+    if target_count or not legacy_count:
+        return False
+
+    con.execute(
+        "update user_title_state set user_id = ? where user_id = ?",
+        (user_id, legacy_user_id),
+    )
+    return True
+
+
+def create_session(con, user_id):
+    token = secrets.token_urlsafe(32)
+    now = now_iso()
+    expires_at = (
+        dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=SESSION_TTL_SECONDS)
+    ).isoformat(timespec="seconds")
+    con.execute(
+        """
+        insert into sessions (token_hash, user_id, created_at, expires_at, revoked_at, last_seen_at)
+        values (?, ?, ?, ?, null, ?)
+        """,
+        (session_token_hash(token), user_id, now, expires_at, now),
+    )
+    return token, expires_at
+
+
+def authenticate_google_credential(credential, db_path=None):
+    profile = verify_google_credential(credential)
+    con = connect(db_path)
+    try:
+        user = upsert_google_user(con, profile)
+        adopted = adopt_legacy_state_if_first_google_user(con, user["id"])
+        token, expires_at = create_session(con, user["id"])
+        con.commit()
+        if adopted:
+            invalidate_catalog_cache(db_path)
+        return {
+            "user": public_user(user),
+            "token": token,
+            "expires_at": expires_at,
+        }
+    finally:
+        con.close()
+
+
+def get_session_user(token, db_path=None):
+    if not token:
+        return None
+    con = connect(db_path)
+    try:
+        row = con.execute(
+            """
+            select u.*
+            from sessions s
+            join users u on u.id = s.user_id
+            where s.token_hash = ?
+              and s.revoked_at is null
+              and s.expires_at > ?
+            """,
+            (session_token_hash(token), now_iso()),
+        ).fetchone()
+        return public_user(row)
+    finally:
+        con.close()
+
+
+def revoke_session(token, db_path=None):
+    if not token:
+        return
+    con = connect(db_path)
+    try:
+        con.execute(
+            """
+            update sessions
+            set revoked_at = ?
+            where token_hash = ?
+              and revoked_at is null
+            """,
+            (now_iso(), session_token_hash(token)),
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
+def safe_next_path(value):
+    parsed = urlparse(value or "/")
+    if parsed.scheme or parsed.netloc:
+        return "/"
+    path = parsed.path or "/"
+    query = f"?{parsed.query}" if parsed.query else ""
+    fragment = f"#{parsed.fragment}" if parsed.fragment else ""
+    return f"{path}{query}{fragment}"
 
 
 class AnimeHandler(BaseHTTPRequestHandler):
@@ -1475,14 +1877,24 @@ class AnimeHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print("%s - %s" % (self.address_string(), fmt % args))
 
-    def send_json(self, payload, status=200):
+    def send_json(self, payload, status=200, headers=None):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or []):
+            self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def send_redirect(self, location, status=302, headers=None):
+        self.send_response(status)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or []):
+            self.send_header(name, value)
+        self.end_headers()
 
     def read_json_body(self):
         length = int(self.headers.get("Content-Length") or 0)
@@ -1510,6 +1922,56 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def session_token(self):
+        cookie_header = self.headers.get("Cookie")
+        if not cookie_header:
+            return None
+        cookie = SimpleCookie()
+        cookie.load(cookie_header)
+        morsel = cookie.get(SESSION_COOKIE_NAME)
+        return morsel.value if morsel else None
+
+    def current_user(self):
+        if hasattr(self, "_current_user"):
+            return self._current_user
+        self._current_user = get_session_user(self.session_token(), self.server.db_path)
+        return self._current_user
+
+    def require_user(self):
+        user = self.current_user()
+        if user:
+            return user
+        self.send_json({"error": "authentication required"}, 401)
+        return None
+
+    def session_cookie_header(self, token):
+        parts = [
+            f"{SESSION_COOKIE_NAME}={token}",
+            "Path=/",
+            "HttpOnly",
+            "SameSite=Lax",
+            f"Max-Age={SESSION_TTL_SECONDS}",
+        ]
+        if session_cookie_secure():
+            parts.append("Secure")
+        return "; ".join(parts)
+
+    def clear_session_cookie_header(self):
+        parts = [
+            f"{SESSION_COOKIE_NAME}=",
+            "Path=/",
+            "HttpOnly",
+            "SameSite=Lax",
+            "Max-Age=0",
+        ]
+        if session_cookie_secure():
+            parts.append("Secure")
+        return "; ".join(parts)
+
+    def redirect_to_login(self):
+        next_path = quote(safe_next_path(self.path), safe="")
+        self.send_redirect(f"/login?next={next_path}")
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -1518,24 +1980,52 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_static("favicon.svg")
             return
 
+        if path.startswith("/static/"):
+            self.send_static(path.removeprefix("/static/"))
+            return
+
         if path == "/api/health":
             self.send_json({"ok": True})
             return
 
+        if path == "/api/auth/config":
+            client_id = google_client_id()
+            self.send_json({"configured": bool(client_id), "client_id": client_id})
+            return
+
+        if path == "/login":
+            if self.current_user():
+                next_path = safe_next_path(parse_qs(parsed.query).get("next", ["/"])[0])
+                self.send_redirect(next_path)
+                return
+            self.send_static("login.html")
+            return
+
+        if path == "/api/me":
+            user = self.require_user()
+            if user:
+                self.send_json({"user": user})
+            return
+
+        user = self.current_user()
+        if path.startswith("/api/") and not user:
+            self.send_json({"error": "authentication required"}, 401)
+            return
+
         if path == "/api/anime":
             query = parse_qs(parsed.query).get("q", [""])[0].strip()
-            self.send_json({"items": get_anime_list(self.server.db_path, query or None)})
+            self.send_json({"items": get_anime_list(self.server.db_path, query or None, user["id"])})
             return
 
         if path == "/api/recommendations":
             raw_limit = parse_qs(parsed.query).get("limit", [str(DEFAULT_RECOMMENDATION_LIMIT)])[0]
-            self.send_json(get_recommendations(self.server.db_path, raw_limit))
+            self.send_json(get_recommendations(self.server.db_path, raw_limit, user["id"]))
             return
 
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
             if len(parts) == 3 and parts[0] == "api" and parts[1] == "anime":
-                detail = get_anime_detail(unquote(parts[2]), self.server.db_path)
+                detail = get_anime_detail(unquote(parts[2]), self.server.db_path, user["id"])
                 if detail:
                     self.send_json(detail)
                 else:
@@ -1543,10 +2033,47 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 return
 
         if path == "/" or re.fullmatch(r"/[A-Za-z0-9][A-Za-z0-9-]*", path):
+            if not user:
+                self.redirect_to_login()
+                return
             self.send_static("index.html")
             return
-        if path.startswith("/static/"):
-            self.send_static(path.removeprefix("/static/"))
+
+        self.send_json({"error": "not found"}, 404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/api/auth/google":
+            try:
+                payload = self.read_json_body()
+                auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            except AuthConfigError as exc:
+                self.send_json({"error": str(exc)}, 503)
+                return
+            except AuthError as exc:
+                self.send_json({"error": str(exc)}, 401)
+                return
+            self.send_json(
+                {"user": auth["user"]},
+                headers=[("Set-Cookie", self.session_cookie_header(auth["token"]))],
+            )
+            return
+
+        if path == "/api/logout":
+            revoke_session(self.session_token(), self.server.db_path)
+            self.send_json(
+                {"ok": True},
+                headers=[("Set-Cookie", self.clear_session_cookie_header())],
+            )
+            return
+
+        if path.startswith("/api/"):
+            self.send_json({"error": "authentication required"}, 401)
             return
 
         self.send_json({"error": "not found"}, 404)
@@ -1554,13 +2081,16 @@ class AnimeHandler(BaseHTTPRequestHandler):
     def do_PATCH(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        user = self.require_user()
+        if not user:
+            return
 
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
             if len(parts) == 4 and parts[0] == "api" and parts[1] == "anime" and parts[3] == "state":
                 try:
                     payload = self.read_json_body()
-                    updated = update_user_state(unquote(parts[2]), payload, self.server.db_path)
+                    updated = update_user_state(unquote(parts[2]), payload, self.server.db_path, user["id"])
                 except json.JSONDecodeError:
                     self.send_json({"error": "invalid json"}, 400)
                     return

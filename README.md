@@ -65,12 +65,17 @@ The stable local production site is `http://127.0.0.1:8766/`. It is release-only
 and must not be used for scraping, indexing, experiments, or routine testing.
 See `docs/ENVIRONMENTS.md` for the fixed dev/prod split and release workflow.
 
-The local app stores favorites and watch progress in SQLite table
-`user_title_state`. Use the title page controls to add a title to favorites,
-set the current episode, or mark the title as watched. The sidebar can filter
-all titles, favorites, titles with progress, or the top recommendation list.
-Recommendations are computed from favorites/progress/watched state and show the
-20 strongest candidates first with short reasons.
+The local app requires Google Sign-In. Set `GOOGLE_CLIENT_ID` before starting
+`server.py`; optionally restrict access with `ANIME_AUTH_ALLOWED_EMAILS` or
+`ANIME_AUTH_ALLOWED_DOMAINS`.
+
+The local app stores favorites and watch progress per Google user in SQLite
+table `user_title_state`. Use the title page controls to add a title to
+favorites, set the current episode, or mark the title as watched. The sidebar
+can filter all titles, favorites, titles with progress, or the top
+recommendation list. Recommendations are computed from the current user's
+favorites/progress/watched state and show the 20 strongest candidates first
+with short reasons.
 
 Refresh yearly AnimeGO catalog pages with player data:
 

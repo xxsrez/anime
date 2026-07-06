@@ -1,13 +1,58 @@
 #!/usr/bin/env python3
+import http.client
 from pathlib import Path
 import shutil
 import tempfile
+import threading
 import unittest
 
 import server
 
 
 class LocalAppTest(unittest.TestCase):
+    def create_google_user(self, db_path, sub, email):
+        con = server.connect(db_path)
+        try:
+            user = server.upsert_google_user(
+                con,
+                {
+                    "sub": sub,
+                    "email": email,
+                    "email_verified": True,
+                    "name": email.split("@")[0],
+                    "picture": None,
+                },
+            )
+            con.commit()
+            return user["id"]
+        finally:
+            con.close()
+
+    def create_session(self, db_path, user_id):
+        con = server.connect(db_path)
+        try:
+            token, _ = server.create_session(con, user_id)
+            con.commit()
+            return token
+        finally:
+            con.close()
+
+    def request_test_server(self, db_path, method, path, headers=None):
+        httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.AnimeHandler)
+        httpd.db_path = db_path
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+        try:
+            conn = http.client.HTTPConnection("127.0.0.1", httpd.server_port, timeout=5)
+            conn.request(method, path, headers=headers or {})
+            response = conn.getresponse()
+            body = response.read()
+            return response.status, dict(response.getheaders()), body
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            thread.join(timeout=5)
+
     def source_row(self, translation, provider="Kodik", episode_id=1, source="animego", row_id=1):
         return {
             "id": row_id,
@@ -163,6 +208,62 @@ class LocalAppTest(unittest.TestCase):
             self.assertTrue(detail["is_favorite"])
             self.assertEqual(detail["progress_episode_number"], 7)
             self.assertTrue(detail["watched"])
+
+    def test_api_requires_authenticated_session(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            status, _, _ = self.request_test_server(db_path, "GET", "/api/anime")
+            self.assertEqual(status, 401)
+
+            status, headers, _ = self.request_test_server(db_path, "GET", "/")
+            self.assertEqual(status, 302)
+            self.assertTrue(headers["Location"].startswith("/login?next="))
+
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            status, _, body = self.request_test_server(
+                db_path,
+                "GET",
+                "/api/me",
+                headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+            )
+            self.assertEqual(status, 200)
+            self.assertIn(b"one@example.com", body)
+
+    def test_user_state_is_scoped_per_google_user(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            user_one = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            user_two = self.create_google_user(db_path, "google-user-2", "two@example.com")
+            anime_id = server.get_anime_list(db_path, user_id=user_one)[0]["id"]
+
+            server.update_user_state(
+                anime_id,
+                {"is_favorite": True, "progress_episode_number": 3},
+                db_path,
+                user_one,
+            )
+            server.update_user_state(anime_id, {"watched": True}, db_path, user_two)
+
+            detail_one = server.get_anime_detail(anime_id, db_path, user_one)
+            detail_two = server.get_anime_detail(anime_id, db_path, user_two)
+            self.assertTrue(detail_one["is_favorite"])
+            self.assertEqual(detail_one["progress_episode_number"], 3)
+            self.assertFalse(detail_one["watched"])
+            self.assertFalse(detail_two["is_favorite"])
+            self.assertIsNone(detail_two["progress_episode_number"])
+            self.assertTrue(detail_two["watched"])
+
+            rec_one = server.get_recommendations(db_path, user_id=user_one)
+            rec_two = server.get_recommendations(db_path, user_id=user_two)
+            self.assertEqual(rec_one["profile"]["mode"], "personalized")
+            self.assertEqual(rec_two["profile"]["mode"], "personalized")
+            self.assertEqual(rec_one["profile"]["favorite_count"], 1)
+            self.assertEqual(rec_two["profile"]["favorite_count"], 0)
 
     def test_recommendations_are_ranked_and_exclude_known_titles(self):
         with tempfile.TemporaryDirectory() as tmpdir:
