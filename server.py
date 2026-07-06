@@ -2117,7 +2117,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     async function waitForSession() {{
-      for (let attempt = 0; attempt < 20; attempt += 1) {{
+      for (let attempt = 0; attempt < 30; attempt += 1) {{
         try {{
           const response = await fetch("/api/me", {{
             cache: "no-store",
@@ -2132,7 +2132,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
         }}
         await delay(100);
       }}
-      state.textContent = "Вход выполнен. Если приложение не открылось автоматически, нажмите ссылку ниже.";
+      state.textContent = "Вход выполнен. Открываю приложение...";
+      window.location.replace(nextPath);
     }}
 
     waitForSession();
