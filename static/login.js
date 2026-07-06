@@ -94,7 +94,10 @@ async function bootLogin() {
   const config = await configResponse.json();
   if (!config.configured || !config.client_id) {
     renderUnavailableGoogleButton();
-    setLoginState("Google-вход недоступен: не настроен OAuth Client ID", "warn");
+    setLoginState(
+      "Ошибка конфигурации деплоймента: Google OAuth Client ID не настроен. Настройте Sign in with Google для этого окружения.",
+      "warn",
+    );
     return;
   }
 

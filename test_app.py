@@ -350,6 +350,7 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("google.accounts.id.renderButton", js)
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
+        self.assertIn("Ошибка конфигурации деплоймента", js)
 
     def test_view_mode_tabs_use_compact_accessible_labels(self):
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
