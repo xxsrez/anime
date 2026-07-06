@@ -50,11 +50,12 @@ Returns the canonical catalog list. Source-specific AnimeGO/YummyAnime rows can
 be merged into one visible item with `source_variants`. Optional `q` filters the
 canonical list across primary and variant titles.
 
-`GET /api/anime/<id>`
+`GET /api/anime/<id-or-slug>`
 
 Returns one canonical title with genres, dubbings, fields, source variants,
 episodes, video sources grouped by episode, and user state. Requests for a
-merged YummyAnime variant ID resolve to the AnimeGO-primary canonical detail.
+canonical `slug`/`internal_id` or a merged YummyAnime variant ID resolve to the
+same AnimeGO-primary canonical detail.
 
 `GET /api/recommendations`
 
@@ -86,8 +87,9 @@ Updates local user state. Supported fields:
    sidebar, and fetches detail JSON when a title is selected.
 6. The user can choose the source variant, translation, and provider; the player
    iframe receives the selected provider's `embed_url`.
-7. The browser URL is synchronized with the right-pane state using query params:
-   `anime`, `episode`, `source`, `translation`, and `provider`.
+7. The browser URL is synchronized with the right-pane state using the canonical
+   title slug in the path and query params for `episode`, `source`,
+   `translation`, and `provider`.
 8. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
 9. Recommendation data is reloaded after favorite/progress/watched changes.
 
@@ -181,10 +183,12 @@ internal video element.
 ## Shared Links
 
 Right-pane state is shareable through the address bar. Opening a URL such as
-`/?anime=3500&episode=43793&source=animego&translation=95&provider=110`
+`/reinkarnaciya-bezrabotnogo-3-sezon-5yc9?episode=43793&source=animego&translation=95&provider=110`
 restores that canonical title, episode, source variant, translation, and
-provider. Invalid or stale params fall back to the closest available option and
-the address bar is normalized to the actual current state.
+provider. Older `/?anime=<numeric-id>` links still load as a compatibility
+fallback and are normalized to the slug URL. Invalid or stale params fall back
+to the closest available option and the address bar is normalized to the actual
+current state.
 
 ## Verification
 

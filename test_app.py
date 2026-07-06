@@ -13,6 +13,18 @@ class LocalAppTest(unittest.TestCase):
         self.assertGreaterEqual(len(items), 10)
         self.assertTrue(all(item["source_count"] > 0 for item in items))
         self.assertTrue(all(item["available_episode_count"] > 0 for item in items))
+        slugs = [item["slug"] for item in items]
+        self.assertEqual(len(slugs), len(set(slugs)))
+        self.assertTrue(all(item["internal_id"] == item["slug"] for item in items))
+        self.assertTrue(all("-" in item["slug"] for item in items))
+
+    def test_title_detail_can_be_loaded_by_slug(self):
+        item = server.get_anime_list()[0]
+        detail = server.get_anime_detail(item["slug"])
+        self.assertIsNotNone(detail)
+        self.assertEqual(detail["id"], item["id"])
+        self.assertEqual(detail["slug"], item["slug"])
+        self.assertEqual(detail["internal_id"], item["slug"])
 
     def test_detail_contains_episode_sources(self):
         anime = next(item for item in server.get_anime_list() if item["source_count"] > 0)
@@ -137,6 +149,8 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('id="fullscreen-toggle"', html)
         self.assertIn('id="pip-toggle"', html)
         self.assertIn('id="recommendation-meta"', html)
+        self.assertIn('href="/static/favicon.svg"', html)
+        self.assertIn('href="/favicon.ico"', html)
 
     def test_right_pane_deep_links_are_supported(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

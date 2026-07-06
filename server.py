@@ -7,9 +7,10 @@ import mimetypes
 import os
 import re
 import sqlite3
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
@@ -22,6 +23,43 @@ SOURCE_PRIORITY = {
     "yummyanime": 1,
 }
 MERGEABLE_SOURCES = {"animego", "yummyanime"}
+CATALOG_CACHE = {}
+CATALOG_CACHE_LOCK = threading.RLock()
+SLUG_TRANSLIT = {
+    "а": "a",
+    "б": "b",
+    "в": "v",
+    "г": "g",
+    "д": "d",
+    "е": "e",
+    "ё": "e",
+    "ж": "zh",
+    "з": "z",
+    "и": "i",
+    "й": "j",
+    "к": "k",
+    "л": "l",
+    "м": "m",
+    "н": "n",
+    "о": "o",
+    "п": "p",
+    "р": "r",
+    "с": "s",
+    "т": "t",
+    "у": "u",
+    "ф": "f",
+    "х": "h",
+    "ц": "c",
+    "ч": "ch",
+    "ш": "sh",
+    "щ": "shch",
+    "ъ": "",
+    "ы": "y",
+    "ь": "",
+    "э": "e",
+    "ю": "yu",
+    "я": "ya",
+}
 
 
 def now_iso():
@@ -29,9 +67,14 @@ def now_iso():
 
 
 def ensure_user_state_schema(con):
+    exists = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_title_state'"
+    ).fetchone()
+    if exists:
+        return False
     con.execute(
         """
-        create table if not exists user_title_state (
+        create table user_title_state (
             anime_id integer primary key,
             is_favorite integer not null default 0,
             progress_episode_number integer,
@@ -41,18 +84,32 @@ def ensure_user_state_schema(con):
         )
         """
     )
-    con.commit()
+    return True
 
 
 def ensure_columns(con, table, columns):
     existing = {row[1] for row in con.execute(f"pragma table_info({table})")}
+    changed = False
     for column, definition in columns.items():
         if column not in existing:
             con.execute(f"alter table {table} add column {column} {definition}")
+            changed = True
+    return changed
+
+
+def ensure_index(con, name, sql):
+    exists = con.execute(
+        "select 1 from sqlite_master where type = 'index' and name = ?",
+        (name,),
+    ).fetchone()
+    if exists:
+        return False
+    con.execute(sql)
+    return True
 
 
 def ensure_catalog_schema(con):
-    ensure_columns(
+    changed = ensure_columns(
         con,
         "anime",
         {
@@ -60,18 +117,54 @@ def ensure_catalog_schema(con):
             "source_id": "text",
         },
     )
-    con.execute("update anime set source = 'animego' where source is null")
-    con.execute("update anime set source_id = cast(id as text) where source_id is null")
-    con.commit()
+    if con.execute("select 1 from anime where source is null limit 1").fetchone():
+        con.execute("update anime set source = 'animego' where source is null")
+        changed = True
+    if con.execute("select 1 from anime where source_id is null limit 1").fetchone():
+        con.execute("update anime set source_id = cast(id as text) where source_id is null")
+        changed = True
+    return changed
+
+
+def ensure_runtime_indexes(con):
+    changed = False
+    changed |= ensure_index(
+        con,
+        "idx_episodes_anime_id",
+        "create index idx_episodes_anime_id on episodes(anime_id)",
+    )
+    changed |= ensure_index(
+        con,
+        "idx_video_sources_anime_embed",
+        "create index idx_video_sources_anime_embed on video_sources(anime_id, embed_url)",
+    )
+    changed |= ensure_index(
+        con,
+        "idx_video_sources_episode_embed",
+        "create index idx_video_sources_episode_embed on video_sources(episode_id, embed_url)",
+    )
+    return changed
+
+
+def resolve_db_path(db_path=None):
+    return Path(db_path or os.environ.get("ANIMEGO_DB") or DEFAULT_DB)
+
+
+def db_signature(path):
+    stat = path.stat()
+    return (stat.st_mtime_ns, stat.st_size)
 
 
 def connect(db_path=None):
-    path = Path(db_path or os.environ.get("ANIMEGO_DB") or DEFAULT_DB)
+    path = resolve_db_path(db_path)
     con = sqlite3.connect(path)
     con.execute("pragma busy_timeout=30000")
     con.row_factory = sqlite3.Row
-    ensure_catalog_schema(con)
-    ensure_user_state_schema(con)
+    changed = ensure_catalog_schema(con)
+    changed |= ensure_user_state_schema(con)
+    changed |= ensure_runtime_indexes(con)
+    if changed:
+        con.commit()
     return con
 
 
@@ -124,6 +217,46 @@ def normalize_match_title(value):
     text = normalize_key(value)
     text = re.sub(r"[^\w\s]+", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def base36(value):
+    digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+    number = int(value or 0)
+    if number == 0:
+        return "0"
+    result = []
+    while number:
+        number, remainder = divmod(number, 36)
+        result.append(digits[remainder])
+    return "".join(reversed(result))
+
+
+def slugify_text(value, max_length=72):
+    result = []
+    previous_dash = False
+    for char in str(value or "").casefold():
+        if char.isascii() and char.isalnum():
+            result.append(char)
+            previous_dash = False
+            continue
+        mapped = SLUG_TRANSLIT.get(char)
+        if mapped is not None:
+            if mapped:
+                result.append(mapped)
+                previous_dash = False
+            continue
+        if not previous_dash:
+            result.append("-")
+            previous_dash = True
+    slug = re.sub(r"-+", "-", "".join(result)).strip("-")
+    if len(slug) > max_length:
+        slug = slug[:max_length].rstrip("-")
+    return slug or "anime"
+
+
+def canonical_slug_for_item(item):
+    base = slugify_text(item.get("title") or item.get("subtitle") or "anime")
+    return f"{base}-{base36(item.get('id'))}"
 
 
 def best_score(item):
@@ -261,6 +394,10 @@ def canonicalize_items(items):
         else:
             groups.extend(merge_canonical_items([item]) for item in bucket)
 
+    for group in groups:
+        slug = canonical_slug_for_item(group)
+        group["slug"] = slug
+        group["internal_id"] = slug
     groups.sort(key=lambda item: ((numeric(item.get("source_count")) or 0) <= 0, -(item.get("id") or 0)))
     return groups
 
@@ -325,7 +462,29 @@ def seed_weight(item):
 
 
 def item_genre_keys(item):
-    return {normalize_key(genre) for genre in item.get("genres", []) if normalize_key(genre)}
+    if "_genre_keys" not in item:
+        keys = set()
+        for genre in item.get("genres", []):
+            key = normalize_key(genre)
+            if key:
+                keys.add(key)
+        item["_genre_keys"] = keys
+    return item["_genre_keys"]
+
+
+def item_genre_label_map(item):
+    if "_genre_label_map" not in item:
+        labels = {}
+        for genre in item.get("genres", []):
+            key = normalize_key(genre)
+            if key:
+                labels.setdefault(key, genre)
+        item["_genre_label_map"] = labels
+    return item["_genre_label_map"]
+
+
+def public_item_copy(item):
+    return {key: value for key, value in item.items() if not key.startswith("_")}
 
 
 def build_recommendation_profile(items):
@@ -336,12 +495,10 @@ def build_recommendation_profile(items):
 
     for item in seeds:
         weight = seed_weight(item)
-        for genre in item.get("genres", []):
-            key = normalize_key(genre)
-            if not key:
-                continue
+        label_map = item_genre_label_map(item)
+        for key in item_genre_keys(item):
             genre_weights[key] = genre_weights.get(key, 0.0) + weight
-            genre_labels.setdefault(key, genre)
+            genre_labels.setdefault(key, label_map[key])
         kind = item.get("kind")
         if kind:
             kind_weights[kind] = kind_weights.get(kind, 0.0) + weight
@@ -359,6 +516,7 @@ def build_recommendation_profile(items):
         "favorite_count": sum(1 for item in items if item.get("is_favorite")),
         "seed_count": len(seeds),
         "genre_weights": genre_weights,
+        "genre_weight_desc": sorted(genre_weights.values(), reverse=True),
         "kind_weights": kind_weights,
         "top_genres": top_genres,
     }
@@ -371,14 +529,13 @@ def genre_profile_score(candidate, profile):
 
     matched_weight = sum(profile["genre_weights"].get(key, 0.0) for key in candidate_keys)
     comparison_size = max(3, len(candidate_keys))
-    top_possible = sum(
-        sorted(profile["genre_weights"].values(), reverse=True)[:comparison_size]
-    )
+    top_possible = sum(profile["genre_weight_desc"][:comparison_size])
     score = clamp(matched_weight / top_possible) if top_possible else 0.0
+    label_map = item_genre_label_map(candidate)
     matched = [
-        genre
-        for genre in candidate.get("genres", [])
-        if normalize_key(genre) in profile["genre_weights"]
+        label
+        for key, label in label_map.items()
+        if key in profile["genre_weights"]
     ]
     return score, matched
 
@@ -400,15 +557,16 @@ def seed_similarity(candidate, profile):
         score = len(overlap) / len(union)
         if candidate.get("kind") and candidate.get("kind") == seed.get("kind"):
             score += 0.05
+        label_map = item_genre_label_map(candidate)
         matches.append(
             {
                 "id": seed["id"],
                 "title": seed["title"],
                 "score": round(clamp(score), 3),
                 "matched_genres": [
-                    genre
-                    for genre in candidate.get("genres", [])
-                    if normalize_key(genre) in overlap
+                    label
+                    for key, label in label_map.items()
+                    if key in overlap
                 ],
             }
         )
@@ -554,7 +712,7 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
             )
 
         score = watchable_recommendation_score(raw_score, item, has_watchable_candidates)
-        item = dict(item)
+        item = public_item_copy(item)
         item["recommendation_score"] = score
         item["recommendation_confidence"] = recommendation_confidence(score)
         item["recommendation_matched_genres"] = matched_genres[:6]
@@ -600,6 +758,30 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
 def get_source_anime_items(con):
     rows = con.execute(
         """
+        with
+            episode_counts as (
+                select anime_id, count(*) as episode_count
+                from episodes
+                group by anime_id
+            ),
+            available_episode_counts as (
+                select e.anime_id, count(distinct e.id) as available_episode_count
+                from episodes e
+                join video_sources vs on vs.episode_id = e.id
+                where vs.embed_url is not null
+                group by e.anime_id
+            ),
+            source_counts as (
+                select anime_id, count(*) as source_count
+                from video_sources
+                where embed_url is not null
+                group by anime_id
+            ),
+            genre_lists as (
+                select anime_id, group_concat(genre) as genres
+                from anime_genres
+                group by anime_id
+            )
         select
             a.id,
             a.title,
@@ -620,16 +802,16 @@ def get_source_anime_items(con):
             us.progress_episode_number,
             coalesce(us.watched, 0) as watched,
             us.updated_at as state_updated_at,
-            count(distinct e.id) as episode_count,
-            count(distinct case when vs.embed_url is not null then e.id end) as available_episode_count,
-            count(distinct case when vs.embed_url is not null then vs.id end) as source_count,
-            group_concat(distinct g.genre) as genres
+            coalesce(ec.episode_count, 0) as episode_count,
+            coalesce(aec.available_episode_count, 0) as available_episode_count,
+            coalesce(sc.source_count, 0) as source_count,
+            gl.genres
         from anime a
         left join user_title_state us on us.anime_id = a.id
-        left join episodes e on e.anime_id = a.id
-        left join video_sources vs on vs.anime_id = a.id
-        left join anime_genres g on g.anime_id = a.id
-        group by a.id
+        left join episode_counts ec on ec.anime_id = a.id
+        left join available_episode_counts aec on aec.anime_id = a.id
+        left join source_counts sc on sc.anime_id = a.id
+        left join genre_lists gl on gl.anime_id = a.id
         order by source_count > 0 desc, a.id desc
         """,
     ).fetchall()
@@ -643,9 +825,7 @@ def get_source_anime_items(con):
 
 
 def get_anime_list(db_path=None, q=None):
-    con = connect(db_path)
-    items = canonicalize_items(get_source_anime_items(con))
-    con.close()
+    items = clone_catalog_items(get_catalog_items(db_path))
     return [item for item in items if item_matches_query(item, q)]
 
 
@@ -653,12 +833,80 @@ def sql_placeholders(values):
     return ",".join("?" for _ in values)
 
 
+def clone_catalog_item(item):
+    cloned = dict(item)
+    cloned["genres"] = list(item.get("genres") or [])
+    cloned["sources"] = list(item.get("sources") or [])
+    cloned["source_member_ids"] = list(item.get("source_member_ids") or [])
+    cloned["source_variants"] = [dict(variant) for variant in item.get("source_variants") or []]
+    return cloned
+
+
+def clone_catalog_items(items):
+    return [clone_catalog_item(item) for item in items]
+
+
+def build_catalog_cache(db_path=None):
+    path = resolve_db_path(db_path)
+    con = connect(path)
+    try:
+        items = canonicalize_items(get_source_anime_items(con))
+    finally:
+        con.close()
+
+    id_map = {}
+    slug_map = {}
+    for item in items:
+        slug_map[item["slug"]] = item
+        slug_map[item["internal_id"]] = item
+        for variant in item.get("source_variants") or []:
+            id_map[int(variant["id"])] = item
+
+    return {
+        "signature": db_signature(path),
+        "items": items,
+        "id_map": id_map,
+        "slug_map": slug_map,
+    }
+
+
+def get_catalog_cache(db_path=None):
+    path = resolve_db_path(db_path)
+    key = str(path.resolve())
+    signature = db_signature(path)
+    with CATALOG_CACHE_LOCK:
+        cached = CATALOG_CACHE.get(key)
+        if cached and cached.get("signature") == signature:
+            return cached
+        cached = build_catalog_cache(path)
+        CATALOG_CACHE[key] = cached
+        return cached
+
+
+def invalidate_catalog_cache(db_path=None):
+    path = resolve_db_path(db_path)
+    key = str(path.resolve())
+    with CATALOG_CACHE_LOCK:
+        CATALOG_CACHE.pop(key, None)
+
+
+def get_catalog_items(db_path=None):
+    return get_catalog_cache(db_path)["items"]
+
+
 def canonical_group_for_anime_id(con, anime_id):
-    for item in canonicalize_items(get_source_anime_items(con)):
-        member_ids = [variant["id"] for variant in item.get("source_variants") or []]
-        if int(anime_id) in member_ids:
-            return item
-    return None
+    db_path = con.execute("pragma database_list").fetchone()["file"]
+    return get_catalog_cache(db_path)["id_map"].get(int(anime_id))
+
+
+def canonical_group_for_anime_ref(con, anime_ref):
+    value = str(anime_ref or "").strip()
+    if not value:
+        return None
+    if value.isdigit():
+        return canonical_group_for_anime_id(con, int(value))
+    db_path = con.execute("pragma database_list").fetchone()["file"]
+    return get_catalog_cache(db_path)["slug_map"].get(value)
 
 
 def aggregate_state_rows(rows):
@@ -720,9 +968,9 @@ def source_row_sort_key(source):
     )
 
 
-def get_anime_detail(anime_id, db_path=None):
+def get_anime_detail(anime_ref, db_path=None):
     con = connect(db_path)
-    group = canonical_group_for_anime_id(con, anime_id)
+    group = canonical_group_for_anime_ref(con, anime_ref)
     if not group:
         con.close()
         return None
@@ -870,21 +1118,22 @@ def get_anime_detail(anime_id, db_path=None):
     detail["source_variant_count"] = group.get("source_variant_count") or 1
     detail["sources"] = group.get("sources") or [detail.get("source")]
     detail["source_member_ids"] = member_ids
+    detail["slug"] = group.get("slug")
+    detail["internal_id"] = group.get("internal_id")
     detail["source_count"] = sum(len(sources) for sources in by_episode.values())
     detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
     return detail
 
 
-def update_user_state(anime_id, patch, db_path=None):
+def update_user_state(anime_ref, patch, db_path=None):
     con = connect(db_path)
-    exists = con.execute("select 1 from anime where id = ?", (anime_id,)).fetchone()
-    if not exists:
+    group = canonical_group_for_anime_ref(con, anime_ref)
+    if not group:
         con.close()
         return None
 
-    group = canonical_group_for_anime_id(con, anime_id)
-    target_id = group["id"] if group else anime_id
-    member_ids = [variant["id"] for variant in group.get("source_variants") or []] if group else [anime_id]
+    target_id = group["id"]
+    member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     current = get_group_state(con, member_ids)
     next_state = dict(current)
 
@@ -936,6 +1185,7 @@ def update_user_state(anime_id, patch, db_path=None):
         )
     con.commit()
     con.close()
+    invalidate_catalog_cache(db_path)
     return next_state
 
 
@@ -985,9 +1235,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/favicon.ico":
-            self.send_response(204)
-            self.send_header("Cache-Control", "max-age=3600")
-            self.end_headers()
+            self.send_static("favicon.svg")
             return
 
         if path == "/api/health":
@@ -1006,15 +1254,15 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
-            if len(parts) == 3 and parts[0] == "api" and parts[1] == "anime" and parts[2].isdigit():
-                detail = get_anime_detail(int(parts[2]), self.server.db_path)
+            if len(parts) == 3 and parts[0] == "api" and parts[1] == "anime":
+                detail = get_anime_detail(unquote(parts[2]), self.server.db_path)
                 if detail:
                     self.send_json(detail)
                 else:
                     self.send_json({"error": "not found"}, 404)
                 return
 
-        if path == "/":
+        if path == "/" or re.fullmatch(r"/[A-Za-z0-9][A-Za-z0-9-]*", path):
             self.send_static("index.html")
             return
         if path.startswith("/static/"):
@@ -1029,10 +1277,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
-            if len(parts) == 4 and parts[0] == "api" and parts[1] == "anime" and parts[2].isdigit() and parts[3] == "state":
+            if len(parts) == 4 and parts[0] == "api" and parts[1] == "anime" and parts[3] == "state":
                 try:
                     payload = self.read_json_body()
-                    updated = update_user_state(int(parts[2]), payload, self.server.db_path)
+                    updated = update_user_state(unquote(parts[2]), payload, self.server.db_path)
                 except json.JSONDecodeError:
                     self.send_json({"error": "invalid json"}, 400)
                     return

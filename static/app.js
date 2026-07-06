@@ -9,7 +9,9 @@ const DEFAULT_FILTERS = {
 const DEFAULT_SORT_BY = "rating_best";
 const DEFAULT_SORT_DIR = "desc";
 const RECOMMENDATION_LIMIT = 20;
-const LINK_PARAM_KEYS = ["anime", "episode", "source", "translation", "provider"];
+const INITIAL_RENDER_LIMIT = 40;
+const RENDER_BATCH_SIZE = 80;
+const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 
 const state = {
   anime: [],
@@ -27,6 +29,7 @@ const state = {
   activeFilterIds: [],
   sortBy: DEFAULT_SORT_BY,
   sortDir: DEFAULT_SORT_DIR,
+  renderLimit: INITIAL_RENDER_LIMIT,
   filterControls: {},
   savingState: false,
   pendingStateSave: null,
@@ -71,6 +74,8 @@ const el = {
   episodeState: document.getElementById("episode-state"),
 };
 
+let listImageObserver = null;
+
 async function api(path, options = {}) {
   const response = await fetch(path, options);
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
@@ -90,10 +95,21 @@ function normalizeLinkValue(value) {
   return text || null;
 }
 
+function titleRefFromPath() {
+  let value = "";
+  try {
+    value = decodeURIComponent(window.location.pathname.replace(/^\/+|\/+$/g, ""));
+  } catch (error) {
+    value = "";
+  }
+  if (!value || value.includes("/") || value === "api" || value === "static") return null;
+  return normalizeLinkValue(value);
+}
+
 function readLinkState() {
   const params = new URLSearchParams(window.location.search);
   return {
-    animeId: normalizeLinkValue(params.get("anime")),
+    animeId: titleRefFromPath() || normalizeLinkValue(params.get("anime")),
     episodeId: normalizeLinkValue(params.get("episode")),
     contentSource: normalizeLinkValue(params.get("source")),
     translation: normalizeLinkValue(params.get("translation")),
@@ -115,17 +131,22 @@ function syncUrlFromDetail({ replace = true } = {}) {
 
   const url = new URL(window.location.href);
   const params = url.searchParams;
-  setOptionalParam(params, "anime", state.selectedAnimeId);
+  params.delete("anime");
   setOptionalParam(params, "episode", state.selectedEpisodeId);
   setOptionalParam(params, "source", state.selectedContentSource);
   setOptionalParam(params, "translation", state.selectedTranslation);
   setOptionalParam(params, "provider", state.selectedSourceId);
+  const slug = state.detail?.slug || state.detail?.internal_id || state.selectedAnimeId;
+  url.pathname = slug ? `/${encodeURIComponent(slug)}` : "/";
 
   const next = `${url.pathname}${url.search}${url.hash}`;
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (next === current) return;
 
-  const statePayload = Object.fromEntries(LINK_PARAM_KEYS.map(key => [key, params.get(key)]));
+  const statePayload = {
+    anime: slug,
+    ...Object.fromEntries(LINK_PARAM_KEYS.map(key => [key, params.get(key)])),
+  };
   window.history[replace ? "replaceState" : "pushState"](statePayload, "", next);
 }
 
@@ -137,7 +158,69 @@ function sourcesForEpisode(episodeId) {
 }
 
 function activeEpisode() {
-  return state.detail?.episodes?.find(episode => episode.id === state.selectedEpisodeId) || null;
+  return state.detail?.episodes?.find(episode => String(episode.id) === String(state.selectedEpisodeId)) || null;
+}
+
+function titleRefForItem(item) {
+  return item?.slug || item?.internal_id || item?.id;
+}
+
+function observeListImage(img, src) {
+  if (!src) return;
+  if (!("IntersectionObserver" in window)) {
+    img.src = src;
+    return;
+  }
+  if (!listImageObserver) {
+    listImageObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const image = entry.target;
+        image.src = image.dataset.src || "";
+        image.removeAttribute("data-src");
+        listImageObserver.unobserve(image);
+      }
+    }, {
+      root: el.list,
+      rootMargin: "180px 0px",
+    });
+  }
+  img.dataset.src = src;
+  listImageObserver.observe(img);
+}
+
+function resetListImageObserver() {
+  if (listImageObserver) listImageObserver.disconnect();
+  listImageObserver = null;
+}
+
+function selectedEpisodeIndex(episodes) {
+  return episodes.findIndex(episode => String(episode.id) === String(state.selectedEpisodeId));
+}
+
+function episodeNumberLabel(episode, fallbackIndex) {
+  const value = text(episode?.number, fallbackIndex + 1);
+  return /^\d+([.,]\d+)?$/.test(value) ? `${value} серия` : value;
+}
+
+function episodeTitleText(episode) {
+  const candidates = [episode?.title, episode?.release_label];
+  return candidates.find(value => value && value !== "---") || "";
+}
+
+function episodeOptionText(episode, index) {
+  const label = episodeNumberLabel(episode, index);
+  const title = episodeTitleText(episode);
+  const showTitle = title && searchText(title) !== searchText(label);
+  const unavailable = (episode.source_count || 0) <= 0 ? " (нет видео)" : "";
+  return `${label}${showTitle ? ` - ${title}` : ""}${unavailable}`;
+}
+
+function adjacentAvailableEpisode(episodes, currentIndex, direction) {
+  for (let index = currentIndex + direction; index >= 0 && index < episodes.length; index += direction) {
+    if ((episodes[index].source_count || 0) > 0) return episodes[index];
+  }
+  return null;
 }
 
 function numberFrom(value) {
@@ -565,6 +648,7 @@ function resetCatalogTools() {
 }
 
 function renderList() {
+  resetListImageObserver();
   const total = isRecommendationView() ? state.recommendations.length : state.anime.length;
   el.count.textContent = isRecommendationView()
     ? `${state.filtered.length} из ${total} советов`
@@ -580,7 +664,11 @@ function renderList() {
     return;
   }
 
-  for (const item of state.filtered) {
+  const selectedIndex = state.filtered.findIndex(item => item.id === state.selectedAnimeId);
+  const renderLimit = selectedIndex >= state.renderLimit ? selectedIndex + 1 : state.renderLimit;
+  const visibleItems = state.filtered.slice(0, renderLimit);
+
+  for (const item of visibleItems) {
     const button = document.createElement("button");
     button.className = "anime-item";
     button.type = "button";
@@ -591,9 +679,10 @@ function renderList() {
     if (item.recommendation_score != null) button.classList.add("recommended");
 
     const img = document.createElement("img");
-    img.src = item.cover_url || "";
     img.alt = "";
     img.loading = "lazy";
+    img.decoding = "async";
+    observeListImage(img, item.cover_url || "");
 
     const body = document.createElement("div");
     const title = document.createElement("strong");
@@ -620,8 +709,21 @@ function renderList() {
       body.append(note);
     }
     button.append(img, body);
-    button.addEventListener("click", () => selectAnime(item.id));
+    button.addEventListener("click", () => selectAnime(titleRefForItem(item)));
     el.list.append(button);
+  }
+
+  if (visibleItems.length < state.filtered.length) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "list-more";
+    const remaining = state.filtered.length - visibleItems.length;
+    more.textContent = `Показать ещё ${Math.min(RENDER_BATCH_SIZE, remaining)}`;
+    more.addEventListener("click", () => {
+      state.renderLimit += RENDER_BATCH_SIZE;
+      renderList();
+    });
+    el.list.append(more);
   }
 }
 
@@ -676,18 +778,7 @@ function renderDetail() {
     return chip;
   }));
 
-  el.episodes.replaceChildren();
-  for (const episode of detail.episodes || []) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "episode-btn";
-    button.textContent = episode.number || episode.id;
-    button.title = episode.title || episode.release_label || "";
-    if (episode.source_count > 0) button.classList.add("available");
-    if (episode.id === state.selectedEpisodeId) button.classList.add("active");
-    button.addEventListener("click", () => selectEpisode(episode.id).catch(console.error));
-    el.episodes.append(button);
-  }
+  renderEpisodes(detail);
 
   renderSources();
 }
@@ -757,6 +848,82 @@ function renderFields(detail) {
     node.append(key, val);
     return node;
   }));
+}
+
+function createEpisodeNavButton(label, ariaLabel, episode) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "icon-button episode-nav";
+  button.textContent = label;
+  button.setAttribute("aria-label", ariaLabel);
+  button.title = ariaLabel;
+  button.disabled = !episode;
+  if (episode) {
+    button.addEventListener("click", () => selectEpisode(episode.id).catch(console.error));
+  }
+  return button;
+}
+
+function renderEpisodes(detail) {
+  const episodes = detail.episodes || [];
+  el.episodes.replaceChildren();
+
+  if (!episodes.length) {
+    const empty = document.createElement("div");
+    empty.className = "episode-empty";
+    empty.textContent = "Серии не найдены";
+    el.episodes.append(empty);
+    return;
+  }
+
+  const currentIndex = Math.max(0, selectedEpisodeIndex(episodes));
+  const current = episodes[currentIndex];
+  const prevEpisode = adjacentAvailableEpisode(episodes, currentIndex, -1);
+  const nextEpisode = adjacentAvailableEpisode(episodes, currentIndex, 1);
+
+  const header = document.createElement("div");
+  header.className = "episode-picker-header";
+
+  const label = document.createElement("span");
+  label.textContent = "Серия";
+
+  const counter = document.createElement("strong");
+  counter.textContent = `${currentIndex + 1} из ${episodes.length}`;
+  header.append(label, counter);
+
+  const row = document.createElement("div");
+  row.className = "episode-picker-row";
+
+  const select = document.createElement("select");
+  select.className = "episode-select";
+  select.setAttribute("aria-label", "Выбор серии");
+
+  episodes.forEach((episode, index) => {
+    const option = document.createElement("option");
+    option.value = episode.id;
+    option.textContent = episodeOptionText(episode, index);
+    option.disabled = (episode.source_count || 0) <= 0;
+    option.selected = String(episode.id) === String(state.selectedEpisodeId);
+    select.append(option);
+  });
+
+  select.addEventListener("change", event => {
+    const episode = episodes.find(item => String(item.id) === event.target.value);
+    if (episode) selectEpisode(episode.id).catch(console.error);
+  });
+
+  row.append(
+    createEpisodeNavButton("‹", "Предыдущая серия", prevEpisode),
+    select,
+    createEpisodeNavButton("›", "Следующая серия", nextEpisode),
+  );
+
+  const summary = document.createElement("div");
+  summary.className = "episode-current";
+  const title = episodeTitleText(current);
+  summary.textContent = title || episodeNumberLabel(current, currentIndex);
+
+  el.episodes.append(header, row, summary);
 }
 
 function uniqueTranslations(sources) {
@@ -951,7 +1118,7 @@ async function openPictureInPicture() {
 }
 
 async function selectAnime(id, options = {}) {
-  state.detail = await api(`/api/anime/${id}`);
+  state.detail = await api(`/api/anime/${encodeURIComponent(id)}`);
   state.selectedAnimeId = state.detail.id;
   applyDetailLinkState(options.linkState || {});
 
@@ -1024,6 +1191,7 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
 function applyFilter({ selectFirst = false } = {}) {
   const query = searchText(el.search.value.trim());
   const baseItems = baseItemsForView();
+  state.renderLimit = INITIAL_RENDER_LIMIT;
   state.filtered = baseItems.filter(item => {
     const variantText = (item.source_variants || []).flatMap(variant => [
       variant.title,
@@ -1059,7 +1227,7 @@ function applyFilter({ selectFirst = false } = {}) {
   el.resetFilters.hidden = !hasActiveCatalogTools();
 
   if (selectFirst && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
-    selectAnime(state.filtered[0].id).catch(console.error);
+    selectAnime(titleRefForItem(state.filtered[0])).catch(console.error);
   }
 }
 
@@ -1158,7 +1326,7 @@ async function selectInitialAnime() {
   }
 
   const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
-  if (first) await selectAnime(first.id);
+  if (first) await selectAnime(titleRefForItem(first));
 }
 
 async function boot() {

@@ -91,8 +91,11 @@ The API presents a canonical catalog view over the source-specific `anime` rows.
 When one AnimeGO row and one YummyAnime row have the same normalized title and
 year, they are exposed as one catalog item with `source_variants`.
 
-- AnimeGO is the primary variant when present. The visible `id`, title,
+- AnimeGO is the primary variant when present. The visible numeric `id`, title,
   metadata, and default detail page come from that AnimeGO row.
+- Each canonical title also exposes a local textual `slug`/`internal_id`, built
+  from the title plus a short stable suffix. This is the shareable URL identity
+  for the visible title and is separate from upstream/source numeric IDs.
 - YummyAnime remains available as a source variant for source selection and
   player/source aggregation.
 - Auto-merge is intentionally conservative: ambiguous buckets with more than
@@ -111,6 +114,9 @@ both the full SQLite database backup and user-state SQL/JSON/CSV exports.
 - YummyAnime legacy episode IDs use `anime_id * 1000 + episode_number`.
 - YummyAnime/YummyAni translation IDs use reserved high ranges to avoid
   collisions with AnimeGO translation IDs.
+- Canonical title URLs use local textual slugs such as
+  `/reinkarnaciya-bezrabotnogo-3-sezon-5yc9`; numeric IDs remain internal for
+  source-row joins and user-state storage.
 
 ## Mutable vs Scraped Data
 

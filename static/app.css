@@ -97,6 +97,7 @@ select {
 .search-box input,
 .tool-field select,
 .source-panel select,
+.episode-select,
 .progress-control input {
   width: 100%;
   min-height: 40px;
@@ -111,8 +112,8 @@ select {
 .search-box input:focus,
 .tool-field select:focus,
 .source-panel select:focus,
+.episode-select:focus,
 .progress-control input:focus,
-.episode-btn:focus-visible,
 .anime-item:focus-visible,
 .watch-button:focus-visible,
 .icon-button:focus-visible,
@@ -327,6 +328,24 @@ select {
 
 .anime-item.recommended:not(.active) {
   border-color: rgba(116, 198, 157, 0.35);
+}
+
+.list-more {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #111417;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.list-more:hover,
+.list-more:focus-visible {
+  border-color: var(--focus);
+  color: var(--text);
 }
 
 .anime-item.watched {
@@ -590,33 +609,59 @@ select {
   overflow-wrap: anywhere;
 }
 
-.episode-strip {
-  display: flex;
+.episode-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
-  overflow-x: auto;
-  padding: 18px 0 16px;
-  min-height: 70px;
+  padding: 16px 0;
+  max-width: 640px;
 }
 
-.episode-btn {
-  min-width: 74px;
-  min-height: 46px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
+.episode-picker-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.episode-picker-header strong {
   color: var(--text);
-  cursor: pointer;
+  font-size: 12px;
 }
 
-.episode-btn.available {
-  border-color: rgba(116, 198, 157, 0.55);
+.episode-picker-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: center;
 }
 
-.episode-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #160907;
-  font-weight: 800;
+.episode-select {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.episode-nav {
+  width: 40px;
+  min-height: 40px;
+  font-size: 22px;
+}
+
+.episode-nav:disabled {
+  cursor: default;
+  color: #626a73;
+  opacity: 0.55;
+}
+
+.episode-current,
+.episode-empty {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .player-layout {
