@@ -6,19 +6,23 @@ and player prototype.
 ## Reading order
 
 1. `OVERVIEW.md` - product summary, current scope, user workflows, limitations.
-2. `TECHNICAL.md` - runtime, data flow, API, scraper behavior, verification.
-3. `DATA_MODEL.md` - SQLite tables, relationships, ID conventions, mutable data.
-4. `CODE_STYLE.md` - project coding rules and contribution conventions.
+2. `ENVIRONMENTS.md` - localhost dev/prod split, fixed ports, release rules.
+3. `TECHNICAL.md` - runtime, data flow, API, scraper behavior, verification.
+4. `DATA_MODEL.md` - SQLite tables, relationships, ID conventions, mutable data.
+5. `CODE_STYLE.md` - project coding rules and contribution conventions.
 
 ## Quick start
 
-Run the local site:
+Run the dev/test site:
 
 ```bash
 python3 server.py --port 8765
 ```
 
 Open `http://127.0.0.1:8765/`.
+
+Production is fixed at `http://127.0.0.1:8766/` and must only be updated after
+an explicit release request. See `ENVIRONMENTS.md` before touching prod.
 
 Run the current verification set:
 
@@ -35,6 +39,7 @@ long-running process.
 ## Important boundaries
 
 - The project stores catalog/player metadata in local SQLite.
+- Dev/test/scratch is `8765`; prod is `8766`; port `8776` is retired.
 - The recommendation list is computed locally from `user_title_state` and
   catalog metadata.
 - The project does not download or host anime video streams.

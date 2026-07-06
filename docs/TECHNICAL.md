@@ -24,7 +24,7 @@
 
 ## Local Server
 
-Run:
+Run the dev/test server:
 
 ```bash
 python3 server.py --host 127.0.0.1 --port 8765
@@ -37,6 +37,10 @@ python3 server.py --db /path/to/animego.sqlite
 ```
 
 or with the `ANIMEGO_DB` environment variable for internal helper calls.
+
+Production is a separate localhost environment at `http://127.0.0.1:8766/`.
+Do not use it for development, scraping, indexing, or performance work. See
+`ENVIRONMENTS.md` for the fixed port map and release workflow.
 
 ## API
 
@@ -200,7 +204,8 @@ python3 -m unittest -v test_app.py
 node --check static/app.js
 ```
 
-For UI changes, also do a browser smoke test against `http://127.0.0.1:8765/`.
+For UI changes, also do a browser smoke test against dev:
+`http://127.0.0.1:8765/`.
 At minimum, verify catalog load, filtering/sorting, detail selection, and player
 source selection for a title with video.
 
@@ -218,3 +223,6 @@ For recommendation/player changes, additionally verify:
 If `http://127.0.0.1:8765/` serves new static files but API routes return 404,
 restart the long-running `server.py` process. Python route handlers are loaded
 only when the process starts.
+
+Prod smoke checks are only part of an explicit release operation. Do not use
+`http://127.0.0.1:8766/` as a substitute for dev testing.

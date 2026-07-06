@@ -49,7 +49,7 @@ cp backups/current/animego.sqlite data/animego.sqlite
 sqlite3 data/animego.sqlite 'pragma integrity_check;'
 ```
 
-For a working iframe prototype or production catalog refresh, persist embed URLs
+For a working iframe prototype or full dev catalog refresh, persist embed URLs
 and then prune rows where the source page still exposes no player:
 
 ```bash
@@ -59,7 +59,11 @@ python3 prune_non_playable.py --commit
 python3 server.py
 ```
 
-Then open `http://127.0.0.1:8765`.
+Then open the dev site at `http://127.0.0.1:8765`.
+
+The stable local production site is `http://127.0.0.1:8766/`. It is release-only
+and must not be used for scraping, indexing, experiments, or routine testing.
+See `docs/ENVIRONMENTS.md` for the fixed dev/prod split and release workflow.
 
 The local app stores favorites and watch progress in SQLite table
 `user_title_state`. Use the title page controls to add a title to favorites,
