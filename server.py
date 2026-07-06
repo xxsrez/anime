@@ -68,6 +68,7 @@ def ensure_catalog_schema(con):
 def connect(db_path=None):
     path = Path(db_path or os.environ.get("ANIMEGO_DB") or DEFAULT_DB)
     con = sqlite3.connect(path)
+    con.execute("pragma busy_timeout=30000")
     con.row_factory = sqlite3.Row
     ensure_catalog_schema(con)
     ensure_user_state_schema(con)
@@ -433,6 +434,10 @@ def popularity_score(item):
     return clamp(math.log10(count + 1) / 4.0) if count > 0 else 0.0
 
 
+def has_playable_source(item):
+    return (numeric(item.get("source_count")) or 0) > 0
+
+
 def availability_score(item):
     available = numeric(item.get("available_episode_count")) or 0
     sources = numeric(item.get("source_count")) or 0
@@ -467,6 +472,15 @@ def kind_profile_score(item, profile):
     return clamp(profile["kind_weights"].get(kind, 0.0) / max_weight) if max_weight else 0.0
 
 
+def watchable_recommendation_score(raw_score, item, has_watchable_candidates):
+    score = clamp(raw_score) * 100
+    if not has_watchable_candidates:
+        return round(score, 1)
+    if has_playable_source(item):
+        return round(55 + (score * 0.45), 1)
+    return round(score * 0.55, 1)
+
+
 def recommendation_reasons(item, matched_genres, based_on):
     reasons = []
     if matched_genres:
@@ -487,6 +501,8 @@ def recommendation_reasons(item, matched_genres, based_on):
         reasons.append(f"Есть видео: {available} сер.")
     elif item.get("source_count"):
         reasons.append("Есть доступные источники")
+    else:
+        reasons.append("Пока без видео в базе")
 
     if not reasons:
         reasons.append("Хороший общий рейтинг для стартовой рекомендации")
@@ -498,12 +514,18 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
     items = get_anime_list(db_path)
     profile = build_recommendation_profile(items)
     has_profile = profile["seed_count"] > 0
+    candidate_items = [
+        item
+        for item in items
+        if not item.get("is_favorite")
+        and not item.get("watched")
+        and item.get("progress_episode_number") is None
+    ]
+    watchable_candidate_count = sum(1 for item in candidate_items if has_playable_source(item))
+    has_watchable_candidates = watchable_candidate_count > 0
     recommendations = []
 
-    for item in items:
-        if item.get("is_favorite") or item.get("watched") or item.get("progress_episode_number") is not None:
-            continue
-
+    for item in candidate_items:
         genre_score, matched_genres = genre_profile_score(item, profile)
         seed_score, based_on = seed_similarity(item, profile)
         taste_score = (0.7 * genre_score) + (0.3 * seed_score)
@@ -531,7 +553,7 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
                 + (0.04 * kind_score)
             )
 
-        score = round(clamp(raw_score) * 100, 1)
+        score = watchable_recommendation_score(raw_score, item, has_watchable_candidates)
         item = dict(item)
         item["recommendation_score"] = score
         item["recommendation_confidence"] = recommendation_confidence(score)
@@ -544,6 +566,8 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
             "availability": round(availability, 3),
             "popularity": round(popularity, 3),
             "recency": round(recency, 3),
+            "watchable": 1.0 if has_playable_source(item) else 0.0,
+            "raw": round(clamp(raw_score), 3),
         }
         recommendations.append(item)
 
@@ -565,6 +589,8 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT):
         "profile": {
             "favorite_count": profile["favorite_count"],
             "seed_count": profile["seed_count"],
+            "candidate_count": len(candidate_items),
+            "watchable_candidate_count": watchable_candidate_count,
             "top_genres": profile["top_genres"],
             "mode": "personalized" if has_profile else "popular",
         },
@@ -595,8 +621,8 @@ def get_source_anime_items(con):
             coalesce(us.watched, 0) as watched,
             us.updated_at as state_updated_at,
             count(distinct e.id) as episode_count,
-            count(distinct case when e.has_video = 1 then e.id end) as available_episode_count,
-            count(distinct vs.id) as source_count,
+            count(distinct case when vs.embed_url is not null then e.id end) as available_episode_count,
+            count(distinct case when vs.embed_url is not null then vs.id end) as source_count,
             group_concat(distinct g.genre) as genres
         from anime a
         left join user_title_state us on us.anime_id = a.id
@@ -744,7 +770,7 @@ def get_anime_detail(anime_id, db_path=None):
                 count(vs.id) as source_count
             from episodes e
             join anime a on a.id = e.anime_id
-            left join video_sources vs on vs.episode_id = e.id
+            left join video_sources vs on vs.episode_id = e.id and vs.embed_url is not null
             where e.anime_id in ({member_sql})
             group by e.id
             order by cast(e.number as integer), e.id
@@ -773,6 +799,7 @@ def get_anime_detail(anime_id, db_path=None):
             join anime a on a.id = vs.anime_id
             join episodes e on e.id = vs.episode_id
             where vs.anime_id in ({member_sql})
+              and vs.embed_url is not null
             order by
                 cast(e.number as integer),
                 vs.episode_id,

@@ -29,8 +29,9 @@
 - Use delays when scraping larger ranges.
 - Do not assume upstream HTML is stable.
 - Store enough metadata to debug source behavior later.
-- For AnimeGO, do not persist live embed URLs unless the command explicitly
-  includes `--include-embed-urls`.
+- Production catalog imports must persist playable embed URLs. `--skip-player`
+  and `--no-embed-urls` are metadata-only research modes and must not be mixed
+  into the main app database without a player backfill and non-playable prune.
 - For YummyAnime, skip Alloha sources unless a future fix proves they are stable;
   the current importer keeps Kodik because it has been verified in the local app.
 

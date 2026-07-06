@@ -51,10 +51,11 @@ will change after scraping or user activity.
 ## Playback Model
 
 The local app does not host video. It embeds third-party players in an iframe
-using URLs saved in SQLite. For AnimeGO, embed URLs are persisted only when the
-scraper is run with `--include-embed-urls`. For YummyAnime, the importer keeps
-Kodik embeds and skips Alloha embeds because the Alloha AJAX response can return
-stale or mismatched player URLs.
+using URLs saved in SQLite. The main catalog is a watchable catalog: imported
+rows that still have no playable `embed_url` after backfill are pruned instead
+of being shown as metadata-only titles. For YummyAnime, the importer keeps Kodik
+embeds and skips Alloha embeds because the Alloha AJAX response can return stale
+or mismatched player URLs.
 
 Fullscreen is implemented on the local iframe wrapper. Picture-in-Picture uses
 Chrome's document Picture-in-Picture API when available and otherwise falls back
@@ -79,7 +80,6 @@ and availability ranking.
 - Recommendations use only local metadata and user state; there is no external
   AniList/MAL similarity graph yet.
 - Scraper parsing is coupled to upstream HTML/API shapes.
-- Some imported titles may have metadata but no playable source.
 - External embeds can fail independently of the local app, and their internal
   fullscreen/PiP behavior is controlled by the external player.
 - The current UI intentionally favors compact browsing over a polished media

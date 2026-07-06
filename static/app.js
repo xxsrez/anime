@@ -635,8 +635,12 @@ function renderRecommendationMeta() {
   const seedText = profile.seed_count
     ? `по ${profile.seed_count} выбранным`
     : "без профиля вкусов";
+  const watchableText = profile.watchable_candidate_count != null
+    ? `${profile.watchable_candidate_count} с видео`
+    : "";
   const genres = (profile.top_genres || []).slice(0, 4).map(item => item.genre).join(", ");
   const parts = [`${state.recommendations.length} советов`, mode, seedText];
+  if (watchableText) parts.push(watchableText);
   if (genres) parts.push(genres);
   el.recommendationMeta.setAttribute("aria-label", parts.join(" · "));
 

@@ -238,12 +238,13 @@ def parse_player_content(content):
     providers = []
     for node in soup.select("[data-player][data-provider][data-ptranslation]"):
         raw_url = normalize_embed_url(node.get("data-player"))
+        translation_id = node.get("data-ptranslation")
         providers.append(
             {
                 "provider_id": node.get("data-provider"),
                 "provider_title": node.get("data-provider-title"),
-                "translation_id": int(node.get("data-ptranslation")),
-                "translation_title": node.get("data-translation-title"),
+                "translation_id": int(translation_id) if translation_id and translation_id.isdigit() else 0,
+                "translation_title": node.get("data-translation-title") or "unknown",
                 "embed_url": raw_url,
                 "embed_url_redacted": redact_embed_url(raw_url),
                 "embed_host": embed_host(raw_url),
@@ -257,10 +258,22 @@ def parse_unavailable_reason(content):
     return " ".join(text.split()) or None
 
 
+def synthetic_episode(anime_id, title):
+    return {
+        "id": int(anime_id) * 1000 + 1,
+        "number": "1",
+        "episode_type": "movie",
+        "title": title,
+        "release_label": None,
+        "description": "Single player entry without an upstream episode list.",
+    }
+
+
 def init_db(db_path):
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
     con.execute("pragma foreign_keys=on")
+    con.execute("pragma busy_timeout=30000")
     con.executescript(
         """
         create table if not exists anime (
@@ -501,10 +514,17 @@ def upsert_provider(con, anime_id, episode_id, provider, include_embed_urls, scr
     )
     con.execute(
         """
-        insert or ignore into video_sources (
+        insert into video_sources (
             anime_id, episode_id, provider_id, provider_title, translation_id,
             translation_title, embed_host, embed_url, embed_url_redacted, scraped_at
         ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        on conflict(episode_id, provider_id, translation_id, embed_url_redacted) do update set
+            anime_id=excluded.anime_id,
+            provider_title=coalesce(excluded.provider_title, video_sources.provider_title),
+            translation_title=coalesce(excluded.translation_title, video_sources.translation_title),
+            embed_host=coalesce(excluded.embed_host, video_sources.embed_host),
+            embed_url=coalesce(excluded.embed_url, video_sources.embed_url),
+            scraped_at=excluded.scraped_at
         """,
         (
             anime_id,
@@ -573,18 +593,27 @@ def scrape(args):
 
         player_json = json.loads(fetch_text(detail["player_url"], ajax=True, referer=item["url"], delay=args.delay))
         content = player_json.get("data", {}).get("content") or ""
-        _, episodes, _, initial_providers = parse_player_content(content)
+        selected_episode_id, episodes, _, initial_providers = parse_player_content(content)
 
         if not episodes and initial_providers:
-            print("  providers found but no episode list; skipped")
+            episodes = [synthetic_episode(item["id"], item["title"])]
 
         for episode in episodes[: args.episode_limit]:
-            video_json = json.loads(fetch_text(f"/player/videos/{episode['id']}", ajax=True, referer=item["url"], delay=args.delay))
-            data = video_json.get("data", {})
-            video_content = data.get("content") or ""
-            _, _, _, providers = parse_player_content(video_content)
-            unavailable_reason = parse_unavailable_reason(data.get("content_online") or "")
-            has_video = bool(data.get("numVideos", 0) or providers)
+            if initial_providers and (
+                episode["id"] == int(item["id"]) * 1000 + 1
+                or selected_episode_id == episode["id"]
+                or len(episodes) == 1
+            ):
+                providers = initial_providers
+                unavailable_reason = None
+                has_video = True
+            else:
+                video_json = json.loads(fetch_text(f"/player/videos/{episode['id']}", ajax=True, referer=item["url"], delay=args.delay))
+                data = video_json.get("data", {})
+                video_content = data.get("content") or ""
+                _, _, _, providers = parse_player_content(video_content)
+                unavailable_reason = parse_unavailable_reason(data.get("content_online") or "")
+                has_video = bool(data.get("numVideos", 0) or providers)
             upsert_episode(con, item["id"], episode, has_video, unavailable_reason, scraped_at)
             episode_count += 1
             for provider in providers:

@@ -11,7 +11,8 @@ class LocalAppTest(unittest.TestCase):
     def test_catalog_has_scraped_titles(self):
         items = server.get_anime_list()
         self.assertGreaterEqual(len(items), 10)
-        self.assertTrue(any(item["source_count"] > 0 for item in items))
+        self.assertTrue(all(item["source_count"] > 0 for item in items))
+        self.assertTrue(all(item["available_episode_count"] > 0 for item in items))
 
     def test_detail_contains_episode_sources(self):
         anime = next(item for item in server.get_anime_list() if item["source_count"] > 0)
@@ -80,6 +81,7 @@ class LocalAppTest(unittest.TestCase):
             recommendations = payload["items"]
             self.assertGreater(len(recommendations), 0)
             self.assertLessEqual(len(recommendations), 20)
+            self.assertTrue(all(item["source_count"] > 0 for item in recommendations))
             self.assertNotIn(favorite["id"], {item["id"] for item in recommendations})
             self.assertEqual(
                 [item["recommendation_score"] for item in recommendations],
@@ -87,6 +89,22 @@ class LocalAppTest(unittest.TestCase):
             )
             self.assertTrue(all(item["recommendation_reasons"] for item in recommendations))
             self.assertEqual(payload["profile"]["mode"], "personalized")
+
+    def test_recommendations_prioritize_watchable_candidates(self):
+        payload = server.get_recommendations(limit=server.MAX_RECOMMENDATION_LIMIT)
+        recommendations = payload["items"]
+        watchable_count = payload["profile"]["watchable_candidate_count"]
+        if watchable_count:
+            priority_count = min(watchable_count, len(recommendations))
+            self.assertTrue(all(item["source_count"] > 0 for item in recommendations[:priority_count]))
+            self.assertTrue(all(
+                item["recommendation_components"]["watchable"] == 1.0
+                for item in recommendations[:priority_count]
+            ))
+        self.assertEqual(
+            [item["recommendation_score"] for item in recommendations],
+            sorted((item["recommendation_score"] for item in recommendations), reverse=True),
+        )
 
     def test_recommendations_have_popular_fallback_without_profile(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -103,6 +121,7 @@ class LocalAppTest(unittest.TestCase):
             self.assertEqual(payload["profile"]["mode"], "popular")
             self.assertGreater(len(recommendations), 0)
             self.assertLessEqual(len(recommendations), server.MAX_RECOMMENDATION_LIMIT)
+            self.assertTrue(all(item["source_count"] > 0 for item in recommendations))
             self.assertTrue(all("recommendation_components" in item for item in recommendations))
 
             fallback = server.get_recommendations(db_path, limit="not-a-number")

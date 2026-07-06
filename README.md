@@ -12,8 +12,8 @@ Project documentation lives in `docs/`. Start with `docs/README.md`.
 - Episode rows and provider/translation availability.
 
 The scraper does not call `/embed/` URLs and does not download video streams.
-By default it also does not persist live third-party embed URLs. Use
-`--include-embed-urls` only for sources you are allowed to embed.
+The local watchable catalog does persist third-party embed URLs so every visible
+title can open a player.
 
 ## Player model found
 
@@ -49,10 +49,13 @@ cp backups/current/animego.sqlite data/animego.sqlite
 sqlite3 data/animego.sqlite 'pragma integrity_check;'
 ```
 
-For a working iframe prototype, explicitly persist embed URLs:
+For a working iframe prototype or production catalog refresh, persist embed URLs
+and then prune rows where the source page still exposes no player:
 
 ```bash
 python3 scrape_animego.py --pages 2 --limit 20 --episode-limit 3 --include-embed-urls
+python3 backfill_players.py --source animego --episode-limit 1
+python3 prune_non_playable.py --commit
 python3 server.py
 ```
 
@@ -65,12 +68,18 @@ all titles, favorites, titles with progress, or the top recommendation list.
 Recommendations are computed from favorites/progress/watched state and show the
 20 strongest candidates first with short reasons.
 
-Scrape yearly metadata without touching player endpoints:
+Refresh yearly AnimeGO catalog pages with player data:
 
 ```bash
-python3 scrape_animego.py --start-url https://animego.me/anime/season/2025 --all-pages --limit 0 --skip-player
-python3 scrape_animego.py --start-url https://animego.me/anime/season/2026 --all-pages --limit 0 --skip-player
+python3 scrape_animego.py --start-url https://animego.me/anime/season/2025 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
+python3 scrape_animego.py --start-url https://animego.me/anime/season/2026 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
+python3 backfill_players.py --source animego --episode-limit 1
+python3 prune_non_playable.py --commit
 ```
+
+`--skip-player` and `--no-embed-urls` are metadata-only research modes. Do not
+use them for the main local catalog unless the rows are backfilled before the
+database is used by the app.
 
 Scrape the currently available YummyAnime pages for the Mushoku Tensei /
 `Реинкарнация безработного` franchise into the same database:

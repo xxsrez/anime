@@ -23,7 +23,7 @@ Open `http://127.0.0.1:8765/`.
 Run the current verification set:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py test_app.py
+python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
 ```
@@ -38,8 +38,8 @@ long-running process.
 - The recommendation list is computed locally from `user_title_state` and
   catalog metadata.
 - The project does not download or host anime video streams.
-- Playback uses third-party embed URLs saved in SQLite when a scraper run
-  explicitly includes embed URLs.
+- Playback uses third-party embed URLs saved in SQLite. The main catalog should
+  not contain titles that have no playable `embed_url`.
 - `data/animego.sqlite` is local mutable state and can change after scraping or
   user progress updates.
 - Scraping depends on upstream site structure and can break when those sites

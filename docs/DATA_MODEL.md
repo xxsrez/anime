@@ -9,7 +9,9 @@ data and local user state.
 
 One row per scraped source title, not necessarily one visible catalog title.
 AnimeGO and YummyAnime rows can describe the same anime and are kept separate
-so scraper refreshes remain source-specific. Important fields:
+so scraper refreshes remain source-specific. The main app database is pruned to
+watchable source rows, so each retained title should have at least one
+`video_sources.embed_url`. Important fields:
 
 - `id` - internal title ID.
 - `source` - source namespace, for example `animego` or `yummyanime`.

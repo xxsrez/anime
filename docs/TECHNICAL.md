@@ -100,8 +100,11 @@ AnimeGO:
 - Detail pages provide richer metadata, JSON-LD rating data, fields, genres,
   dubbings, description, and an AJAX player shell URL.
 - Player endpoints expose episodes, translations, providers, and player URLs.
-- Default runs do not persist live embed URLs. Use `--include-embed-urls`
-  deliberately.
+- Production catalog imports must persist playable embed URLs with
+  `--include-embed-urls`; `--skip-player` is only a metadata research mode.
+- `backfill_players.py` can fill missing player rows after a broad catalog
+  scrape. `prune_non_playable.py --commit` removes rows that still have no
+  playable `embed_url`.
 
 YummyAnime/YummyAni:
 
@@ -112,6 +115,8 @@ YummyAnime/YummyAni:
 - YummyAnime translation IDs use reserved high ranges.
 - Alloha is intentionally skipped for YummyAnime imports; Kodik is preferred
   when available.
+- `--no-embed-urls` and `--skip-player` are metadata research modes and should
+  be followed by player backfill before the database is used by the app.
 
 ## Frontend Filtering and Sorting
 
@@ -153,10 +158,14 @@ Recommendation scoring lives in `server.py` and is intentionally explainable:
 - Genre overlap and nearest-seed similarity form the taste score.
 - Rating, rating count, source availability, recency, and type match adjust the
   final ranking.
+- Recommendations expect the main catalog to be watchable-only. As a defensive
+  fallback, if metadata-only rows leak into the database, watchable candidates
+  are kept above rows that cannot be opened in the player.
 - With no seeds, the endpoint uses a popularity/quality/availability fallback.
 
 The frontend always requests 20 items and displays them in the `Советы` tab.
-Each row shows score/confidence/source availability and short reason text.
+Each row shows score/confidence/source availability and short reason text. The
+profile metadata includes total candidate count and watchable candidate count.
 
 ## Player Controls
 
@@ -182,7 +191,7 @@ the address bar is normalized to the actual current state.
 Use this command set after behavior changes:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py test_app.py
+python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
 ```
