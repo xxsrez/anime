@@ -24,9 +24,9 @@ python3 server.py --host 127.0.0.1 --port 8765
 
 The Google OAuth client must be type `Web application`. Add the exact dev URL
 origin you open in the browser to Authorized JavaScript origins, usually
-`http://127.0.0.1:8765` and optionally `http://localhost:8765`. Also add the
-matching backend endpoint to Authorized redirect URIs, usually
-`http://127.0.0.1:8765/api/auth/google`.
+`http://127.0.0.1:8765` and optionally `http://localhost:8765`. The normal
+login button uses Google Identity Services popup callbacks, so Authorized
+redirect URIs are not needed for the standard local login path.
 
 Use dev for:
 

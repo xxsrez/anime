@@ -41,8 +41,9 @@ python3 server.py --db /path/to/animego.sqlite
 or with the `ANIMEGO_DB` environment variable for internal helper calls.
 
 Authentication uses Sign in with Google. The login page calls Google One Tap
-first and keeps the Google button as a fallback. Google requires a public OAuth
-client ID for both flows:
+first and keeps the Google button as a fallback. Both paths use the popup
+callback ID-token flow, then POST the credential to the local server. Google
+requires a public OAuth client ID:
 
 ```bash
 export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
@@ -128,8 +129,9 @@ fields:
 3. Scrapers upsert rows into SQLite.
 4. `server.py` reads SQLite and emits JSON.
 5. `/login` loads Google Identity Services, shows One Tap when available, and
-   renders the Google button as a fallback. `/api/auth/google` verifies the ID
-   token and creates a local session cookie.
+   renders the Google button as a fallback. The login page receives the Google
+   ID token in a JavaScript callback and POSTs it to `/api/auth/google`, which
+   verifies the token and creates a local session cookie.
 6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
    renders the sidebar, and fetches detail JSON when a title is selected.
 7. The user can choose the source variant, translation, and provider; the player
