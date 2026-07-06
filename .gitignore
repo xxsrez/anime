@@ -2,3 +2,6 @@ data/*.sqlite-*
 backups/run-*/
 __pycache__/
 .venv/
+.env
+.env.*
+!.env.example
