@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import http.client
+import json
 from pathlib import Path
 import shutil
 import tempfile
 import threading
 import unittest
+from urllib.parse import parse_qs, urlencode, urlparse
 from unittest.mock import patch
 
 import server
@@ -237,10 +239,14 @@ class LocalAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
-            body = "credential=fake-token&g_csrf_token=csrf-token&state=%2Fsome-title"
+            body = urlencode(
+                {
+                    "credential": "fake-token",
+                    "state": server.sign_google_auth_state("/some-title"),
+                }
+            )
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
-                "Cookie": "g_csrf_token=csrf-token",
             }
             auth = {
                 "user": {"id": 10, "email": "one@example.com", "name": "One", "picture_url": None},
@@ -258,21 +264,73 @@ class LocalAppTest(unittest.TestCase):
                 )
 
             self.assertEqual(status, 302)
-            self.assertEqual(headers["Location"], "/some-title")
-            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            complete_location = headers["Location"]
+            self.assertEqual(urlparse(complete_location).path, "/api/auth/complete")
+            self.assertNotIn("Set-Cookie", headers)
             authenticate.assert_called_once_with("fake-token", db_path)
 
-    def test_google_redirect_post_rejects_csrf_mismatch(self):
+            status, headers, _ = self.request_test_server(
+                db_path,
+                "GET",
+                complete_location,
+            )
+
+            self.assertEqual(status, 302)
+            self.assertEqual(headers["Location"], "/some-title")
+            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+
+            status, headers, _ = self.request_test_server(
+                db_path,
+                "GET",
+                complete_location,
+            )
+
+            self.assertEqual(status, 302)
+            self.assertEqual(urlparse(headers["Location"]).path, "/login")
+
+    def test_auth_config_returns_signed_google_state(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
-            body = "credential=fake-token&g_csrf_token=csrf-token"
+
+            with patch.object(server, "google_client_id", return_value="client.apps.googleusercontent.com"):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/auth/config?next=%2Fwanted%3Ftab%3Dfavorites",
+                )
+
+            self.assertEqual(status, 200)
+            payload = json.loads(body)
+            self.assertEqual(payload["client_id"], "client.apps.googleusercontent.com")
+            self.assertTrue(payload["state"])
+            self.assertEqual(server.verify_google_auth_state(payload["state"]), "/wanted?tab=favorites")
+
+    def test_google_auth_complete_rejects_invalid_handoff_code(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            status, headers, _ = self.request_test_server(
+                db_path,
+                "GET",
+                "/api/auth/complete?code=missing",
+            )
+
+            self.assertEqual(status, 302)
+            self.assertEqual(urlparse(headers["Location"]).path, "/login")
+            self.assertIn("auth_error", parse_qs(urlparse(headers["Location"]).query))
+
+    def test_google_redirect_post_redirects_invalid_state_to_login(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            body = urlencode({"credential": "fake-token", "state": "invalid-state"})
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
-                "Cookie": "g_csrf_token=other-token",
             }
 
-            status, _, response_body = self.request_test_server(
+            status, headers, response_body = self.request_test_server(
                 db_path,
                 "POST",
                 "/api/auth/google",
@@ -280,8 +338,51 @@ class LocalAppTest(unittest.TestCase):
                 body=body,
             )
 
-            self.assertEqual(status, 401)
-            self.assertIn(b"invalid Google CSRF token", response_body)
+            self.assertEqual(status, 302)
+            location = headers["Location"]
+            self.assertEqual(urlparse(location).path, "/login")
+            self.assertEqual(
+                parse_qs(urlparse(location).query)["auth_error"],
+                [server.GOOGLE_AUTH_STATE_ERROR],
+            )
+            self.assertEqual(response_body, b"")
+
+    def test_google_redirect_post_redirects_config_error_to_login(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            body = urlencode(
+                {
+                    "credential": "fake-token",
+                    "state": server.sign_google_auth_state("/wanted"),
+                }
+            )
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            with patch.object(
+                server,
+                "authenticate_google_credential",
+                side_effect=server.AuthConfigError("google-auth dependencies are not installed"),
+            ):
+                status, headers, _ = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/auth/google",
+                    headers=headers,
+                    body=body,
+                )
+
+            self.assertEqual(status, 302)
+            location = headers["Location"]
+            self.assertEqual(urlparse(location).path, "/login")
+            params = parse_qs(urlparse(location).query)
+            self.assertEqual(params["next"], ["/wanted"])
+            self.assertEqual(
+                params["auth_error"],
+                ["Ошибка конфигурации деплоймента: google-auth dependencies are not installed"],
+            )
 
     def test_user_state_is_scoped_per_google_user(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -397,6 +498,9 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('id="one-tap-anchor"', html)
         self.assertIn('id="google-button"', html)
         self.assertIn("google.accounts.id.prompt", js)
+        self.assertIn("function authError()", js)
+        self.assertIn('get("auth_error")', js)
+        self.assertIn("api/auth/config?next=", js)
         self.assertIn("auto_select: true", js)
         self.assertIn('ux_mode: "redirect"', js)
         self.assertIn('login_uri: `${window.location.origin}/api/auth/google`', js)
@@ -406,7 +510,8 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('const GOOGLE_LOCALE = "ru"', js)
         self.assertIn("locale: GOOGLE_LOCALE", js)
         self.assertIn("click_listener: handleGoogleButtonClick", js)
-        self.assertIn("state: nextPath()", js)
+        self.assertIn("state: config.state", js)
+        self.assertIn("maybeShowOneTap(google, Boolean(redirectError))", js)
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)

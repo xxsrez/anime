@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import base64
+import binascii
 import datetime as dt
 import hashlib
+import hmac
 import json
 import math
 import mimetypes
@@ -10,11 +13,12 @@ import re
 import secrets
 import sqlite3
 import threading
+import time
 import unicodedata
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, quote, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
@@ -28,6 +32,12 @@ LEGACY_USER_SUB = "local:legacy"
 LEGACY_USER_NAME = "Локальный профиль"
 SESSION_COOKIE_NAME = "anime_session"
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
+GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
+GOOGLE_AUTH_STATE_SECRET = secrets.token_bytes(32)
+GOOGLE_AUTH_STATE_ERROR = "Не удалось подтвердить ответ Google. Попробуйте войти еще раз."
+LOGIN_HANDOFF_TTL_SECONDS = 60
+LOGIN_HANDOFFS = {}
+LOGIN_HANDOFFS_LOCK = threading.RLock()
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 EXTERNAL_RATING_SOURCES = {
     "tal": ("TAL", 0),
@@ -1683,7 +1693,7 @@ def verify_google_credential(credential):
         from google.auth.transport import requests as google_requests
         from google.oauth2 import id_token
     except ImportError as exc:
-        raise AuthConfigError("google-auth is not installed") from exc
+        raise AuthConfigError("google-auth dependencies are not installed") from exc
 
     try:
         payload = id_token.verify_oauth2_token(
@@ -1871,6 +1881,77 @@ def safe_next_path(value):
     return f"{path}{query}{fragment}"
 
 
+def base64url_encode(data):
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def base64url_decode(value):
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(f"{value}{padding}")
+
+
+def sign_google_auth_state(next_path):
+    payload = {
+        "iat": int(time.time()),
+        "next": safe_next_path(next_path),
+        "nonce": secrets.token_urlsafe(16),
+    }
+    payload_bytes = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    signature = hmac.new(GOOGLE_AUTH_STATE_SECRET, payload_bytes, hashlib.sha256).digest()
+    return f"{base64url_encode(payload_bytes)}.{base64url_encode(signature)}"
+
+
+def verify_google_auth_state(value):
+    try:
+        payload_part, signature_part = (value or "").split(".", 1)
+        payload_bytes = base64url_decode(payload_part)
+        signature = base64url_decode(signature_part)
+    except (ValueError, TypeError, binascii.Error):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+
+    expected = hmac.new(GOOGLE_AUTH_STATE_SECRET, payload_bytes, hashlib.sha256).digest()
+    if not hmac.compare_digest(signature, expected):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+
+    try:
+        payload = json.loads(payload_bytes.decode("utf-8"))
+        issued_at = int(payload.get("iat") or 0)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+
+    now = int(time.time())
+    if issued_at < now - GOOGLE_AUTH_STATE_TTL_SECONDS or issued_at > now + 60:
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+    return safe_next_path(payload.get("next") or "/")
+
+
+def create_login_handoff(session_token, next_path):
+    code = secrets.token_urlsafe(32)
+    now = time.time()
+    with LOGIN_HANDOFFS_LOCK:
+        expired_codes = [
+            item_code
+            for item_code, item in LOGIN_HANDOFFS.items()
+            if item["expires_at"] <= now
+        ]
+        for item_code in expired_codes:
+            LOGIN_HANDOFFS.pop(item_code, None)
+        LOGIN_HANDOFFS[code] = {
+            "expires_at": now + LOGIN_HANDOFF_TTL_SECONDS,
+            "next_path": safe_next_path(next_path),
+            "session_token": session_token,
+        }
+    return code
+
+
+def consume_login_handoff(code):
+    with LOGIN_HANDOFFS_LOCK:
+        item = LOGIN_HANDOFFS.pop(code or "", None)
+    if not item or item["expires_at"] <= time.time():
+        raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
+    return item["session_token"], item["next_path"]
+
+
 class AnimeHandler(BaseHTTPRequestHandler):
     server_version = "AnimeLocal/0.1"
 
@@ -1911,12 +1992,6 @@ class AnimeHandler(BaseHTTPRequestHandler):
         content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
         if content_type == "application/x-www-form-urlencoded":
             params = parse_qs(raw, keep_blank_values=True)
-            csrf_body = params.get("g_csrf_token", [""])[0]
-            cookie = SimpleCookie()
-            cookie.load(self.headers.get("Cookie") or "")
-            csrf_cookie = cookie.get("g_csrf_token")
-            if not csrf_body or not csrf_cookie or csrf_cookie.value != csrf_body:
-                raise AuthError("invalid Google CSRF token")
             return {key: values[0] for key, values in params.items()}, True
         return json.loads(raw or "{}"), False
 
@@ -1992,6 +2067,23 @@ class AnimeHandler(BaseHTTPRequestHandler):
         next_path = quote(safe_next_path(self.path), safe="")
         self.send_redirect(f"/login?next={next_path}")
 
+    def redirect_to_login_auth_error(self, message, next_path=None):
+        next_path = safe_next_path(next_path or "/")
+        params = {"auth_error": message}
+        if next_path != "/":
+            params["next"] = next_path
+        self.send_redirect(f"/login?{urlencode(params)}")
+
+    def is_google_redirect_request(self):
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0]
+        return content_type.strip().lower() == "application/x-www-form-urlencoded"
+
+    def send_google_auth_error(self, message, status, is_redirect_flow, next_path=None):
+        if is_redirect_flow:
+            self.redirect_to_login_auth_error(message, next_path)
+            return
+        self.send_json({"error": message}, status)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -2010,7 +2102,14 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path == "/api/auth/config":
             client_id = google_client_id()
-            self.send_json({"configured": bool(client_id), "client_id": client_id})
+            next_path = safe_next_path(parse_qs(parsed.query).get("next", ["/"])[0])
+            self.send_json(
+                {
+                    "configured": bool(client_id),
+                    "client_id": client_id,
+                    "state": sign_google_auth_state(next_path) if client_id else "",
+                }
+            )
             return
 
         if path == "/login":
@@ -2019,6 +2118,20 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_redirect(next_path)
                 return
             self.send_static("login.html")
+            return
+
+        if path == "/api/auth/complete":
+            try:
+                token, next_path = consume_login_handoff(
+                    parse_qs(parsed.query).get("code", [""])[0]
+                )
+            except AuthError as exc:
+                self.redirect_to_login_auth_error(str(exc) or "Не удалось войти через Google")
+                return
+            self.send_redirect(
+                next_path,
+                headers=[("Set-Cookie", self.session_cookie_header(token))],
+            )
             return
 
         if path == "/api/me":
@@ -2066,24 +2179,37 @@ class AnimeHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/api/auth/google":
+            payload = {}
+            is_redirect_flow = self.is_google_redirect_request()
+            next_path = "/"
             try:
                 payload, is_redirect_flow = self.read_google_auth_body()
+                if is_redirect_flow:
+                    next_path = verify_google_auth_state(payload.get("state"))
                 auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
             except json.JSONDecodeError:
-                self.send_json({"error": "invalid json"}, 400)
+                self.send_google_auth_error("invalid json", 400, is_redirect_flow)
                 return
             except AuthConfigError as exc:
-                self.send_json({"error": str(exc)}, 503)
+                self.send_google_auth_error(
+                    f"Ошибка конфигурации деплоймента: {exc}",
+                    503,
+                    is_redirect_flow,
+                    next_path,
+                )
                 return
             except AuthError as exc:
-                self.send_json({"error": str(exc)}, 401)
+                self.send_google_auth_error(
+                    str(exc) or "Не удалось войти через Google",
+                    401,
+                    is_redirect_flow,
+                    next_path,
+                )
                 return
             cookie_header = self.session_cookie_header(auth["token"])
             if is_redirect_flow:
-                self.send_redirect(
-                    safe_next_path(payload.get("state") or "/"),
-                    headers=[("Set-Cookie", cookie_header)],
-                )
+                code = create_login_handoff(auth["token"], next_path)
+                self.send_redirect(f"/api/auth/complete?code={quote(code, safe='')}")
                 return
             self.send_json(
                 {"user": auth["user"]},

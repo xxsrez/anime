@@ -35,6 +35,11 @@ function nextPath() {
   }
 }
 
+function authError() {
+  const raw = new URLSearchParams(window.location.search).get("auth_error");
+  return raw ? raw.trim() : "";
+}
+
 function waitForGoogle() {
   return new Promise((resolve, reject) => {
     const startedAt = Date.now();
@@ -79,28 +84,41 @@ function handleGoogleButtonClick() {
   setLoginState("Открываю вход Google...", "ok");
 }
 
-function maybeShowOneTap(google) {
+function maybeShowOneTap(google, keepMessage = false) {
   google.accounts.id.prompt(notification => {
     if (notification.isDisplayed?.()) {
-      setLoginState("");
+      if (!keepMessage) setLoginState("");
       return;
     }
     if (notification.isDismissedMoment?.()) {
       return;
     }
     if (notification.isSkippedMoment?.() || notification.isNotDisplayed?.()) {
-      setLoginState("");
+      if (!keepMessage) setLoginState("");
     }
   });
 }
 
 async function bootLogin() {
-  const configResponse = await fetch("/api/auth/config");
+  const redirectError = authError();
+  if (redirectError) {
+    setLoginState(redirectError, "warn");
+  }
+
+  const configResponse = await fetch(`/api/auth/config?next=${encodeURIComponent(nextPath())}`);
   const config = await configResponse.json();
   if (!config.configured || !config.client_id) {
     renderUnavailableGoogleButton();
     setLoginState(
       "Ошибка конфигурации деплоймента: Google OAuth Client ID не настроен. Настройте Sign in with Google для этого окружения.",
+      "warn",
+    );
+    return;
+  }
+  if (!config.state) {
+    renderUnavailableGoogleButton();
+    setLoginState(
+      "Ошибка конфигурации деплоймента: Sign in with Google не настроен для этого окружения.",
       "warn",
     );
     return;
@@ -123,10 +141,10 @@ async function bootLogin() {
     text: "signin_with",
     locale: GOOGLE_LOCALE,
     click_listener: handleGoogleButtonClick,
-    state: nextPath(),
+    state: config.state,
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
-  maybeShowOneTap(google);
+  maybeShowOneTap(google, Boolean(redirectError));
 }
 
 bootLogin().catch(error => {
