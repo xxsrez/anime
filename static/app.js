@@ -12,6 +12,7 @@ const RECOMMENDATION_LIMIT = 20;
 const INITIAL_RENDER_LIMIT = 40;
 const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
+const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
 
 const state = {
   anime: [],
@@ -75,6 +76,8 @@ const el = {
 };
 
 let listImageObserver = null;
+let titleTooltip = null;
+let titleTooltipTarget = null;
 
 async function api(path, options = {}) {
   const response = await fetch(path, options);
@@ -88,6 +91,69 @@ function text(value, fallback = "") {
 
 function searchText(value) {
   return String(value || "").toLocaleLowerCase("ru").replaceAll("ё", "е").replaceAll("э", "е");
+}
+
+function ensureTitleTooltip() {
+  if (titleTooltip) return titleTooltip;
+  titleTooltip = document.createElement("div");
+  titleTooltip.id = "title-tooltip";
+  titleTooltip.className = "title-tooltip";
+  titleTooltip.setAttribute("role", "tooltip");
+  titleTooltip.setAttribute("aria-hidden", "true");
+  document.body.append(titleTooltip);
+  return titleTooltip;
+}
+
+function isTitleOverflowing(node) {
+  if (!node) return false;
+  return node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1;
+}
+
+function placeTitleTooltip(target, tooltip) {
+  const rect = target.getBoundingClientRect();
+  const gap = 10;
+  const viewportPadding = 12;
+  const wideMax = Math.min(420, window.innerWidth - viewportPadding * 2);
+  tooltip.style.maxWidth = `${Math.max(220, wideMax)}px`;
+
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const enoughRightSpace = rect.right + gap + tooltipRect.width <= window.innerWidth - viewportPadding;
+  let left = enoughRightSpace ? rect.right + gap : rect.left;
+  let top = enoughRightSpace ? rect.top + 6 : rect.bottom + gap;
+
+  if (left + tooltipRect.width > window.innerWidth - viewportPadding) {
+    left = window.innerWidth - tooltipRect.width - viewportPadding;
+  }
+  if (top + tooltipRect.height > window.innerHeight - viewportPadding) {
+    top = rect.top - tooltipRect.height - gap;
+  }
+
+  tooltip.style.left = `${Math.max(viewportPadding, left)}px`;
+  tooltip.style.top = `${Math.max(viewportPadding, top)}px`;
+}
+
+function showTitleTooltip(target, titleNode) {
+  const fullTitle = target.dataset.fullTitle || titleNode?.textContent?.trim() || "";
+  if (!fullTitle || !isTitleOverflowing(titleNode)) return;
+
+  const tooltip = ensureTitleTooltip();
+  titleTooltipTarget = target;
+  tooltip.textContent = fullTitle;
+  tooltip.classList.add("visible");
+  tooltip.setAttribute("aria-hidden", "false");
+  target.setAttribute("aria-describedby", tooltip.id);
+
+  requestAnimationFrame(() => {
+    if (titleTooltipTarget === target) placeTitleTooltip(target, tooltip);
+  });
+}
+
+function hideTitleTooltip() {
+  if (!titleTooltipTarget || !titleTooltip) return;
+  titleTooltipTarget.removeAttribute("aria-describedby");
+  titleTooltipTarget = null;
+  titleTooltip.classList.remove("visible");
+  titleTooltip.setAttribute("aria-hidden", "true");
 }
 
 function normalizeLinkValue(value) {
@@ -317,7 +383,9 @@ function yearValue(item) {
 }
 
 function bestScore(item) {
-  return numericValue(item.aggregate_score) ?? numericValue(item.listing_score);
+  return numericValue(item.effective_score)
+    ?? numericValue(item.aggregate_score)
+    ?? numericValue(item.listing_score);
 }
 
 function formatScore(value) {
@@ -325,6 +393,19 @@ function formatScore(value) {
   if (score == null) return "";
   const rounded = score.toFixed(1).replace(/\.0$/, "");
   return `${rounded}/10`;
+}
+
+function ratingSourceLabel(item) {
+  const source = item?.effective_score_source;
+  if (!source) return "";
+  return source === "synthetic" ? "синт." : source;
+}
+
+function ratingText(item) {
+  const formatted = formatScore(bestScore(item));
+  if (!formatted) return "";
+  const source = ratingSourceLabel(item);
+  return source ? `${formatted} ${source}` : formatted;
 }
 
 function formatPercent(value) {
@@ -648,6 +729,7 @@ function resetCatalogTools() {
 }
 
 function renderList() {
+  hideTitleTooltip();
   resetListImageObserver();
   const total = isRecommendationView() ? state.recommendations.length : state.anime.length;
   el.count.textContent = isRecommendationView()
@@ -688,9 +770,10 @@ function renderList() {
     const title = document.createElement("strong");
     const rank = isRecommendationView() && item.recommendation_rank ? `${item.recommendation_rank}. ` : "";
     title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
+    button.dataset.fullTitle = item.title || title.textContent;
     const meta = document.createElement("span");
     const available = item.available_episode_count || 0;
-    const score = formatScore(bestScore(item));
+    const score = ratingText(item);
     const watch = progressText(item);
     const source = sourceLabelList(item);
     if (isRecommendationView()) {
@@ -709,7 +792,14 @@ function renderList() {
       body.append(note);
     }
     button.append(img, body);
-    button.addEventListener("click", () => selectAnime(titleRefForItem(item)));
+    button.addEventListener("pointerenter", () => showTitleTooltip(button, title));
+    button.addEventListener("pointerleave", hideTitleTooltip);
+    button.addEventListener("focus", () => showTitleTooltip(button, title));
+    button.addEventListener("blur", hideTitleTooltip);
+    button.addEventListener("click", () => {
+      hideTitleTooltip();
+      selectAnime(titleRefForItem(item));
+    });
     el.list.append(button);
   }
 
@@ -759,10 +849,7 @@ function renderDetail() {
 
   el.poster.src = detail.cover_url || "";
   el.poster.alt = detail.title || "";
-  const formattedScore = formatScore(detail.aggregate_score);
-  const scoreText = formattedScore
-    ? `${formattedScore}${detail.aggregate_count ? ` (${detail.aggregate_count})` : ""}`
-    : null;
+  const scoreText = ratingText(detail);
   el.meta.textContent = [detail.kind, detail.status, detail.episodes_text, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
@@ -1022,6 +1109,7 @@ function renderSources() {
 
 function setPlayer(source, episode) {
   el.wrap.classList.remove("empty");
+  configurePlayerIframe(el.player);
   el.player.src = source.embed_url;
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
@@ -1036,13 +1124,23 @@ function clearPlayer(message) {
   el.episodeState.textContent = "-";
 }
 
+function configurePlayerIframe(iframe = el.player) {
+  iframe.setAttribute("allow", PLAYER_IFRAME_ALLOW);
+  iframe.setAttribute("allowfullscreen", "");
+  iframe.setAttribute("webkitallowfullscreen", "");
+  iframe.setAttribute("mozallowfullscreen", "");
+  iframe.allowFullscreen = true;
+  iframe.referrerPolicy = iframe.referrerPolicy || "origin";
+  return iframe;
+}
+
 function setPlayerActionState(message = "", tone = "") {
   el.playerActionState.textContent = message;
   el.playerActionState.dataset.tone = tone;
 }
 
 function updateFullscreenControl() {
-  const active = document.fullscreenElement === el.wrap;
+  const active = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
   el.fullscreenToggle.classList.toggle("active", active);
   el.fullscreenToggle.title = active ? "Выйти из полного экрана" : "Во весь экран";
   el.fullscreenToggle.setAttribute("aria-label", el.fullscreenToggle.title);
@@ -1072,16 +1170,27 @@ async function toggleFullscreen() {
   }
 }
 
+function isEditableShortcutTarget(target) {
+  if (!target || target === document.body) return false;
+  if (target.isContentEditable) return true;
+  return Boolean(target.closest?.("input, textarea, select, [contenteditable='true']"));
+}
+
+function isFullscreenHotkey(event) {
+  if (event.defaultPrevented || event.repeat) return false;
+  if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return false;
+  if (isEditableShortcutTarget(event.target)) return false;
+  return event.code === "KeyF" || String(event.key || "").toLowerCase() === "f";
+}
+
 function clonePlayerForPipWindow(pipWindow) {
   const doc = pipWindow.document;
   doc.body.style.margin = "0";
   doc.body.style.background = "#050607";
   const iframe = doc.createElement("iframe");
+  configurePlayerIframe(iframe);
   iframe.src = el.player.src;
   iframe.title = el.player.title || "Аниме плеер";
-  iframe.allow = el.player.allow || "fullscreen; picture-in-picture";
-  iframe.allowFullscreen = true;
-  iframe.referrerPolicy = el.player.referrerPolicy || "origin";
   Object.assign(iframe.style, {
     border: "0",
     width: "100vw",
@@ -1266,7 +1375,11 @@ el.resetFilters.addEventListener("click", resetCatalogTools);
 for (const button of el.viewTabs) {
   button.addEventListener("click", () => {
     state.viewMode = button.dataset.view || "all";
-    for (const item of el.viewTabs) item.classList.toggle("active", item === button);
+    for (const item of el.viewTabs) {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", active ? "true" : "false");
+    }
     applyFilter({ selectFirst: true });
   });
 }
@@ -1307,6 +1420,14 @@ el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(console.error);
 });
 document.addEventListener("fullscreenchange", updateFullscreenControl);
+document.addEventListener("webkitfullscreenchange", updateFullscreenControl);
+document.addEventListener("keydown", event => {
+  if (!isFullscreenHotkey(event)) return;
+  event.preventDefault();
+  toggleFullscreen().catch(console.error);
+});
+window.addEventListener("resize", hideTitleTooltip);
+el.list.addEventListener("scroll", hideTitleTooltip);
 window.addEventListener("popstate", () => {
   const linkState = readLinkState();
   if (linkState.animeId) {
@@ -1330,6 +1451,7 @@ async function selectInitialAnime() {
 }
 
 async function boot() {
+  configurePlayerIframe(el.player);
   const payload = await api("/api/anime");
   state.anime = payload.items || [];
   await loadRecommendations();

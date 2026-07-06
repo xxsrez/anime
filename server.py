@@ -8,6 +8,7 @@ import os
 import re
 import sqlite3
 import threading
+import unicodedata
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -18,6 +19,16 @@ DEFAULT_DB = ROOT / "data" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
+SYNTHETIC_RATING_PRIOR = 6.8
+SYNTHETIC_RATING_MIN_COUNT = 80
+EXTERNAL_RATING_SOURCES = {
+    "tal": ("TAL", 0),
+    "myanimelist": ("MAL", 1),
+    "mal": ("MAL", 1),
+    "anilist": ("AniList", 2),
+    "shikimori": ("Shikimori", 3),
+    "imdb": ("IMDB", 4),
+}
 SOURCE_PRIORITY = {
     "animego": 0,
     "yummyanime": 1,
@@ -215,18 +226,34 @@ def numeric(value):
         return None
 
 
+def parse_rating_number(value):
+    text = str(value or "").replace(",", ".")
+    match = re.search(r"\d+(?:\.\d+)?", text)
+    if not match:
+        return None
+    score = numeric(match.group(0))
+    if score is None or score <= 0 or score > 10:
+        return None
+    return score
+
+
 def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
 
 
 def normalize_key(value):
-    return str(value or "").strip().casefold().replace("ё", "е").replace("э", "е")
+    text = str(value or "").strip().casefold().replace("ё", "е").replace("э", "е")
+    return "".join(char for char in unicodedata.normalize("NFKD", text) if not unicodedata.combining(char))
 
 
 def normalize_match_title(value):
     text = normalize_key(value)
     text = re.sub(r"[^\w\s]+", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def external_rating_source(label):
+    return EXTERNAL_RATING_SOURCES.get(normalize_match_title(label))
 
 
 def translation_key(value):
@@ -280,10 +307,60 @@ def canonical_slug_for_item(item):
 
 
 def best_score(item):
+    effective = numeric(item.get("effective_score"))
+    if effective is not None:
+        return effective
     aggregate = numeric(item.get("aggregate_score"))
     if aggregate is not None:
         return aggregate
     return numeric(item.get("listing_score"))
+
+
+def raw_site_score(item):
+    aggregate = numeric(item.get("aggregate_score"))
+    if aggregate is not None:
+        return aggregate
+    return numeric(item.get("listing_score"))
+
+
+def synthetic_rating(item):
+    score = raw_site_score(item)
+    count = numeric(item.get("aggregate_count")) or 0
+    if score is not None:
+        if count > 0:
+            return ((score * count) + (SYNTHETIC_RATING_PRIOR * SYNTHETIC_RATING_MIN_COUNT)) / (count + SYNTHETIC_RATING_MIN_COUNT)
+        return ((score * 5) + (SYNTHETIC_RATING_PRIOR * SYNTHETIC_RATING_MIN_COUNT)) / (5 + SYNTHETIC_RATING_MIN_COUNT)
+
+    sources = numeric(item.get("source_count")) or 0
+    available = numeric(item.get("available_episode_count")) or 0
+    source_boost = min(0.45, math.log10(sources + 1) * 0.18) if sources > 0 else 0
+    episode_boost = min(0.25, available / 96.0) if available > 0 else 0
+    return SYNTHETIC_RATING_PRIOR - 0.35 + source_boost + episode_boost
+
+
+def apply_effective_rating(item):
+    external = numeric(item.get("external_score"))
+    if external is not None:
+        item["effective_score"] = round(external, 3)
+        item["effective_score_source"] = item.get("external_score_source") or "External"
+    else:
+        item["synthetic_score"] = round(synthetic_rating(item), 3)
+        item["effective_score"] = item["synthetic_score"]
+        item["effective_score_source"] = "synthetic"
+    return item
+
+
+def preferred_rating_item(items):
+    return sorted(
+        items,
+        key=lambda item: (
+            0 if numeric(item.get("external_score")) is not None else 1,
+            0 if (numeric(item.get("source_count")) or 0) > 0 else 1,
+            -(numeric(item.get("effective_score")) or 0),
+            source_priority(item.get("source")),
+            item.get("id") or 0,
+        ),
+    )[0]
 
 
 def year_number(item):
@@ -300,7 +377,7 @@ def source_priority(source):
     return SOURCE_PRIORITY.get(source or "", 99)
 
 
-def canonical_match_key(item):
+def canonical_title_match_key(item):
     if item.get("source") not in MERGEABLE_SOURCES:
         return None
     title_key = normalize_match_title(item.get("title"))
@@ -308,6 +385,16 @@ def canonical_match_key(item):
     if not title_key or year is None:
         return None
     return (year, title_key)
+
+
+def canonical_subtitle_match_key(item):
+    if item.get("source") not in MERGEABLE_SOURCES:
+        return None
+    subtitle_key = normalize_match_title(item.get("subtitle"))
+    year = year_number(item)
+    if not subtitle_key or len(subtitle_key) < 8 or year is None:
+        return None
+    return (year, subtitle_key)
 
 
 def variant_from_item(item):
@@ -350,6 +437,47 @@ def unique_values(items, getter):
     return values
 
 
+def load_external_ratings(con):
+    rows = con.execute(
+        """
+        select anime_id, label, value
+        from anime_fields
+        where value is not null
+        """
+    ).fetchall()
+    ratings = {}
+    for row in rows:
+        source = external_rating_source(row["label"])
+        if not source:
+            continue
+        label, priority = source
+        score = parse_rating_number(row["value"])
+        if score is None:
+            continue
+        current = ratings.get(row["anime_id"])
+        if current and current["priority"] <= priority:
+            continue
+        ratings[row["anime_id"]] = {
+            "external_score": score,
+            "external_score_source": label,
+            "priority": priority,
+        }
+    return ratings
+
+
+def apply_external_ratings(items, ratings):
+    for item in items:
+        rating = ratings.get(item.get("id"))
+        if rating:
+            item["external_score"] = rating["external_score"]
+            item["external_score_source"] = rating["external_score_source"]
+        else:
+            item["external_score"] = None
+            item["external_score_source"] = None
+        apply_effective_rating(item)
+    return items
+
+
 def aggregate_item_state(item, variants):
     item["is_favorite"] = any(bool(variant.get("is_favorite")) for variant in variants)
     item["watched"] = any(bool(variant.get("watched")) for variant in variants)
@@ -384,6 +512,9 @@ def merge_canonical_items(items):
     merged["available_episode_count"] = max((item.get("available_episode_count") or 0) for item in sorted_items)
     merged["episode_count"] = max((item.get("episode_count") or 0) for item in sorted_items)
     merged["genres"] = unique_values(sorted_items, lambda item: item.get("genres") or [])
+    rating_item = preferred_rating_item(sorted_items)
+    for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
+        merged[field] = rating_item.get(field)
 
     for field in ("subtitle", "cover_url", "listing_score", "aggregate_score", "aggregate_count", "kind", "year", "status", "episodes_text"):
         if merged.get(field) in (None, ""):
@@ -392,27 +523,48 @@ def merge_canonical_items(items):
     return aggregate_item_state(merged, sorted_items)
 
 
-def canonicalize_items(items):
-    buckets = {}
-    groups = []
-    for item in items:
-        key = canonical_match_key(item)
-        if key is None:
-            groups.append(merge_canonical_items([item]))
-            continue
-        buckets.setdefault(key, []).append(item)
+def can_auto_merge_by_title(bucket):
+    source_counts = {}
+    for item in bucket:
+        source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
+    title_key = normalize_match_title(bucket[0].get("title"))
+    subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
+    short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
+    return len(source_counts) > 1 and all(count == 1 for count in source_counts.values()) and short_title_has_matching_subtitle
 
-    for bucket in buckets.values():
-        source_counts = {}
-        for item in bucket:
-            source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
-        title_key = normalize_match_title(bucket[0].get("title"))
-        subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
-        short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
-        if len(source_counts) > 1 and all(count == 1 for count in source_counts.values()) and short_title_has_matching_subtitle:
-            groups.append(merge_canonical_items(bucket))
+
+def can_auto_merge_by_subtitle(bucket):
+    source_counts = {}
+    for item in bucket:
+        source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
+    return len(source_counts) > 1 and all(count == 1 for count in source_counts.values())
+
+
+def merge_by_match_key(items, key_getter, can_merge):
+    buckets = {}
+    passthrough = []
+    for item in items:
+        key = key_getter(item)
+        if key is None:
+            passthrough.append(item)
         else:
-            groups.extend(merge_canonical_items([item]) for item in bucket)
+            buckets.setdefault(key, []).append(item)
+
+    merged = []
+    remaining = list(passthrough)
+    for bucket in buckets.values():
+        if can_merge(bucket):
+            merged.append(merge_canonical_items(bucket))
+        else:
+            remaining.extend(bucket)
+    return merged, remaining
+
+
+def canonicalize_items(items):
+    groups, remaining = merge_by_match_key(items, canonical_title_match_key, can_auto_merge_by_title)
+    subtitle_groups, remaining = merge_by_match_key(remaining, canonical_subtitle_match_key, can_auto_merge_by_subtitle)
+    groups.extend(subtitle_groups)
+    groups.extend(merge_canonical_items([item]) for item in remaining)
 
     for group in groups:
         slug = canonical_slug_for_item(group)
@@ -600,11 +752,7 @@ def quality_score(item):
     score = best_score(item)
     if score is None:
         return 0.35
-    count = numeric(item.get("aggregate_count")) or 0
-    prior = 7.2
-    min_count = 50
-    bayesian = ((score * count) + (prior * min_count)) / (count + min_count) if count else score
-    return clamp((bayesian - 6.2) / 3.2)
+    return clamp((score - 5.8) / 3.7)
 
 
 def popularity_score(item):
@@ -670,8 +818,14 @@ def recommendation_reasons(item, matched_genres, based_on):
     score = best_score(item)
     if score is not None:
         rating = format_number(score)
-        count = int(numeric(item.get("aggregate_count")) or 0)
-        suffix = f" ({count} оценок)" if count >= 10 else ""
+        source = item.get("effective_score_source")
+        if source == "synthetic":
+            suffix = " синт."
+        elif source:
+            suffix = f" {source}"
+        else:
+            count = int(numeric(item.get("aggregate_count")) or 0)
+            suffix = f" ({count} оценок)" if count >= 10 else ""
         reasons.append(f"Рейтинг {rating}/10{suffix}")
 
     available = int(numeric(item.get("available_episode_count")) or 0)
@@ -837,6 +991,7 @@ def get_source_anime_items(con):
     ).fetchall()
 
     items = rows_to_dicts(rows)
+    apply_external_ratings(items, load_external_ratings(con))
     for item in items:
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
@@ -1241,6 +1396,8 @@ def get_anime_detail(anime_ref, db_path=None):
     detail["source_variant_count"] = group.get("source_variant_count") or 1
     detail["sources"] = group.get("sources") or [detail.get("source")]
     detail["source_member_ids"] = member_ids
+    for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
+        detail[field] = group.get(field)
     detail["slug"] = group.get("slug")
     detail["internal_id"] = group.get("internal_id")
     detail["source_count"] = sum(len(sources) for sources in by_episode.values())

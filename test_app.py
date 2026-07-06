@@ -125,6 +125,19 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("Тип", labels)
         self.assertIn("Статус", labels)
 
+    def test_effective_rating_prefers_external_rating_over_tiny_local_vote_count(self):
+        items = server.get_anime_list()
+        wixoss = next(item for item in items if item["id"] == 10005287)
+
+        self.assertEqual(wixoss["aggregate_score"], 10.0)
+        self.assertEqual(wixoss["aggregate_count"], 2)
+        self.assertAlmostEqual(wixoss["external_score"], 5.6)
+        self.assertEqual(wixoss["external_score_source"], "Shikimori")
+        self.assertAlmostEqual(wixoss["effective_score"], 5.6)
+
+        ranked = sorted(items, key=lambda item: (-(server.best_score(item) or 0), item["title"]))
+        self.assertNotEqual(ranked[0]["id"], wixoss["id"])
+
     def test_user_state_round_trip(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -217,11 +230,22 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("allowfullscreen", html)
         self.assertIn("fullscreen", html)
         self.assertIn("picture-in-picture", html)
+        self.assertIn("web-share", html)
+        self.assertIn("screen-wake-lock", html)
         self.assertIn('id="fullscreen-toggle"', html)
         self.assertIn('id="pip-toggle"', html)
         self.assertIn('id="recommendation-meta"', html)
         self.assertIn('href="/static/favicon.svg"', html)
         self.assertIn('href="/favicon.ico"', html)
+
+    def test_view_mode_tabs_use_compact_accessible_labels(self):
+        html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        self.assertIn('aria-label="Режим каталога"', html)
+        self.assertIn('class="view-tab-icon"', html)
+        self.assertIn('class="view-tab-label">Избр.</span>', html)
+        self.assertIn('aria-label="Избранное"', html)
+        self.assertIn('class="view-tab-label">Смотрю</span>', html)
+        self.assertIn('aria-pressed="true"', html)
 
     def test_right_pane_deep_links_are_supported(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
@@ -274,6 +298,22 @@ class LocalAppTest(unittest.TestCase):
         same_detail = server.get_anime_detail(yummy_variant["id"])
         self.assertEqual(same_detail["id"], item["id"])
         self.assertEqual(same_detail["source"], "animego")
+
+    def test_subtitle_matched_duplicate_sources_are_merged(self):
+        items = server.get_anime_list()
+        moon = [
+            item
+            for item in items
+            if "Лунное путешествие приведёт к новому миру 2" in item["title"]
+        ]
+
+        self.assertEqual(len(moon), 1)
+        self.assertEqual(moon[0]["source"], "animego")
+        self.assertEqual(
+            {variant["source"] for variant in moon[0]["source_variants"]},
+            {"animego", "yummyanime"},
+        )
+        self.assertEqual(set(moon[0]["source_member_ids"]), {2463, 10001210})
 
 
 if __name__ == "__main__":

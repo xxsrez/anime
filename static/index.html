@@ -41,11 +41,23 @@
         <div id="filter-grid" class="filter-grid" hidden></div>
         <div id="active-filters" class="active-filters" hidden></div>
       </section>
-      <div class="view-tabs" aria-label="Фильтр каталога">
-        <button id="view-all" class="active" type="button" data-view="all">Все</button>
-        <button id="view-favorites" type="button" data-view="favorites">Избранное</button>
-        <button id="view-progress" type="button" data-view="progress">Прогресс</button>
-        <button id="view-recommendations" type="button" data-view="recommendations">Советы</button>
+      <div class="view-tabs" aria-label="Режим каталога">
+        <button id="view-all" class="active" type="button" data-view="all" aria-label="Все тайтлы" aria-pressed="true" title="Все тайтлы">
+          <span class="view-tab-icon" aria-hidden="true">▦</span>
+          <span class="view-tab-label">Все</span>
+        </button>
+        <button id="view-favorites" type="button" data-view="favorites" aria-label="Избранное" aria-pressed="false" title="Избранное">
+          <span class="view-tab-icon" aria-hidden="true">★</span>
+          <span class="view-tab-label">Избр.</span>
+        </button>
+        <button id="view-progress" type="button" data-view="progress" aria-label="Прогресс просмотра" aria-pressed="false" title="Прогресс просмотра">
+          <span class="view-tab-icon" aria-hidden="true">▶</span>
+          <span class="view-tab-label">Смотрю</span>
+        </button>
+        <button id="view-recommendations" type="button" data-view="recommendations" aria-label="Рекомендации" aria-pressed="false" title="Рекомендации">
+          <span class="view-tab-icon" aria-hidden="true">✦</span>
+          <span class="view-tab-label">Советы</span>
+        </button>
       </div>
       <div id="recommendation-meta" class="recommendation-meta" hidden></div>
       <div id="anime-list" class="anime-list"></div>
@@ -85,8 +97,10 @@
             <iframe
               id="player"
               title="Аниме плеер"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
+              allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *"
               allowfullscreen
+              webkitallowfullscreen
+              mozallowfullscreen
               referrerpolicy="origin">
             </iframe>
             <div id="empty-player" class="empty-player"></div>
