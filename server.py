@@ -7,6 +7,7 @@ import hashlib
 import html
 import hmac
 import json
+import logging
 import math
 import mimetypes
 import os
@@ -18,6 +19,7 @@ import time
 import unicodedata
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
@@ -25,12 +27,14 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "data" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
+DEFAULT_LOG_DIR = ROOT / "data" / "logs"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
+MAX_CLIENT_ERROR_BYTES = 16 * 1024
+MAX_CLIENT_ERROR_TEXT = 2048
+MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
-LEGACY_USER_SUB = "local:legacy"
-LEGACY_USER_NAME = "Локальный профиль"
 SESSION_COOKIE_NAME = "anime_session"
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
@@ -65,6 +69,27 @@ TRANSLATION_PREFIXES = ("озвучка ",)
 UNKNOWN_TRANSLATION_RANK = 9999
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
+LOGGING_LOCK = threading.RLock()
+LOGGING_DIR = None
+SERVER_LOGGER_NAME = "anime.server"
+CLIENT_ERROR_LOGGER_NAME = "anime.client_errors"
+SENSITIVE_CLIENT_KEYS = {
+    "authorization",
+    "cookie",
+    "credential",
+    "embed_url",
+    "id_token",
+    "password",
+    "player",
+    "secret",
+    "src",
+    "token",
+}
+SENSITIVE_CLIENT_PATTERNS = (
+    re.compile(r"(?i)\b(authorization:\s*bearer\s+)[^\s,;]+"),
+    re.compile(r"(?i)\b((?:credential|id_token|access_token|refresh_token|token|secret|password)=)([^&\s]+)"),
+    re.compile(r"(?i)https?://[^\s\"'<>]*(?:alloha|embed|kodik|player|video)[^\s\"'<>]*"),
+)
 SLUG_TRANSLIT = {
     "а": "a",
     "б": "b",
@@ -106,6 +131,104 @@ def now_iso():
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
 
+class ClientErrorPayloadTooLarge(Exception):
+    pass
+
+
+def log_dir():
+    return Path(os.environ.get("ANIME_LOG_DIR") or DEFAULT_LOG_DIR).expanduser()
+
+
+def configure_logging():
+    global LOGGING_DIR
+    target = log_dir()
+    with LOGGING_LOCK:
+        if LOGGING_DIR == target:
+            return
+        target.mkdir(parents=True, exist_ok=True)
+
+        server_logger_obj = logging.getLogger(SERVER_LOGGER_NAME)
+        client_logger_obj = logging.getLogger(CLIENT_ERROR_LOGGER_NAME)
+
+        for logger_obj in (server_logger_obj, client_logger_obj):
+            logger_obj.setLevel(logging.INFO)
+            logger_obj.propagate = False
+            for handler in list(logger_obj.handlers):
+                if getattr(handler, "_anime_log_handler", False):
+                    logger_obj.removeHandler(handler)
+                    handler.close()
+
+        server_handler = RotatingFileHandler(
+            target / "server.log",
+            maxBytes=1_000_000,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        server_handler._anime_log_handler = True
+        server_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        server_logger_obj.addHandler(server_handler)
+
+        client_handler = RotatingFileHandler(
+            target / "client-errors.log",
+            maxBytes=1_000_000,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        client_handler._anime_log_handler = True
+        client_handler.setFormatter(logging.Formatter("%(message)s"))
+        client_logger_obj.addHandler(client_handler)
+        LOGGING_DIR = target
+
+
+def server_logger():
+    configure_logging()
+    return logging.getLogger(SERVER_LOGGER_NAME)
+
+
+def client_error_logger():
+    configure_logging()
+    return logging.getLogger(CLIENT_ERROR_LOGGER_NAME)
+
+
+def redact_client_text(value):
+    text = str(value)
+    for pattern in SENSITIVE_CLIENT_PATTERNS:
+        text = pattern.sub(lambda match: f"{match.group(1)}<redacted>" if match.groups() else "<redacted-url>", text)
+    if len(text) > MAX_CLIENT_ERROR_TEXT:
+        return f"{text[:MAX_CLIENT_ERROR_TEXT]}...[truncated]"
+    return text
+
+
+def sanitize_client_error_value(value, depth=0):
+    if depth > 4:
+        return "[max-depth]"
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return redact_client_text(value)
+    if isinstance(value, dict):
+        result = {}
+        for index, (key, item) in enumerate(value.items()):
+            if index >= MAX_CLIENT_ERROR_COLLECTION_ITEMS:
+                result["...[truncated]"] = True
+                break
+            key_text = redact_client_text(key)[:120]
+            if key_text.lower() in SENSITIVE_CLIENT_KEYS:
+                result[key_text] = "<redacted>"
+            else:
+                result[key_text] = sanitize_client_error_value(item, depth + 1)
+        return result
+    if isinstance(value, (list, tuple)):
+        result = [
+            sanitize_client_error_value(item, depth + 1)
+            for item in value[:MAX_CLIENT_ERROR_COLLECTION_ITEMS]
+        ]
+        if len(value) > MAX_CLIENT_ERROR_COLLECTION_ITEMS:
+            result.append("[truncated]")
+        return result
+    return redact_client_text(value)
+
+
 class AuthError(Exception):
     pass
 
@@ -122,26 +245,29 @@ def env_list(name):
     ]
 
 
-def ensure_legacy_user(con):
-    existing = con.execute(
-        "select id from users where google_sub = ?",
-        (LEGACY_USER_SUB,),
-    ).fetchone()
-    if existing:
-        return existing["id"]
+def parse_env_value(value):
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
 
-    now = now_iso()
-    con.execute(
-        """
-        insert into users (google_sub, email, email_verified, name, picture_url, created_at, last_login_at)
-        values (?, null, 0, ?, null, ?, null)
-        """,
-        (LEGACY_USER_SUB, LEGACY_USER_NAME, now),
-    )
-    return con.execute(
-        "select id from users where google_sub = ?",
-        (LEGACY_USER_SUB,),
-    ).fetchone()["id"]
+
+def load_env_file(path):
+    path = Path(path)
+    if not path.exists():
+        return False
+    changed = False
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        os.environ[key] = parse_env_value(value)
+        changed = True
+    return changed
 
 
 def ensure_auth_schema(con):
@@ -190,9 +316,7 @@ def ensure_auth_schema(con):
         "create index idx_sessions_expires_at on sessions(expires_at)",
     )
 
-    before = con.total_changes
-    ensure_legacy_user(con)
-    return changed or con.total_changes != before
+    return changed
 
 
 def create_user_title_state_table(con):
@@ -233,46 +357,100 @@ def ensure_user_state_schema(con):
     if not user_title_state_needs_rebuild(con):
         return False
 
-    legacy_user_id = ensure_legacy_user(con)
     old_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
     con.execute("alter table user_title_state rename to user_title_state_old")
     create_user_title_state_table(con)
 
     if "user_id" in old_columns:
-        user_id_expr = "coalesce(user_id, ?)"
-        params = (legacy_user_id,)
-    else:
-        user_id_expr = "?"
-        params = (legacy_user_id,)
-
-    con.execute(
-        f"""
-        insert or replace into user_title_state (
-            user_id,
-            anime_id,
-            is_favorite,
-            progress_episode_number,
-            watched,
-            updated_at
+        con.execute(
+            """
+            insert or replace into user_title_state (
+                user_id,
+                anime_id,
+                is_favorite,
+                progress_episode_number,
+                watched,
+                updated_at
+            )
+            select
+                user_id,
+                anime_id,
+                coalesce(is_favorite, 0),
+                progress_episode_number,
+                coalesce(watched, 0),
+                coalesce(updated_at, ?)
+            from user_title_state_old
+            where user_id is not null
+              and anime_id is not null
+              and exists (
+                  select 1
+                  from users u
+                  where u.id = user_title_state_old.user_id
+              )
+            """,
+            (now_iso(),),
         )
-        select
-            {user_id_expr},
-            anime_id,
-            coalesce(is_favorite, 0),
-            progress_episode_number,
-            coalesce(watched, 0),
-            coalesce(updated_at, ?)
-        from user_title_state_old
-        where anime_id is not null
-        """,
-        (*params, now_iso()),
-    )
     con.execute("drop table user_title_state_old")
     return True
 
 
-def default_user_id(con):
-    return ensure_legacy_user(con)
+def purge_orphaned_user_data(con):
+    if not con.execute("select 1 from sqlite_master where type = 'table' and name = 'users'").fetchone():
+        return False
+
+    before = con.total_changes
+    if con.execute("select 1 from sqlite_master where type = 'table' and name = 'sessions'").fetchone():
+        orphaned_sessions = con.execute(
+            """
+            select 1
+            from sessions
+            where not exists (
+                select 1
+                from users u
+                where u.id = sessions.user_id
+            )
+            limit 1
+            """
+        ).fetchone()
+        if orphaned_sessions:
+            con.execute(
+                """
+                delete from sessions
+                where not exists (
+                    select 1
+                    from users u
+                    where u.id = sessions.user_id
+                )
+                """
+            )
+
+    if con.execute("select 1 from sqlite_master where type = 'table' and name = 'user_title_state'").fetchone():
+        state_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
+        if "user_id" in state_columns:
+            orphaned_state = con.execute(
+                """
+                select 1
+                from user_title_state
+                where not exists (
+                    select 1
+                    from users u
+                    where u.id = user_title_state.user_id
+                )
+                limit 1
+                """
+            ).fetchone()
+            if orphaned_state:
+                con.execute(
+                    """
+                    delete from user_title_state
+                    where not exists (
+                        select 1
+                        from users u
+                        where u.id = user_title_state.user_id
+                    )
+                    """
+                )
+    return con.total_changes != before
 
 
 def ensure_columns(con, table, columns):
@@ -351,6 +529,7 @@ def connect(db_path=None):
     changed = ensure_catalog_schema(con)
     changed |= ensure_auth_schema(con)
     changed |= ensure_user_state_schema(con)
+    changed |= purge_orphaned_user_data(con)
     changed |= ensure_runtime_indexes(con)
     if changed:
         con.commit()
@@ -386,7 +565,17 @@ def apply_state_fields(item):
 
 
 def resolved_user_id(con, user_id=None):
-    return int(user_id) if user_id is not None else default_user_id(con)
+    return int(user_id) if user_id is not None else None
+
+
+def require_user_id(con, user_id):
+    resolved = resolved_user_id(con, user_id)
+    if resolved is None:
+        raise ValueError("user_id is required")
+    exists = con.execute("select 1 from users where id = ?", (resolved,)).fetchone()
+    if not exists:
+        raise ValueError("user_id does not exist")
+    return resolved
 
 
 def numeric(value):
@@ -1318,6 +1507,8 @@ def get_group_state(con, anime_ids, user_id=None):
     if not anime_ids:
         return normalize_state(None)
     user_id = resolved_user_id(con, user_id)
+    if user_id is None:
+        return normalize_state(None)
     rows = con.execute(
         f"""
         select *
@@ -1591,11 +1782,15 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
 
 def update_user_state(anime_ref, patch, db_path=None, user_id=None):
     con = connect(db_path)
-    user_id = resolved_user_id(con, user_id)
-    group = canonical_group_for_anime_ref(con, anime_ref, user_id)
-    if not group:
+    try:
+        user_id = require_user_id(con, user_id)
+        group = canonical_group_for_anime_ref(con, anime_ref, user_id)
+        if not group:
+            con.close()
+            return None
+    except Exception:
         con.close()
-        return None
+        raise
 
     target_id = group["id"]
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
@@ -1767,36 +1962,6 @@ def upsert_google_user(con, profile):
     ).fetchone()
 
 
-def adopt_legacy_state_if_first_google_user(con, user_id):
-    legacy_user_id = ensure_legacy_user(con)
-    if user_id == legacy_user_id:
-        return False
-
-    google_user_count = con.execute(
-        "select count(*) from users where google_sub != ?",
-        (LEGACY_USER_SUB,),
-    ).fetchone()[0]
-    if google_user_count != 1:
-        return False
-
-    target_count = con.execute(
-        "select count(*) from user_title_state where user_id = ?",
-        (user_id,),
-    ).fetchone()[0]
-    legacy_count = con.execute(
-        "select count(*) from user_title_state where user_id = ?",
-        (legacy_user_id,),
-    ).fetchone()[0]
-    if target_count or not legacy_count:
-        return False
-
-    con.execute(
-        "update user_title_state set user_id = ? where user_id = ?",
-        (user_id, legacy_user_id),
-    )
-    return True
-
-
 def create_session(con, user_id):
     token = secrets.token_urlsafe(32)
     now = now_iso()
@@ -1818,11 +1983,8 @@ def authenticate_google_credential(credential, db_path=None):
     con = connect(db_path)
     try:
         user = upsert_google_user(con, profile)
-        adopted = adopt_legacy_state_if_first_google_user(con, user["id"])
         token, expires_at = create_session(con, user["id"])
         con.commit()
-        if adopted:
-            invalidate_catalog_cache(db_path)
         return {
             "user": public_user(user),
             "token": token,
@@ -1956,8 +2118,44 @@ def consume_login_handoff(code):
 class AnimeHandler(BaseHTTPRequestHandler):
     server_version = "AnimeLocal/0.1"
 
+    def send_response(self, code, message=None):
+        self._last_status = code
+        super().send_response(code, message)
+
     def log_message(self, fmt, *args):
-        print("%s - %s" % (self.address_string(), fmt % args))
+        parsed = urlparse(getattr(self, "path", "") or "")
+        server_logger().info(
+            "remote=%s method=%s path=%s status=%s message=%s",
+            self.client_address[0] if self.client_address else "-",
+            getattr(self, "command", "-"),
+            parsed.path or "-",
+            getattr(self, "_last_status", "-"),
+            fmt % args,
+        )
+
+    def handle_request(self, callback):
+        try:
+            callback()
+        except Exception as exc:
+            self.send_unexpected_error(exc)
+
+    def send_unexpected_error(self, exc):
+        parsed = urlparse(getattr(self, "path", "") or "")
+        server_logger().exception(
+            "unhandled request error remote=%s method=%s path=%s",
+            self.client_address[0] if self.client_address else "-",
+            getattr(self, "command", "-"),
+            parsed.path or "-",
+        )
+        try:
+            self.send_json({"error": "internal server error"}, 500)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            server_logger().warning(
+                "failed to write error response remote=%s method=%s path=%s",
+                self.client_address[0] if self.client_address else "-",
+                getattr(self, "command", "-"),
+                parsed.path or "-",
+            )
 
     def send_json(self, payload, status=200, headers=None):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -1995,6 +2193,69 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return {}
         raw = self.rfile.read(length).decode("utf-8")
         return json.loads(raw or "{}")
+
+    def read_limited_json_body(self, max_bytes):
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError as exc:
+            raise ValueError("invalid content length") from exc
+        if length > max_bytes:
+            self.rfile.read(0)
+            raise ClientErrorPayloadTooLarge()
+        if not length:
+            return {}
+        raw = self.rfile.read(length).decode("utf-8")
+        return json.loads(raw or "{}")
+
+    def build_client_error_event(self, payload):
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be an object")
+        message = payload.get("message")
+        if not message:
+            raise ValueError("message is required")
+
+        user = self.current_user()
+        event = {
+            "received_at": now_iso(),
+            "remote": self.client_address[0] if self.client_address else None,
+            "authenticated": bool(user),
+            "type": sanitize_client_error_value(payload.get("type") or "error"),
+            "message": sanitize_client_error_value(message),
+        }
+        if user:
+            event["user_id"] = user["id"]
+
+        for key in (
+            "timestamp",
+            "url",
+            "path",
+            "source",
+            "lineno",
+            "colno",
+            "stack",
+            "userAgent",
+            "context",
+        ):
+            if key in payload:
+                event[key] = sanitize_client_error_value(payload[key])
+        return event
+
+    def handle_client_error_post(self):
+        try:
+            payload = self.read_limited_json_body(MAX_CLIENT_ERROR_BYTES)
+            event = self.build_client_error_event(payload)
+        except ClientErrorPayloadTooLarge:
+            self.send_json({"error": "payload too large"}, 413)
+            return
+        except json.JSONDecodeError:
+            self.send_json({"error": "invalid json"}, 400)
+            return
+        except ValueError as exc:
+            self.send_json({"error": str(exc)}, 400)
+            return
+
+        client_error_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        self.send_json({"ok": True}, status=202)
 
     def read_google_auth_body(self):
         length = int(self.headers.get("Content-Length") or 0)
@@ -2147,6 +2408,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         )
 
     def do_GET(self):
+        self.handle_request(self.handle_GET)
+
+    def handle_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
 
@@ -2234,8 +2498,15 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
+        self.handle_request(self.handle_POST)
+
+    def handle_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
+
+        if path == "/api/client-errors":
+            self.handle_client_error_post()
+            return
 
         if path == "/api/auth/google":
             payload = {}
@@ -2294,6 +2565,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_json({"error": "not found"}, 404)
 
     def do_PATCH(self):
+        self.handle_request(self.handle_PATCH)
+
+    def handle_PATCH(self):
         parsed = urlparse(self.path)
         path = parsed.path
         user = self.require_user()
@@ -2324,13 +2598,17 @@ class AnimeHandler(BaseHTTPRequestHandler):
 def run(port, host, db_path):
     if not Path(db_path).exists():
         raise SystemExit(f"Database not found: {db_path}")
+    configure_logging()
     server = ThreadingHTTPServer((host, port), AnimeHandler)
     server.db_path = db_path
-    print(f"Serving http://{host}:{port} using {db_path}")
+    message = f"Serving http://{host}:{port} using {db_path}"
+    print(message)
+    server_logger().info(message)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped")
+        server_logger().info("Stopped")
     finally:
         server.server_close()
 
@@ -2340,7 +2618,9 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--db", default=str(DEFAULT_DB))
+    parser.add_argument("--env-file", default=str(ROOT / ".env"))
     args = parser.parse_args()
+    load_env_file(args.env_file)
     run(args.port, args.host, args.db)
 
 

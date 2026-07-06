@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 import sqlite3
 import time
 import traceback
@@ -16,18 +17,25 @@ def connect(db_path):
     return con
 
 
+def parsed_episode_total(value):
+    match = re.search(r"\d+", str(value or ""))
+    return int(match.group(0)) if match else None
+
+
+def needs_player_backfill(row):
+    available = int(row.get("available_episode_count") or 0)
+    episode_count = int(row.get("episode_count") or 0)
+    expected = parsed_episode_total(row.get("episodes_text"))
+    if available == 0:
+        return True
+    if episode_count > available:
+        return True
+    return expected is not None and expected > available
+
+
 def playable_missing_rows(con, source=None, limit=0, anime_ids=None):
     params = []
-    where = [
-        """
-        not exists (
-            select 1
-            from video_sources vs
-            where vs.anime_id = a.id
-              and vs.embed_url is not null
-        )
-        """
-    ]
+    where = []
     if source:
         where.append("a.source = ?")
         params.append(source)
@@ -35,18 +43,46 @@ def playable_missing_rows(con, source=None, limit=0, anime_ids=None):
         where.append(f"a.id in ({','.join('?' for _ in anime_ids)})")
         params.extend(anime_ids)
     sql = f"""
-        select *
+        with
+            episode_counts as (
+                select anime_id, count(*) as episode_count
+                from episodes
+                group by anime_id
+            ),
+            available_episode_counts as (
+                select e.anime_id, count(distinct e.id) as available_episode_count
+                from episodes e
+                join video_sources vs on vs.episode_id = e.id
+                where vs.embed_url is not null
+                group by e.anime_id
+            ),
+            source_counts as (
+                select anime_id, count(*) as source_count
+                from video_sources
+                where embed_url is not null
+                group by anime_id
+            )
+        select
+            a.*,
+            coalesce(ec.episode_count, 0) as episode_count,
+            coalesce(aec.available_episode_count, 0) as available_episode_count,
+            coalesce(sc.source_count, 0) as source_count
         from anime a
-        where {' and '.join(where)}
+        left join episode_counts ec on ec.anime_id = a.id
+        left join available_episode_counts aec on aec.anime_id = a.id
+        left join source_counts sc on sc.anime_id = a.id
+        {"where " + " and ".join(where) if where else ""}
         order by
             case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
             cast(a.year as integer) desc,
             a.id desc
     """
+    rows = [dict(row) for row in con.execute(sql, params)]
+    if not anime_ids:
+        rows = [row for row in rows if needs_player_backfill(row)]
     if limit:
-        sql += " limit ?"
-        params.append(limit)
-    return [dict(row) for row in con.execute(sql, params)]
+        rows = rows[:limit]
+    return rows
 
 
 def item_from_row(row, detail):
@@ -229,7 +265,7 @@ def main():
     parser.add_argument("--source", choices=["animego", "yummyanime"])
     parser.add_argument("--anime-id", type=int, action="append", help="backfill one source row id; can be repeated")
     parser.add_argument("--limit", type=int, default=0)
-    parser.add_argument("--episode-limit", type=int, default=1, help="episodes per title to fetch; 0 means all")
+    parser.add_argument("--episode-limit", type=int, default=0, help="episodes per title to fetch; 0 means all")
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--retry-attempts", type=int, default=4)
     parser.add_argument("--retry-backoff", type=float, default=8.0)

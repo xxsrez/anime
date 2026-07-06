@@ -16,8 +16,9 @@ and player prototype.
 Run the dev/test site:
 
 ```bash
-export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
-python3 server.py --port 8765
+cp .env.example .env
+printf 'GOOGLE_CLIENT_ID=%s\n' '...apps.googleusercontent.com' > .env
+.venv/bin/python server.py --port 8765
 ```
 
 Open `http://127.0.0.1:8765/`.

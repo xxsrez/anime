@@ -1,4 +1,6 @@
 data/*.sqlite-*
+data/logs/
+backups/pre-*/
 backups/run-*/
 __pycache__/
 .venv/

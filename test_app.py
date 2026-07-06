@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 import http.client
 import json
+import os
 from pathlib import Path
 import shutil
+import sqlite3
 import tempfile
 import threading
 import unittest
 from urllib.parse import parse_qs, urlencode, urlparse
 from unittest.mock import patch
 
+import backfill_players
 import server
 
 
@@ -56,6 +59,31 @@ class LocalAppTest(unittest.TestCase):
             httpd.server_close()
             thread.join(timeout=5)
 
+    def latest_json_log_entry(self, log_dir, filename):
+        lines = (Path(log_dir) / filename).read_text(encoding="utf-8").strip().splitlines()
+        self.assertTrue(lines)
+        return json.loads(lines[-1])
+
+    def test_load_env_file_sets_missing_values_without_overriding_existing_env(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text(
+                "\n".join(
+                    [
+                        "ANIME_TEST_ENV_LOADER_VALUE=loaded",
+                        "ANIME_TEST_ENV_LOADER_QUOTED=\"quoted value\"",
+                        "ANIME_TEST_ENV_LOADER_KEEP=file-value",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"ANIME_TEST_ENV_LOADER_KEEP": "existing"}):
+                self.assertTrue(server.load_env_file(env_path))
+                self.assertEqual(os.environ["ANIME_TEST_ENV_LOADER_VALUE"], "loaded")
+                self.assertEqual(os.environ["ANIME_TEST_ENV_LOADER_QUOTED"], "quoted value")
+                self.assertEqual(os.environ["ANIME_TEST_ENV_LOADER_KEEP"], "existing")
+
     def source_row(self, translation, provider="Kodik", episode_id=1, source="animego", row_id=1):
         return {
             "id": row_id,
@@ -96,6 +124,51 @@ class LocalAppTest(unittest.TestCase):
         ]
         self.assertTrue(any(source["embed_url"] for source in source_rows))
         self.assertTrue(any(source["translation_title"] for source in source_rows))
+
+    def test_backfill_selects_partial_episode_coverage(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            con = backfill_players.connect(db_path)
+            try:
+                scraped_at = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, episodes_text, scraped_at)
+                    values (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (1, "partial", "Partial", "https://animego.me/anime/partial-1", "animego", "1", "3", scraped_at),
+                )
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, episodes_text, scraped_at)
+                    values (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (2, "complete", "Complete", "https://animego.me/anime/complete-2", "animego", "2", "1", scraped_at),
+                )
+                for anime_id, episode_id in ((1, 101), (2, 201)):
+                    con.execute(
+                        """
+                        insert into episodes(id, anime_id, number, has_video, scraped_at)
+                        values (?, ?, ?, 1, ?)
+                        """,
+                        (episode_id, anime_id, "1", scraped_at),
+                    )
+                    con.execute(
+                        """
+                        insert into video_sources(anime_id, episode_id, provider_id, translation_id, embed_url, scraped_at)
+                        values (?, ?, 'kodik', 1, ?, ?)
+                        """,
+                        (anime_id, episode_id, f"https://example.test/{episode_id}", scraped_at),
+                    )
+                con.commit()
+
+                rows = backfill_players.playable_missing_rows(con, source="animego")
+                self.assertEqual([row["id"] for row in rows], [1])
+
+                forced_rows = backfill_players.playable_missing_rows(con, source="animego", anime_ids=[2])
+                self.assertEqual([row["id"] for row in forced_rows], [2])
+            finally:
+                con.close()
 
     def test_source_sort_pins_dream_cast_above_popular_translations(self):
         sources = [
@@ -190,27 +263,40 @@ class LocalAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
 
-            anime_id = server.get_anime_list(db_path)[0]["id"]
+            anime_id = server.get_anime_list(db_path, user_id=user_id)[0]["id"]
             saved = server.update_user_state(
                 anime_id,
                 {"is_favorite": True, "progress_episode_number": 7, "watched": False},
                 db_path,
+                user_id,
             )
             self.assertTrue(saved["is_favorite"])
             self.assertEqual(saved["progress_episode_number"], 7)
             self.assertFalse(saved["watched"])
 
-            item = next(item for item in server.get_anime_list(db_path) if item["id"] == anime_id)
+            item = next(item for item in server.get_anime_list(db_path, user_id=user_id) if item["id"] == anime_id)
             self.assertTrue(item["is_favorite"])
             self.assertEqual(item["progress_episode_number"], 7)
             self.assertFalse(item["watched"])
 
-            server.update_user_state(anime_id, {"watched": True}, db_path)
-            detail = server.get_anime_detail(anime_id, db_path)
+            server.update_user_state(anime_id, {"watched": True}, db_path, user_id)
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
             self.assertTrue(detail["is_favorite"])
             self.assertEqual(detail["progress_episode_number"], 7)
             self.assertTrue(detail["watched"])
+
+    def test_user_state_update_requires_real_user(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            anime_id = server.get_anime_list(db_path)[0]["id"]
+
+            with self.assertRaisesRegex(ValueError, "user_id is required"):
+                server.update_user_state(anime_id, {"is_favorite": True}, db_path)
+            with self.assertRaisesRegex(ValueError, "user_id does not exist"):
+                server.update_user_state(anime_id, {"is_favorite": True}, db_path, 999999)
 
     def test_api_requires_authenticated_session(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -234,6 +320,93 @@ class LocalAppTest(unittest.TestCase):
             )
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
+
+    def test_client_error_endpoint_logs_without_auth_and_redacts_payload(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            log_dir = f"{tmpdir}/logs"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            payload = {
+                "type": "TypeError",
+                "message": "Boom token=abc https://kodikplayer.com/embed/private",
+                "stack": "Error: Boom\ncredential=secret",
+                "url": "/login?next=/",
+                "context": {
+                    "action": "boot login",
+                    "credential": "secret",
+                    "nested": {"cookie": "session=secret"},
+                },
+            }
+
+            with patch.dict(os.environ, {"ANIME_LOG_DIR": log_dir}):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/client-errors",
+                    headers={"Content-Type": "application/json"},
+                    body=json.dumps(payload),
+                )
+
+            self.assertEqual(status, 202)
+            self.assertEqual(json.loads(body), {"ok": True})
+            event = self.latest_json_log_entry(log_dir, "client-errors.log")
+            self.assertFalse(event["authenticated"])
+            self.assertEqual(event["type"], "TypeError")
+            self.assertIn("token=<redacted>", event["message"])
+            self.assertIn("<redacted-url>", event["message"])
+            self.assertIn("credential=<redacted>", event["stack"])
+            self.assertEqual(event["context"]["credential"], "<redacted>")
+            self.assertEqual(event["context"]["nested"]["cookie"], "<redacted>")
+
+    def test_client_error_endpoint_rejects_invalid_and_oversized_payloads(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            log_dir = f"{tmpdir}/logs"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            with patch.dict(os.environ, {"ANIME_LOG_DIR": log_dir}):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/client-errors",
+                    headers={"Content-Type": "application/json"},
+                    body="{",
+                )
+                self.assertEqual(status, 400)
+                self.assertEqual(json.loads(body)["error"], "invalid json")
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/client-errors",
+                    headers={"Content-Type": "application/json"},
+                    body="x" * (server.MAX_CLIENT_ERROR_BYTES + 1),
+                )
+                self.assertEqual(status, 413)
+                self.assertEqual(json.loads(body)["error"], "payload too large")
+
+    def test_unexpected_backend_exception_returns_500_and_logs_traceback(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            log_dir = f"{tmpdir}/logs"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+
+            with patch.dict(os.environ, {"ANIME_LOG_DIR": log_dir}):
+                with patch.object(server, "get_anime_list", side_effect=RuntimeError("boom")):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "GET",
+                        "/api/anime",
+                        headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+                    )
+
+            self.assertEqual(status, 500)
+            self.assertEqual(json.loads(body)["error"], "internal server error")
+            server_log = (Path(log_dir) / "server.log").read_text(encoding="utf-8")
+            self.assertIn("unhandled request error", server_log)
+            self.assertIn("RuntimeError: boom", server_log)
 
     def test_google_redirect_post_sets_session_cookie_on_completion_page(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -431,6 +604,96 @@ class LocalAppTest(unittest.TestCase):
                 ["Ошибка конфигурации деплоймента: google-auth dependencies are not installed"],
             )
 
+    def test_new_google_user_starts_empty_and_existing_state_persists(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            con = server.connect(db_path)
+            try:
+                con.execute("delete from sessions")
+                con.execute("delete from user_title_state")
+                con.execute("delete from users")
+                anime_id = con.execute("select id from anime order by id limit 1").fetchone()["id"]
+                con.commit()
+            finally:
+                con.close()
+
+            profile = {
+                "sub": "brand-new-google-user",
+                "email": "new@example.com",
+                "email_verified": True,
+                "name": "New User",
+                "picture": None,
+            }
+            with patch.object(server, "verify_google_credential", return_value=profile):
+                auth = server.authenticate_google_credential("fake-token", db_path)
+
+            new_user_id = auth["user"]["id"]
+            con = server.connect(db_path)
+            try:
+                new_count = con.execute(
+                    "select count(*) from user_title_state where user_id = ?",
+                    (new_user_id,),
+                ).fetchone()[0]
+            finally:
+                con.close()
+
+            self.assertEqual(new_count, 0)
+
+            new_detail = server.get_anime_detail(anime_id, db_path, new_user_id)
+            self.assertFalse(new_detail["is_favorite"])
+            self.assertIsNone(new_detail["progress_episode_number"])
+
+            server.update_user_state(
+                anime_id,
+                {"is_favorite": True, "progress_episode_number": 2},
+                db_path,
+                new_user_id,
+            )
+            with patch.object(server, "verify_google_credential", return_value=profile):
+                server.authenticate_google_credential("fake-token", db_path)
+
+            new_detail = server.get_anime_detail(anime_id, db_path, new_user_id)
+            self.assertTrue(new_detail["is_favorite"])
+            self.assertEqual(new_detail["progress_episode_number"], 2)
+
+    def test_old_user_state_schema_is_dropped_without_local_profile_import(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            con = sqlite3.connect(db_path)
+            try:
+                anime_id = con.execute("select id from anime order by id limit 1").fetchone()[0]
+                con.execute("drop table user_title_state")
+                con.execute(
+                    """
+                    create table user_title_state (
+                        anime_id integer primary key,
+                        is_favorite integer not null default 0,
+                        progress_episode_number integer,
+                        watched integer not null default 0,
+                        updated_at text not null
+                    )
+                    """
+                )
+                con.execute(
+                    "insert into user_title_state values (?, 1, 5, 0, ?)",
+                    (anime_id, "2026-07-06T10:00:00+00:00"),
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            con = server.connect(db_path)
+            try:
+                columns = [row[1] for row in con.execute("pragma table_info(user_title_state)")]
+                self.assertIn("user_id", columns)
+                self.assertEqual(con.execute("select count(*) from user_title_state").fetchone()[0], 0)
+            finally:
+                con.close()
+
     def test_user_state_is_scoped_per_google_user(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -468,12 +731,13 @@ class LocalAppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
 
-            items = server.get_anime_list(db_path)
+            items = server.get_anime_list(db_path, user_id=user_id)
             favorite = next(item for item in items if item.get("genres") and item.get("source_count") > 0)
-            server.update_user_state(favorite["id"], {"is_favorite": True}, db_path)
+            server.update_user_state(favorite["id"], {"is_favorite": True}, db_path, user_id)
 
-            payload = server.get_recommendations(db_path, limit=20)
+            payload = server.get_recommendations(db_path, limit=20, user_id=user_id)
             recommendations = payload["items"]
             self.assertGreater(len(recommendations), 0)
             self.assertLessEqual(len(recommendations), 20)
@@ -537,11 +801,14 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('id="recommendation-meta"', html)
         self.assertIn('href="/static/favicon.svg"', html)
         self.assertIn('href="/favicon.ico"', html)
+        self.assertIn('src="/static/client_errors.js"', html)
 
     def test_login_uses_google_one_tap_and_button(self):
         html = Path(server.STATIC_DIR / "login.html").read_text(encoding="utf-8")
         js = Path(server.STATIC_DIR / "login.js").read_text(encoding="utf-8")
+        reporter_js = Path(server.STATIC_DIR / "client_errors.js").read_text(encoding="utf-8")
         self.assertIn("https://accounts.google.com/gsi/client?hl=ru", html)
+        self.assertIn('src="/static/client_errors.js"', html)
         self.assertIn('id="one-tap-anchor"', html)
         self.assertIn('id="google-button"', html)
         self.assertIn("google.accounts.id.prompt", js)
@@ -570,6 +837,9 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)
+        self.assertIn("/api/client-errors", reporter_js)
+        self.assertIn("window.addEventListener(\"error\"", reporter_js)
+        self.assertIn("window.addEventListener(\"unhandledrejection\"", reporter_js)
 
     def test_login_page_allows_google_popup_opener(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -652,6 +922,18 @@ class LocalAppTest(unittest.TestCase):
         same_detail = server.get_anime_detail(yummy_variant["id"])
         self.assertEqual(same_detail["id"], item["id"])
         self.assertEqual(same_detail["source"], "animego")
+
+    def test_frieren_details_have_full_episode_video_coverage(self):
+        expected = {
+            2430: 28,
+            2911: 10,
+        }
+        for anime_id, episode_count in expected.items():
+            with self.subTest(anime_id=anime_id):
+                detail = server.get_anime_detail(anime_id)
+                self.assertEqual(len(detail["episodes"]), episode_count)
+                self.assertEqual(detail["available_episode_count"], episode_count)
+                self.assertTrue(all(episode["source_count"] > 0 for episode in detail["episodes"]))
 
     def test_subtitle_matched_duplicate_sources_are_merged(self):
         items = server.get_anime_list()

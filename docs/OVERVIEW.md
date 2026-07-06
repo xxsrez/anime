@@ -43,7 +43,8 @@ As of the current local SQLite snapshot on 2026-07-06, the database contains:
 - 212 episode rows.
 - 175 video source rows.
 - 16,011 genre rows.
-- 24 legacy user progress/favorite rows before first Google account adoption.
+- User progress/favorite rows are per Google user. New Google accounts start
+  empty; anonymous/local profile state is not supported.
 
 The committed recovery snapshot is in `backups/current/`. It includes a full
 SQLite backup and readable exports of favorites/progress/watched state.

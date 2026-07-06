@@ -18,8 +18,9 @@ unless the user explicitly changes the scheme again.
 Run and test the current working tree on dev:
 
 ```bash
-export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
-python3 server.py --host 127.0.0.1 --port 8765
+cp .env.example .env
+printf 'GOOGLE_CLIENT_ID=%s\n' '...apps.googleusercontent.com' > .env
+.venv/bin/python server.py --host 127.0.0.1 --port 8765
 ```
 
 The Google OAuth client must be type `Web application`. Add the exact dev URL

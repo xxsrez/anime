@@ -54,9 +54,9 @@ and then prune rows where the source page still exposes no player:
 
 ```bash
 python3 scrape_animego.py --pages 2 --limit 20 --episode-limit 3 --include-embed-urls
-python3 backfill_players.py --source animego --episode-limit 1
+python3 backfill_players.py --source animego
 python3 prune_non_playable.py --commit
-python3 server.py
+.venv/bin/python server.py
 ```
 
 Then open the dev site at `http://127.0.0.1:8765`.
@@ -66,8 +66,9 @@ and must not be used for scraping, indexing, experiments, or routine testing.
 See `docs/ENVIRONMENTS.md` for the fixed dev/prod split and release workflow.
 
 The local app requires Sign in with Google. The login page shows Google One Tap
-when available and keeps the Google button as a fallback. Set the public
-`GOOGLE_CLIENT_ID` before starting `server.py`; optionally restrict access with
+when available and keeps the Google button as a fallback. `server.py` loads a
+repo-local `.env` file by default, so set the public `GOOGLE_CLIENT_ID` there or
+export it before starting the server; optionally restrict access with
 `ANIME_AUTH_ALLOWED_EMAILS` or `ANIME_AUTH_ALLOWED_DOMAINS`.
 The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
@@ -79,14 +80,15 @@ favorites, set the current episode, or mark the title as watched. The sidebar
 can filter all titles, favorites, titles with progress, or the top
 recommendation list. Recommendations are computed from the current user's
 favorites/progress/watched state and show the 20 strongest candidates first
-with short reasons.
+with short reasons. A newly created Google user starts with empty local state;
+anonymous/local profile state is not supported.
 
 Refresh yearly AnimeGO catalog pages with player data:
 
 ```bash
 python3 scrape_animego.py --start-url https://animego.me/anime/season/2025 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
 python3 scrape_animego.py --start-url https://animego.me/anime/season/2026 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
-python3 backfill_players.py --source animego --episode-limit 1
+python3 backfill_players.py --source animego
 python3 prune_non_playable.py --commit
 ```
 

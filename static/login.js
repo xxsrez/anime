@@ -4,6 +4,7 @@ const el = {
   state: document.getElementById("login-state"),
 };
 const GOOGLE_LOCALE = "ru";
+const reportClientError = window.reportClientError || (() => {});
 const LOGIN_RECOVERY_STARTED_KEY = "anime-login-recovery-started-at";
 const LOGIN_RECOVERY_RELOADS_KEY = "anime-login-recovery-reloads";
 const LOGIN_RECOVERY_MAX_AGE_MS = 60_000;
@@ -59,7 +60,7 @@ function markLoginRecovery() {
     window.sessionStorage.setItem(LOGIN_RECOVERY_STARTED_KEY, String(Date.now()));
     window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, "0");
   } catch (error) {
-    console.error(error);
+    reportClientError(error, { action: "mark login recovery" });
   }
 }
 
@@ -68,7 +69,7 @@ function clearLoginRecovery() {
     window.sessionStorage.removeItem(LOGIN_RECOVERY_STARTED_KEY);
     window.sessionStorage.removeItem(LOGIN_RECOVERY_RELOADS_KEY);
   } catch (error) {
-    console.error(error);
+    reportClientError(error, { action: "clear login recovery" });
   }
 }
 
@@ -78,7 +79,7 @@ function hasRecentLoginRecovery() {
     const startedAt = Number(window.sessionStorage.getItem(LOGIN_RECOVERY_STARTED_KEY) || 0);
     return startedAt > 0 && Date.now() - startedAt < LOGIN_RECOVERY_MAX_AGE_MS;
   } catch (error) {
-    console.error(error);
+    reportClientError(error, { action: "read login recovery" });
     return false;
   }
 }
@@ -87,7 +88,7 @@ function loginRecoveryReloadCount() {
   try {
     return Number(window.sessionStorage.getItem(LOGIN_RECOVERY_RELOADS_KEY) || 0);
   } catch (error) {
-    console.error(error);
+    reportClientError(error, { action: "read login recovery reloads" });
     return LOGIN_RECOVERY_MAX_RELOADS;
   }
 }
@@ -96,7 +97,7 @@ function bumpLoginRecoveryReloadCount(value) {
   try {
     window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, String(value));
   } catch (error) {
-    console.error(error);
+    reportClientError(error, { action: "write login recovery reloads" });
   }
 }
 
@@ -175,6 +176,7 @@ async function submitCredential(response) {
 function handleCredential(response) {
   submitCredential(response).catch(error => {
     clearLoginRecovery();
+    reportClientError(error, { action: "submit google credential" });
     setLoginState(error.message || "Не удалось войти", "warn");
     console.error(error);
   });
@@ -248,6 +250,7 @@ async function bootLogin() {
 }
 
 bootLogin().catch(error => {
+  reportClientError(error, { action: "boot login" });
   setLoginState(error.message || "Не удалось открыть вход", "warn");
   console.error(error);
 });

@@ -13,6 +13,8 @@ const INITIAL_RENDER_LIMIT = 40;
 const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
+const reportClientError = window.reportClientError || (() => {});
+const reportActionError = window.reportActionError || (() => error => console.error(error));
 
 const state = {
   user: null,
@@ -256,9 +258,7 @@ function syncUrlFromDetail({ replace = true } = {}) {
 }
 
 function sourcesForEpisode(episodeId) {
-  const sources = state.detail?.sources_by_episode?.[episodeId] || [];
-  return sources
-    .filter(source => source.embed_url)
+  return allSourcesForEpisode(episodeId)
     .filter(source => !state.selectedContentSource || source.source === state.selectedContentSource);
 }
 
@@ -381,10 +381,29 @@ function sourceVariants(detail) {
   return detail?.source ? [{ source: detail.source, source_count: detail.source_count || 0 }] : [];
 }
 
-function preferredContentSource(detail) {
+function allSourcesForEpisode(episodeId) {
+  return (state.detail?.sources_by_episode?.[episodeId] || [])
+    .filter(source => source.embed_url);
+}
+
+function contentSourceHasEpisode(source, episodeId) {
+  if (!source || !episodeId) return false;
+  return allSourcesForEpisode(episodeId).some(item => item.source === source);
+}
+
+function preferredContentSource(detail, episodeId = null) {
   const variants = sourceVariants(detail);
-  const withVideo = variants.find(variant => (variant.source_count || 0) > 0);
-  return (withVideo || variants[0] || {}).source || detail?.source || null;
+  if (episodeId) {
+    const withEpisode = variants.find(variant => contentSourceHasEpisode(variant.source, episodeId));
+    if (withEpisode) return withEpisode.source;
+  }
+  const ranked = variants
+    .filter(variant => (variant.source_count || 0) > 0)
+    .sort((left, right) => (
+      (right.available_episode_count || 0) - (left.available_episode_count || 0)
+      || (right.source_count || 0) - (left.source_count || 0)
+    ));
+  return (ranked[0] || variants[0] || {}).source || detail?.source || null;
 }
 
 function matchingEpisodeId(episodeId) {
@@ -399,13 +418,13 @@ function matchingContentSource(source) {
 }
 
 function applyDetailLinkState(linkState = {}) {
-  state.selectedContentSource = matchingContentSource(linkState.contentSource)
-    || preferredContentSource(state.detail);
-
   const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
   state.selectedEpisodeId = matchingEpisodeId(linkState.episodeId)
     || (firstAvailable || state.detail.episodes[0] || {}).id
     || null;
+
+  state.selectedContentSource = matchingContentSource(linkState.contentSource)
+    || preferredContentSource(state.detail, state.selectedEpisodeId);
 
   state.selectedTranslation = linkState.translation || null;
   state.selectedSourceId = linkState.provider || null;
@@ -985,7 +1004,7 @@ function createEpisodeNavButton(label, ariaLabel, episode) {
   button.title = ariaLabel;
   button.disabled = !episode;
   if (episode) {
-    button.addEventListener("click", () => selectEpisode(episode.id).catch(console.error));
+    button.addEventListener("click", () => selectEpisode(episode.id).catch(reportActionError("episode nav")));
   }
   return button;
 }
@@ -1035,7 +1054,7 @@ function renderEpisodes(detail) {
 
   select.addEventListener("change", event => {
     const episode = episodes.find(item => String(item.id) === event.target.value);
-    if (episode) selectEpisode(episode.id).catch(console.error);
+    if (episode) selectEpisode(episode.id).catch(reportActionError("episode select"));
   });
 
   row.append(
@@ -1073,7 +1092,7 @@ function renderContentSourceOptions() {
   }
 
   if (!variants.some(variant => variant.source === state.selectedContentSource)) {
-    state.selectedContentSource = preferredContentSource(state.detail);
+    state.selectedContentSource = preferredContentSource(state.detail, state.selectedEpisodeId);
   }
 
   for (const variant of variants) {
@@ -1089,6 +1108,11 @@ function renderContentSourceOptions() {
 
 function renderSources() {
   const episode = activeEpisode();
+  if (episode && state.selectedContentSource && !contentSourceHasEpisode(state.selectedContentSource, episode.id)) {
+    state.selectedContentSource = preferredContentSource(state.detail, episode.id);
+    state.selectedTranslation = null;
+    state.selectedSourceId = null;
+  }
   renderContentSourceOptions();
   const sources = sourcesForEpisode(state.selectedEpisodeId);
   const translations = uniqueTranslations(sources);
@@ -1205,6 +1229,7 @@ async function toggleFullscreen() {
     setPlayerActionState("");
     updateFullscreenControl();
   } catch (error) {
+    reportClientError(error, { action: "fullscreen" });
     setPlayerActionState(error.message || "Не удалось открыть fullscreen", "warn");
   }
 }
@@ -1256,6 +1281,7 @@ async function openPictureInPicture() {
       return;
     } catch (error) {
       if (error.name !== "NotAllowedError") {
+        reportClientError(error, { action: "picture in picture" });
         setPlayerActionState("PiP доступен в самом плеере", "warn");
         return;
       }
@@ -1375,7 +1401,7 @@ function applyFilter({ selectFirst = false } = {}) {
   el.resetFilters.hidden = !hasActiveCatalogTools();
 
   if (selectFirst && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
-    selectAnime(titleRefForItem(state.filtered[0])).catch(console.error);
+    selectAnime(titleRefForItem(state.filtered[0])).catch(reportActionError("select filtered anime"));
   }
 }
 
@@ -1424,21 +1450,21 @@ for (const button of el.viewTabs) {
 }
 el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
-  saveUserState({ is_favorite: !state.detail.is_favorite }).catch(console.error);
+  saveUserState({ is_favorite: !state.detail.is_favorite }).catch(reportActionError("toggle favorite"));
 });
 el.logoutButton.addEventListener("click", () => {
-  logout().catch(console.error);
+  logout().catch(reportActionError("logout"));
 });
 el.progressEpisode.addEventListener("change", () => {
   if (!state.detail) return;
   saveUserState({
     progress_episode_number: progressInputValue(),
     watched: false,
-  }).catch(console.error);
+  }).catch(reportActionError("save progress episode"));
 });
 el.watchedToggle.addEventListener("change", () => {
   if (!state.detail) return;
-  saveUserState({ watched: el.watchedToggle.checked }).catch(console.error);
+  saveUserState({ watched: el.watchedToggle.checked }).catch(reportActionError("toggle watched"));
 });
 el.contentSource.addEventListener("change", event => {
   state.selectedContentSource = event.target.value || null;
@@ -1456,24 +1482,24 @@ el.provider.addEventListener("change", event => {
   renderSources();
 });
 el.fullscreenToggle.addEventListener("click", () => {
-  toggleFullscreen().catch(console.error);
+  toggleFullscreen().catch(reportActionError("fullscreen button"));
 });
 el.pipToggle.addEventListener("click", () => {
-  openPictureInPicture().catch(console.error);
+  openPictureInPicture().catch(reportActionError("picture in picture button"));
 });
 document.addEventListener("fullscreenchange", updateFullscreenControl);
 document.addEventListener("webkitfullscreenchange", updateFullscreenControl);
 document.addEventListener("keydown", event => {
   if (!isFullscreenHotkey(event)) return;
   event.preventDefault();
-  toggleFullscreen().catch(console.error);
+  toggleFullscreen().catch(reportActionError("fullscreen hotkey"));
 });
 window.addEventListener("resize", hideTitleTooltip);
 el.list.addEventListener("scroll", hideTitleTooltip);
 window.addEventListener("popstate", () => {
   const linkState = readLinkState();
   if (linkState.animeId) {
-    selectAnime(linkState.animeId, { linkState, updateUrl: false }).catch(console.error);
+    selectAnime(linkState.animeId, { linkState, updateUrl: false }).catch(reportActionError("popstate anime"));
   }
 });
 
@@ -1484,6 +1510,7 @@ async function selectInitialAnime() {
       await selectAnime(linkState.animeId, { linkState });
       return;
     } catch (error) {
+      reportClientError(error, { action: "open shared anime link", animeId: linkState.animeId });
       console.warn("Failed to open shared anime link", error);
     }
   }
@@ -1507,6 +1534,7 @@ async function boot() {
 }
 
 boot().catch(error => {
+  reportClientError(error, { action: "boot app" });
   clearPlayer(error.message);
   console.error(error);
 });

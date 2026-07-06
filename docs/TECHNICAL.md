@@ -29,13 +29,13 @@
 Run the dev/test server:
 
 ```bash
-python3 server.py --host 127.0.0.1 --port 8765
+.venv/bin/python server.py --host 127.0.0.1 --port 8765
 ```
 
 The default database is `data/animego.sqlite`. Override it with:
 
 ```bash
-python3 server.py --db /path/to/animego.sqlite
+.venv/bin/python server.py --db /path/to/animego.sqlite
 ```
 
 or with the `ANIMEGO_DB` environment variable for internal helper calls.
@@ -47,8 +47,12 @@ through a top-level completion page that sets the session cookie. Google
 requires a public OAuth client ID:
 
 ```bash
-export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
+cp .env.example .env
+printf 'GOOGLE_CLIENT_ID=%s\n' '...apps.googleusercontent.com' > .env
 ```
+
+`server.py` loads `.env` by default. Exported environment variables still win
+over values from `.env`.
 
 Optional restrictions:
 
@@ -63,6 +67,35 @@ SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
 Production is a separate localhost environment at `http://127.0.0.1:8766/`.
 Do not use it for development, scraping, indexing, or performance work. See
 `ENVIRONMENTS.md` for the fixed port map and release workflow.
+
+## Logging
+
+The local server writes rotating log files with Python standard-library
+`logging`.
+
+Default location:
+
+```bash
+data/logs/
+```
+
+Override the location for a run or test with:
+
+```bash
+export ANIME_LOG_DIR="/path/to/logs"
+```
+
+Files:
+
+- `server.log` - server startup, HTTP access lines, and unexpected backend
+  exceptions with tracebacks.
+- `client-errors.log` - one JSON object per line from browser-side error
+  reports.
+
+`POST /api/client-errors` accepts browser error reports without requiring an
+authenticated session, so login-page errors can be captured. The endpoint caps
+the request body, stores sanitized fields only, and redacts obvious credentials,
+tokens, cookies, and third-party player/embed URLs before writing the log.
 
 ## API
 
@@ -82,15 +115,22 @@ Returns the current authenticated user. Requires a valid session cookie.
 
 Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
 verifies it server-side, upserts the local user, and returns a short-lived
-`complete_url`. The browser then opens that URL as a top-level page so the
-server can set the `HttpOnly` session cookie. The completion page waits until
-`/api/me` sees that cookie before returning to the app, with a timed fallback
+`complete_url`. New Google users start with empty favorites/progress state. The
+browser then opens that URL as a top-level page so the server can set the
+`HttpOnly` session cookie. The completion page waits until `/api/me` sees that
+cookie before returning to the app, with a timed top-level navigation fallback
 through `/login?...auth_complete=1` for browser cookie timing quirks. That login
-recovery route retries the session check and can self-refresh a bounded number of times.
+recovery route retries the session check and can self-refresh a bounded number
+of times.
 
 `POST /api/logout`
 
 Revokes the current session and clears the session cookie.
+
+`POST /api/client-errors`
+
+Accepts a JSON browser error report and appends a sanitized JSONL entry to
+`client-errors.log`. This endpoint is intentionally available before login.
 
 `GET /api/anime`
 
@@ -164,8 +204,9 @@ AnimeGO:
 - Production catalog imports must persist playable embed URLs with
   `--include-embed-urls`; `--skip-player` is only a metadata research mode.
 - `backfill_players.py` can fill missing player rows after a broad catalog
-  scrape. `prune_non_playable.py --commit` removes rows that still have no
-  playable `embed_url`.
+  scrape. Its default fetches all exposed episodes; use `--episode-limit` only
+  for temporary samples. `prune_non_playable.py --commit` removes rows that
+  still have no playable `embed_url`.
 
 YummyAnime/YummyAni:
 

@@ -73,8 +73,7 @@ Audit table for scraper runs.
 
 `users`
 
-One row per authenticated Google account plus an internal legacy local profile
-used only for migration/function-level tests:
+One row per authenticated Google account:
 
 - `id` - local user ID.
 - `google_sub` - stable Google subject ID, unique. Google `sub` is the durable
@@ -104,7 +103,9 @@ Per-user mutable state:
 The primary key is `(user_id, anime_id)`. The recommendation endpoint reads
 this table for the current user as the taste profile. Favorites are strongest,
 watched titles are weaker, and in-progress titles also count. Recommendations
-themselves are computed at request time and are not persisted.
+themselves are computed at request time and are not persisted. New Google users
+start with no `user_title_state` rows. Anonymous/local profile state is not
+supported.
 
 ## Canonical Title View
 
@@ -131,8 +132,8 @@ both the full SQLite database backup and user-state SQL/JSON/CSV exports.
 ## ID Conventions
 
 - AnimeGO title IDs use the upstream AnimeGO numeric ID.
-- YummyAnime legacy title IDs use `10_000_000 + source_id`.
-- YummyAnime legacy episode IDs use `anime_id * 1000 + episode_number`.
+- YummyAnime derived title IDs use `10_000_000 + source_id`.
+- YummyAnime derived episode IDs use `anime_id * 1000 + episode_number`.
 - YummyAnime/YummyAni translation IDs use reserved high ranges to avoid
   collisions with AnimeGO translation IDs.
 - Canonical title URLs use local textual slugs such as
