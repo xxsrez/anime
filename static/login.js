@@ -3,6 +3,7 @@ const el = {
   oneTapAnchor: document.getElementById("one-tap-anchor"),
   state: document.getElementById("login-state"),
 };
+const GOOGLE_LOCALE = "ru";
 
 function setLoginState(message, tone = "") {
   el.state.textContent = message || "";
@@ -116,6 +117,7 @@ async function bootLogin() {
     type: "standard",
     shape: "rectangular",
     text: "signin_with",
+    locale: GOOGLE_LOCALE,
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
   maybeShowOneTap(google);
