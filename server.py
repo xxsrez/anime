@@ -4,6 +4,7 @@ import base64
 import binascii
 import datetime as dt
 import hashlib
+import html
 import hmac
 import json
 import math
@@ -1969,6 +1970,17 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_html(self, html_body, status=200, headers=None):
+        body = html_body.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or []):
+            self.send_header(name, value)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_redirect(self, location, status=302, headers=None):
         self.send_response(status)
         self.send_header("Location", location)
@@ -2084,6 +2096,29 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
         self.send_json({"error": message}, status)
 
+    def send_login_complete_page(self, token, next_path):
+        next_path = safe_next_path(next_path)
+        next_js = json.dumps(next_path, ensure_ascii=False)
+        next_href = html.escape(next_path, quote=True)
+        self.send_html(
+            f"""<!doctype html>
+<html lang=\"ru\">
+<head>
+  <meta charset=\"utf-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+  <meta http-equiv=\"refresh\" content=\"0; url={next_href}\">
+  <title>Вход выполнен - Anime Local</title>
+</head>
+<body>
+  <p>Вход выполнен. Открываю приложение...</p>
+  <p><a href=\"{next_href}\">Открыть приложение</a></p>
+  <script>window.location.replace({next_js});</script>
+</body>
+</html>
+""",
+            headers=[("Set-Cookie", self.session_cookie_header(token))],
+        )
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -2128,10 +2163,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
             except AuthError as exc:
                 self.redirect_to_login_auth_error(str(exc) or "Не удалось войти через Google")
                 return
-            self.send_redirect(
-                next_path,
-                headers=[("Set-Cookie", self.session_cookie_header(token))],
-            )
+            self.send_login_complete_page(token, next_path)
             return
 
         if path == "/api/me":
@@ -2186,6 +2218,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 payload, is_redirect_flow = self.read_google_auth_body()
                 if is_redirect_flow:
                     next_path = verify_google_auth_state(payload.get("state"))
+                elif payload.get("state"):
+                    next_path = verify_google_auth_state(payload.get("state"))
+                else:
+                    next_path = safe_next_path(payload.get("next") or "/")
                 auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
             except json.JSONDecodeError:
                 self.send_google_auth_error("invalid json", 400, is_redirect_flow)
@@ -2206,14 +2242,13 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     next_path,
                 )
                 return
-            cookie_header = self.session_cookie_header(auth["token"])
+            code = create_login_handoff(auth["token"], next_path)
+            complete_url = f"/api/auth/complete?code={quote(code, safe='')}"
             if is_redirect_flow:
-                code = create_login_handoff(auth["token"], next_path)
-                self.send_redirect(f"/api/auth/complete?code={quote(code, safe='')}")
+                self.send_redirect(complete_url)
                 return
             self.send_json(
-                {"user": auth["user"]},
-                headers=[("Set-Cookie", cookie_header)],
+                {"user": auth["user"], "complete_url": complete_url},
             )
             return
 

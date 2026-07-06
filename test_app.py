@@ -235,7 +235,7 @@ class LocalAppTest(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
 
-    def test_google_redirect_post_sets_session_cookie(self):
+    def test_google_redirect_post_sets_session_cookie_on_completion_page(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
@@ -269,15 +269,16 @@ class LocalAppTest(unittest.TestCase):
             self.assertNotIn("Set-Cookie", headers)
             authenticate.assert_called_once_with("fake-token", db_path)
 
-            status, headers, _ = self.request_test_server(
+            status, headers, response_body = self.request_test_server(
                 db_path,
                 "GET",
                 complete_location,
             )
 
-            self.assertEqual(status, 302)
-            self.assertEqual(headers["Location"], "/some-title")
+            self.assertEqual(status, 200)
             self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            self.assertIn(b"window.location.replace", response_body)
+            self.assertIn(b"/some-title", response_body)
 
             status, headers, _ = self.request_test_server(
                 db_path,
@@ -287,6 +288,46 @@ class LocalAppTest(unittest.TestCase):
 
             self.assertEqual(status, 302)
             self.assertEqual(urlparse(headers["Location"]).path, "/login")
+
+    def test_google_json_post_returns_completion_url_without_fetch_cookie(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            body = json.dumps({"credential": "fake-token", "next": "/wanted"})
+            headers = {
+                "Content-Type": "application/json",
+            }
+            auth = {
+                "user": {"id": 10, "email": "one@example.com", "name": "One", "picture_url": None},
+                "token": "session-token",
+                "expires_at": "2030-01-01T00:00:00+00:00",
+            }
+
+            with patch.object(server, "authenticate_google_credential", return_value=auth) as authenticate:
+                status, headers, response_body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/auth/google",
+                    headers=headers,
+                    body=body,
+                )
+
+            self.assertEqual(status, 200)
+            self.assertNotIn("Set-Cookie", headers)
+            payload = json.loads(response_body)
+            self.assertEqual(payload["user"]["email"], "one@example.com")
+            self.assertEqual(urlparse(payload["complete_url"]).path, "/api/auth/complete")
+            authenticate.assert_called_once_with("fake-token", db_path)
+
+            status, headers, response_body = self.request_test_server(
+                db_path,
+                "GET",
+                payload["complete_url"],
+            )
+
+            self.assertEqual(status, 200)
+            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            self.assertIn(b"/wanted", response_body)
 
     def test_auth_config_returns_signed_google_state(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -504,6 +545,8 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("auto_select: true", js)
         self.assertIn("callback: handleCredential", js)
         self.assertIn('fetch("/api/auth/google"', js)
+        self.assertIn('credentials: "same-origin"', js)
+        self.assertIn("complete_url", js)
         self.assertNotIn('ux_mode: "redirect"', js)
         self.assertNotIn("login_uri:", js)
         self.assertNotIn("use_fedcm_for_button", js)

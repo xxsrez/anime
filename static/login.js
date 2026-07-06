@@ -63,14 +63,22 @@ async function submitCredential(response) {
   setLoginState("Проверяю вход...", "ok");
   const authResponse = await fetch("/api/auth/google", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ credential: response.credential }),
+    body: JSON.stringify({
+      credential: response.credential,
+      next: nextPath(),
+      state: response.state || "",
+    }),
   });
+  const payload = await authResponse.json().catch(() => ({}));
   if (!authResponse.ok) {
-    const payload = await authResponse.json().catch(() => ({}));
     throw new Error(payload.error || `${authResponse.status} ${authResponse.statusText}`);
   }
-  window.location.replace(nextPath());
+  if (!payload.complete_url) {
+    throw new Error("Сервер не вернул завершение входа");
+  }
+  window.location.replace(payload.complete_url);
 }
 
 function handleCredential(response) {

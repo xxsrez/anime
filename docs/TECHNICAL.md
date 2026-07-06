@@ -42,7 +42,8 @@ or with the `ANIMEGO_DB` environment variable for internal helper calls.
 
 Authentication uses Sign in with Google. The login page calls Google One Tap
 first and keeps the Google button as a fallback. Both paths use the popup
-callback ID-token flow, then POST the credential to the local server. Google
+callback ID-token flow, then POST the credential to the local server and finish
+through a top-level completion page that sets the session cookie. Google
 requires a public OAuth client ID:
 
 ```bash
@@ -80,7 +81,9 @@ Returns the current authenticated user. Requires a valid session cookie.
 `POST /api/auth/google`
 
 Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
-verifies it server-side, upserts the local user, and sets the session cookie.
+verifies it server-side, upserts the local user, and returns a short-lived
+`complete_url`. The browser then opens that URL as a top-level page so the
+server can set the `HttpOnly` session cookie before returning to the app.
 
 `POST /api/logout`
 
@@ -131,7 +134,9 @@ fields:
 5. `/login` loads Google Identity Services, shows One Tap when available, and
    renders the Google button as a fallback. The login page receives the Google
    ID token in a JavaScript callback and POSTs it to `/api/auth/google`, which
-   verifies the token and creates a local session cookie.
+   verifies the token and returns `/api/auth/complete`. The browser opens that
+   completion page, receives the local session cookie, and is sent back to the
+   requested app route.
 6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
    renders the sidebar, and fetches detail JSON when a title is selected.
 7. The user can choose the source variant, translation, and provider; the player
