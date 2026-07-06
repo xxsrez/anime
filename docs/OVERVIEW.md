@@ -8,7 +8,8 @@ choosing a provider/translation, and tracking personal progress.
 ## Current User Workflows
 
 - Browse all scraped titles.
-- Sign in with a Google account and see the active account in the sidebar.
+- Sign in with a Google account through One Tap or the Google button and see
+  the active account in the sidebar.
 - Sign out from the sidebar account control.
 - Search by title, subtitle, source, type, status, year, or genre.
 - Filter by genre, year, type, status, source, and whether video is available.

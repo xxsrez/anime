@@ -86,6 +86,11 @@ select {
   margin-top: 22px;
 }
 
+#one-tap-anchor {
+  position: relative;
+  z-index: 2;
+}
+
 .login-state {
   min-height: 22px;
   margin: 14px 0 0;

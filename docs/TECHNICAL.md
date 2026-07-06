@@ -40,7 +40,9 @@ python3 server.py --db /path/to/animego.sqlite
 
 or with the `ANIMEGO_DB` environment variable for internal helper calls.
 
-Authentication requires:
+Authentication uses Sign in with Google. The login page calls Google One Tap
+first and keeps the Google button as a fallback. Google requires a public OAuth
+client ID for both flows:
 
 ```bash
 export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
@@ -125,8 +127,9 @@ fields:
 2. Scrapers normalize title, metadata, episodes, translations, and providers.
 3. Scrapers upsert rows into SQLite.
 4. `server.py` reads SQLite and emits JSON.
-5. `/login` renders the Google button. `/api/auth/google` verifies the ID token
-   and creates a local session cookie.
+5. `/login` loads Google Identity Services, shows One Tap when available, and
+   renders the Google button as a fallback. `/api/auth/google` verifies the ID
+   token and creates a local session cookie.
 6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
    renders the sidebar, and fetches detail JSON when a title is selected.
 7. The user can choose the source variant, translation, and provider; the player

@@ -339,6 +339,16 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('href="/static/favicon.svg"', html)
         self.assertIn('href="/favicon.ico"', html)
 
+    def test_login_uses_google_one_tap_and_button(self):
+        html = Path(server.STATIC_DIR / "login.html").read_text(encoding="utf-8")
+        js = Path(server.STATIC_DIR / "login.js").read_text(encoding="utf-8")
+        self.assertIn("https://accounts.google.com/gsi/client", html)
+        self.assertIn('id="one-tap-anchor"', html)
+        self.assertIn('id="google-button"', html)
+        self.assertIn("google.accounts.id.prompt", js)
+        self.assertIn("auto_select: true", js)
+        self.assertIn("google.accounts.id.renderButton", js)
+
     def test_view_mode_tabs_use_compact_accessible_labels(self):
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('aria-label="Режим каталога"', html)

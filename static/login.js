@@ -1,5 +1,6 @@
 const el = {
   googleButton: document.getElementById("google-button"),
+  oneTapAnchor: document.getElementById("one-tap-anchor"),
   state: document.getElementById("login-state"),
 };
 
@@ -56,6 +57,28 @@ async function submitCredential(response) {
   window.location.replace(nextPath());
 }
 
+function handleCredential(response) {
+  submitCredential(response).catch(error => {
+    setLoginState(error.message || "Не удалось войти", "warn");
+    console.error(error);
+  });
+}
+
+function maybeShowOneTap(google) {
+  google.accounts.id.prompt(notification => {
+    if (notification.isDisplayed?.()) {
+      setLoginState("");
+      return;
+    }
+    if (notification.isDismissedMoment?.()) {
+      return;
+    }
+    if (notification.isSkippedMoment?.() || notification.isNotDisplayed?.()) {
+      setLoginState("");
+    }
+  });
+}
+
 async function bootLogin() {
   const configResponse = await fetch("/api/auth/config");
   const config = await configResponse.json();
@@ -67,12 +90,11 @@ async function bootLogin() {
   const google = await waitForGoogle();
   google.accounts.id.initialize({
     client_id: config.client_id,
-    callback: credential => {
-      submitCredential(credential).catch(error => {
-        setLoginState(error.message || "Не удалось войти", "warn");
-        console.error(error);
-      });
-    },
+    callback: handleCredential,
+    auto_select: true,
+    use_fedcm_for_button: true,
+    button_auto_select: true,
+    prompt_parent_id: el.oneTapAnchor?.id,
   });
   google.accounts.id.renderButton(el.googleButton, {
     theme: "filled_black",
@@ -82,6 +104,7 @@ async function bootLogin() {
     text: "signin_with",
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
+  maybeShowOneTap(google);
 }
 
 bootLogin().catch(error => {
