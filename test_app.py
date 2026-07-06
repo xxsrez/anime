@@ -277,6 +277,9 @@ class LocalAppTest(unittest.TestCase):
 
             self.assertEqual(status, 200)
             self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            self.assertIn(b"waitForSession", response_body)
+            self.assertIn(b'fetch("/api/me"', response_body)
+            self.assertIn(b'credentials: "same-origin"', response_body)
             self.assertIn(b"window.location.replace", response_body)
             self.assertIn(b"/some-title", response_body)
 
@@ -327,6 +330,7 @@ class LocalAppTest(unittest.TestCase):
 
             self.assertEqual(status, 200)
             self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            self.assertIn(b"waitForSession", response_body)
             self.assertIn(b"/wanted", response_body)
 
     def test_auth_config_returns_signed_google_state(self):

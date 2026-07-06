@@ -83,7 +83,8 @@ Returns the current authenticated user. Requires a valid session cookie.
 Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
 verifies it server-side, upserts the local user, and returns a short-lived
 `complete_url`. The browser then opens that URL as a top-level page so the
-server can set the `HttpOnly` session cookie before returning to the app.
+server can set the `HttpOnly` session cookie. The completion page waits until
+`/api/me` sees that cookie before returning to the app.
 
 `POST /api/logout`
 
@@ -135,8 +136,8 @@ fields:
    renders the Google button as a fallback. The login page receives the Google
    ID token in a JavaScript callback and POSTs it to `/api/auth/google`, which
    verifies the token and returns `/api/auth/complete`. The browser opens that
-   completion page, receives the local session cookie, and is sent back to the
-   requested app route.
+   completion page, receives the local session cookie, waits until `/api/me`
+   accepts it, and is sent back to the requested app route.
 6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
    renders the sidebar, and fetches detail JSON when a title is selected.
 7. The user can choose the source variant, translation, and provider; the player

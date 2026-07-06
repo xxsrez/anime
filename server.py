@@ -2106,13 +2106,37 @@ class AnimeHandler(BaseHTTPRequestHandler):
 <head>
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-  <meta http-equiv=\"refresh\" content=\"0; url={next_href}\">
   <title>Вход выполнен - Anime Local</title>
 </head>
 <body>
-  <p>Вход выполнен. Открываю приложение...</p>
+  <p id=\"login-complete-state\">Вход выполнен. Открываю приложение...</p>
   <p><a href=\"{next_href}\">Открыть приложение</a></p>
-  <script>window.location.replace({next_js});</script>
+  <script>
+    const nextPath = {next_js};
+    const state = document.getElementById("login-complete-state");
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function waitForSession() {{
+      for (let attempt = 0; attempt < 20; attempt += 1) {{
+        try {{
+          const response = await fetch("/api/me", {{
+            cache: "no-store",
+            credentials: "same-origin",
+          }});
+          if (response.ok) {{
+            window.location.replace(nextPath);
+            return;
+          }}
+        }} catch (error) {{
+          // The next retry handles transient navigation/cookie timing.
+        }}
+        await delay(100);
+      }}
+      state.textContent = "Вход выполнен. Если приложение не открылось автоматически, нажмите ссылку ниже.";
+    }}
+
+    waitForSession();
+  </script>
 </body>
 </html>
 """,
