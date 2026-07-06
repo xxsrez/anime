@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anime Local</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div>
+          <h1>Anime Local</h1>
+          <p id="catalog-count">0 тайтлов</p>
+        </div>
+        <span class="status-dot" aria-hidden="true"></span>
+      </div>
+      <label class="search-box">
+        <span>Поиск</span>
+        <input id="search" type="search" autocomplete="off">
+      </label>
+      <section class="catalog-tools" aria-label="Фильтры каталога">
+        <div class="sort-row">
+          <label class="tool-field">
+            <span>Сортировка</span>
+            <select id="sort-by"></select>
+          </label>
+          <button id="sort-dir-toggle" class="icon-button sort-dir-toggle" type="button" aria-label="По убыванию" title="По убыванию">↓</button>
+          <label class="tool-field add-filter-field">
+            <span>Фильтр</span>
+            <select id="add-filter">
+              <option value="">+ добавить</option>
+            </select>
+          </label>
+          <button id="reset-filters" class="icon-button reset-filters" type="button" aria-label="Сбросить" title="Сбросить">↺</button>
+        </div>
+        <div id="filter-grid" class="filter-grid" hidden></div>
+        <div id="active-filters" class="active-filters" hidden></div>
+      </section>
+      <div class="view-tabs" aria-label="Фильтр каталога">
+        <button id="view-all" class="active" type="button" data-view="all">Все</button>
+        <button id="view-favorites" type="button" data-view="favorites">Избранное</button>
+        <button id="view-progress" type="button" data-view="progress">Прогресс</button>
+        <button id="view-recommendations" type="button" data-view="recommendations">Советы</button>
+      </div>
+      <div id="recommendation-meta" class="recommendation-meta" hidden></div>
+      <div id="anime-list" class="anime-list"></div>
+    </aside>
+
+    <section class="detail">
+      <div class="detail-header">
+        <img id="poster" class="poster" alt="">
+        <div class="title-block">
+          <div id="meta-line" class="meta-line"></div>
+          <h2 id="title"></h2>
+          <p id="subtitle"></p>
+          <div class="watch-row">
+            <button id="favorite-toggle" class="watch-button" type="button" aria-pressed="false">☆ Избранное</button>
+            <label class="progress-control">
+              <span>Серия</span>
+              <input id="progress-episode" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+            <label class="watched-control">
+              <input id="watched-toggle" type="checkbox">
+              <span>Просмотрен</span>
+            </label>
+            <strong id="progress-summary" class="progress-summary">Не начато</strong>
+          </div>
+          <div id="recommendation-context" class="recommendation-context" hidden></div>
+          <div id="genres" class="chip-row"></div>
+          <p id="description" class="description"></p>
+          <div id="fields" class="field-grid"></div>
+        </div>
+      </div>
+
+      <div class="episode-strip" id="episodes"></div>
+
+      <div class="player-layout">
+        <section class="player-pane">
+          <div class="iframe-wrap" id="iframe-wrap">
+            <iframe
+              id="player"
+              title="Аниме плеер"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
+              allowfullscreen
+              referrerpolicy="origin">
+            </iframe>
+            <div id="empty-player" class="empty-player"></div>
+          </div>
+        </section>
+
+        <aside class="source-panel">
+          <label>
+            <span>Озвучка</span>
+            <select id="translation"></select>
+          </label>
+          <label>
+              <span>Плеер</span>
+              <select id="provider"></select>
+            </label>
+          <div class="player-actions">
+            <button id="fullscreen-toggle" class="icon-button player-action" type="button" aria-label="Во весь экран" title="Во весь экран">⛶</button>
+            <button id="pip-toggle" class="icon-button player-action" type="button" aria-label="Picture-in-Picture" title="Picture-in-Picture">▣</button>
+          </div>
+          <div id="player-action-state" class="player-action-state" aria-live="polite"></div>
+          <div class="source-meta">
+            <div>
+              <span>Хост</span>
+              <strong id="host">-</strong>
+            </div>
+            <div>
+              <span>Эпизод</span>
+              <strong id="episode-state">-</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

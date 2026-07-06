@@ -1,0 +1,1008 @@
+const DEFAULT_FILTERS = {
+  genre: "",
+  year: "",
+  kind: "",
+  status: "",
+  source: "",
+  video: "any",
+};
+const DEFAULT_SORT_BY = "rating_best";
+const DEFAULT_SORT_DIR = "desc";
+const RECOMMENDATION_LIMIT = 20;
+
+const state = {
+  anime: [],
+  recommendations: [],
+  recommendationProfile: null,
+  filtered: [],
+  selectedAnimeId: null,
+  detail: null,
+  selectedEpisodeId: null,
+  selectedTranslation: null,
+  selectedSourceId: null,
+  viewMode: "all",
+  filters: { ...DEFAULT_FILTERS },
+  activeFilterIds: [],
+  sortBy: DEFAULT_SORT_BY,
+  sortDir: DEFAULT_SORT_DIR,
+  filterControls: {},
+  savingState: false,
+  pendingStateSave: null,
+};
+
+const el = {
+  count: document.getElementById("catalog-count"),
+  search: document.getElementById("search"),
+  filterGrid: document.getElementById("filter-grid"),
+  activeFilters: document.getElementById("active-filters"),
+  sortBy: document.getElementById("sort-by"),
+  sortDirToggle: document.getElementById("sort-dir-toggle"),
+  addFilter: document.getElementById("add-filter"),
+  resetFilters: document.getElementById("reset-filters"),
+  viewTabs: document.querySelectorAll(".view-tabs button"),
+  recommendationMeta: document.getElementById("recommendation-meta"),
+  list: document.getElementById("anime-list"),
+  poster: document.getElementById("poster"),
+  meta: document.getElementById("meta-line"),
+  title: document.getElementById("title"),
+  subtitle: document.getElementById("subtitle"),
+  favoriteToggle: document.getElementById("favorite-toggle"),
+  progressEpisode: document.getElementById("progress-episode"),
+  watchedToggle: document.getElementById("watched-toggle"),
+  progressSummary: document.getElementById("progress-summary"),
+  recommendationContext: document.getElementById("recommendation-context"),
+  genres: document.getElementById("genres"),
+  description: document.getElementById("description"),
+  fields: document.getElementById("fields"),
+  episodes: document.getElementById("episodes"),
+  translation: document.getElementById("translation"),
+  provider: document.getElementById("provider"),
+  fullscreenToggle: document.getElementById("fullscreen-toggle"),
+  pipToggle: document.getElementById("pip-toggle"),
+  playerActionState: document.getElementById("player-action-state"),
+  player: document.getElementById("player"),
+  wrap: document.getElementById("iframe-wrap"),
+  empty: document.getElementById("empty-player"),
+  host: document.getElementById("host"),
+  episodeState: document.getElementById("episode-state"),
+};
+
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  return response.json();
+}
+
+function text(value, fallback = "") {
+  return value == null || value === "" ? fallback : String(value);
+}
+
+function searchText(value) {
+  return String(value || "").toLocaleLowerCase("ru").replaceAll("ё", "е").replaceAll("э", "е");
+}
+
+function sourcesForEpisode(episodeId) {
+  const sources = state.detail?.sources_by_episode?.[episodeId] || [];
+  return sources.filter(source => source.embed_url);
+}
+
+function activeEpisode() {
+  return state.detail?.episodes?.find(episode => episode.id === state.selectedEpisodeId) || null;
+}
+
+function numberFrom(value) {
+  const match = String(value || "").match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : null;
+}
+
+function progressText(item) {
+  if (item.watched) return "просмотрено";
+  if (item.progress_episode_number != null) return `серия ${item.progress_episode_number}`;
+  return "";
+}
+
+function progressSummary(detail) {
+  if (!detail) return "Не начато";
+  const progress = detail.progress_episode_number;
+  const total = numberFrom(detail.episodes_text);
+  if (detail.watched) return "Просмотрено";
+  if (progress != null && total) return `Серия ${progress} из ${total}`;
+  if (progress != null) return `Серия ${progress}`;
+  return "Не начато";
+}
+
+function progressInputValue() {
+  if (el.progressEpisode.value === "") return null;
+  const parsed = Number.parseInt(el.progressEpisode.value, 10);
+  if (!Number.isFinite(parsed)) return null;
+  const total = numberFrom(state.detail?.episodes_text);
+  const normalized = Math.max(0, parsed);
+  return total ? Math.min(total, normalized) : normalized;
+}
+
+function sourceLabel(source) {
+  if (source === "yummyanime") return "YummyAnime";
+  if (source === "animego") return "AnimeGO";
+  return source ? String(source) : "";
+}
+
+function numericValue(value) {
+  if (value == null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function yearValue(item) {
+  return numericValue(item.year) || numericValue(String(item.date_published || "").slice(0, 4));
+}
+
+function bestScore(item) {
+  return numericValue(item.aggregate_score) ?? numericValue(item.listing_score);
+}
+
+function formatScore(value) {
+  const score = numericValue(value);
+  if (score == null) return "";
+  const rounded = score.toFixed(1).replace(/\.0$/, "");
+  return `${rounded}/10`;
+}
+
+function formatPercent(value) {
+  const score = numericValue(value);
+  return score == null ? "" : `${Math.round(score)}%`;
+}
+
+function isRecommendationView() {
+  return state.viewMode === "recommendations";
+}
+
+function recommendationFor(id) {
+  return state.recommendations.find(item => String(item.id) === String(id)) || null;
+}
+
+function baseItemsForView() {
+  return isRecommendationView() ? state.recommendations : state.anime;
+}
+
+function normalizeOptionValues(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .map(item => (item == null ? "" : String(item).trim()))
+    .filter(Boolean);
+}
+
+function countedOptions(items, extractor, labeler = value => value, sorter = null) {
+  const counts = new Map();
+  for (const item of items) {
+    for (const value of normalizeOptionValues(extractor(item))) {
+      const entry = counts.get(value) || { value, label: labeler(value), count: 0 };
+      entry.count += 1;
+      counts.set(value, entry);
+    }
+  }
+  const options = [...counts.values()].map(option => ({
+    ...option,
+    label: `${option.label} (${option.count})`,
+  }));
+  return options.sort(sorter || ((a, b) => b.count - a.count || a.label.localeCompare(b.label, "ru")));
+}
+
+const filterDefinitions = [
+  {
+    id: "genre",
+    label: "Жанр",
+    allLabel: "Все жанры",
+    options: items => countedOptions(items, item => item.genres || []),
+    match: (item, value) => !value || (item.genres || []).includes(value),
+  },
+  {
+    id: "year",
+    label: "Год",
+    allLabel: "Все годы",
+    options: items => countedOptions(
+      items,
+      item => yearValue(item),
+      value => value,
+      (a, b) => Number(b.value) - Number(a.value)
+    ),
+    match: (item, value) => !value || String(yearValue(item)) === String(value),
+  },
+  {
+    id: "kind",
+    label: "Тип",
+    allLabel: "Все типы",
+    options: items => countedOptions(items, item => item.kind),
+    match: (item, value) => !value || item.kind === value,
+  },
+  {
+    id: "status",
+    label: "Статус",
+    allLabel: "Все статусы",
+    options: items => countedOptions(items, item => item.status),
+    match: (item, value) => !value || item.status === value,
+  },
+  {
+    id: "source",
+    label: "Источник",
+    allLabel: "Все источники",
+    options: items => countedOptions(items, item => item.source, sourceLabel),
+    match: (item, value) => !value || item.source === value,
+  },
+  {
+    id: "video",
+    label: "Видео",
+    allLabel: "Любые видео",
+    options: () => [
+      { value: "with", label: "Есть видео" },
+      { value: "missing", label: "Без видео" },
+    ],
+    match: (item, value) => {
+      if (value === "with") return (item.source_count || 0) > 0;
+      if (value === "missing") return (item.source_count || 0) === 0;
+      return true;
+    },
+  },
+];
+
+const sortDefinitions = [
+  {
+    id: "rating_best",
+    label: "Лучший",
+    defaultDir: "desc",
+    type: "number",
+    value: bestScore,
+  },
+  {
+    id: "aggregate_score",
+    label: "Сайт",
+    defaultDir: "desc",
+    type: "number",
+    value: item => numericValue(item.aggregate_score),
+  },
+  {
+    id: "listing_score",
+    label: "Список",
+    defaultDir: "desc",
+    type: "number",
+    value: item => numericValue(item.listing_score),
+  },
+  {
+    id: "aggregate_count",
+    label: "Оценок",
+    defaultDir: "desc",
+    type: "number",
+    value: item => numericValue(item.aggregate_count),
+  },
+  {
+    id: "year",
+    label: "Год",
+    defaultDir: "desc",
+    type: "number",
+    value: yearValue,
+  },
+  {
+    id: "videos",
+    label: "Видео",
+    defaultDir: "desc",
+    type: "number",
+    value: item => numericValue(item.available_episode_count) ?? numericValue(item.source_count),
+  },
+  {
+    id: "title",
+    label: "Название",
+    defaultDir: "asc",
+    type: "string",
+    value: item => item.title || "",
+  },
+];
+
+function sortDefinition(id = state.sortBy) {
+  return sortDefinitions.find(item => item.id === id) || sortDefinitions[0];
+}
+
+function compareAnime(left, right) {
+  const definition = sortDefinition();
+  const leftValue = definition.value(left);
+  const rightValue = definition.value(right);
+  const leftMissing = leftValue == null || leftValue === "";
+  const rightMissing = rightValue == null || rightValue === "";
+
+  if (leftMissing !== rightMissing) return leftMissing ? 1 : -1;
+  if (!leftMissing) {
+    let result = 0;
+    if (definition.type === "string") {
+      result = String(leftValue).localeCompare(String(rightValue), "ru", { sensitivity: "base" });
+    } else {
+      result = Number(leftValue) - Number(rightValue);
+    }
+    if (result !== 0) return state.sortDir === "desc" ? -result : result;
+  }
+
+  return String(left.title || "").localeCompare(String(right.title || ""), "ru", { sensitivity: "base" });
+}
+
+function compareRecommendations(left, right) {
+  const scoreDiff = (numericValue(right.recommendation_score) || 0) - (numericValue(left.recommendation_score) || 0);
+  if (scoreDiff !== 0) return scoreDiff;
+  const rankDiff = (numericValue(left.recommendation_rank) || 9999) - (numericValue(right.recommendation_rank) || 9999);
+  if (rankDiff !== 0) return rankDiff;
+  return String(left.title || "").localeCompare(String(right.title || ""), "ru", { sensitivity: "base" });
+}
+
+function filterOptionLabel(definition, value) {
+  if (!value || value === "any") return "";
+  const option = definition.options(state.anime).find(item => String(item.value) === String(value));
+  return option ? option.label.replace(/\s+\(\d+\)$/, "") : value;
+}
+
+function activeFilterDefinitions() {
+  return state.activeFilterIds
+    .map(id => filterDefinitions.find(definition => definition.id === id))
+    .filter(Boolean);
+}
+
+function renderAddFilterControl() {
+  const available = filterDefinitions.filter(definition => !state.activeFilterIds.includes(definition.id));
+  el.addFilter.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = available.length ? "+ добавить" : "Все добавлены";
+  el.addFilter.append(placeholder);
+
+  for (const definition of available) {
+    const option = document.createElement("option");
+    option.value = definition.id;
+    option.textContent = definition.label;
+    el.addFilter.append(option);
+  }
+
+  el.addFilter.value = "";
+  el.addFilter.disabled = available.length === 0;
+}
+
+function renderFilterControls() {
+  state.filterControls = {};
+  el.filterGrid.replaceChildren();
+  el.filterGrid.hidden = state.activeFilterIds.length === 0;
+
+  for (const definition of activeFilterDefinitions()) {
+    const row = document.createElement("div");
+    row.className = "filter-control";
+
+    const label = document.createElement("label");
+    label.className = "tool-field";
+
+    const caption = document.createElement("span");
+    caption.textContent = definition.label;
+
+    const select = document.createElement("select");
+    select.dataset.filter = definition.id;
+
+    const all = document.createElement("option");
+    all.value = definition.id === "video" ? "any" : "";
+    all.textContent = definition.allLabel;
+    select.append(all);
+
+    for (const item of definition.options(state.anime)) {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      select.append(option);
+    }
+
+    select.value = state.filters[definition.id] || all.value;
+    select.addEventListener("change", () => {
+      state.filters[definition.id] = select.value;
+      applyFilter({ selectFirst: true });
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "icon-button remove-filter";
+    remove.textContent = "×";
+    remove.title = `Убрать фильтр: ${definition.label}`;
+    remove.setAttribute("aria-label", `Убрать фильтр: ${definition.label}`);
+    remove.addEventListener("click", () => {
+      state.filters[definition.id] = DEFAULT_FILTERS[definition.id];
+      state.activeFilterIds = state.activeFilterIds.filter(id => id !== definition.id);
+      renderFilterControls();
+      renderAddFilterControl();
+      applyFilter({ selectFirst: true });
+    });
+
+    state.filterControls[definition.id] = select;
+    label.append(caption, select);
+    row.append(label, remove);
+    el.filterGrid.append(row);
+  }
+
+  renderAddFilterControl();
+}
+
+function renderSortControls() {
+  el.sortBy.replaceChildren(...sortDefinitions.map(definition => {
+    const option = document.createElement("option");
+    option.value = definition.id;
+    option.textContent = definition.label;
+    return option;
+  }));
+  el.sortBy.value = state.sortBy;
+  renderSortDirection();
+}
+
+function renderSortDirection() {
+  const isDesc = state.sortDir === "desc";
+  const label = isDesc ? "По убыванию" : "По возрастанию";
+  el.sortDirToggle.textContent = isDesc ? "↓" : "↑";
+  el.sortDirToggle.title = label;
+  el.sortDirToggle.setAttribute("aria-label", label);
+}
+
+function renderActiveFilters() {
+  el.activeFilters.hidden = true;
+  el.activeFilters.replaceChildren();
+}
+
+function hasActiveCatalogTools() {
+  const query = el.search.value.trim();
+  const filtersChanged = Object.keys(DEFAULT_FILTERS).some(key => state.filters[key] !== DEFAULT_FILTERS[key]);
+  return Boolean(query)
+    || filtersChanged
+    || state.activeFilterIds.length > 0
+    || state.sortBy !== DEFAULT_SORT_BY
+    || state.sortDir !== DEFAULT_SORT_DIR;
+}
+
+function resetCatalogTools() {
+  el.search.value = "";
+  state.filters = { ...DEFAULT_FILTERS };
+  state.activeFilterIds = [];
+  state.sortBy = DEFAULT_SORT_BY;
+  state.sortDir = DEFAULT_SORT_DIR;
+
+  renderFilterControls();
+  el.sortBy.value = state.sortBy;
+  renderSortDirection();
+  applyFilter({ selectFirst: true });
+}
+
+function renderList() {
+  const total = isRecommendationView() ? state.recommendations.length : state.anime.length;
+  el.count.textContent = isRecommendationView()
+    ? `${state.filtered.length} из ${total} советов`
+    : `${state.filtered.length} из ${total} тайтлов`;
+  renderRecommendationMeta();
+  el.list.replaceChildren();
+
+  if (!state.filtered.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-list";
+    empty.textContent = isRecommendationView() ? "Пока нет рекомендаций" : "Ничего не найдено";
+    el.list.append(empty);
+    return;
+  }
+
+  for (const item of state.filtered) {
+    const button = document.createElement("button");
+    button.className = "anime-item";
+    button.type = "button";
+    button.dataset.id = item.id;
+    if (item.id === state.selectedAnimeId) button.classList.add("active");
+    if (item.is_favorite) button.classList.add("favorite");
+    if (item.watched) button.classList.add("watched");
+    if (item.recommendation_score != null) button.classList.add("recommended");
+
+    const img = document.createElement("img");
+    img.src = item.cover_url || "";
+    img.alt = "";
+    img.loading = "lazy";
+
+    const body = document.createElement("div");
+    const title = document.createElement("strong");
+    const rank = isRecommendationView() && item.recommendation_rank ? `${item.recommendation_rank}. ` : "";
+    title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
+    const meta = document.createElement("span");
+    const available = item.available_episode_count || 0;
+    const score = formatScore(bestScore(item));
+    const watch = progressText(item);
+    const source = sourceLabel(item.source);
+    if (isRecommendationView()) {
+      const recScore = formatPercent(item.recommendation_score);
+      const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
+      meta.textContent = [recScore, confidence, `${available} видео`, score, source].filter(Boolean).join(" · ");
+    } else {
+      meta.textContent = `${text(item.kind, "тайтл")} ${text(item.episodes_text, "")} · ${available} видео${score ? ` · ${score}` : ""}${source ? ` · ${source}` : ""}${watch ? ` · ${watch}` : ""}`;
+    }
+
+    body.append(title, meta);
+    if (isRecommendationView()) {
+      const note = document.createElement("span");
+      note.className = "recommendation-note";
+      note.textContent = (item.recommendation_reasons || []).slice(0, 2).join(" · ");
+      body.append(note);
+    }
+    button.append(img, body);
+    button.addEventListener("click", () => selectAnime(item.id));
+    el.list.append(button);
+  }
+}
+
+function renderRecommendationMeta() {
+  el.recommendationMeta.hidden = !isRecommendationView();
+  el.recommendationMeta.replaceChildren();
+  if (!isRecommendationView()) return;
+
+  const profile = state.recommendationProfile || {};
+  const mode = profile.mode === "personalized" ? "персонально" : "популярное";
+  const seedText = profile.seed_count
+    ? `по ${profile.seed_count} выбранным`
+    : "без профиля вкусов";
+  const genres = (profile.top_genres || []).slice(0, 4).map(item => item.genre).join(", ");
+  const parts = [`${state.recommendations.length} советов`, mode, seedText];
+  if (genres) parts.push(genres);
+  el.recommendationMeta.setAttribute("aria-label", parts.join(" · "));
+
+  for (const part of parts) {
+    const item = document.createElement("span");
+    item.textContent = part;
+    el.recommendationMeta.append(item);
+  }
+}
+
+function renderDetail() {
+  const detail = state.detail;
+  if (!detail) return;
+
+  el.poster.src = detail.cover_url || "";
+  el.poster.alt = detail.title || "";
+  const formattedScore = formatScore(detail.aggregate_score);
+  const scoreText = formattedScore
+    ? `${formattedScore}${detail.aggregate_count ? ` (${detail.aggregate_count})` : ""}`
+    : null;
+  el.meta.textContent = [detail.kind, detail.status, detail.episodes_text, scoreText, sourceLabel(detail.source)].filter(Boolean).join(" · ");
+  el.title.textContent = detail.title || "";
+  el.subtitle.textContent = detail.subtitle || "";
+  el.description.textContent = detail.description || "";
+  renderWatchState(detail);
+  renderRecommendationContext(detail);
+  renderFields(detail);
+
+  el.genres.replaceChildren(...(detail.genres || []).map(genre => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = genre;
+    return chip;
+  }));
+
+  el.episodes.replaceChildren();
+  for (const episode of detail.episodes || []) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "episode-btn";
+    button.textContent = episode.number || episode.id;
+    button.title = episode.title || episode.release_label || "";
+    if (episode.source_count > 0) button.classList.add("available");
+    if (episode.id === state.selectedEpisodeId) button.classList.add("active");
+    button.addEventListener("click", () => selectEpisode(episode.id).catch(console.error));
+    el.episodes.append(button);
+  }
+
+  renderSources();
+}
+
+function renderWatchState(detail) {
+  el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
+  el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
+  el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
+  el.progressEpisode.value = detail.progress_episode_number == null ? "" : detail.progress_episode_number;
+  const total = numberFrom(detail.episodes_text);
+  if (total) {
+    el.progressEpisode.max = total;
+  } else {
+    el.progressEpisode.removeAttribute("max");
+  }
+  el.watchedToggle.checked = Boolean(detail.watched);
+  el.progressSummary.textContent = progressSummary(detail);
+}
+
+function renderRecommendationContext(detail) {
+  const rec = recommendationFor(detail.id);
+  el.recommendationContext.replaceChildren();
+  if (!rec) {
+    el.recommendationContext.hidden = true;
+    return;
+  }
+
+  el.recommendationContext.hidden = false;
+  const header = document.createElement("div");
+  header.className = "recommendation-context-header";
+
+  const score = document.createElement("strong");
+  score.textContent = `Совет ${formatPercent(rec.recommendation_score)}`;
+  const confidence = document.createElement("span");
+  confidence.textContent = `${rec.recommendation_confidence || "средняя"} уверенность`;
+  header.append(score, confidence);
+
+  const reasons = document.createElement("div");
+  reasons.className = "recommendation-reasons";
+  for (const reason of rec.recommendation_reasons || []) {
+    const item = document.createElement("span");
+    item.textContent = reason;
+    reasons.append(item);
+  }
+
+  el.recommendationContext.append(header, reasons);
+}
+
+function renderFields(detail) {
+  const skip = new Set(["Жанры"]);
+  const fields = [];
+  if (detail.rating) fields.push(["Рейтинг", detail.rating]);
+  if (detail.date_published) fields.push(["Дата", detail.date_published]);
+  for (const item of detail.fields || []) {
+    if (skip.has(item.label)) continue;
+    if (fields.some(([label]) => label === item.label)) continue;
+    fields.push([item.label, item.value]);
+  }
+
+  el.fields.replaceChildren(...fields.slice(0, 18).map(([label, value]) => {
+    const node = document.createElement("div");
+    node.className = "field-item";
+    const key = document.createElement("span");
+    key.textContent = label;
+    const val = document.createElement("strong");
+    val.textContent = value || "-";
+    node.append(key, val);
+    return node;
+  }));
+}
+
+function uniqueTranslations(sources) {
+  const map = new Map();
+  for (const source of sources) {
+    if (!map.has(source.translation_id)) {
+      map.set(source.translation_id, source.translation_title || String(source.translation_id));
+    }
+  }
+  return [...map.entries()].map(([id, title]) => ({ id: String(id), title }));
+}
+
+function renderSources() {
+  const episode = activeEpisode();
+  const sources = sourcesForEpisode(state.selectedEpisodeId);
+  const translations = uniqueTranslations(sources);
+
+  el.translation.replaceChildren();
+  el.provider.replaceChildren();
+
+  if (!episode) {
+    clearPlayer("-");
+    return;
+  }
+
+  if (!sources.length) {
+    clearPlayer(episode.unavailable_reason || "Видео недоступно");
+    return;
+  }
+
+  if (!translations.some(item => item.id === String(state.selectedTranslation))) {
+    state.selectedTranslation = translations[0]?.id || null;
+  }
+
+  for (const item of translations) {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.title;
+    option.selected = item.id === String(state.selectedTranslation);
+    el.translation.append(option);
+  }
+
+  const providers = sources.filter(source => String(source.translation_id) === String(state.selectedTranslation));
+  if (!providers.some(source => String(source.id) === String(state.selectedSourceId))) {
+    state.selectedSourceId = providers[0]?.id ? String(providers[0].id) : null;
+  }
+
+  for (const source of providers) {
+    const option = document.createElement("option");
+    option.value = source.id;
+    option.textContent = `${source.provider_title} · ${source.embed_host}`;
+    option.selected = String(source.id) === String(state.selectedSourceId);
+    el.provider.append(option);
+  }
+
+  const selected = providers.find(source => String(source.id) === String(state.selectedSourceId)) || providers[0];
+  if (selected) {
+    setPlayer(selected, episode);
+  } else {
+    clearPlayer("Источник недоступен");
+  }
+}
+
+function setPlayer(source, episode) {
+  el.wrap.classList.remove("empty");
+  el.player.src = source.embed_url;
+  el.host.textContent = source.embed_host || "-";
+  el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
+  el.empty.textContent = "";
+}
+
+function clearPlayer(message) {
+  el.player.removeAttribute("src");
+  el.wrap.classList.add("empty");
+  el.empty.textContent = message;
+  el.host.textContent = "-";
+  el.episodeState.textContent = "-";
+}
+
+function setPlayerActionState(message = "", tone = "") {
+  el.playerActionState.textContent = message;
+  el.playerActionState.dataset.tone = tone;
+}
+
+function updateFullscreenControl() {
+  const active = document.fullscreenElement === el.wrap;
+  el.fullscreenToggle.classList.toggle("active", active);
+  el.fullscreenToggle.title = active ? "Выйти из полного экрана" : "Во весь экран";
+  el.fullscreenToggle.setAttribute("aria-label", el.fullscreenToggle.title);
+  el.fullscreenToggle.setAttribute("aria-pressed", active ? "true" : "false");
+}
+
+async function toggleFullscreen() {
+  if (!el.player.getAttribute("src")) {
+    setPlayerActionState("Нет активного видео", "warn");
+    return;
+  }
+  if (!el.wrap.requestFullscreen) {
+    setPlayerActionState("Браузер не поддерживает fullscreen", "warn");
+    return;
+  }
+
+  try {
+    if (document.fullscreenElement === el.wrap) {
+      await document.exitFullscreen();
+    } else {
+      await el.wrap.requestFullscreen();
+    }
+    setPlayerActionState("");
+    updateFullscreenControl();
+  } catch (error) {
+    setPlayerActionState(error.message || "Не удалось открыть fullscreen", "warn");
+  }
+}
+
+function clonePlayerForPipWindow(pipWindow) {
+  const doc = pipWindow.document;
+  doc.body.style.margin = "0";
+  doc.body.style.background = "#050607";
+  const iframe = doc.createElement("iframe");
+  iframe.src = el.player.src;
+  iframe.title = el.player.title || "Аниме плеер";
+  iframe.allow = el.player.allow || "fullscreen; picture-in-picture";
+  iframe.allowFullscreen = true;
+  iframe.referrerPolicy = el.player.referrerPolicy || "origin";
+  Object.assign(iframe.style, {
+    border: "0",
+    width: "100vw",
+    height: "100vh",
+    background: "#050607",
+  });
+  doc.body.append(iframe);
+}
+
+async function openPictureInPicture() {
+  if (!el.player.getAttribute("src")) {
+    setPlayerActionState("Нет активного видео", "warn");
+    return;
+  }
+
+  if ("documentPictureInPicture" in window) {
+    try {
+      const pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: 560,
+        height: 315,
+      });
+      clonePlayerForPipWindow(pipWindow);
+      setPlayerActionState("PiP открыт", "ok");
+      return;
+    } catch (error) {
+      if (error.name !== "NotAllowedError") {
+        setPlayerActionState("PiP доступен в самом плеере", "warn");
+        return;
+      }
+    }
+  }
+
+  setPlayerActionState("PiP доступен в самом плеере", "warn");
+}
+
+async function selectAnime(id) {
+  state.selectedAnimeId = id;
+  state.detail = await api(`/api/anime/${id}`);
+  const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
+  state.selectedEpisodeId = (firstAvailable || state.detail.episodes[0] || {}).id || null;
+  state.selectedTranslation = null;
+  state.selectedSourceId = null;
+  renderList();
+  renderDetail();
+}
+
+async function selectEpisode(id) {
+  state.selectedEpisodeId = id;
+  state.selectedTranslation = null;
+  state.selectedSourceId = null;
+  const episode = activeEpisode();
+  const number = numberFrom(episode?.number);
+  if (number != null) {
+    await saveUserState({ progress_episode_number: number, watched: false });
+    return;
+  }
+  renderDetail();
+}
+
+async function saveUserState(patch, animeId = state.selectedAnimeId) {
+  if (!animeId) return;
+  if (state.savingState) {
+    if (state.pendingStateSave?.animeId === animeId) {
+      Object.assign(state.pendingStateSave.patch, patch);
+    } else {
+      state.pendingStateSave = { animeId, patch: { ...patch } };
+    }
+    return;
+  }
+
+  state.savingState = true;
+  try {
+    const payload = await api(`/api/anime/${animeId}/state`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const nextState = payload.state || {};
+    const pendingForSameAnime = state.pendingStateSave?.animeId === animeId
+      ? state.pendingStateSave.patch
+      : null;
+    const visibleState = pendingForSameAnime
+      ? { ...nextState, ...pendingForSameAnime }
+      : nextState;
+    const item = state.anime.find(entry => entry.id === animeId);
+    if (item) Object.assign(item, visibleState);
+    const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in patch);
+    if (affectsRecommendations) {
+      await loadRecommendations();
+    }
+    const recommended = state.recommendations.find(entry => entry.id === animeId);
+    if (recommended) Object.assign(recommended, visibleState);
+    if (state.detail?.id === animeId) Object.assign(state.detail, visibleState);
+    applyFilter({ selectFirst: isRecommendationView() && state.selectedAnimeId === animeId });
+    if (state.detail?.id === animeId) renderDetail();
+  } finally {
+    state.savingState = false;
+    const pending = state.pendingStateSave;
+    state.pendingStateSave = null;
+    if (pending) await saveUserState(pending.patch, pending.animeId);
+  }
+}
+
+function applyFilter({ selectFirst = false } = {}) {
+  const query = searchText(el.search.value.trim());
+  const baseItems = baseItemsForView();
+  state.filtered = baseItems.filter(item => {
+    const haystack = searchText([
+      item.title,
+      item.subtitle,
+      item.kind,
+      item.status,
+      item.year,
+      sourceLabel(item.source),
+      ...(item.genres || []),
+    ].join(" "));
+    const queryMatch = haystack.includes(query);
+    const viewMatch =
+      state.viewMode === "recommendations"
+        ? true
+        : state.viewMode === "favorites"
+        ? item.is_favorite
+        : state.viewMode === "progress"
+          ? item.watched || item.progress_episode_number != null
+          : true;
+    const filterMatch = filterDefinitions.every(definition => (
+      definition.match(item, state.filters[definition.id])
+    ));
+    return queryMatch && viewMatch && filterMatch;
+  }).sort(isRecommendationView() ? compareRecommendations : compareAnime);
+  renderList();
+  renderActiveFilters();
+  el.resetFilters.hidden = !hasActiveCatalogTools();
+
+  if (selectFirst && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
+    selectAnime(state.filtered[0].id).catch(console.error);
+  }
+}
+
+async function loadRecommendations() {
+  const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
+  state.recommendationProfile = payload.profile || null;
+  state.recommendations = (payload.items || []).map(item => {
+    const local = state.anime.find(entry => entry.id === item.id);
+    return local ? { ...local, ...item } : item;
+  });
+}
+
+el.search.addEventListener("input", () => applyFilter({ selectFirst: true }));
+el.sortBy.addEventListener("change", () => {
+  state.sortBy = el.sortBy.value;
+  state.sortDir = sortDefinition(state.sortBy).defaultDir;
+  renderSortDirection();
+  applyFilter({ selectFirst: true });
+});
+el.sortDirToggle.addEventListener("click", () => {
+  state.sortDir = state.sortDir === "desc" ? "asc" : "desc";
+  renderSortDirection();
+  applyFilter({ selectFirst: true });
+});
+el.addFilter.addEventListener("change", () => {
+  const id = el.addFilter.value;
+  if (!id || state.activeFilterIds.includes(id)) {
+    el.addFilter.value = "";
+    return;
+  }
+  state.activeFilterIds.push(id);
+  renderFilterControls();
+  applyFilter({ selectFirst: true });
+});
+el.resetFilters.addEventListener("click", resetCatalogTools);
+for (const button of el.viewTabs) {
+  button.addEventListener("click", () => {
+    state.viewMode = button.dataset.view || "all";
+    for (const item of el.viewTabs) item.classList.toggle("active", item === button);
+    applyFilter({ selectFirst: true });
+  });
+}
+el.favoriteToggle.addEventListener("click", () => {
+  if (!state.detail) return;
+  saveUserState({ is_favorite: !state.detail.is_favorite }).catch(console.error);
+});
+el.progressEpisode.addEventListener("change", () => {
+  if (!state.detail) return;
+  saveUserState({
+    progress_episode_number: progressInputValue(),
+    watched: false,
+  }).catch(console.error);
+});
+el.watchedToggle.addEventListener("change", () => {
+  if (!state.detail) return;
+  saveUserState({ watched: el.watchedToggle.checked }).catch(console.error);
+});
+el.translation.addEventListener("change", event => {
+  state.selectedTranslation = event.target.value;
+  state.selectedSourceId = null;
+  renderSources();
+});
+el.provider.addEventListener("change", event => {
+  state.selectedSourceId = event.target.value;
+  renderSources();
+});
+el.fullscreenToggle.addEventListener("click", () => {
+  toggleFullscreen().catch(console.error);
+});
+el.pipToggle.addEventListener("click", () => {
+  openPictureInPicture().catch(console.error);
+});
+document.addEventListener("fullscreenchange", updateFullscreenControl);
+
+async function boot() {
+  const payload = await api("/api/anime");
+  state.anime = payload.items || [];
+  await loadRecommendations();
+  renderFilterControls();
+  renderSortControls();
+  applyFilter();
+  const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
+  if (first) await selectAnime(first.id);
+}
+
+boot().catch(error => {
+  clearPlayer(error.message);
+  console.error(error);
+});

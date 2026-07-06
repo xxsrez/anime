@@ -1,0 +1,109 @@
+# Data Model
+
+The project uses one SQLite database, `data/animego.sqlite`, for scraped catalog
+data and local user state.
+
+## Tables
+
+`anime`
+
+One row per title. Important fields:
+
+- `id` - internal title ID.
+- `source` - source namespace, for example `animego` or `yummyanime`.
+- `source_id` - original upstream ID as text.
+- `slug`, `title`, `subtitle`, `url`, `cover_url`.
+- `kind`, `year`, `status`, `episodes_text`.
+- `listing_score`, `aggregate_score`, `aggregate_count`.
+- `date_published`, `rating`, `age`, `duration`, `studio`, `season`.
+- `description`.
+- `fields_json`, `schema_json` for richer source payloads.
+- `scraped_at`.
+
+`episodes`
+
+One row per known episode:
+
+- `id` - internal episode ID.
+- `anime_id` - parent title.
+- `number`, `title`, `release_label`, `episode_type`, `description`.
+- `has_video`.
+- `unavailable_reason`.
+- `scraped_at`.
+
+`video_sources`
+
+One row per provider/translation/embed combination:
+
+- `anime_id`, `episode_id`.
+- `provider_id`, `provider_title`.
+- `translation_id`, `translation_title`.
+- `embed_host`.
+- `embed_url`.
+- `embed_url_redacted`.
+- `scraped_at`.
+
+The uniqueness key is `(episode_id, provider_id, translation_id,
+embed_url_redacted)`. This allows multiple providers/translations per episode
+without duplicating the same source.
+
+`anime_genres`
+
+Many-to-many title genres.
+
+`anime_dubbings`
+
+Many-to-many title dubbing labels.
+
+`anime_fields`
+
+Normalized label/value metadata extracted from source detail pages.
+
+`translations`
+
+Translation labels discovered by the AnimeGO scraper.
+
+`scrape_runs`
+
+Audit table for scraper runs.
+
+`user_title_state`
+
+Local mutable state:
+
+- `anime_id`.
+- `is_favorite`.
+- `progress_episode_number`.
+- `watched`.
+- `updated_at`.
+
+The recommendation endpoint reads this table as the taste profile. Favorites
+are strongest, watched titles are weaker, and in-progress titles also count.
+Recommendations themselves are computed at request time and are not persisted.
+
+The current committed recovery snapshot lives in `backups/current/` and includes
+both the full SQLite database backup and user-state SQL/JSON/CSV exports.
+
+## ID Conventions
+
+- AnimeGO title IDs use the upstream AnimeGO numeric ID.
+- YummyAnime legacy title IDs use `10_000_000 + source_id`.
+- YummyAnime legacy episode IDs use `anime_id * 1000 + episode_number`.
+- YummyAnime/YummyAni translation IDs use reserved high ranges to avoid
+  collisions with AnimeGO translation IDs.
+
+## Mutable vs Scraped Data
+
+Scraped data is refreshed by scraper runs and should be treated as replaceable.
+User state is local and should not be overwritten by scraper imports.
+
+The frontend currently relies on `source_count` and `available_episode_count`
+computed by the API, not stored directly on `anime`. Recommendation scores,
+ranks, reasons, and component scores are also computed API fields.
+
+## External URLs
+
+`url` and `cover_url` point to upstream sites. `embed_url` points to an external
+player host and is needed for playback. `embed_url_redacted` exists so the app
+can preserve useful host/provider identity without exposing full tokenized URLs
+where a redacted value is enough for uniqueness and inspection.
