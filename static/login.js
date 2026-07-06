@@ -13,6 +13,16 @@ function setLoginState(message, tone = "") {
   }
 }
 
+function renderUnavailableGoogleButton() {
+  el.googleButton.replaceChildren();
+  const button = document.createElement("button");
+  button.className = "google-fallback-button";
+  button.type = "button";
+  button.disabled = true;
+  button.textContent = "Войти через Google";
+  el.googleButton.append(button);
+}
+
 function nextPath() {
   const raw = new URLSearchParams(window.location.search).get("next") || "/";
   try {
@@ -83,7 +93,8 @@ async function bootLogin() {
   const configResponse = await fetch("/api/auth/config");
   const config = await configResponse.json();
   if (!config.configured || !config.client_id) {
-    setLoginState("GOOGLE_CLIENT_ID не настроен", "warn");
+    renderUnavailableGoogleButton();
+    setLoginState("Google-вход недоступен: не настроен OAuth Client ID", "warn");
     return;
   }
 
