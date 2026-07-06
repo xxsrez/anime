@@ -1287,7 +1287,7 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
     const recommended = state.recommendations.find(entry => entry.id === animeId);
     if (recommended) Object.assign(recommended, visibleState);
     if (state.detail?.id === animeId) Object.assign(state.detail, visibleState);
-    applyFilter({ selectFirst: isRecommendationView() && state.selectedAnimeId === animeId });
+    applyFilter();
     if (state.detail?.id === animeId) renderDetail();
   } finally {
     state.savingState = false;

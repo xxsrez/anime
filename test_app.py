@@ -253,6 +253,15 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("syncUrlFromDetail", js)
         self.assertIn("window.history", js)
 
+    def test_right_pane_state_save_does_not_autoselect_first_filtered_item(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        start = js.index("async function saveUserState")
+        end = js.index("function applyFilter", start)
+        save_user_state = js[start:end]
+
+        self.assertIn("applyFilter();", save_user_state)
+        self.assertNotIn("selectFirst", save_user_state)
+
     def test_yummyanime_mushoku_titles_are_available(self):
         items = server.get_anime_list()
         yummy = [item for item in items if item.get("source") == "yummyanime"]
