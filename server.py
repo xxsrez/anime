@@ -1918,6 +1918,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Cache-Control", "no-store")
+        if safe_path == "login.html":
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+            self.send_header("Referrer-Policy", "no-referrer-when-downgrade")
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -2058,9 +2061,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
             except AuthError as exc:
                 self.send_json({"error": str(exc)}, 401)
                 return
+            cookie_header = self.session_cookie_header(auth["token"])
             self.send_json(
                 {"user": auth["user"]},
-                headers=[("Set-Cookie", self.session_cookie_header(auth["token"]))],
+                headers=[("Set-Cookie", cookie_header)],
             )
             return
 

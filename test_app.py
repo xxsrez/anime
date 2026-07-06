@@ -347,12 +347,28 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('id="google-button"', html)
         self.assertIn("google.accounts.id.prompt", js)
         self.assertIn("auto_select: true", js)
+        self.assertIn('ux_mode: "popup"', js)
+        self.assertNotIn("use_fedcm_for_button", js)
+        self.assertNotIn("button_auto_select", js)
         self.assertIn("google.accounts.id.renderButton", js)
         self.assertIn('const GOOGLE_LOCALE = "ru"', js)
         self.assertIn("locale: GOOGLE_LOCALE", js)
+        self.assertIn("click_listener: handleGoogleButtonClick", js)
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)
+
+    def test_login_page_allows_google_popup_opener(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            status, headers, body = self.request_test_server(db_path, "GET", "/login")
+
+            self.assertEqual(status, 200)
+            self.assertIn(b"accounts.google.com/gsi/client", body)
+            self.assertEqual(headers["Cross-Origin-Opener-Policy"], "same-origin-allow-popups")
+            self.assertEqual(headers["Referrer-Policy"], "no-referrer-when-downgrade")
 
     def test_view_mode_tabs_use_compact_accessible_labels(self):
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")

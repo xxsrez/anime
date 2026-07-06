@@ -69,6 +69,9 @@ The local app requires Sign in with Google. The login page shows Google One Tap
 when available and keeps the Google button as a fallback. Set the public
 `GOOGLE_CLIENT_ID` before starting `server.py`; optionally restrict access with
 `ANIME_AUTH_ALLOWED_EMAILS` or `ANIME_AUTH_ALLOWED_DOMAINS`.
+The OAuth client must be a Google Cloud `Web application` client with the dev
+origin registered, for example `http://127.0.0.1:8765` and/or
+`http://localhost:8765`.
 
 The local app stores favorites and watch progress per Google user in SQLite
 table `user_title_state`. Use the title page controls to add a title to

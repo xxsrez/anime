@@ -22,6 +22,10 @@ export GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
 python3 server.py --host 127.0.0.1 --port 8765
 ```
 
+The Google OAuth client must be type `Web application`. Add the exact dev URL
+origin you open in the browser to Authorized JavaScript origins, usually
+`http://127.0.0.1:8765` and optionally `http://localhost:8765`.
+
 Use dev for:
 
 - Code and UI changes.

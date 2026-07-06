@@ -75,6 +75,10 @@ function handleCredential(response) {
   });
 }
 
+function handleGoogleButtonClick() {
+  setLoginState("Открываю вход Google...", "ok");
+}
+
 function maybeShowOneTap(google) {
   google.accounts.id.prompt(notification => {
     if (notification.isDisplayed?.()) {
@@ -106,9 +110,8 @@ async function bootLogin() {
   google.accounts.id.initialize({
     client_id: config.client_id,
     callback: handleCredential,
+    ux_mode: "popup",
     auto_select: true,
-    use_fedcm_for_button: true,
-    button_auto_select: true,
     prompt_parent_id: el.oneTapAnchor?.id,
   });
   google.accounts.id.renderButton(el.googleButton, {
@@ -118,6 +121,7 @@ async function bootLogin() {
     shape: "rectangular",
     text: "signin_with",
     locale: GOOGLE_LOCALE,
+    click_listener: handleGoogleButtonClick,
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
   maybeShowOneTap(google);
