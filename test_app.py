@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import http.client
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -269,6 +270,31 @@ class LocalAppTest(unittest.TestCase):
         selected = sync_videos.filter_episodes_with_providers(episodes, [global_provider])
         self.assertEqual(selected, episodes)
 
+    def test_video_sync_manual_yummy_ref_infers_source(self):
+        args = sync_videos.parse_args(
+            [
+                "--mode",
+                "manual",
+                "--yummy-ref",
+                "https://ru.yummyani.me/catalog/item/vanpanchmen-2",
+            ]
+        )
+
+        self.assertEqual(args.sources, ["yummyanime"])
+        self.assertEqual(args.yummy_refs, ["https://ru.yummyani.me/catalog/item/vanpanchmen-2"])
+
+    def test_video_sync_manual_mode_requires_refs(self):
+        with self.assertRaises(SystemExit):
+            sync_videos.parse_args(["--mode", "manual"])
+
+    def test_video_sync_builds_animego_manual_item_from_url(self):
+        item = sync_videos.animego_item_from_ref("https://animego.me/anime/vanpanchmen-3-2854")
+
+        self.assertEqual(item["id"], 2854)
+        self.assertEqual(item["slug"], "vanpanchmen-3-2854")
+        self.assertEqual(item["source"], "animego")
+        self.assertEqual(item["source_id"], "2854")
+
     def test_video_sync_detects_known_provider(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -344,6 +370,28 @@ class LocalAppTest(unittest.TestCase):
                 self.assertEqual(row[0], 0)
             finally:
                 con.close()
+
+    def test_prod_incremental_update_uses_railway_ssh_and_remote_backup(self):
+        path = Path("scripts/prod_incremental_update.py")
+        spec = importlib.util.spec_from_file_location("prod_incremental_update", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        args = module.parse_args(
+            [
+                "--yummy-ref",
+                "https://ru.yummyani.me/catalog/item/vanpanchmen-2",
+                "--print-command",
+            ]
+        )
+        command = module.build_remote_command(args)
+
+        self.assertIn("python3 sync_videos.py", command)
+        self.assertIn("--mode manual", command)
+        self.assertIn("--wait-lock", command)
+        self.assertIn("animego-pre-incremental-", command)
+        self.assertIn("integrity_check", command)
+        self.assertNotIn("volume files upload", command)
 
     def test_yummy_modern_provider_skips_alloha(self):
         self.assertEqual(scrape_yummyanime.modern_provider_title("Плеер Alloha"), "Alloha")

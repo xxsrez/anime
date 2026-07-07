@@ -376,6 +376,23 @@ def sync_yummy_ongoing(con, args, stats):
 
 def sync_yummyanime(con, args):
     stats = defaultdict(int)
+    for index, anime_ref in enumerate(args.yummy_refs or [], start=1):
+        print(f"[yummyanime manual {index}/{len(args.yummy_refs)}] {anime_ref}")
+        begin_title(con, args)
+        try:
+            sync_yummy_title(con, anime_ref, args, stats, "manual")
+            finish_title(con, args)
+        except Exception as exc:
+            abort_title(con, args)
+            stats["failed"] += 1
+            print(f"  ERROR: {exc}")
+            if args.verbose:
+                traceback.print_exc()
+            if args.stop_on_error:
+                raise
+    if args.mode == "manual":
+        return stats
+
     sync_yummy_feed(con, args, stats)
     if args.mode in {"daily", "full"}:
         sync_yummy_ongoing(con, args, stats)
@@ -397,6 +414,29 @@ def animego_item_from_row(row):
         "year": row["year"],
         "genres": [],
         "listing_description": row["description"],
+    }
+
+
+def animego_item_from_ref(anime_ref):
+    url = animego.absolute_url(str(anime_ref))
+    anime_id = animego.parse_anime_id(url)
+    if not anime_id:
+        raise ValueError(f"AnimeGO manual refs must be title URLs with numeric ids: {anime_ref}")
+    slug = animego.parse_slug(url)
+    return {
+        "id": anime_id,
+        "slug": slug,
+        "title": slug,
+        "subtitle": None,
+        "url": url,
+        "cover_url": None,
+        "source": "animego",
+        "source_id": str(anime_id),
+        "listing_score": None,
+        "kind": None,
+        "year": None,
+        "genres": [],
+        "listing_description": None,
     }
 
 
@@ -526,6 +566,23 @@ def sync_animego_item(con, item, args, stats, reason):
 
 def sync_animego(con, args):
     stats = defaultdict(int)
+    for index, anime_ref in enumerate(args.animego_refs or [], start=1):
+        print(f"[animego manual {index}/{len(args.animego_refs)}] {anime_ref}")
+        begin_title(con, args)
+        try:
+            sync_animego_item(con, animego_item_from_ref(anime_ref), args, stats, "manual")
+            finish_title(con, args)
+        except Exception as exc:
+            abort_title(con, args)
+            stats["failed"] += 1
+            print(f"  ERROR: {exc}")
+            if args.verbose:
+                traceback.print_exc()
+            if args.stop_on_error:
+                raise
+    if args.mode == "manual":
+        return stats
+
     candidates = OrderedDict()
     for item in collect_animego_listing(args):
         candidates[item["id"]] = (item, "listing")
@@ -565,7 +622,21 @@ def sync_animego(con, args):
 
 def apply_mode_defaults(args):
     if not args.sources:
-        args.sources = ["yummyanime", "animego"]
+        if args.mode == "manual":
+            args.sources = []
+            if args.yummy_refs:
+                args.sources.append("yummyanime")
+            if args.animego_refs:
+                args.sources.append("animego")
+        else:
+            args.sources = ["yummyanime", "animego"]
+    if args.mode == "manual" and not (args.yummy_refs or args.animego_refs):
+        raise SystemExit("--mode manual requires at least one --yummy-ref or --animego-ref")
+    if args.mode == "manual":
+        if args.yummy_refs and "yummyanime" not in args.sources:
+            raise SystemExit("--yummy-ref requires --source yummyanime in manual mode")
+        if args.animego_refs and "animego" not in args.sources:
+            raise SystemExit("--animego-ref requires --source animego in manual mode")
     if args.missing_only is None:
         args.missing_only = args.mode == "hourly"
     if args.animego_discover_pages is None:
@@ -580,11 +651,13 @@ def apply_mode_defaults(args):
     return args
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Video-first periodic sync for Anime Local.")
     parser.add_argument("--db", default="db/animego.sqlite")
-    parser.add_argument("--mode", choices=["hourly", "daily", "full"], default="hourly")
+    parser.add_argument("--mode", choices=["manual", "hourly", "daily", "full"], default="hourly")
     parser.add_argument("--source", dest="sources", action="append", choices=["animego", "yummyanime"])
+    parser.add_argument("--yummy-ref", dest="yummy_refs", action="append", default=[], help="YummyAni title URL or slug to sync explicitly")
+    parser.add_argument("--animego-ref", dest="animego_refs", action="append", default=[], help="AnimeGO title URL to sync explicitly")
     parser.add_argument("--episode-limit", type=int, default=0, help="episodes per title to fetch; 0 means all")
     parser.add_argument("--refresh-known", action="store_true", help="also rewrite/update already known video source rows")
     parser.add_argument("--include-empty-episodes", action="store_true", help="allow episode rows without playable providers")
@@ -606,7 +679,7 @@ def parse_args():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
-    return apply_mode_defaults(parser.parse_args())
+    return apply_mode_defaults(parser.parse_args(argv))
 
 
 def main():

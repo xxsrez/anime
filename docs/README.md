@@ -18,14 +18,16 @@ and player prototype. It follows the `project-docs` layout:
    artifacts live.
 4. `instructions/Operations_Runbook.md` - central runbook for dev, prod,
    release, tmux, env vars, login troubleshooting, and smoke checks.
-5. `instructions/Environment_Rules.md` - short dev/prod environment map.
-6. `instructions/Testing_Plan.md` - shared browser, mobile, dev/prod, and
+5. `instructions/Incremental_DB_Update.md` - production-safe incremental
+   catalog/player update process for agents and operators.
+6. `instructions/Environment_Rules.md` - short dev/prod environment map.
+7. `instructions/Testing_Plan.md` - shared browser, mobile, dev/prod, and
    release testing checklist for agents.
-7. `guides/deployment/railway-production.md` - Railway-specific quick
+8. `guides/deployment/railway-production.md` - Railway-specific quick
    reference; defer to the operations runbook for the release checklist.
-8. `guides/data-model/README.md` - SQLite tables, relationships, ID
+9. `guides/data-model/README.md` - SQLite tables, relationships, ID
    conventions, and mutable data.
-9. `instructions/Code_Style_Instructions.md` - coding rules and contribution
+10. `instructions/Code_Style_Instructions.md` - coding rules and contribution
    conventions.
 
 ## Directory Map

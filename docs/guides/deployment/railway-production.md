@@ -87,15 +87,35 @@ railway status
 railway volume list --json
 ```
 
-3. Upload the current SQLite catalog/state to the Railway volume when the
-   database should change:
+3. For routine title/episode data changes, run an incremental update inside
+   Railway instead of uploading the whole SQLite file:
 
 ```bash
-railway volume files --volume web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
+.venv/bin/python scripts/prod_incremental_update.py \
+  --mode hourly \
+  --source yummyanime \
+  --source animego \
+  --stop-on-error
 ```
 
-`db/animego.sqlite` is ignored by git. It is not included in `railway up`, so
-database release is a separate explicit step from code release.
+For a specific title:
+
+```bash
+.venv/bin/python scripts/prod_incremental_update.py \
+  --yummy-ref https://ru.yummyani.me/catalog/item/example \
+  --stop-on-error
+```
+
+`db/animego.sqlite` is ignored by git. It is not included in `railway up`.
+Routine production data changes should mutate `/data/animego.sqlite` in place
+through `scripts/prod_incremental_update.py`; see
+`../../instructions/Incremental_DB_Update.md`.
+
+Full upload is emergency-only for deliberate full restores:
+
+```bash
+railway volume files -v web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
+```
 
 4. Deploy the current working tree to Railway production:
 

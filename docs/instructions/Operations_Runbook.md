@@ -16,6 +16,8 @@ Railway production, and releasing code or database changes.
   `google-auth dependencies are not installed`.
 - `db/animego.sqlite` is mutable local state and ignored by git. It is not
   included in `railway up`.
+- Do not upload the whole SQLite database for routine title or episode updates.
+  Use `Incremental_DB_Update.md` and `scripts/prod_incremental_update.py`.
 
 ## Environment Map
 
@@ -190,14 +192,34 @@ railway volume list --json
 
 2. Run verification from `## Verification Before Release`.
 
-3. If the production database should change, upload it explicitly:
+3. If production data should change, prefer an incremental in-place update
+   inside Railway:
 
 ```bash
-railway volume files --volume web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
+.venv/bin/python scripts/prod_incremental_update.py \
+  --yummy-ref https://ru.yummyani.me/catalog/item/example \
+  --stop-on-error
 ```
 
-Skip this step for code-only releases. `railway up` does not include
-`db/animego.sqlite`.
+For recurring new episodes:
+
+```bash
+.venv/bin/python scripts/prod_incremental_update.py \
+  --mode hourly \
+  --source yummyanime \
+  --source animego \
+  --stop-on-error
+```
+
+Skip this step for code-only releases. See `Incremental_DB_Update.md` for the
+full data-update workflow, remote backup policy, and AI-agent checklist.
+
+Full SQLite upload is emergency-only. Use it only for a deliberate full restore,
+not for adding titles or episodes:
+
+```bash
+railway volume files -v web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
+```
 
 4. Deploy code:
 

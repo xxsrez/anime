@@ -5,6 +5,7 @@ This directory contains project working rules and operational process.
 | File | Purpose |
 | --- | --- |
 | `Operations_Runbook.md` | Central runbook for dev, production, release, env vars, login troubleshooting, and smoke checks. |
+| `Incremental_DB_Update.md` | Production-safe incremental SQLite update workflow for titles, episodes, backups, and AI-agent handoffs. |
 | `Environment_Rules.md` | Short environment map and dev/prod boundary. |
 | `Code_Style_Instructions.md` | Coding style, scraper rules, UI rules, and verification expectations. |
 | `Testing_Plan.md` | Shared browser, mobile, dev/prod, and release testing checklist for agents. |
