@@ -7,7 +7,7 @@ development work cannot break the stable local production site.
 
 | Environment | URL | Files | Database | Agent rule |
 | --- | --- | --- | --- | --- |
-| dev/test/scratch | `http://127.0.0.1:8765/` | `/Users/andrey/Documents/Anime` | `/Users/andrey/Documents/Anime/data/animego.sqlite` | Safe for regular edits, scraping, indexing, restarts, and browser testing. |
+| dev/test/scratch | `http://127.0.0.1:8765/` | `/Users/andrey/Projects/Home/Anime` | `/Users/andrey/Projects/Home/Anime/db/animego.sqlite` | Safe for regular edits, scraping, indexing, restarts, and browser testing. |
 | prod | `http://127.0.0.1:8766/` | `/Users/andrey/.local/share/anime-local-prod` | `/Users/andrey/.local/share/anime-local-prod/shared/animego.sqlite` | Release-only. Do not edit, restart, scrape, index, or test against it unless the user explicitly asks for a prod operation. |
 
 Port `8776` is retired for this project. Do not use it for Anime dev/prod work
@@ -37,9 +37,9 @@ Use dev for:
 - Performance checks.
 - Browser smoke tests.
 
-If `data/animego.sqlite` or `backups/current/animego.sqlite` changes, treat
-that as local mutable catalog state and verify the intended database snapshot
-before committing or releasing it.
+If `db/animego.sqlite` or `db/backups/current/animego.sqlite` changes, treat
+that as local mutable catalog state and verify the intended database snapshot.
+These files are ignored by git and should not be committed.
 
 ## Production
 
@@ -76,7 +76,8 @@ preserved when referenced titles still exist.
 
 1. Make changes and run all experiments on `http://127.0.0.1:8765/`.
 2. Verify the app on dev, including browser checks for UI/player changes.
-3. Commit the intended code, docs, and backup/database snapshot changes.
+3. Commit the intended code and docs only; keep database snapshots under ignored
+   `db/`.
 4. Wait for an explicit user release command.
 5. Run the prod release script from the committed ref.
 6. Smoke-check prod after release, then stop making changes there.

@@ -25,7 +25,7 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_DB = ROOT / "data" / "animego.sqlite"
+DEFAULT_DB = ROOT / "db" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
 DEFAULT_LOG_DIR = ROOT / "data" / "logs"
 DEFAULT_RECOMMENDATION_LIMIT = 20

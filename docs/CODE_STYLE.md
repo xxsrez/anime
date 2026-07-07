@@ -6,7 +6,7 @@
 - Prefer small functions over framework-level abstractions.
 - Keep local behavior explicit and easy to inspect.
 - Do not download or store video streams.
-- Treat `data/animego.sqlite` as local mutable state.
+- Treat `db/animego.sqlite` as local mutable state.
 - Keep source-specific quirks isolated in the relevant scraper.
 - Run the relevant checks before declaring work complete.
 - Keep environment discipline strict: `8765` is dev/test/scratch, `8766` is

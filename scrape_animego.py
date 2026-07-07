@@ -647,7 +647,7 @@ def scrape(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Scrape a small AnimeGO metadata sample into SQLite.")
-    parser.add_argument("--db", default="data/animego.sqlite")
+    parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--start-url", default=START_URL)
     parser.add_argument("--pages", type=int, default=1)
     parser.add_argument("--all-pages", action="store_true")

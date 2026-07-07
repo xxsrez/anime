@@ -1,7 +1,8 @@
+db/
+data/*.sqlite
 data/*.sqlite-*
+backups/
 data/logs/
-backups/pre-*/
-backups/run-*/
 __pycache__/
 .venv/
 .env

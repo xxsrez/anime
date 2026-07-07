@@ -11,8 +11,8 @@ import server
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_DB = ROOT / "data" / "animego.sqlite"
-DEFAULT_OUT = ROOT / "backups" / "current"
+DEFAULT_DB = ROOT / "db" / "animego.sqlite"
+DEFAULT_OUT = ROOT / "db" / "backups" / "current"
 
 
 def connect(db_path):
@@ -180,8 +180,8 @@ def write_readme(out_dir, created_at, counts):
 
 Created: {created_at}
 
-This directory is the committed recovery snapshot for the current local catalog
-state.
+This directory is the local recovery snapshot for the current catalog state.
+It lives under `db/`, which is intentionally ignored by git.
 
 ## Contents
 
@@ -211,8 +211,8 @@ state.
 From the project root:
 
 ```bash
-cp backups/current/animego.sqlite data/animego.sqlite
-sqlite3 data/animego.sqlite 'pragma integrity_check;'
+cp db/backups/current/animego.sqlite db/animego.sqlite
+sqlite3 db/animego.sqlite 'pragma integrity_check;'
 ```
 
 ## Restore Only User State
@@ -220,7 +220,7 @@ sqlite3 data/animego.sqlite 'pragma integrity_check;'
 From the project root:
 
 ```bash
-sqlite3 data/animego.sqlite < backups/current/user_title_state.sql
+sqlite3 db/animego.sqlite < db/backups/current/user_title_state.sql
 ```
 
 The full backup and active database can have different SHA-256 hashes because
@@ -258,7 +258,7 @@ def update_backup(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Refresh backups/current from the active SQLite database.")
+    parser = argparse.ArgumentParser(description="Refresh db/backups/current from the active SQLite database.")
     parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     update_backup(parser.parse_args())

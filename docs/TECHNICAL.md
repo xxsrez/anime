@@ -35,7 +35,7 @@ Run the dev/test server:
 .venv/bin/python server.py --host 127.0.0.1 --port 8765
 ```
 
-The default database is `data/animego.sqlite`. Override it with:
+The default database is `db/animego.sqlite`. Override it with:
 
 ```bash
 .venv/bin/python server.py --db /path/to/animego.sqlite

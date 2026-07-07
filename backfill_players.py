@@ -261,7 +261,7 @@ def backfill(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Backfill playable episode/provider rows for metadata-only imported titles.")
-    parser.add_argument("--db", default="data/animego.sqlite")
+    parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--source", choices=["animego", "yummyanime"])
     parser.add_argument("--anime-id", type=int, action="append", help="backfill one source row id; can be repeated")
     parser.add_argument("--limit", type=int, default=0)

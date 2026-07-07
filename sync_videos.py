@@ -582,7 +582,7 @@ def apply_mode_defaults(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Video-first periodic sync for Anime Local.")
-    parser.add_argument("--db", default="data/animego.sqlite")
+    parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--mode", choices=["hourly", "daily", "full"], default="hourly")
     parser.add_argument("--source", dest="sources", action="append", choices=["animego", "yummyanime"])
     parser.add_argument("--episode-limit", type=int, default=0, help="episodes per title to fetch; 0 means all")

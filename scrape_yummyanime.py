@@ -594,7 +594,7 @@ def scrape(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Scrape selected YummyAnime title pages into the local SQLite app.")
-    parser.add_argument("--db", default="data/animego.sqlite")
+    parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--no-embed-urls", action="store_true")
     parser.add_argument("--skip-player", action="store_true")

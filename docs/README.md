@@ -50,7 +50,7 @@ long-running process.
 - The project does not download or host anime video streams.
 - Playback uses third-party embed URLs saved in SQLite. The main catalog should
   not contain titles that have no playable `embed_url`.
-- `data/animego.sqlite` is local mutable state and can change after scraping or
+- `db/animego.sqlite` is local mutable state and can change after scraping or
   user progress updates.
 - Scraping depends on upstream site structure and can break when those sites
   change.

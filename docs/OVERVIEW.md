@@ -46,8 +46,9 @@ As of the current local SQLite snapshot on 2026-07-06, the database contains:
 - User progress/favorite rows are per Google user. New Google accounts start
   empty; anonymous/local profile state is not supported.
 
-The committed recovery snapshot is in `backups/current/`. It includes a full
-SQLite backup and readable exports of favorites/progress/watched state.
+The local recovery snapshot is in `db/backups/current/`. It includes a full
+SQLite backup and readable exports of favorites/progress/watched state. The
+`db/` directory is intentionally ignored by git.
 
 These counts are not product constants. They are a local database snapshot and
 will change after scraping or user activity.

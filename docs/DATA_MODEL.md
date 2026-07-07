@@ -1,6 +1,6 @@
 # Data Model
 
-The project uses one SQLite database, `data/animego.sqlite`, for scraped catalog
+The project uses one SQLite database, `db/animego.sqlite`, for scraped catalog
 data and local user state.
 
 ## Tables
@@ -126,8 +126,9 @@ year, they are exposed as one catalog item with `source_variants`.
   state was previously attached to a duplicate variant, the API aggregates that
   user's rows and moves future updates to the primary row.
 
-The current committed recovery snapshot lives in `backups/current/` and includes
-both the full SQLite database backup and user-state SQL/JSON/CSV exports.
+The current local recovery snapshot lives in `db/backups/current/` and includes
+both the full SQLite database backup and user-state SQL/JSON/CSV exports. The
+`db/` directory is intentionally ignored by git.
 
 ## ID Conventions
 

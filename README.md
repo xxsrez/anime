@@ -39,14 +39,15 @@ AnimeGO title pages render an empty player shell:
 python3 sync_videos.py --mode hourly
 ```
 
-The default database path is `data/animego.sqlite`.
+The default database path is `db/animego.sqlite`.
 
-The current committed recovery snapshot is stored in `backups/current/`. To
-restore the full local catalog database:
+The local recovery snapshot is stored in `db/backups/current/`. `db/` is
+ignored by git so the mutable SQLite database and backups stay out of the
+repository. To restore the full local catalog database:
 
 ```bash
-cp backups/current/animego.sqlite data/animego.sqlite
-sqlite3 data/animego.sqlite 'pragma integrity_check;'
+cp db/backups/current/animego.sqlite db/animego.sqlite
+sqlite3 db/animego.sqlite 'pragma integrity_check;'
 ```
 
 For a working iframe prototype or full dev catalog refresh, persist embed URLs
@@ -114,7 +115,7 @@ the Alloha AJAX response can return stale or mismatched player URLs.
 Inspect a quick summary:
 
 ```bash
-sqlite3 data/animego.sqlite '
+sqlite3 db/animego.sqlite '
 select count(*) as anime from anime;
 select count(*) as episodes from episodes;
 select count(*) as video_sources from video_sources;

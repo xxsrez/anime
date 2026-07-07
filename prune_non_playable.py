@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 
 
-DEFAULT_DB = Path(__file__).resolve().parent / "data" / "animego.sqlite"
+DEFAULT_DB = Path(__file__).resolve().parent / "db" / "animego.sqlite"
 
 
 def connect(db_path):
