@@ -6,7 +6,7 @@ import time
 import zlib
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.parse import quote, urljoin, urlparse, parse_qsl
+from urllib.parse import quote, urlencode, urljoin, urlparse, parse_qsl, urlunparse
 from urllib.request import Request, urlopen
 
 from bs4 import BeautifulSoup
@@ -290,6 +290,97 @@ def fetch_player_url(player, page_url, delay=0.0):
     return url
 
 
+def selected_option(select):
+    if not select:
+        return None
+    return select.select_one("option[selected]") or select.select_one("option")
+
+
+def kodik_serial_url(embed_url, serial_id, serial_hash, season_number, episode_number):
+    parsed = urlparse("https:" + embed_url if embed_url.startswith("//") else embed_url)
+    path = re.sub(
+        r"^/serial/[^/]+/[^/]+/",
+        f"/serial/{serial_id}/{serial_hash}/",
+        parsed.path,
+        count=1,
+    )
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key not in {"season", "episode"}
+    ]
+    query.extend([("season", str(season_number)), ("episode", str(episode_number))])
+    return urlunparse((parsed.scheme or "https", parsed.netloc, path, "", urlencode(query), parsed.fragment))
+
+
+def parse_kodik_serial_episode_urls(embed_url, html_text):
+    if not embed_url or "kodikplayer.com/serial/" not in embed_url:
+        return []
+
+    soup = BeautifulSoup(html_text or "", "lxml")
+    season = selected_option(soup.select_one(".serial-seasons-box select"))
+    episodes = soup.select(".serial-series-box select option")
+    serial_id = season.get("data-serial-id") if season else None
+    serial_hash = season.get("data-serial-hash") if season else None
+    season_number = season.get("value") if season else None
+    if not serial_id or not serial_hash or not season_number:
+        return []
+
+    urls = []
+    for episode in episodes:
+        query_episode = episode.get("value")
+        visible_number = parse_int(episode.get("data-title")) or parse_int(clean_text(episode)) or parse_int(query_episode)
+        if not query_episode or visible_number is None:
+            continue
+        urls.append(
+            {
+                "episode_number": str(visible_number),
+                "embed_url": kodik_serial_url(embed_url, serial_id, serial_hash, season_number, query_episode),
+            }
+        )
+    return urls
+
+
+def title_season_number(title):
+    match = re.search(r"(\d+)\s*сезон", title or "", flags=re.I)
+    return match.group(1) if match else None
+
+
+def kodik_season_option_url(embed_url, html_text, season_number):
+    soup = BeautifulSoup(html_text or "", "lxml")
+    for season in soup.select(".serial-seasons-box select option"):
+        if season.get("value") != str(season_number):
+            continue
+        serial_id = season.get("data-serial-id")
+        serial_hash = season.get("data-serial-hash")
+        if serial_id and serial_hash:
+            return kodik_serial_url(embed_url, serial_id, serial_hash, season.get("value"), 1)
+    return None
+
+
+def expand_legacy_provider_urls(player, embed_url, page_url, episode_count, delay=0.0, preferred_season=None):
+    if player.get("provider_title") == "Kodik" and episode_count > 1:
+        try:
+            html_text = fetch_text(embed_url, referer=page_url, delay=delay)
+        except Exception:
+            html_text = ""
+        episode_urls = parse_kodik_serial_episode_urls(embed_url, html_text)
+        if preferred_season and episode_urls and len(episode_urls) != episode_count:
+            preferred_url = kodik_season_option_url(embed_url, html_text, preferred_season)
+            if preferred_url:
+                try:
+                    preferred_html = fetch_text(preferred_url, referer=page_url, delay=delay)
+                except Exception:
+                    preferred_html = ""
+                preferred_episode_urls = parse_kodik_serial_episode_urls(preferred_url, preferred_html)
+                if len(preferred_episode_urls) == episode_count:
+                    return preferred_episode_urls
+        if episode_urls:
+            return episode_urls
+    episode_number = "1" if episode_count > 1 else None
+    return [{"episode_number": episode_number, "embed_url": embed_url}]
+
+
 def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
     slug = parse_modern_slug(page_url)
     anime, api_url = fetch_modern_anime(slug, include_embed_urls, delay=delay)
@@ -458,17 +549,27 @@ def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False
             embed_url = fetch_player_url(player, page_url, delay=delay)
             if not embed_url:
                 continue
-            providers.append(
-                {
-                    "provider_id": player["provider_id"],
-                    "provider_title": player["provider_title"],
-                    "translation_id": YUMMY_TRANSLATION_ID,
-                    "translation_title": "YummyAnime",
-                    "embed_url": embed_url,
-                    "embed_url_redacted": redact_embed_url(embed_url),
-                    "embed_host": embed_host(embed_url),
-                }
-            )
+            for episode_url in expand_legacy_provider_urls(
+                player,
+                embed_url,
+                page_url,
+                episode_count,
+                delay=delay,
+                preferred_season=title_season_number(title),
+            ):
+                episode_embed_url = episode_url["embed_url"]
+                providers.append(
+                    {
+                        "episode_number": episode_url["episode_number"],
+                        "provider_id": player["provider_id"],
+                        "provider_title": player["provider_title"],
+                        "translation_id": YUMMY_TRANSLATION_ID,
+                        "translation_title": "YummyAnime",
+                        "embed_url": episode_embed_url,
+                        "embed_url_redacted": redact_embed_url(episode_embed_url),
+                        "embed_host": embed_host(episode_embed_url),
+                    }
+                )
 
     item = {
         "id": anime_id,

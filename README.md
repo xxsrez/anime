@@ -127,3 +127,11 @@ Inspect local recommendations:
 ```bash
 curl 'http://127.0.0.1:8765/api/recommendations?limit=20'
 ```
+
+Run local health and smoke checks:
+
+```bash
+python3 scripts/check_repo_hygiene.py
+python3 scripts/check_data_health.py
+python3 scripts/smoke_dev_app.py
+```

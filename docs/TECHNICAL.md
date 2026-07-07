@@ -102,6 +102,17 @@ authenticated session, so login-page errors can be captured. The endpoint caps
 the request body, stores sanitized fields only, and redacts obvious credentials,
 tokens, cookies, and third-party player/embed URLs before writing the log.
 
+## Health Checks
+
+- `scripts/check_repo_hygiene.py` rejects tracked or historical local data,
+  SQLite databases, logs, env files, caches, and unexpectedly large tracked
+  files.
+- `scripts/check_data_health.py` validates the ignored local SQLite database,
+  the current local backup snapshot, checksums, and the playable-catalog
+  invariant.
+- `scripts/smoke_dev_app.py` starts the HTTP app on a temporary copy of the
+  local database and checks login, auth guards, catalog, and recommendations.
+
 ## API
 
 `GET /api/health`

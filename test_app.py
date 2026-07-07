@@ -97,6 +97,54 @@ class LocalAppTest(unittest.TestCase):
             "embed_host": "kodikplayer.com" if provider.startswith("Kodik") else "example.test",
         }
 
+    def seed_watchable_title(self, db_path, anime_id=1, title="Smoke Title"):
+        con = scrape_animego.init_db(db_path)
+        try:
+            scraped_at = server.now_iso()
+            con.execute(
+                """
+                insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
+                values (?, ?, ?, ?, 'animego', ?, '2026', ?)
+                """,
+                (
+                    anime_id,
+                    f"smoke-title-{anime_id}",
+                    title,
+                    f"https://animego.me/anime/smoke-title-{anime_id}",
+                    str(anime_id),
+                    scraped_at,
+                ),
+            )
+            con.execute(
+                """
+                insert into episodes(id, anime_id, number, has_video, scraped_at)
+                values (?, ?, '1', 1, ?)
+                """,
+                (anime_id * 1000 + 1, anime_id, scraped_at),
+            )
+            con.execute(
+                """
+                insert into video_sources(
+                    anime_id, episode_id, provider_id, provider_title,
+                    translation_id, translation_title, embed_url, embed_url_redacted,
+                    embed_host, scraped_at
+                )
+                values (?, ?, 'kodik', 'Kodik', 1, 'Dream Cast', ?, ?, 'kodikplayer.com', ?)
+                """,
+                (
+                    anime_id,
+                    anime_id * 1000 + 1,
+                    f"https://kodikplayer.com/serial/{anime_id}/hash/720p?season=1&episode=1",
+                    f"https://kodikplayer.com/serial/{anime_id}/<redacted>/720p",
+                    scraped_at,
+                ),
+            )
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(db_path)
+        return anime_id
+
     def test_catalog_has_scraped_titles(self):
         items = server.get_anime_list()
         self.assertGreaterEqual(len(items), 10)
@@ -177,6 +225,28 @@ class LocalAppTest(unittest.TestCase):
         episodes = [{"id": 1}, {"id": 2}, {"id": 3}]
         self.assertEqual(scrape_animego.selected_episodes(episodes, 0), episodes)
         self.assertEqual(scrape_animego.selected_episodes(episodes, 2), episodes[:2])
+
+    def test_prepare_database_creates_empty_catalog_for_fresh_clone(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "nested" / "animego.sqlite"
+
+            prepared = server.prepare_database(db_path)
+
+            self.assertEqual(prepared, db_path)
+            self.assertTrue(db_path.exists())
+            self.assertEqual(server.get_anime_list(db_path), [])
+
+            status, _, body = self.request_test_server(str(db_path), "GET", "/api/health")
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body), {"ok": True})
+
+            status, headers, _ = self.request_test_server(str(db_path), "GET", "/")
+            self.assertEqual(status, 302)
+            self.assertTrue(headers["Location"].startswith("/login?next="))
+
+            status, _, body = self.request_test_server(str(db_path), "GET", "/login")
+            self.assertEqual(status, 200)
+            self.assertIn(b"Anime Local", body)
 
     def test_video_sync_filters_empty_episodes(self):
         episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]
@@ -427,6 +497,43 @@ class LocalAppTest(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
 
+    def test_oversized_auth_payload_is_rejected_before_parsing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            server.prepare_database(db_path)
+
+            status, _, body = self.request_test_server(
+                db_path,
+                "POST",
+                "/api/auth/google",
+                headers={"Content-Type": "application/json"},
+                body="x" * (server.MAX_JSON_BODY_BYTES + 1),
+            )
+
+            self.assertEqual(status, 413)
+            self.assertEqual(json.loads(body)["error"], "payload too large")
+
+    def test_oversized_state_patch_is_rejected_before_parsing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+
+            status, _, body = self.request_test_server(
+                db_path,
+                "PATCH",
+                f"/api/anime/{anime_id}/state",
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"{server.SESSION_COOKIE_NAME}={token}",
+                },
+                body="x" * (server.MAX_JSON_BODY_BYTES + 1),
+            )
+
+            self.assertEqual(status, 413)
+            self.assertEqual(json.loads(body)["error"], "payload too large")
+
     def test_client_error_endpoint_logs_without_auth_and_redacts_payload(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -631,6 +738,12 @@ class LocalAppTest(unittest.TestCase):
             self.assertEqual(payload["client_id"], "client.apps.googleusercontent.com")
             self.assertTrue(payload["state"])
             self.assertEqual(server.verify_google_auth_state(payload["state"]), "/wanted?tab=favorites")
+
+    def test_safe_next_path_rejects_external_and_relative_targets(self):
+        self.assertEqual(server.safe_next_path("/wanted?tab=favorites#details"), "/wanted?tab=favorites#details")
+        self.assertEqual(server.safe_next_path("relative/path"), "/")
+        self.assertEqual(server.safe_next_path("//evil.example/path"), "/")
+        self.assertEqual(server.safe_next_path("https://evil.example/path"), "/")
 
     def test_google_auth_complete_rejects_invalid_handoff_code(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1004,6 +1117,90 @@ class LocalAppTest(unittest.TestCase):
         self.assertTrue(source_rows)
         self.assertEqual(source_rows[0]["provider_title"], "Kodik")
         self.assertFalse(any(source["provider_title"] == "Alloha" for source in source_rows))
+
+        episode_urls = {}
+        for episode in season3["episodes"]:
+            sources = season3["sources_by_episode"].get(episode["id"], [])
+            if sources:
+                episode_urls[str(episode["number"])] = sources[0]["embed_url"]
+        self.assertEqual(parse_qs(urlparse(episode_urls["1"]).query).get("episode"), ["1"])
+        self.assertEqual(parse_qs(urlparse(episode_urls["2"]).query).get("episode"), ["2"])
+        self.assertNotEqual(episode_urls["1"], episode_urls["2"])
+
+    def test_legacy_kodik_serial_player_urls_are_episode_specific(self):
+        html = """
+        <div class="serial-seasons-box">
+          <select>
+            <option value="2" data-serial-id="76688" data-serial-hash="46dc" selected>2 сезон</option>
+          </select>
+        </div>
+        <div class="serial-series-box">
+          <select>
+            <option value="1" data-title="1 серия" selected>1 серия</option>
+            <option value="2" data-title="2 серия">2 серия</option>
+          </select>
+        </div>
+        """
+
+        urls = scrape_yummyanime.parse_kodik_serial_episode_urls(
+            "https://kodikplayer.com/serial/76549/oldhash/720p",
+            html,
+        )
+
+        self.assertEqual([item["episode_number"] for item in urls], ["1", "2"])
+        self.assertEqual(parse_qs(urlparse(urls[0]["embed_url"]).query), {"season": ["2"], "episode": ["1"]})
+        self.assertEqual(parse_qs(urlparse(urls[1]["embed_url"]).query), {"season": ["2"], "episode": ["2"]})
+        self.assertIn("/serial/76688/46dc/720p", urls[0]["embed_url"])
+
+    def test_legacy_multi_episode_fallback_does_not_fan_out_single_video(self):
+        with patch.object(scrape_yummyanime, "fetch_text", side_effect=RuntimeError("offline")):
+            providers = scrape_yummyanime.expand_legacy_provider_urls(
+                {"provider_title": "Kodik"},
+                "https://kodikplayer.com/video/104168/hash/720p",
+                "https://yummyanime.tv/title.html",
+                12,
+            )
+
+        self.assertEqual(providers, [{"episode_number": "1", "embed_url": "https://kodikplayer.com/video/104168/hash/720p"}])
+
+    def test_legacy_kodik_prefers_matching_title_season_when_default_count_differs(self):
+        default_html = """
+        <div class="serial-seasons-box">
+          <select>
+            <option value="1" data-serial-id="33456" data-serial-hash="dota" selected>1 сезон</option>
+            <option value="2" data-serial-id="33456" data-serial-hash="dota">2 сезон</option>
+          </select>
+        </div>
+        <div class="serial-series-box">
+          <select><option value="1" data-title="1 серия">1 серия</option></select>
+        </div>
+        """
+        season_two_html = """
+        <div class="serial-seasons-box">
+          <select>
+            <option value="1" data-serial-id="33456" data-serial-hash="dota">1 сезон</option>
+            <option value="2" data-serial-id="33456" data-serial-hash="dota" selected>2 сезон</option>
+          </select>
+        </div>
+        <div class="serial-series-box">
+          <select>
+            <option value="1" data-title="1 серия">1 серия</option>
+            <option value="2" data-title="2 серия">2 серия</option>
+          </select>
+        </div>
+        """
+
+        with patch.object(scrape_yummyanime, "fetch_text", side_effect=[default_html, season_two_html]):
+            providers = scrape_yummyanime.expand_legacy_provider_urls(
+                {"provider_title": "Kodik"},
+                "https://kodikplayer.com/serial/33456/dota/720p",
+                "https://yummyanime.tv/dota-2.html",
+                2,
+                preferred_season="2",
+            )
+
+        self.assertEqual([item["episode_number"] for item in providers], ["1", "2"])
+        self.assertEqual(parse_qs(urlparse(providers[0]["embed_url"]).query), {"season": ["2"], "episode": ["1"]})
 
     def test_duplicate_sources_are_exposed_as_canonical_titles(self):
         items = server.get_anime_list()

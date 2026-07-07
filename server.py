@@ -30,6 +30,7 @@ STATIC_DIR = ROOT / "static"
 DEFAULT_LOG_DIR = ROOT / "data" / "logs"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
+MAX_JSON_BODY_BYTES = 64 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
@@ -521,10 +522,26 @@ def db_signature(path):
     return (stat.st_mtime_ns, stat.st_size)
 
 
-def connect(db_path=None):
-    path = resolve_db_path(db_path)
+def ensure_base_database(path):
     if path.parent != Path("."):
         path.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(path)
+    try:
+        has_catalog_schema = con.execute(
+            "select 1 from sqlite_master where type = 'table' and name = 'anime'"
+        ).fetchone()
+    finally:
+        con.close()
+    if not has_catalog_schema:
+        import scrape_animego
+
+        con = scrape_animego.init_db(path)
+        con.close()
+
+
+def connect(db_path=None):
+    path = resolve_db_path(db_path)
+    ensure_base_database(path)
     con = sqlite3.connect(path)
     con.execute("pragma busy_timeout=30000")
     con.row_factory = sqlite3.Row
@@ -536,6 +553,17 @@ def connect(db_path=None):
     if changed:
         con.commit()
     return con
+
+
+def prepare_database(db_path=None):
+    path = resolve_db_path(db_path)
+    ensure_base_database(path)
+    con = connect(path)
+    try:
+        con.commit()
+    finally:
+        con.close()
+    return path
 
 
 def rows_to_dicts(rows):
@@ -2041,6 +2069,8 @@ def safe_next_path(value):
     if parsed.scheme or parsed.netloc:
         return "/"
     path = parsed.path or "/"
+    if not path.startswith("/"):
+        return "/"
     query = f"?{parsed.query}" if parsed.query else ""
     fragment = f"#{parsed.fragment}" if parsed.fragment else ""
     return f"{path}{query}{fragment}"
@@ -2189,24 +2219,27 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_header(name, value)
         self.end_headers()
 
-    def read_json_body(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        if not length:
-            return {}
-        raw = self.rfile.read(length).decode("utf-8")
-        return json.loads(raw or "{}")
-
-    def read_limited_json_body(self, max_bytes):
+    def read_body_text(self, max_bytes=MAX_JSON_BODY_BYTES):
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError as exc:
             raise ValueError("invalid content length") from exc
+        if length < 0:
+            raise ValueError("invalid content length")
         if length > max_bytes:
+            self.close_connection = True
             self.rfile.read(0)
             raise ClientErrorPayloadTooLarge()
         if not length:
-            return {}
-        raw = self.rfile.read(length).decode("utf-8")
+            return ""
+        return self.rfile.read(length).decode("utf-8")
+
+    def read_json_body(self):
+        raw = self.read_body_text(MAX_JSON_BODY_BYTES)
+        return json.loads(raw or "{}")
+
+    def read_limited_json_body(self, max_bytes):
+        raw = self.read_body_text(max_bytes)
         return json.loads(raw or "{}")
 
     def build_client_error_event(self, payload):
@@ -2260,10 +2293,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_json({"ok": True}, status=202)
 
     def read_google_auth_body(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        if not length:
+        raw = self.read_body_text(MAX_JSON_BODY_BYTES)
+        if not raw:
             return {}, False
-        raw = self.rfile.read(length).decode("utf-8")
         content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
         if content_type == "application/x-www-form-urlencoded":
             params = parse_qs(raw, keep_blank_values=True)
@@ -2523,8 +2555,14 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 else:
                     next_path = safe_next_path(payload.get("next") or "/")
                 auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
+            except ClientErrorPayloadTooLarge:
+                self.send_google_auth_error("payload too large", 413, is_redirect_flow, next_path)
+                return
             except json.JSONDecodeError:
                 self.send_google_auth_error("invalid json", 400, is_redirect_flow)
+                return
+            except ValueError as exc:
+                self.send_google_auth_error(str(exc), 400, is_redirect_flow, next_path)
                 return
             except AuthConfigError as exc:
                 self.send_google_auth_error(
@@ -2582,6 +2620,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 try:
                     payload = self.read_json_body()
                     updated = update_user_state(unquote(parts[2]), payload, self.server.db_path, user["id"])
+                except ClientErrorPayloadTooLarge:
+                    self.send_json({"error": "payload too large"}, 413)
+                    return
                 except json.JSONDecodeError:
                     self.send_json({"error": "invalid json"}, 400)
                     return
@@ -2598,11 +2639,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
 
 def run(port, host, db_path):
-    if not Path(db_path).exists():
-        raise SystemExit(f"Database not found: {db_path}")
+    db_path = prepare_database(db_path)
     configure_logging()
     server = ThreadingHTTPServer((host, port), AnimeHandler)
-    server.db_path = db_path
+    server.db_path = str(db_path)
     message = f"Serving http://{host}:{port} using {db_path}"
     print(message)
     server_logger().info(message)
