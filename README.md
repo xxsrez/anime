@@ -39,7 +39,7 @@ AnimeGO title pages render an empty player shell:
 ## Run
 
 ```bash
-python3 sync_videos.py --mode hourly
+.venv/bin/python sync_videos.py --mode hourly
 ```
 
 The default database path is `db/animego.sqlite`.
@@ -57,8 +57,8 @@ For a working iframe prototype or full dev catalog refresh, persist embed URLs
 and then prune rows where the source page still exposes no player:
 
 ```bash
-python3 sync_videos.py --mode daily
-python3 prune_non_playable.py --commit
+.venv/bin/python sync_videos.py --mode daily
+.venv/bin/python prune_non_playable.py --commit
 .venv/bin/python server.py
 ```
 
@@ -93,9 +93,9 @@ anonymous/local profile state is not supported.
 Refresh the watchable catalog with player data:
 
 ```bash
-python3 sync_videos.py --mode hourly
-python3 sync_videos.py --mode daily
-python3 prune_non_playable.py --commit
+.venv/bin/python sync_videos.py --mode hourly
+.venv/bin/python sync_videos.py --mode daily
+.venv/bin/python prune_non_playable.py --commit
 ```
 
 `sync_videos.py` is video-first: it skips metadata-only title/episode rows by
@@ -110,7 +110,7 @@ Scrape the currently available YummyAnime pages for the Mushoku Tensei /
 `Реинкарнация безработного` franchise into the same database:
 
 ```bash
-python3 scrape_yummyanime.py
+.venv/bin/python scrape_yummyanime.py
 ```
 
 The current YummyAnime franchise block exposes four available pages: season 1,
@@ -138,7 +138,7 @@ curl 'http://127.0.0.1:8765/api/recommendations?limit=20'
 Run local health and smoke checks:
 
 ```bash
-python3 scripts/check_repo_hygiene.py
-python3 scripts/check_data_health.py
-python3 scripts/smoke_dev_app.py
+.venv/bin/python scripts/check_repo_hygiene.py
+.venv/bin/python scripts/check_data_health.py
+.venv/bin/python scripts/smoke_dev_app.py
 ```
