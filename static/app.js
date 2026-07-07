@@ -15,6 +15,24 @@ const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
 const reportClientError = window.reportClientError || (() => {});
 const reportActionError = window.reportActionError || (() => error => console.error(error));
+const PERFORMANCE_ENDPOINT = "/api/performance";
+const MAX_PERFORMANCE_API_REQUESTS = 40;
+const MAX_PERFORMANCE_RESOURCES = 24;
+
+function performanceNow() {
+  return window.performance?.now ? window.performance.now() : Date.now();
+}
+
+function roundMetric(value) {
+  return Number.isFinite(value) ? Math.round(value * 10) / 10 : null;
+}
+
+const pagePerformance = {
+  bootStartedAt: performanceNow(),
+  checkpoints: [],
+  apiRequests: [],
+  reported: false,
+};
 
 const state = {
   user: null,
@@ -88,15 +106,154 @@ let listImageObserver = null;
 let titleTooltip = null;
 let titleTooltipTarget = null;
 
-async function api(path, options = {}) {
-  const response = await fetch(path, options);
-  if (response.status === 401) {
-    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.replace(`/login?next=${encodeURIComponent(next)}`);
-    throw new Error("authentication required");
+function sameOriginPath(value) {
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    return `${url.pathname}${url.search}`;
+  } catch (error) {
+    return null;
   }
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-  return response.json();
+}
+
+function markPerformanceCheckpoint(name, context = {}) {
+  pagePerformance.checkpoints.push({
+    name,
+    at_ms: roundMetric(performanceNow() - pagePerformance.bootStartedAt),
+    ...context,
+  });
+}
+
+function recordApiPerformance(path, details) {
+  const normalizedPath = sameOriginPath(path);
+  if (!normalizedPath || normalizedPath === PERFORMANCE_ENDPOINT || !normalizedPath.startsWith("/api/")) {
+    return;
+  }
+  pagePerformance.apiRequests.push({
+    path: normalizedPath,
+    ...details,
+  });
+  if (pagePerformance.apiRequests.length > MAX_PERFORMANCE_API_REQUESTS) {
+    pagePerformance.apiRequests.splice(0, pagePerformance.apiRequests.length - MAX_PERFORMANCE_API_REQUESTS);
+  }
+}
+
+function navigationPerformance() {
+  const entry = window.performance?.getEntriesByType?.("navigation")?.[0];
+  if (!entry) return null;
+  return {
+    type: entry.type || "",
+    response_start_ms: roundMetric(entry.responseStart),
+    response_end_ms: roundMetric(entry.responseEnd),
+    dom_interactive_ms: roundMetric(entry.domInteractive),
+    dom_content_loaded_ms: roundMetric(entry.domContentLoadedEventEnd),
+    dom_complete_ms: roundMetric(entry.domComplete),
+    load_event_end_ms: roundMetric(entry.loadEventEnd),
+    duration_ms: roundMetric(entry.duration),
+    transfer_size: entry.transferSize || 0,
+    encoded_body_size: entry.encodedBodySize || 0,
+    decoded_body_size: entry.decodedBodySize || 0,
+  };
+}
+
+function resourcePerformance() {
+  const entries = window.performance?.getEntriesByType?.("resource") || [];
+  return entries
+    .map(entry => {
+      const path = sameOriginPath(entry.name);
+      if (!path || path === PERFORMANCE_ENDPOINT) return null;
+      return {
+        path,
+        initiator_type: entry.initiatorType || "",
+        start_ms: roundMetric(entry.startTime),
+        duration_ms: roundMetric(entry.duration),
+        response_end_ms: roundMetric(entry.responseEnd),
+        transfer_size: entry.transferSize || 0,
+        encoded_body_size: entry.encodedBodySize || 0,
+        decoded_body_size: entry.decodedBodySize || 0,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => (right.duration_ms || 0) - (left.duration_ms || 0))
+    .slice(0, MAX_PERFORMANCE_RESOURCES);
+}
+
+function connectionPerformance() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!connection) return null;
+  return {
+    effective_type: connection.effectiveType || "",
+    downlink: connection.downlink || null,
+    rtt: connection.rtt || null,
+    save_data: Boolean(connection.saveData),
+  };
+}
+
+function reportHomePerformance(result, context = {}) {
+  if (pagePerformance.reported) return;
+  pagePerformance.reported = true;
+  const payload = {
+    event: "home_boot",
+    source: "static/app.js",
+    result,
+    timestamp: new Date().toISOString(),
+    path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    duration_ms: roundMetric(performanceNow() - pagePerformance.bootStartedAt),
+    navigation: navigationPerformance(),
+    resources: resourcePerformance(),
+    api_requests: [...pagePerformance.apiRequests],
+    checkpoints: [...pagePerformance.checkpoints],
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      device_pixel_ratio: window.devicePixelRatio || 1,
+    },
+    connection: connectionPerformance(),
+    catalog: {
+      items: state.anime.length,
+      filtered: state.filtered.length,
+      recommendations: state.recommendations.length,
+      selected_anime_id: state.selectedAnimeId,
+      authenticated: Boolean(state.user),
+    },
+    context,
+  };
+  window.setTimeout(() => {
+    fetch(PERFORMANCE_ENDPOINT, {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  }, 0);
+}
+
+async function api(path, options = {}) {
+  const startedAt = performanceNow();
+  const startFromBoot = startedAt - pagePerformance.bootStartedAt;
+  let status = 0;
+  let ok = false;
+  try {
+    const response = await fetch(path, options);
+    status = response.status;
+    ok = response.ok;
+    if (response.status === 401) {
+      const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.replace(`/login?next=${encodeURIComponent(next)}`);
+      throw new Error("authentication required");
+    }
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return await response.json();
+  } finally {
+    recordApiPerformance(path, {
+      method: options.method || "GET",
+      status,
+      ok,
+      start_ms: roundMetric(startFromBoot),
+      duration_ms: roundMetric(performanceNow() - startedAt),
+    });
+  }
 }
 
 function text(value, fallback = "") {
@@ -1541,20 +1698,29 @@ async function selectInitialAnime() {
 }
 
 async function boot() {
+  markPerformanceCheckpoint("boot_start");
   configurePlayerIframe(el.player);
   const me = await api("/api/me");
   state.user = me.user;
   renderAccount();
+  markPerformanceCheckpoint("me_loaded", { is_admin: Boolean(state.user?.is_admin) });
   const payload = await api("/api/anime");
   state.anime = payload.items || [];
+  markPerformanceCheckpoint("catalog_loaded", { items: state.anime.length });
   await loadRecommendations();
+  markPerformanceCheckpoint("recommendations_loaded", { recommendations: state.recommendations.length });
   renderFilterControls();
   renderSortControls();
   applyFilter();
+  markPerformanceCheckpoint("catalog_rendered", { filtered: state.filtered.length });
   await selectInitialAnime();
+  markPerformanceCheckpoint("initial_detail_loaded", { selected_anime_id: state.selectedAnimeId });
+  markPerformanceCheckpoint("boot_complete");
+  reportHomePerformance("success");
 }
 
 boot().catch(error => {
+  markPerformanceCheckpoint("boot_failed");
   reportClientError(error, { action: "boot app" });
   clearPlayer(error.message);
   console.error(error);

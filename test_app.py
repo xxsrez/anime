@@ -63,9 +63,13 @@ class LocalAppTest(unittest.TestCase):
             thread.join(timeout=5)
 
     def latest_json_log_entry(self, log_dir, filename):
+        entries = self.json_log_entries(log_dir, filename)
+        self.assertTrue(entries)
+        return entries[-1]
+
+    def json_log_entries(self, log_dir, filename):
         lines = (Path(log_dir) / filename).read_text(encoding="utf-8").strip().splitlines()
-        self.assertTrue(lines)
-        return json.loads(lines[-1])
+        return [json.loads(line) for line in lines if line.strip()]
 
     def test_load_env_file_sets_missing_values_without_overriding_existing_env(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -715,6 +719,79 @@ class LocalAppTest(unittest.TestCase):
                 )
                 self.assertEqual(status, 413)
                 self.assertEqual(json.loads(body)["error"], "payload too large")
+
+    def test_request_performance_log_records_server_timing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            log_dir = f"{tmpdir}/logs"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            with patch.dict(os.environ, {"ANIME_LOG_DIR": log_dir}):
+                status, _, body = self.request_test_server(db_path, "GET", "/api/health")
+
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body), {"ok": True})
+            entries = self.json_log_entries(log_dir, "performance.log")
+            request_event = next(entry for entry in entries if entry["event"] == "server_request")
+            self.assertEqual(request_event["method"], "GET")
+            self.assertEqual(request_event["path"], "/api/health")
+            self.assertEqual(request_event["status"], 200)
+            self.assertGreaterEqual(request_event["duration_ms"], 0)
+            self.assertGreater(request_event["response_bytes"], 0)
+
+    def test_performance_endpoint_requires_auth_and_redacts_payload(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            log_dir = f"{tmpdir}/logs"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            payload = {
+                "event": "home_boot",
+                "path": "/",
+                "duration_ms": 1234.5,
+                "resources": [
+                    {
+                        "path": "https://kodikplayer.com/embed/private?token=secret",
+                        "duration_ms": 999,
+                    }
+                ],
+                "api_requests": [{"path": "/api/anime", "duration_ms": 712}],
+                "context": {"token": "secret", "note": "ok"},
+            }
+
+            with patch.dict(os.environ, {"ANIME_LOG_DIR": log_dir}):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/performance",
+                    headers={"Content-Type": "application/json"},
+                    body=json.dumps(payload),
+                )
+                self.assertEqual(status, 401)
+                self.assertEqual(json.loads(body)["error"], "authentication required")
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/performance",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Cookie": f"{server.SESSION_COOKIE_NAME}={token}",
+                    },
+                    body=json.dumps(payload),
+                )
+
+            self.assertEqual(status, 202)
+            self.assertEqual(json.loads(body), {"ok": True})
+            entries = self.json_log_entries(log_dir, "performance.log")
+            event = next(entry for entry in entries if entry["event"] == "home_boot")
+            self.assertTrue(event["authenticated"])
+            self.assertEqual(event["user_id"], user_id)
+            self.assertEqual(event["duration_ms"], 1234.5)
+            self.assertEqual(event["resources"][0]["path"], "<redacted-url>")
+            self.assertEqual(event["context"]["token"], "<redacted>")
+            self.assertEqual(event["api_requests"][0]["path"], "/api/anime")
 
     def test_unexpected_backend_exception_returns_500_and_logs_traceback(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -32,6 +32,7 @@ DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
 MAX_JSON_BODY_BYTES = 64 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
+MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNTHETIC_RATING_PRIOR = 6.8
@@ -74,6 +75,7 @@ LOGGING_LOCK = threading.RLock()
 LOGGING_DIR = None
 SERVER_LOGGER_NAME = "anime.server"
 CLIENT_ERROR_LOGGER_NAME = "anime.client_errors"
+PERFORMANCE_LOGGER_NAME = "anime.performance"
 SENSITIVE_CLIENT_KEYS = {
     "authorization",
     "cookie",
@@ -88,8 +90,8 @@ SENSITIVE_CLIENT_KEYS = {
 }
 SENSITIVE_CLIENT_PATTERNS = (
     re.compile(r"(?i)\b(authorization:\s*bearer\s+)[^\s,;]+"),
-    re.compile(r"(?i)\b((?:credential|id_token|access_token|refresh_token|token|secret|password)=)([^&\s]+)"),
     re.compile(r"(?i)https?://[^\s\"'<>]*(?:alloha|embed|kodik|player|video)[^\s\"'<>]*"),
+    re.compile(r"(?i)\b((?:credential|id_token|access_token|refresh_token|token|secret|password)=)([^&\s]+)"),
 )
 SLUG_TRANSLIT = {
     "а": "a",
@@ -150,8 +152,9 @@ def configure_logging():
 
         server_logger_obj = logging.getLogger(SERVER_LOGGER_NAME)
         client_logger_obj = logging.getLogger(CLIENT_ERROR_LOGGER_NAME)
+        performance_logger_obj = logging.getLogger(PERFORMANCE_LOGGER_NAME)
 
-        for logger_obj in (server_logger_obj, client_logger_obj):
+        for logger_obj in (server_logger_obj, client_logger_obj, performance_logger_obj):
             logger_obj.setLevel(logging.INFO)
             logger_obj.propagate = False
             for handler in list(logger_obj.handlers):
@@ -178,6 +181,21 @@ def configure_logging():
         client_handler._anime_log_handler = True
         client_handler.setFormatter(logging.Formatter("%(message)s"))
         client_logger_obj.addHandler(client_handler)
+
+        performance_handler = RotatingFileHandler(
+            target / "performance.log",
+            maxBytes=1_000_000,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        performance_handler._anime_log_handler = True
+        performance_handler.setFormatter(logging.Formatter("%(message)s"))
+        performance_logger_obj.addHandler(performance_handler)
+
+        performance_stream_handler = logging.StreamHandler()
+        performance_stream_handler._anime_log_handler = True
+        performance_stream_handler.setFormatter(logging.Formatter("%(message)s"))
+        performance_logger_obj.addHandler(performance_stream_handler)
         LOGGING_DIR = target
 
 
@@ -189,6 +207,11 @@ def server_logger():
 def client_error_logger():
     configure_logging()
     return logging.getLogger(CLIENT_ERROR_LOGGER_NAME)
+
+
+def performance_logger():
+    configure_logging()
+    return logging.getLogger(PERFORMANCE_LOGGER_NAME)
 
 
 def redact_client_text(value):
@@ -2319,10 +2342,34 @@ class AnimeHandler(BaseHTTPRequestHandler):
         )
 
     def handle_request(self, callback):
+        started_at = time.perf_counter()
+        caught = None
         try:
             callback()
         except Exception as exc:
+            caught = exc
             self.send_unexpected_error(exc)
+        finally:
+            self.log_request_performance(started_at, caught)
+
+    def log_request_performance(self, started_at, exc=None):
+        parsed = urlparse(getattr(self, "path", "") or "")
+        event = {
+            "received_at": now_iso(),
+            "event": "server_request",
+            "method": getattr(self, "command", "-"),
+            "path": parsed.path or "-",
+            "status": getattr(self, "_last_status", None),
+            "duration_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            "response_bytes": getattr(self, "_last_response_bytes", None),
+        }
+        if hasattr(self, "_current_user"):
+            event["authenticated"] = bool(self._current_user)
+            if self._current_user:
+                event["user_id"] = self._current_user["id"]
+        if exc is not None:
+            event["error_type"] = type(exc).__name__
+        performance_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
 
     def send_unexpected_error(self, exc):
         parsed = urlparse(getattr(self, "path", "") or "")
@@ -2344,6 +2391,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def send_json(self, payload, status=200, headers=None):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self._last_response_bytes = len(body)
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
@@ -2355,6 +2403,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def send_html(self, html_body, status=200, headers=None):
         body = html_body.encode("utf-8")
+        self._last_response_bytes = len(body)
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
@@ -2365,6 +2414,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def send_redirect(self, location, status=302, headers=None):
+        self._last_response_bytes = 0
         self.send_response(status)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
@@ -2445,6 +2495,58 @@ class AnimeHandler(BaseHTTPRequestHandler):
         client_error_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
         self.send_json({"ok": True}, status=202)
 
+    def build_performance_event(self, payload, user):
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be an object")
+        event_name = payload.get("event") or payload.get("type")
+        if not event_name:
+            raise ValueError("event is required")
+
+        event = {
+            "received_at": now_iso(),
+            "authenticated": True,
+            "event": sanitize_client_error_value(event_name),
+            "remote": self.client_address[0] if self.client_address else None,
+            "user_id": user["id"],
+        }
+        for key in (
+            "timestamp",
+            "path",
+            "url",
+            "source",
+            "result",
+            "duration_ms",
+            "navigation",
+            "resources",
+            "api_requests",
+            "checkpoints",
+            "viewport",
+            "connection",
+            "catalog",
+            "context",
+            "userAgent",
+        ):
+            if key in payload:
+                event[key] = sanitize_client_error_value(payload[key])
+        return event
+
+    def handle_performance_post(self, user):
+        try:
+            payload = self.read_limited_json_body(MAX_PERFORMANCE_EVENT_BYTES)
+            event = self.build_performance_event(payload, user)
+        except ClientErrorPayloadTooLarge:
+            self.send_json({"error": "payload too large"}, 413)
+            return
+        except json.JSONDecodeError:
+            self.send_json({"error": "invalid json"}, 400)
+            return
+        except ValueError as exc:
+            self.send_json({"error": str(exc)}, 400)
+            return
+
+        performance_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        self.send_json({"ok": True}, status=202)
+
     def read_google_auth_body(self):
         raw = self.read_body_text(MAX_JSON_BODY_BYTES)
         if not raw:
@@ -2464,6 +2566,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_json({"error": "not found"}, 404)
             return
         content = target.read_bytes()
+        self._last_response_bytes = len(content)
         ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
         if target.suffix == ".js":
             ctype = "text/javascript"
@@ -2725,6 +2828,12 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path == "/api/client-errors":
             self.handle_client_error_post()
+            return
+
+        if path == "/api/performance":
+            user = self.require_user()
+            if user:
+                self.handle_performance_post(user)
             return
 
         if path == "/api/auth/google":
