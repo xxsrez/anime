@@ -269,6 +269,12 @@ def synthetic_episode(anime_id, title):
     }
 
 
+def selected_episodes(episodes, episode_limit):
+    if episode_limit == 0:
+        return episodes
+    return episodes[:episode_limit]
+
+
 def init_db(db_path):
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
@@ -598,7 +604,7 @@ def scrape(args):
         if not episodes and initial_providers:
             episodes = [synthetic_episode(item["id"], item["title"])]
 
-        for episode in episodes[: args.episode_limit]:
+        for episode in selected_episodes(episodes, args.episode_limit):
             if initial_providers and (
                 episode["id"] == int(item["id"]) * 1000 + 1
                 or selected_episode_id == episode["id"]
@@ -621,8 +627,9 @@ def scrape(args):
                 source_count += 1
             print(f"  episode {episode.get('number')}: {len(providers)} provider options")
 
-        for episode in episodes[args.episode_limit :]:
-            upsert_episode(con, item["id"], episode, False, "not fetched in this sample run", scraped_at)
+        if args.episode_limit:
+            for episode in episodes[args.episode_limit :]:
+                upsert_episode(con, item["id"], episode, False, "not fetched in this sample run", scraped_at)
 
         con.commit()
 
@@ -646,7 +653,7 @@ def main():
     parser.add_argument("--all-pages", action="store_true")
     parser.add_argument("--max-pages", type=int, default=100)
     parser.add_argument("--limit", type=int, default=5)
-    parser.add_argument("--episode-limit", type=int, default=2)
+    parser.add_argument("--episode-limit", type=int, default=0, help="episodes per title to fetch; 0 means all")
     parser.add_argument("--delay", type=float, default=0.5)
     parser.add_argument("--include-embed-urls", action="store_true")
     parser.add_argument("--skip-player", action="store_true")

@@ -12,7 +12,10 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from unittest.mock import patch
 
 import backfill_players
+import scrape_animego
+import scrape_yummyanime
 import server
+import sync_videos
 
 
 class LocalAppTest(unittest.TestCase):
@@ -169,6 +172,109 @@ class LocalAppTest(unittest.TestCase):
                 self.assertEqual([row["id"] for row in forced_rows], [2])
             finally:
                 con.close()
+
+    def test_animego_episode_limit_zero_selects_all(self):
+        episodes = [{"id": 1}, {"id": 2}, {"id": 3}]
+        self.assertEqual(scrape_animego.selected_episodes(episodes, 0), episodes)
+        self.assertEqual(scrape_animego.selected_episodes(episodes, 2), episodes[:2])
+
+    def test_video_sync_filters_empty_episodes(self):
+        episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]
+        provider = {
+            "episode_number": "2",
+            "provider_id": "kodik-2",
+            "translation_id": 1,
+            "embed_url": "//kodikplayer.com/seria/2/token",
+            "embed_url_redacted": "//kodikplayer.com/seria/2/<redacted>",
+        }
+
+        selected = sync_videos.filter_episodes_with_providers(episodes, [provider])
+        self.assertEqual([episode["number"] for episode in selected], ["2"])
+
+        global_provider = dict(provider, episode_number=None)
+        selected = sync_videos.filter_episodes_with_providers(episodes, [global_provider])
+        self.assertEqual(selected, episodes)
+
+    def test_video_sync_detects_known_provider(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            con = sync_videos.connect(db_path)
+            try:
+                scraped_at = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (1, 'known', 'Known', 'https://animego.me/anime/known-1', 'animego', '1', ?)
+                    """,
+                    (scraped_at,),
+                )
+                con.execute(
+                    """
+                    insert into episodes(id, anime_id, number, has_video, scraped_at)
+                    values (101, 1, '1', 1, ?)
+                    """,
+                    (scraped_at,),
+                )
+                con.execute(
+                    """
+                    insert into video_sources(
+                        anime_id, episode_id, provider_id, translation_id,
+                        embed_url, embed_url_redacted, scraped_at
+                    )
+                    values (1, 101, 'kodik', 7, '//kodik.test/source', '//kodik.test/<redacted>', ?)
+                    """,
+                    (scraped_at,),
+                )
+
+                self.assertTrue(
+                    sync_videos.provider_known(
+                        con,
+                        101,
+                        {
+                            "provider_id": "kodik",
+                            "translation_id": 7,
+                            "embed_url_redacted": "//kodik.test/<redacted>",
+                        },
+                    )
+                )
+                self.assertFalse(
+                    sync_videos.provider_known(
+                        con,
+                        101,
+                        {
+                            "provider_id": "kodik",
+                            "translation_id": 8,
+                            "embed_url_redacted": "//kodik.test/<redacted>",
+                        },
+                    )
+                )
+            finally:
+                con.close()
+
+    def test_video_sync_dry_run_savepoint_rolls_back_writes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            con = sync_videos.connect(db_path)
+            try:
+                args = type("Args", (), {"dry_run": True})()
+                sync_videos.begin_title(con, args)
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (1, 'dry-run', 'Dry Run', 'https://animego.me/anime/dry-run-1', 'animego', '1', ?)
+                    """,
+                    (server.now_iso(),),
+                )
+                sync_videos.finish_title(con, args)
+                row = con.execute("select count(*) from anime where id = 1").fetchone()
+                self.assertEqual(row[0], 0)
+            finally:
+                con.close()
+
+    def test_yummy_modern_provider_skips_alloha(self):
+        self.assertEqual(scrape_yummyanime.modern_provider_title("Плеер Alloha"), "Alloha")
+        self.assertTrue(scrape_yummyanime.should_skip_modern_provider("Alloha"))
+        self.assertFalse(scrape_yummyanime.should_skip_modern_provider("Kodik"))
 
     def test_source_sort_pins_dream_cast_above_popular_translations(self):
         sources = [

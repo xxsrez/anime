@@ -190,6 +190,10 @@ def modern_provider_title(raw_title):
     return title or "YummyAni"
 
 
+def should_skip_modern_provider(provider_title):
+    return (provider_title or "").strip().lower() == "alloha"
+
+
 def clean_field_value(label, value):
     if not value:
         return None
@@ -396,6 +400,8 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
         data = video.get("data") or {}
         dubbing = data.get("dubbing") or "YummyAni"
         provider_title = modern_provider_title(data.get("player"))
+        if should_skip_modern_provider(provider_title):
+            continue
         providers.append(
             {
                 "episode_number": str(video.get("number") or "1"),

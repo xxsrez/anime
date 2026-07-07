@@ -36,7 +36,7 @@ AnimeGO title pages render an empty player shell:
 ## Run
 
 ```bash
-python3 scrape_animego.py --limit 5 --episode-limit 2
+python3 sync_videos.py --mode hourly
 ```
 
 The default database path is `data/animego.sqlite`.
@@ -53,8 +53,7 @@ For a working iframe prototype or full dev catalog refresh, persist embed URLs
 and then prune rows where the source page still exposes no player:
 
 ```bash
-python3 scrape_animego.py --pages 2 --limit 20 --episode-limit 3 --include-embed-urls
-python3 backfill_players.py --source animego
+python3 sync_videos.py --mode daily
 python3 prune_non_playable.py --commit
 .venv/bin/python server.py
 ```
@@ -83,18 +82,21 @@ favorites/progress/watched state and show the 20 strongest candidates first
 with short reasons. A newly created Google user starts with empty local state;
 anonymous/local profile state is not supported.
 
-Refresh yearly AnimeGO catalog pages with player data:
+Refresh the watchable catalog with player data:
 
 ```bash
-python3 scrape_animego.py --start-url https://animego.me/anime/season/2025 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
-python3 scrape_animego.py --start-url https://animego.me/anime/season/2026 --all-pages --limit 0 --episode-limit 1 --include-embed-urls
-python3 backfill_players.py --source animego
+python3 sync_videos.py --mode hourly
+python3 sync_videos.py --mode daily
 python3 prune_non_playable.py --commit
 ```
 
-`--skip-player` and `--no-embed-urls` are metadata-only research modes. Do not
-use them for the main local catalog unless the rows are backfilled before the
-database is used by the app.
+`sync_videos.py` is video-first: it skips metadata-only title/episode rows by
+default, fetches all exposed episodes with `--episode-limit 0`, and does not
+rewrite already known video source rows unless `--refresh-known` is passed.
+Hourly mode is the light update path; daily/full mode checks broader ongoing
+coverage and can find newly added voices/providers. `--skip-player`,
+`--no-embed-urls`, and `--include-empty-episodes` are research/enrichment modes;
+do not use them for the main local catalog unless a backfill/prune step follows.
 
 Scrape the currently available YummyAnime pages for the Mushoku Tensei /
 `Реинкарнация безработного` franchise into the same database:

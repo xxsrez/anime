@@ -17,6 +17,9 @@
 - `scrape_animego.py` owns the base SQLite schema and the AnimeGO scraper.
 - `scrape_yummyanime.py` imports selected YummyAnime/YummyAni titles into the
   same schema.
+- `sync_videos.py` is the periodic video-first updater for hourly/daily/full
+  runs. It skips metadata-only rows by default and only rewrites known video
+  sources when `--refresh-known` is passed.
 - `static/index.html` defines the local app shell.
 - `static/app.js` owns client state, rendering, filtering, sorting, player
   source selection, recommendations, player controls, and user-state PATCH
@@ -207,6 +210,10 @@ AnimeGO:
   scrape. Its default fetches all exposed episodes; use `--episode-limit` only
   for temporary samples. `prune_non_playable.py --commit` removes rows that
   still have no playable `embed_url`.
+- `sync_videos.py --mode hourly` is the light periodic path: YummyAni feed plus
+  small AnimeGO ongoing/missing coverage checks.
+- `sync_videos.py --mode daily` checks broader ongoing coverage and can find
+  newly added voices/providers without rewriting existing rows.
 
 YummyAnime/YummyAni:
 
@@ -296,7 +303,7 @@ current state.
 Use this command set after behavior changes:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
+python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
 ```
