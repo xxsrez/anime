@@ -46,6 +46,7 @@ const el = {
   accountAvatar: document.getElementById("account-avatar"),
   accountName: document.getElementById("account-name"),
   accountEmail: document.getElementById("account-email"),
+  adminLink: null,
   logoutButton: document.getElementById("logout-button"),
   search: document.getElementById("search"),
   filterGrid: document.getElementById("filter-grid"),
@@ -115,6 +116,7 @@ function renderAccount() {
   if (!state.user || !el.accountRow) return;
   el.accountName.textContent = state.user.name || state.user.email || "Google user";
   el.accountEmail.textContent = state.user.email || "";
+  renderAdminLink();
   el.accountRow.hidden = false;
   if (state.user.picture_url) {
     el.accountAvatar.textContent = "";
@@ -122,6 +124,25 @@ function renderAccount() {
   } else {
     el.accountAvatar.style.backgroundImage = "";
     el.accountAvatar.textContent = userInitials(state.user);
+  }
+}
+
+function renderAdminLink() {
+  if (!state.user?.is_admin) {
+    el.adminLink?.remove();
+    el.adminLink = null;
+    return;
+  }
+  if (!el.adminLink) {
+    const link = document.createElement("a");
+    link.id = "admin-link";
+    link.className = "icon-button icon-link admin-link";
+    link.href = "/admin";
+    link.setAttribute("aria-label", "Админка");
+    link.title = "Админка";
+    link.textContent = "⚙";
+    el.logoutButton.before(link);
+    el.adminLink = link;
   }
 }
 

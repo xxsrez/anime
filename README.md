@@ -2,7 +2,9 @@
 
 Small local scraper prototype for `https://animego.me/anime/status/ongoing`.
 
-Project documentation lives in `docs/`. Start with `docs/README.md`.
+Project documentation lives in `docs/`. Start with `docs/README.md`; for dev
+server management, Railway production, release steps, env vars, and login
+troubleshooting, use `docs/OPERATIONS.md` as the central runbook.
 
 ## What is scraped
 
@@ -61,15 +63,18 @@ python3 prune_non_playable.py --commit
 
 Then open the dev site at `http://127.0.0.1:8765`.
 
-The stable local production site is `http://127.0.0.1:8766/`. It is release-only
-and must not be used for scraping, indexing, experiments, or routine testing.
-See `docs/ENVIRONMENTS.md` for the fixed dev/prod split and release workflow.
+Production runs on Railway at `https://anime-srez.up.railway.app`.
+It is release-only and must not be used for scraping, indexing, experiments, or
+routine testing. See `docs/ENVIRONMENTS.md` and `docs/RAILWAY_PRODUCTION.md` for
+the dev/prod split and release workflow.
 
 The local app requires Sign in with Google. The login page shows Google One Tap
 when available and keeps the Google button as a fallback. `server.py` loads a
 repo-local `.env` file by default, so set the public `GOOGLE_CLIENT_ID` there or
 export it before starting the server; optionally restrict access with
 `ANIME_AUTH_ALLOWED_EMAILS` or `ANIME_AUTH_ALLOWED_DOMAINS`.
+Set `ANIME_ADMIN_EMAIL` to the single Google email that may open `/admin`; if
+`ANIME_AUTH_ALLOWED_EMAILS` is set, include the same email there too.
 The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
 `http://localhost:8765`.

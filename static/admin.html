@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121416">
+  <title>Админка - Anime Catalog</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div class="admin-title">
+        <h1>Админка</h1>
+        <p id="admin-account"></p>
+      </div>
+      <div class="admin-actions">
+        <a class="icon-button icon-link" href="/" aria-label="Каталог" title="Каталог">▦</a>
+        <button id="admin-logout" class="icon-button" type="button" aria-label="Выйти" title="Выйти">↪</button>
+      </div>
+    </header>
+
+    <section id="admin-summary" class="admin-summary" aria-label="Сводка"></section>
+
+    <section class="admin-layout">
+      <section class="admin-panel" aria-labelledby="admin-users-title">
+        <div class="admin-panel-title">
+          <h2 id="admin-users-title">Пользователи</h2>
+          <span id="admin-users-count"></span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Аккаунт</th>
+                <th>Роль</th>
+                <th>Избр.</th>
+                <th>Прогресс</th>
+                <th>Просм.</th>
+                <th>Вход</th>
+                <th>Сессии</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="admin-titles-title">
+        <div class="admin-panel-title">
+          <h2 id="admin-titles-title">Активные тайтлы</h2>
+          <span>топ 12</span>
+        </div>
+        <div id="admin-top-titles" class="admin-title-list"></div>
+      </section>
+    </section>
+
+    <p id="admin-state" class="admin-state" aria-live="polite"></p>
+  </main>
+  <script src="/static/client_errors.js"></script>
+  <script src="/static/admin.js"></script>
+</body>
+</html>

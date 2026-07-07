@@ -6,11 +6,17 @@ const el = {
 const GOOGLE_LOCALE = "ru";
 const reportClientError = window.reportClientError || (() => {});
 const LOGIN_RECOVERY_STARTED_KEY = "anime-login-recovery-started-at";
-const LOGIN_RECOVERY_RELOADS_KEY = "anime-login-recovery-reloads";
 const LOGIN_RECOVERY_MAX_AGE_MS = 60_000;
-const LOGIN_RECOVERY_MAX_RELOADS = 2;
-const LOGIN_RECOVERY_CHECK_ATTEMPTS = 20;
-const LOGIN_RECOVERY_CHECK_DELAY_MS = 150;
+const LOGIN_SESSION_POLL_INTERVAL_MS = 1_000;
+const LOGIN_RECOVERY_POLL_INTERVAL_MS = 150;
+const LOGIN_RECOVERY_FAST_WINDOW_MS = 12_000;
+
+let credentialSubmitInFlight = false;
+let sessionCheckInFlight = false;
+let sessionCheckTimer = 0;
+let fastSessionChecksUntil = 0;
+let redirectingAfterSession = false;
+let sessionCheckErrorReported = false;
 
 function setLoginState(message, tone = "") {
   el.state.textContent = message || "";
@@ -51,14 +57,9 @@ function authComplete() {
   return new URLSearchParams(window.location.search).get("auth_complete") === "1";
 }
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function markLoginRecovery() {
   try {
     window.sessionStorage.setItem(LOGIN_RECOVERY_STARTED_KEY, String(Date.now()));
-    window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, "0");
   } catch (error) {
     reportClientError(error, { action: "mark login recovery" });
   }
@@ -67,7 +68,6 @@ function markLoginRecovery() {
 function clearLoginRecovery() {
   try {
     window.sessionStorage.removeItem(LOGIN_RECOVERY_STARTED_KEY);
-    window.sessionStorage.removeItem(LOGIN_RECOVERY_RELOADS_KEY);
   } catch (error) {
     reportClientError(error, { action: "clear login recovery" });
   }
@@ -84,51 +84,69 @@ function hasRecentLoginRecovery() {
   }
 }
 
-function loginRecoveryReloadCount() {
-  try {
-    return Number(window.sessionStorage.getItem(LOGIN_RECOVERY_RELOADS_KEY) || 0);
-  } catch (error) {
-    reportClientError(error, { action: "read login recovery reloads" });
-    return LOGIN_RECOVERY_MAX_RELOADS;
+function stopSessionWatcher() {
+  if (sessionCheckTimer) {
+    window.clearTimeout(sessionCheckTimer);
+    sessionCheckTimer = 0;
   }
 }
 
-function bumpLoginRecoveryReloadCount(value) {
+async function checkExistingSession() {
+  if (sessionCheckInFlight || redirectingAfterSession) return false;
+  sessionCheckInFlight = true;
   try {
-    window.sessionStorage.setItem(LOGIN_RECOVERY_RELOADS_KEY, String(value));
-  } catch (error) {
-    reportClientError(error, { action: "write login recovery reloads" });
-  }
-}
-
-async function recoverExistingSession() {
-  if (!hasRecentLoginRecovery()) return false;
-  setLoginState("Завершаю вход...", "ok");
-  for (let attempt = 0; attempt < LOGIN_RECOVERY_CHECK_ATTEMPTS; attempt += 1) {
-    try {
-      const response = await fetch("/api/me", {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      if (response.ok) {
-        clearLoginRecovery();
-        window.location.replace(nextPath());
-        return true;
-      }
-    } catch (error) {
-      // A reload below is the recovery path for transient cookie timing issues.
+    const response = await fetch("/api/me", {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    if (response.ok) {
+      redirectingAfterSession = true;
+      clearLoginRecovery();
+      stopSessionWatcher();
+      window.location.replace(nextPath());
+      return true;
     }
-    await delay(LOGIN_RECOVERY_CHECK_DELAY_MS);
+  } catch (error) {
+    if (!sessionCheckErrorReported) {
+      sessionCheckErrorReported = true;
+      reportClientError(error, { action: "check existing login session" });
+    }
+  } finally {
+    sessionCheckInFlight = false;
   }
-
-  const reloadCount = loginRecoveryReloadCount();
-  if (reloadCount < LOGIN_RECOVERY_MAX_RELOADS) {
-    bumpLoginRecoveryReloadCount(reloadCount + 1);
-    window.location.reload();
-    return true;
-  }
-  setLoginState("Вход выполнен. Обновите страницу, если приложение не открылось.", "warn");
   return false;
+}
+
+function scheduleSessionCheck(delayMs = 0) {
+  if (sessionCheckTimer || redirectingAfterSession) return;
+  sessionCheckTimer = window.setTimeout(runSessionCheck, delayMs);
+}
+
+async function runSessionCheck() {
+  sessionCheckTimer = 0;
+  const foundSession = await checkExistingSession();
+  if (foundSession || redirectingAfterSession) return;
+  const delayMs = Date.now() < fastSessionChecksUntil
+    ? LOGIN_RECOVERY_POLL_INTERVAL_MS
+    : LOGIN_SESSION_POLL_INTERVAL_MS;
+  scheduleSessionCheck(delayMs);
+}
+
+function startSessionWatcher({ recovery = false } = {}) {
+  if (recovery) {
+    fastSessionChecksUntil = Math.max(
+      fastSessionChecksUntil,
+      Date.now() + LOGIN_RECOVERY_FAST_WINDOW_MS,
+    );
+    setLoginState("Завершаю вход...", "ok");
+  }
+  scheduleSessionCheck(0);
+}
+
+function recoverExistingSession() {
+  if (!hasRecentLoginRecovery()) return false;
+  startSessionWatcher({ recovery: true });
+  return true;
 }
 
 function waitForGoogle() {
@@ -147,30 +165,37 @@ function waitForGoogle() {
 }
 
 async function submitCredential(response) {
+  if (credentialSubmitInFlight || redirectingAfterSession) return;
   if (!response?.credential) {
     setLoginState("Google не вернул credential", "warn");
     return;
   }
+  credentialSubmitInFlight = true;
   setLoginState("Проверяю вход...", "ok");
-  const authResponse = await fetch("/api/auth/google", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      credential: response.credential,
-      next: nextPath(),
-      state: response.state || "",
-    }),
-  });
-  const payload = await authResponse.json().catch(() => ({}));
-  if (!authResponse.ok) {
-    throw new Error(payload.error || `${authResponse.status} ${authResponse.statusText}`);
+  try {
+    const authResponse = await fetch("/api/auth/google", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        credential: response.credential,
+        next: nextPath(),
+        state: response.state || "",
+      }),
+    });
+    const payload = await authResponse.json().catch(() => ({}));
+    if (!authResponse.ok) {
+      throw new Error(payload.error || `${authResponse.status} ${authResponse.statusText}`);
+    }
+    if (!payload.complete_url) {
+      throw new Error("Сервер не вернул завершение входа");
+    }
+    markLoginRecovery();
+    window.location.replace(payload.complete_url);
+  } catch (error) {
+    credentialSubmitInFlight = false;
+    throw error;
   }
-  if (!payload.complete_url) {
-    throw new Error("Сервер не вернул завершение входа");
-  }
-  markLoginRecovery();
-  window.location.replace(payload.complete_url);
 }
 
 function handleCredential(response) {
@@ -205,12 +230,14 @@ async function bootLogin() {
   const redirectError = authError();
   if (redirectError) {
     setLoginState(redirectError, "warn");
-  } else {
-    recoverExistingSession();
+    startSessionWatcher();
+  } else if (!recoverExistingSession()) {
+    startSessionWatcher();
   }
 
   const configResponse = await fetch(`/api/auth/config?next=${encodeURIComponent(nextPath())}`);
   const config = await configResponse.json();
+  if (redirectingAfterSession) return;
   if (!config.configured || !config.client_id) {
     renderUnavailableGoogleButton();
     setLoginState(
@@ -229,6 +256,7 @@ async function bootLogin() {
   }
 
   const google = await waitForGoogle();
+  if (redirectingAfterSession) return;
   google.accounts.id.initialize({
     client_id: config.client_id,
     callback: handleCredential,
@@ -253,4 +281,10 @@ bootLogin().catch(error => {
   reportClientError(error, { action: "boot login" });
   setLoginState(error.message || "Не удалось открыть вход", "warn");
   console.error(error);
+});
+
+window.addEventListener("focus", () => scheduleSessionCheck(0));
+window.addEventListener("pageshow", () => scheduleSessionCheck(0));
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) scheduleSessionCheck(0);
 });

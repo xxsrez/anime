@@ -246,7 +246,7 @@ class LocalAppTest(unittest.TestCase):
 
             status, _, body = self.request_test_server(str(db_path), "GET", "/login")
             self.assertEqual(status, 200)
-            self.assertIn(b"Anime Local", body)
+            self.assertIn(b"Anime Catalog", body)
 
     def test_video_sync_filters_empty_episodes(self):
         episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]
@@ -496,6 +496,124 @@ class LocalAppTest(unittest.TestCase):
             )
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
+
+    def test_admin_access_is_limited_to_configured_email(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            con = server.connect(db_path)
+            try:
+                con.execute("delete from sessions")
+                con.execute("delete from user_title_state")
+                con.execute("delete from users")
+                con.commit()
+            finally:
+                con.close()
+
+            admin_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            other_id = self.create_google_user(db_path, "google-user-2", "two@example.com")
+            admin_token = self.create_session(db_path, admin_id)
+            other_token = self.create_session(db_path, other_id)
+            anime_id = server.get_anime_list(db_path, user_id=admin_id)[0]["id"]
+            server.update_user_state(
+                anime_id,
+                {"is_favorite": True, "progress_episode_number": 4},
+                db_path,
+                admin_id,
+            )
+            server.update_user_state(anime_id, {"watched": True}, db_path, other_id)
+
+            with patch.dict(os.environ, {"ANIME_ADMIN_EMAIL": "one@example.com"}):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/me",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={admin_token}"},
+                )
+                self.assertEqual(status, 200)
+                self.assertTrue(json.loads(body)["user"]["is_admin"])
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/me",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={other_token}"},
+                )
+                self.assertEqual(status, 200)
+                self.assertFalse(json.loads(body)["user"]["is_admin"])
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/admin",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={admin_token}"},
+                )
+                self.assertEqual(status, 200)
+                self.assertIn(b"/static/admin.js", body)
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/static/admin.js",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={admin_token}"},
+                )
+                self.assertEqual(status, 200)
+                self.assertIn(b"/api/admin/users", body)
+
+                status, _, _ = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/admin",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={other_token}"},
+                )
+                self.assertEqual(status, 404)
+
+                status, _, _ = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/static/admin.js",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={other_token}"},
+                )
+                self.assertEqual(status, 404)
+
+                status, _, _ = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/admin/users",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={other_token}"},
+                )
+                self.assertEqual(status, 404)
+
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/admin/users",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={admin_token}"},
+                )
+                self.assertEqual(status, 200)
+
+            payload = json.loads(body)
+            self.assertEqual(payload["summary"]["registered_users"], 2)
+            self.assertEqual(payload["summary"]["total_favorites"], 1)
+            self.assertEqual(payload["summary"]["total_progress_titles"], 1)
+            self.assertEqual(payload["summary"]["total_watched_titles"], 1)
+            users = {item["email"]: item for item in payload["users"]}
+            self.assertEqual(set(users), {"one@example.com", "two@example.com"})
+            self.assertTrue(users["one@example.com"]["is_admin"])
+            self.assertFalse(users["two@example.com"]["is_admin"])
+            self.assertEqual(users["one@example.com"]["favorite_titles"], 1)
+            self.assertEqual(users["two@example.com"]["watched_titles"], 1)
+            self.assertTrue(payload["top_titles"])
+
+    def test_admin_route_redirects_anonymous_user_to_login(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+
+            status, headers, _ = self.request_test_server(db_path, "GET", "/admin")
+
+            self.assertEqual(status, 302)
+            self.assertEqual(urlparse(headers["Location"]).path, "/login")
 
     def test_oversized_auth_payload_is_rejected_before_parsing(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1021,6 +1139,8 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('href="/static/favicon.svg"', html)
         self.assertIn('href="/favicon.ico"', html)
         self.assertIn('src="/static/client_errors.js"', html)
+        self.assertNotIn('href="/admin"', html)
+        self.assertNotIn('id="admin-link"', html)
 
     def test_login_uses_google_one_tap_and_button(self):
         html = Path(server.STATIC_DIR / "login.html").read_text(encoding="utf-8")
@@ -1041,8 +1161,15 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("complete_url", js)
         self.assertIn("authComplete()", js)
         self.assertIn("recoverExistingSession", js)
-        self.assertIn("window.location.reload()", js)
+        self.assertIn("startSessionWatcher", js)
+        self.assertIn("checkExistingSession", js)
+        self.assertIn("LOGIN_SESSION_POLL_INTERVAL_MS", js)
+        self.assertIn('window.addEventListener("focus"', js)
+        self.assertIn('window.addEventListener("pageshow"', js)
+        self.assertIn('document.addEventListener("visibilitychange"', js)
         self.assertIn("sessionStorage.setItem(LOGIN_RECOVERY_STARTED_KEY", js)
+        self.assertIn("credentialSubmitInFlight", js)
+        self.assertNotIn("window.location.reload()", js)
         self.assertNotIn('ux_mode: "redirect"', js)
         self.assertNotIn("login_uri:", js)
         self.assertNotIn("use_fedcm_for_button", js)
@@ -1081,11 +1208,28 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn('class="view-tab-label">Смотрю</span>', html)
         self.assertIn('aria-pressed="true"', html)
 
+    def test_admin_page_has_dashboard_assets(self):
+        html = Path(server.STATIC_DIR / "admin.html").read_text(encoding="utf-8")
+        js = Path(server.STATIC_DIR / "admin.js").read_text(encoding="utf-8")
+        self.assertIn('body class="admin-page"', html)
+        self.assertIn('id="admin-summary"', html)
+        self.assertIn('id="admin-users"', html)
+        self.assertIn('id="admin-top-titles"', html)
+        self.assertIn('src="/static/admin.js"', html)
+        self.assertIn("/api/admin/users", js)
+        self.assertIn("is_admin", js)
+
     def test_right_pane_deep_links_are_supported(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         self.assertIn("readLinkState", js)
         self.assertIn("syncUrlFromDetail", js)
         self.assertIn("window.history", js)
+
+    def test_admin_link_is_created_only_after_admin_user_payload(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        self.assertIn("function renderAdminLink", js)
+        self.assertIn('link.href = "/admin"', js)
+        self.assertIn("!state.user?.is_admin", js)
 
     def test_right_pane_state_save_does_not_autoselect_first_filtered_item(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

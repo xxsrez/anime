@@ -64,12 +64,23 @@ export ANIME_AUTH_ALLOWED_EMAILS="one@example.com,two@example.com"
 export ANIME_AUTH_ALLOWED_DOMAINS="example.com"
 ```
 
+Admin access is separate from the general login allowlist:
+
+```bash
+export ANIME_ADMIN_EMAIL="one@example.com"
+```
+
+Only that one Google email can open `/admin` or `/api/admin/users`. If
+`ANIME_AUTH_ALLOWED_EMAILS` is set, include the same email there so the admin
+account can pass the normal login gate.
+
 Sessions use an opaque `HttpOnly` cookie and are stored as SHA-256 hashes in
 SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
 
-Production is a separate localhost environment at `http://127.0.0.1:8766/`.
+Production runs on Railway at `https://anime-srez.up.railway.app`.
 Do not use it for development, scraping, indexing, or performance work. See
-`ENVIRONMENTS.md` for the fixed port map and release workflow.
+`ENVIRONMENTS.md` and `RAILWAY_PRODUCTION.md` for the environment map and
+release workflow.
 
 ## Logging
 
@@ -127,6 +138,12 @@ Returns the public Google client ID configuration for the login page.
 
 Returns the current authenticated user. Requires a valid session cookie.
 
+`GET /api/admin/users`
+
+Requires the current user's email to match `ANIME_ADMIN_EMAIL`. Returns
+registered users, per-user favorite/progress/watched counts, active-session
+counts, aggregate summary metrics, and top titles by user activity.
+
 `POST /api/auth/google`
 
 Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
@@ -135,9 +152,10 @@ verifies it server-side, upserts the local user, and returns a short-lived
 browser then opens that URL as a top-level page so the server can set the
 `HttpOnly` session cookie. The completion page waits until `/api/me` sees that
 cookie before returning to the app, with a timed top-level navigation fallback
-through `/login?...auth_complete=1` for browser cookie timing quirks. That login
-recovery route retries the session check and can self-refresh a bounded number
-of times.
+through `/login?...auth_complete=1` for browser cookie timing quirks. The login
+page continuously polls `/api/me` while it is open, uses a faster polling window
+after an auth completion handoff, and redirects automatically as soon as the
+session cookie becomes visible.
 
 `POST /api/logout`
 
@@ -341,5 +359,5 @@ If `http://127.0.0.1:8765/` serves new static files but API routes return 404,
 restart the long-running `server.py` process. Python route handlers are loaded
 only when the process starts.
 
-Prod smoke checks are only part of an explicit release operation. Do not use
-`http://127.0.0.1:8766/` as a substitute for dev testing.
+Production smoke checks are only part of an explicit release operation. Do not
+use Railway production as a substitute for dev testing.

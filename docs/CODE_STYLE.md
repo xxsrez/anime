@@ -11,8 +11,8 @@
   out of git.
 - Keep source-specific quirks isolated in the relevant scraper.
 - Run the relevant checks before declaring work complete.
-- Keep environment discipline strict: `8765` is dev/test/scratch, `8766` is
-  prod, and `8776` is retired.
+- Keep environment discipline strict: `8765` is dev/test/scratch, Railway is
+  production, and local ports `8766`/`8776` are retired.
 
 ## Python
 
@@ -68,9 +68,9 @@
 ## Tests And Verification
 
 Use dev (`http://127.0.0.1:8765/`) for all regular verification, browser
-testing, scraping, indexing, and performance checks. Prod
-(`http://127.0.0.1:8766/`) is release-only and must not be changed, restarted,
-or used as scratch unless the user explicitly asks for a prod operation.
+testing, scraping, indexing, and performance checks. Railway production is
+release-only and must not be changed, redeployed, or used as scratch unless the
+user explicitly asks for a production operation.
 
 For code changes, run:
 

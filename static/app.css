@@ -33,6 +33,10 @@ body.login-page {
   overflow: auto;
 }
 
+body.admin-page {
+  overflow: auto;
+}
+
 button,
 input,
 select {
@@ -167,7 +171,7 @@ select {
 
 .account-row {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 36px;
+  grid-template-columns: 38px minmax(0, 1fr) 36px 36px;
   gap: 10px;
   align-items: center;
   padding: 12px 20px;
@@ -323,10 +327,25 @@ select {
   background: var(--panel);
 }
 
+.icon-link {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+.icon-button[hidden],
+.icon-link[hidden] {
+  display: none;
+}
+
 .icon-button.active {
   border-color: rgba(116, 198, 157, 0.7);
   background: rgba(116, 198, 157, 0.12);
   color: var(--accent-2);
+}
+
+.admin-link {
+  color: var(--muted);
 }
 
 .reset-filters {
@@ -986,6 +1005,206 @@ select {
   overflow-wrap: anywhere;
 }
 
+.admin-shell {
+  width: min(1180px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 22px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.admin-title {
+  min-width: 0;
+}
+
+.admin-title h1 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.admin-title p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.admin-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.admin-metric {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+  min-width: 0;
+}
+
+.admin-metric span,
+.admin-panel-title span,
+.admin-cell-muted {
+  color: var(--muted);
+}
+
+.admin-metric span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.admin-metric strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.admin-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171a1e;
+  overflow: hidden;
+}
+
+.admin-panel-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-panel-title h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-table td {
+  font-size: 13px;
+}
+
+.admin-user-cell strong,
+.admin-user-cell span {
+  display: block;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-cell span {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.admin-pill {
+  display: inline-flex;
+  max-width: 100%;
+  border: 1px solid rgba(116, 198, 157, 0.35);
+  border-radius: 999px;
+  background: rgba(116, 198, 157, 0.08);
+  color: #c7d7ce;
+  padding: 3px 7px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.admin-pill.warn {
+  border-color: rgba(244, 184, 96, 0.4);
+  background: rgba(244, 184, 96, 0.09);
+  color: var(--focus);
+}
+
+.admin-title-list {
+  display: grid;
+  gap: 0;
+}
+
+.admin-title-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-title-item:last-child {
+  border-bottom: 0;
+}
+
+.admin-title-item strong {
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.admin-title-item span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-state {
+  margin-top: 18px;
+  color: var(--muted);
+}
+
+.admin-state[data-tone="warn"] {
+  color: var(--focus);
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -998,6 +1217,10 @@ select {
   }
 
   .player-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-layout {
     grid-template-columns: 1fr;
   }
 }

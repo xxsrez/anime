@@ -1888,12 +1888,14 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
 def public_user(row):
     if row is None:
         return None
-    return {
+    user = {
         "id": row["id"],
         "email": row["email"],
         "name": row["name"] or row["email"] or "Google user",
         "picture_url": row["picture_url"],
     }
+    user["is_admin"] = is_admin_user(user)
+    return user
 
 
 def session_token_hash(token):
@@ -1906,6 +1908,19 @@ def google_client_id():
 
 def session_cookie_secure():
     return os.environ.get("ANIME_SESSION_SECURE", "").strip().lower() in {"1", "true", "yes"}
+
+
+def configured_admin_email():
+    return os.environ.get("ANIME_ADMIN_EMAIL", "").strip().lower()
+
+
+def is_admin_user(user):
+    if not user:
+        return False
+    admin_email = configured_admin_email()
+    if not admin_email:
+        return False
+    return str(user.get("email") or "").strip().lower() == admin_email
 
 
 def verify_google_credential(credential):
@@ -2060,6 +2075,144 @@ def revoke_session(token, db_path=None):
             (now_iso(), session_token_hash(token)),
         )
         con.commit()
+    finally:
+        con.close()
+
+
+def admin_users_payload(db_path=None):
+    now = now_iso()
+    recent_cutoff = (
+        dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=7)
+    ).isoformat(timespec="seconds")
+    con = connect(db_path)
+    try:
+        users = rows_to_dicts(
+            con.execute(
+                """
+                with state_stats as (
+                    select
+                        user_id,
+                        count(*) as touched_titles,
+                        sum(case when is_favorite then 1 else 0 end) as favorite_titles,
+                        sum(case when progress_episode_number is not null then 1 else 0 end) as progress_titles,
+                        sum(case when watched then 1 else 0 end) as watched_titles,
+                        max(updated_at) as last_state_at
+                    from user_title_state
+                    group by user_id
+                ),
+                session_stats as (
+                    select
+                        user_id,
+                        count(*) as active_sessions,
+                        max(last_seen_at) as last_session_at
+                    from sessions
+                    where revoked_at is null
+                      and expires_at > ?
+                    group by user_id
+                )
+                select
+                    u.id,
+                    u.email,
+                    u.name,
+                    u.picture_url,
+                    u.created_at,
+                    u.last_login_at,
+                    coalesce(ss.touched_titles, 0) as touched_titles,
+                    coalesce(ss.favorite_titles, 0) as favorite_titles,
+                    coalesce(ss.progress_titles, 0) as progress_titles,
+                    coalesce(ss.watched_titles, 0) as watched_titles,
+                    ss.last_state_at,
+                    coalesce(sess.active_sessions, 0) as active_sessions,
+                    sess.last_session_at
+                from users u
+                left join state_stats ss on ss.user_id = u.id
+                left join session_stats sess on sess.user_id = u.id
+                order by
+                    coalesce(u.last_login_at, u.created_at) desc,
+                    u.id desc
+                """,
+                (now,),
+            ).fetchall()
+        )
+        for user in users:
+            for key in (
+                "touched_titles",
+                "favorite_titles",
+                "progress_titles",
+                "watched_titles",
+                "active_sessions",
+            ):
+                user[key] = int(user.get(key) or 0)
+            user["is_admin"] = is_admin_user(user)
+
+        summary_row = con.execute(
+            """
+            with state_stats as (
+                select
+                    user_id,
+                    sum(case when is_favorite then 1 else 0 end) as favorite_titles,
+                    sum(case when progress_episode_number is not null then 1 else 0 end) as progress_titles,
+                    sum(case when watched then 1 else 0 end) as watched_titles
+                from user_title_state
+                group by user_id
+            ),
+            session_stats as (
+                select user_id, count(*) as active_sessions
+                from sessions
+                where revoked_at is null
+                  and expires_at > ?
+                group by user_id
+            )
+            select
+                count(u.id) as registered_users,
+                sum(case when u.last_login_at >= ? then 1 else 0 end) as recent_logins,
+                sum(case when coalesce(ss.favorite_titles, 0) > 0 then 1 else 0 end) as users_with_favorites,
+                sum(case when coalesce(ss.progress_titles, 0) > 0 then 1 else 0 end) as users_with_progress,
+                sum(case when coalesce(ss.watched_titles, 0) > 0 then 1 else 0 end) as users_with_watched,
+                coalesce(sum(ss.favorite_titles), 0) as total_favorites,
+                coalesce(sum(ss.progress_titles), 0) as total_progress_titles,
+                coalesce(sum(ss.watched_titles), 0) as total_watched_titles,
+                coalesce(sum(sess.active_sessions), 0) as active_sessions
+            from users u
+            left join state_stats ss on ss.user_id = u.id
+            left join session_stats sess on sess.user_id = u.id
+            """,
+            (now, recent_cutoff),
+        ).fetchone()
+        summary = dict(summary_row)
+        for key, value in list(summary.items()):
+            summary[key] = int(value or 0)
+
+        top_titles = rows_to_dicts(
+            con.execute(
+                """
+                select
+                    a.id as anime_id,
+                    a.title,
+                    a.source,
+                    count(distinct uts.user_id) as users,
+                    sum(case when uts.is_favorite then 1 else 0 end) as favorites,
+                    sum(case when uts.progress_episode_number is not null then 1 else 0 end) as in_progress,
+                    sum(case when uts.watched then 1 else 0 end) as watched
+                from user_title_state uts
+                join anime a on a.id = uts.anime_id
+                group by a.id, a.title, a.source
+                having favorites > 0 or in_progress > 0 or watched > 0
+                order by favorites desc, watched desc, in_progress desc, users desc, a.title
+                limit 12
+                """
+            ).fetchall()
+        )
+        for title in top_titles:
+            for key in ("anime_id", "users", "favorites", "in_progress", "watched"):
+                title[key] = int(title.get(key) or 0)
+
+        return {
+            "summary": summary,
+            "users": users,
+            "top_titles": top_titles,
+            "generated_at": now,
+        }
     finally:
         con.close()
 
@@ -2346,6 +2499,19 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_json({"error": "authentication required"}, 401)
         return None
 
+    def require_admin(self):
+        user = self.require_user()
+        if not user:
+            return None
+        if user.get("is_admin"):
+            return user
+        self.send_json({"error": "not found"}, 404)
+        return None
+
+    def current_user_is_admin(self):
+        user = self.current_user()
+        return bool(user and user.get("is_admin"))
+
     def session_cookie_header(self, token):
         parts = [
             f"{SESSION_COOKIE_NAME}={token}",
@@ -2403,7 +2569,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 <head>
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-  <title>Вход выполнен - Anime Local</title>
+  <title>Вход выполнен - Anime Catalog</title>
 </head>
 <body>
   <p id=\"login-complete-state\">Вход выполнен. Открываю приложение...</p>
@@ -2453,6 +2619,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/static/"):
+            if path.startswith("/static/admin") and not self.current_user_is_admin():
+                self.send_json({"error": "not found"}, 404)
+                return
             self.send_static(path.removeprefix("/static/"))
             return
 
@@ -2497,9 +2666,25 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_json({"user": user})
             return
 
+        if path == "/admin" or path == "/admin/":
+            user = self.current_user()
+            if not user:
+                self.redirect_to_login()
+                return
+            if not user.get("is_admin"):
+                self.send_json({"error": "not found"}, 404)
+                return
+            self.send_static("admin.html")
+            return
+
         user = self.current_user()
         if path.startswith("/api/") and not user:
             self.send_json({"error": "authentication required"}, 401)
+            return
+
+        if path == "/api/admin/users":
+            if self.require_admin():
+                self.send_json(admin_users_payload(self.server.db_path))
             return
 
         if path == "/api/anime":

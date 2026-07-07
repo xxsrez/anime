@@ -89,7 +89,7 @@ def smoke(args):
 
             status, _, body = request(args.host, port, "GET", "/login")
             assert_status(status, 200, "login page")
-            if b"Anime Local" not in body:
+            if b"Anime Catalog" not in body:
                 raise AssertionError("login page did not render app brand")
 
             status, _, _ = request(args.host, port, "GET", "/api/anime")
