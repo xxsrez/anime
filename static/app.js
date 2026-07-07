@@ -312,6 +312,17 @@ function searchText(value) {
   return String(value || "").toLocaleLowerCase("ru").replaceAll("ё", "е").replaceAll("э", "е");
 }
 
+function isMobileLayout() {
+  return window.matchMedia?.("(max-width: 980px)").matches;
+}
+
+function scrollDetailIntoViewForMobile() {
+  if (!isMobileLayout()) return;
+  requestAnimationFrame(() => {
+    document.querySelector(".detail")?.scrollIntoView({ block: "start" });
+  });
+}
+
 function ensureTitleTooltip() {
   if (titleTooltip) return titleTooltip;
   titleTooltip = document.createElement("div");
@@ -1034,7 +1045,7 @@ function renderList() {
     button.addEventListener("blur", hideTitleTooltip);
     button.addEventListener("click", () => {
       hideTitleTooltip();
-      selectAnime(titleRefForItem(item));
+      selectAnime(titleRefForItem(item), { scrollDetail: true });
     });
     el.list.append(button);
   }
@@ -1480,6 +1491,7 @@ async function selectAnime(id, options = {}) {
   renderDetail();
   state.urlSyncSuspended = previousUrlSync;
   if (options.updateUrl !== false) syncUrlFromDetail();
+  if (options.scrollDetail) scrollDetailIntoViewForMobile();
 }
 
 async function selectEpisode(id) {
@@ -1677,7 +1689,7 @@ el.list.addEventListener("scroll", hideTitleTooltip);
 window.addEventListener("popstate", () => {
   const linkState = readLinkState();
   if (linkState.animeId) {
-    selectAnime(linkState.animeId, { linkState, updateUrl: false }).catch(reportActionError("popstate anime"));
+    selectAnime(linkState.animeId, { linkState, updateUrl: false, scrollDetail: true }).catch(reportActionError("popstate anime"));
   }
 });
 
@@ -1685,7 +1697,7 @@ async function selectInitialAnime() {
   const linkState = readLinkState();
   if (linkState.animeId) {
     try {
-      await selectAnime(linkState.animeId, { linkState });
+      await selectAnime(linkState.animeId, { linkState, scrollDetail: true });
       return;
     } catch (error) {
       reportClientError(error, { action: "open shared anime link", animeId: linkState.animeId });
