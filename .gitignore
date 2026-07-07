@@ -1,10 +1,30 @@
+.DS_Store
+
+# Local mutable data and recovery snapshots.
 db/
-data/*.sqlite
-data/*.sqlite-*
+data/
 backups/
-data/logs/
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.db3
+*.db3-*
+*.log
+
+# Python/runtime artifacts.
 __pycache__/
+*.py[cod]
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environment.
 .env
 .env.*
 !.env.example

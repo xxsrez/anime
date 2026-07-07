@@ -7,6 +7,8 @@
 - Keep local behavior explicit and easy to inspect.
 - Do not download or store video streams.
 - Treat `db/animego.sqlite` as local mutable state.
+- Keep `db/`, `data/`, local backups, logs, virtualenvs, and generated caches
+  out of git.
 - Keep source-specific quirks isolated in the relevant scraper.
 - Run the relevant checks before declaring work complete.
 - Keep environment discipline strict: `8765` is dev/test/scratch, `8766` is
@@ -74,6 +76,7 @@ For code changes, run:
 
 ```bash
 python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
+python3 scripts/check_repo_hygiene.py
 python3 -m unittest -v test_app.py
 node --check static/app.js
 node --check static/login.js

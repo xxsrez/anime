@@ -63,14 +63,15 @@ Release command, only after the user explicitly asks to release:
 /Users/andrey/.local/share/anime-local-prod/bin/release --ref HEAD
 ```
 
-Releases are immutable snapshots created from committed git refs with
+Code releases are immutable snapshots created from committed git refs with
 `git archive`. Dirty working-tree changes are not included. The release script
 refuses dirty worktrees by default; `--allow-dirty` must be explicit and should
 only be used when the user accepts that uncommitted work is ignored.
 
-During release, the production catalog database is refreshed from the released
-backup database while `users`, `sessions`, and per-user `user_title_state` are
-preserved when referenced titles still exist.
+The SQLite catalog and local backup snapshots are not part of git archives.
+Treat production database refreshes as a separate explicit operation from code
+release. Do not assume that `release --ref HEAD` carries `db/animego.sqlite` or
+`db/backups/current/animego.sqlite` into production.
 
 ## Normal Workflow
 

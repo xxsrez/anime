@@ -523,6 +523,8 @@ def db_signature(path):
 
 def connect(db_path=None):
     path = resolve_db_path(db_path)
+    if path.parent != Path("."):
+        path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(path)
     con.execute("pragma busy_timeout=30000")
     con.row_factory = sqlite3.Row

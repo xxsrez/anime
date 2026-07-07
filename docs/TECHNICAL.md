@@ -82,6 +82,8 @@ Default location:
 data/logs/
 ```
 
+The whole `data/` directory is ignored by git.
+
 Override the location for a run or test with:
 
 ```bash
