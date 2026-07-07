@@ -350,6 +350,14 @@ class LocalAppTest(unittest.TestCase):
         self.assertTrue(scrape_yummyanime.should_skip_modern_provider("Alloha"))
         self.assertFalse(scrape_yummyanime.should_skip_modern_provider("Kodik"))
 
+    def test_yummy_modern_ids_do_not_collide_with_legacy_ids(self):
+        self.assertEqual(scrape_yummyanime.internal_anime_id(4981), 10004981)
+        self.assertEqual(scrape_yummyanime.internal_modern_anime_id(4981), 20004981)
+        self.assertNotEqual(
+            scrape_yummyanime.internal_anime_id(4981),
+            scrape_yummyanime.internal_modern_anime_id(4981),
+        )
+
     def test_source_sort_pins_dream_cast_above_popular_translations(self):
         sources = [
             self.source_row("AniStar", row_id=1),
@@ -1263,6 +1271,16 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("/api/client-errors", reporter_js)
         self.assertIn("window.addEventListener(\"error\"", reporter_js)
         self.assertIn("window.addEventListener(\"unhandledrejection\"", reporter_js)
+
+    def test_app_boot_parallelizes_initial_api_and_defers_recommendations(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        boot = js[js.index("async function boot()"):js.index("boot().catch")]
+        self.assertIn("Promise.all", boot)
+        self.assertIn('api("/api/me")', boot)
+        self.assertIn('api("/api/anime")', boot)
+        self.assertIn('markPerformanceCheckpoint("recommendations_deferred")', boot)
+        self.assertNotIn("await loadRecommendations", boot)
+        self.assertNotIn("/api/recommendations", boot)
 
     def test_login_page_allows_google_popup_opener(self):
         with tempfile.TemporaryDirectory() as tmpdir:

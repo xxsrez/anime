@@ -34,6 +34,7 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 )
 YUMMY_ID_OFFSET = 10_000_000
+YUMMYANI_ID_OFFSET = 20_000_000
 YUMMY_TRANSLATION_ID = 9_000_001
 YUMMYANI_TRANSLATION_ID_OFFSET = 9_100_000
 
@@ -71,6 +72,10 @@ def parse_yummy_source_id(url):
 
 def internal_anime_id(source_id):
     return YUMMY_ID_OFFSET + int(source_id)
+
+
+def internal_modern_anime_id(source_id):
+    return YUMMYANI_ID_OFFSET + int(source_id)
 
 
 def internal_episode_id(anime_id, number):
@@ -389,7 +394,7 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
         raise ValueError(f"Cannot parse YummyAni id: {page_url}")
 
     source_id = int(source_id)
-    anime_id = internal_anime_id(source_id)
+    anime_id = internal_modern_anime_id(source_id)
     rating = anime.get("rating") or {}
     episode_info = anime.get("episodes") or {}
     min_age = anime.get("min_age") or {}

@@ -39,6 +39,9 @@ const state = {
   anime: [],
   recommendations: [],
   recommendationProfile: null,
+  recommendationsLoaded: false,
+  recommendationsLoading: null,
+  recommendationsError: null,
   filtered: [],
   selectedAnimeId: null,
   detail: null,
@@ -669,7 +672,8 @@ function recommendationFor(id) {
 }
 
 function baseItemsForView() {
-  return isRecommendationView() ? state.recommendations : state.anime;
+  if (!isRecommendationView()) return state.anime;
+  return state.recommendationsLoaded ? state.recommendations : [];
 }
 
 function normalizeOptionValues(value) {
@@ -988,7 +992,13 @@ function renderList() {
   if (!state.filtered.length) {
     const empty = document.createElement("div");
     empty.className = "empty-list";
-    empty.textContent = isRecommendationView() ? "Пока нет рекомендаций" : "Ничего не найдено";
+    if (isRecommendationView() && state.recommendationsLoading) {
+      empty.textContent = "Загружаю советы...";
+    } else if (isRecommendationView() && state.recommendationsError) {
+      empty.textContent = "Не удалось загрузить советы";
+    } else {
+      empty.textContent = isRecommendationView() ? "Пока нет рекомендаций" : "Ничего не найдено";
+    }
     el.list.append(empty);
     return;
   }
@@ -1068,6 +1078,14 @@ function renderRecommendationMeta() {
   el.recommendationMeta.hidden = !isRecommendationView();
   el.recommendationMeta.replaceChildren();
   if (!isRecommendationView()) return;
+
+  if (state.recommendationsLoading || state.recommendationsError) {
+    const item = document.createElement("span");
+    item.textContent = state.recommendationsLoading ? "Загружаю советы" : "Советы недоступны";
+    el.recommendationMeta.append(item);
+    el.recommendationMeta.setAttribute("aria-label", item.textContent);
+    return;
+  }
 
   const profile = state.recommendationProfile || {};
   const mode = profile.mode === "personalized" ? "персонально" : "популярное";
@@ -1537,7 +1555,11 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
     if (item) Object.assign(item, visibleState);
     const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in patch);
     if (affectsRecommendations) {
-      await loadRecommendations();
+      state.recommendationsLoaded = false;
+      state.recommendationProfile = null;
+      if (isRecommendationView()) {
+        loadRecommendationsForView({ force: true });
+      }
     }
     const recommended = state.recommendations.find(entry => entry.id === animeId);
     if (recommended) Object.assign(recommended, visibleState);
@@ -1602,6 +1624,38 @@ async function loadRecommendations() {
     const local = state.anime.find(entry => entry.id === item.id);
     return local ? { ...local, ...item } : item;
   });
+  state.recommendationsLoaded = true;
+  state.recommendationsError = null;
+  return state.recommendations;
+}
+
+function ensureRecommendations({ force = false } = {}) {
+  if (!force && state.recommendationsLoaded) {
+    return Promise.resolve(state.recommendations);
+  }
+  if (state.recommendationsLoading) return state.recommendationsLoading;
+
+  state.recommendationsError = null;
+  state.recommendationsLoading = loadRecommendations()
+    .catch(error => {
+      state.recommendationsError = error;
+      throw error;
+    })
+    .finally(() => {
+      state.recommendationsLoading = null;
+    });
+  return state.recommendationsLoading;
+}
+
+function loadRecommendationsForView({ force = false } = {}) {
+  if (!isRecommendationView()) return;
+  if (!force && state.recommendationsLoaded) return;
+  ensureRecommendations({ force })
+    .then(() => {
+      if (isRecommendationView()) applyFilter({ selectFirst: true });
+      if (state.detail) renderRecommendationContext(state.detail);
+    })
+    .catch(reportActionError("load recommendations"));
 }
 
 el.search.addEventListener("input", () => applyFilter({ selectFirst: true }));
@@ -1635,6 +1689,7 @@ for (const button of el.viewTabs) {
       item.classList.toggle("active", active);
       item.setAttribute("aria-pressed", active ? "true" : "false");
     }
+    loadRecommendationsForView();
     applyFilter({ selectFirst: true });
   });
 }
@@ -1712,15 +1767,16 @@ async function selectInitialAnime() {
 async function boot() {
   markPerformanceCheckpoint("boot_start");
   configurePlayerIframe(el.player);
-  const me = await api("/api/me");
+  const [me, payload] = await Promise.all([
+    api("/api/me"),
+    api("/api/anime"),
+  ]);
   state.user = me.user;
   renderAccount();
   markPerformanceCheckpoint("me_loaded", { is_admin: Boolean(state.user?.is_admin) });
-  const payload = await api("/api/anime");
   state.anime = payload.items || [];
   markPerformanceCheckpoint("catalog_loaded", { items: state.anime.length });
-  await loadRecommendations();
-  markPerformanceCheckpoint("recommendations_loaded", { recommendations: state.recommendations.length });
+  markPerformanceCheckpoint("recommendations_deferred");
   renderFilterControls();
   renderSortControls();
   applyFilter();
