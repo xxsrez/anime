@@ -75,18 +75,19 @@ user explicitly asks for a production operation.
 For code changes, run:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
-python3 scripts/check_repo_hygiene.py
-python3 -m unittest -v test_app.py
+.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
+.venv/bin/python scripts/check_repo_hygiene.py
+.venv/bin/python -m unittest -v test_app.py
 node --check static/app.js
 node --check static/login.js
+node --check static/admin.js
 ```
 
 For local database or backup changes, also run:
 
 ```bash
-python3 scripts/check_data_health.py
-python3 scripts/smoke_dev_app.py
+.venv/bin/python scripts/check_data_health.py
+.venv/bin/python scripts/smoke_dev_app.py
 ```
 
 For UI changes, also verify in a browser:

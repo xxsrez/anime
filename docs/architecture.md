@@ -1,4 +1,4 @@
-# Technical Documentation
+# Architecture
 
 ## Runtime Stack
 
@@ -79,8 +79,9 @@ SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
 
 Production runs on Railway at `https://anime-srez.up.railway.app`.
 Do not use it for development, scraping, indexing, or performance work. See
-`ENVIRONMENTS.md` and `RAILWAY_PRODUCTION.md` for the environment map and
-release workflow.
+`instructions/Environment_Rules.md` and
+`guides/deployment/railway-production.md` for the environment map and release
+workflow.
 
 ## Logging
 
@@ -334,9 +335,11 @@ current state.
 Use this command set after behavior changes:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py
-python3 -m unittest -v test_app.py
+.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
+.venv/bin/python -m unittest -v test_app.py
 node --check static/app.js
+node --check static/login.js
+node --check static/admin.js
 ```
 
 For UI changes, also do a browser smoke test against dev:

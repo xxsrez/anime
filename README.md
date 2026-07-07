@@ -4,7 +4,8 @@ Small local scraper prototype for `https://animego.me/anime/status/ongoing`.
 
 Project documentation lives in `docs/`. Start with `docs/README.md`; for dev
 server management, Railway production, release steps, env vars, and login
-troubleshooting, use `docs/OPERATIONS.md` as the central runbook.
+troubleshooting, use `docs/instructions/Operations_Runbook.md` as the central
+runbook.
 
 ## What is scraped
 
@@ -65,8 +66,9 @@ Then open the dev site at `http://127.0.0.1:8765`.
 
 Production runs on Railway at `https://anime-srez.up.railway.app`.
 It is release-only and must not be used for scraping, indexing, experiments, or
-routine testing. See `docs/ENVIRONMENTS.md` and `docs/RAILWAY_PRODUCTION.md` for
-the dev/prod split and release workflow.
+routine testing. See `docs/instructions/Environment_Rules.md` and
+`docs/guides/deployment/railway-production.md` for the dev/prod split and
+release workflow.
 
 The local app requires Sign in with Google. The login page shows Google One Tap
 when available and keeps the Google button as a fallback. `server.py` loads a

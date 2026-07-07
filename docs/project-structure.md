@@ -1,0 +1,81 @@
+# Project Structure
+
+This page shows where the main repository files live. It describes the intended
+layout; verify the live tree before making changes because ignored local data
+can change outside git.
+
+## Root Files
+
+| Path | Purpose |
+| --- | --- |
+| `README.md` | Public project entrypoint and short scraper/app notes. |
+| `requirements.txt` | Python runtime dependencies. |
+| `railway.json` | Railway build/deploy configuration. |
+| `.env.example` | Local environment variable template. |
+| `.gitignore` | Keeps local databases, logs, caches, env files, and venvs out of git. |
+
+## Application Code
+
+| Path | Purpose |
+| --- | --- |
+| `server.py` | HTTP server, Google auth, API, canonical catalog, recommendations, logging. |
+| `scrape_animego.py` | Base SQLite schema and AnimeGO scraper/importer. |
+| `scrape_yummyanime.py` | YummyAnime/YummyAni importer and provider parsing. |
+| `sync_videos.py` | Video-first periodic updater for hourly, daily, and full sync modes. |
+| `backfill_players.py` | Backfills player/video rows for source titles missing playable coverage. |
+| `prune_non_playable.py` | Removes source rows that still have no playable embed URL. |
+| `update_backup.py` | Updates the ignored local recovery snapshot. |
+| `test_app.py` | Regression tests for server, scraper, sync, auth, catalog, and recommendations behavior. |
+
+## Frontend
+
+| Path | Purpose |
+| --- | --- |
+| `static/index.html` | Authenticated app shell. |
+| `static/app.js` | Catalog UI state, filtering, sorting, detail view, player controls, user state, recommendations. |
+| `static/app.css` | Compact dark UI styling. |
+| `static/login.html` | Google login page. |
+| `static/login.js` | Google Identity Services login flow and session handoff. |
+| `static/admin.html` | Admin page shell. |
+| `static/admin.js` | Admin users/activity UI. |
+| `static/client_errors.js` | Browser error reporting helper. |
+| `static/favicon.svg` | App icon. |
+
+## Scripts
+
+| Path | Purpose |
+| --- | --- |
+| `scripts/check_repo_hygiene.py` | Fails when local mutable files, logs, caches, or large artifacts are tracked or present in git history. |
+| `scripts/check_data_health.py` | Validates local SQLite integrity, backup checksums, and the watchable-catalog invariant. |
+| `scripts/smoke_dev_app.py` | Starts a temporary local server and checks login guards, catalog, and recommendations. |
+| `scripts/railway_start.sh` | Railway start command wrapper for `server.py`. |
+
+## Documentation
+
+| Path | Purpose |
+| --- | --- |
+| `docs/README.md` | Documentation index and reading order. |
+| `docs/overview.md` | Product summary, current workflows, data sources, playback, recommendations, limitations. |
+| `docs/architecture.md` | Runtime stack, main components, API, data flow, scraper notes, verification. |
+| `docs/project-structure.md` | This file. |
+| `docs/instructions/` | Working rules, environment rules, and operations runbook. |
+| `docs/guides/` | Component and deployment guides. |
+| `docs/design/` | Reserved for historical/original specifications. |
+| `docs/tasks/` | Reserved for complex investigations with changelogs. |
+| `docs/reports/` | Reserved for final analysis reports. |
+
+## Ignored Local State
+
+These paths are part of the local workflow but are intentionally not committed:
+
+| Path | Purpose |
+| --- | --- |
+| `db/animego.sqlite` | Mutable local app database. |
+| `db/backups/current/` | Local recovery snapshot for database and user state exports. |
+| `data/logs/` | Server and browser error logs. |
+| `.env` | Local secrets/config values. |
+| `.venv/` | Local Python virtual environment. |
+| `__pycache__/`, `scripts/__pycache__/` | Python bytecode caches. |
+
+Do not move ignored mutable data into tracked documentation. Summaries belong
+in docs; databases, logs, raw secrets, and generated caches stay ignored.

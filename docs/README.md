@@ -1,20 +1,43 @@
 # Anime Local Documentation
 
 This directory is the durable project documentation for the local anime catalog
-and player prototype.
+and player prototype. It follows the `project-docs` layout:
+
+- root pages explain the project, architecture, and repository structure;
+- `instructions/` contains working rules and operational process;
+- `guides/` contains current component and deployment how-tos;
+- `design/`, `tasks/`, and `reports/` are reserved for future historical
+  specifications, multi-day investigations, and final analyses.
 
 ## Reading order
 
-1. `OVERVIEW.md` - product summary, current scope, user workflows, limitations.
-2. `OPERATIONS.md` - central runbook for dev, prod, release, tmux, env vars,
-   login troubleshooting, and smoke checks.
-3. `ENVIRONMENTS.md` - short environment map; defer to `OPERATIONS.md` for
-   commands.
-4. `RAILWAY_PRODUCTION.md` - Railway-specific quick reference; defer to
-   `OPERATIONS.md` for the release checklist.
-5. `TECHNICAL.md` - runtime, data flow, API, scraper behavior, verification.
-6. `DATA_MODEL.md` - SQLite tables, relationships, ID conventions, mutable data.
-7. `CODE_STYLE.md` - project coding rules and contribution conventions.
+1. `overview.md` - product summary, current scope, workflows, limitations.
+2. `architecture.md` - runtime, data flow, API, scraper behavior,
+   recommendations, and verification.
+3. `project-structure.md` - where source, docs, ignored data, and generated
+   artifacts live.
+4. `instructions/Operations_Runbook.md` - central runbook for dev, prod,
+   release, tmux, env vars, login troubleshooting, and smoke checks.
+5. `instructions/Environment_Rules.md` - short dev/prod environment map.
+6. `guides/deployment/railway-production.md` - Railway-specific quick
+   reference; defer to the operations runbook for the release checklist.
+7. `guides/data-model/README.md` - SQLite tables, relationships, ID
+   conventions, and mutable data.
+8. `instructions/Code_Style_Instructions.md` - coding rules and contribution
+   conventions.
+
+## Directory Map
+
+| Path | Purpose |
+| --- | --- |
+| `overview.md` | What Anime Local is and why it exists. |
+| `architecture.md` | How the app, scrapers, auth, API, and UI work. |
+| `project-structure.md` | Where files live and which paths are generated. |
+| `instructions/` | Rules for working on this repo. |
+| `guides/` | Current how-tos for components and deployment. |
+| `design/` | Future original/historical specifications. |
+| `tasks/` | Future complex investigations with changelogs. |
+| `reports/` | Future final analysis documents. |
 
 ## Quick start
 
@@ -30,15 +53,15 @@ Open `http://127.0.0.1:8765/`.
 
 Production is Railway service `web` at
 `https://anime-srez.up.railway.app` and must only be updated after an explicit
-release request. See `OPERATIONS.md` before touching dev process management,
-Railway variables, production deploys, or database uploads.
+release request. See `instructions/Operations_Runbook.md` before touching dev
+process management, Railway variables, production deploys, or database uploads.
 
 Run the current verification set:
 
 ```bash
-python3 -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
-python3 scripts/check_repo_hygiene.py
-python3 -m unittest -v test_app.py
+.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
+.venv/bin/python scripts/check_repo_hygiene.py
+.venv/bin/python -m unittest -v test_app.py
 node --check static/app.js
 node --check static/login.js
 node --check static/admin.js
@@ -47,8 +70,8 @@ node --check static/admin.js
 For local database changes, also run:
 
 ```bash
-python3 scripts/check_data_health.py
-python3 scripts/smoke_dev_app.py
+.venv/bin/python scripts/check_data_health.py
+.venv/bin/python scripts/smoke_dev_app.py
 ```
 
 After frontend or API changes, restart any already-running `server.py` process.

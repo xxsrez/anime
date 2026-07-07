@@ -1,8 +1,8 @@
 # Environments And Release Rules
 
-`OPERATIONS.md` is the central source of truth for dev process management,
-Railway production, releases, env vars, smoke checks, and troubleshooting. This
-file is a short environment map only.
+`Operations_Runbook.md` is the central source of truth for dev process
+management, Railway production, releases, env vars, smoke checks, and
+troubleshooting. This file is a short environment map only.
 
 This project uses local development plus Railway production. Keep the split
 strict so development work cannot break the production service.
@@ -20,7 +20,7 @@ for Anime dev/prod work unless the user explicitly changes the scheme again.
 ## Development
 
 Run and test the current working tree on dev. For durable dev server commands,
-use `OPERATIONS.md`.
+use `Operations_Runbook.md`.
 
 ```bash
 cp .env.example .env
@@ -54,11 +54,11 @@ These files are ignored by git and should not be committed.
 
 Production runs on Railway. Use the central runbook before touching prod:
 
-- `docs/OPERATIONS.md`
+- `docs/instructions/Operations_Runbook.md`
 
 Railway-specific details are also summarized in:
 
-- `docs/RAILWAY_PRODUCTION.md`
+- `docs/guides/deployment/railway-production.md`
 
 Useful read-only status commands:
 
@@ -69,7 +69,7 @@ railway logs --latest --lines 100
 ```
 
 Code release command, only after the user explicitly asks to release and after
-the `OPERATIONS.md` release checklist passes:
+   the `Operations_Runbook.md` release checklist passes:
 
 ```bash
 railway up --service web --environment production --detach --message "production release"

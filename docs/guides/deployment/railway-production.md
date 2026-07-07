@@ -1,8 +1,8 @@
 # Railway Production Release
 
-`OPERATIONS.md` is the central source of truth for the release checklist,
-verification, dev/prod boundaries, env vars, and troubleshooting. This file is
-a Railway-specific quick reference.
+`../../instructions/Operations_Runbook.md` is the central source of truth for
+the release checklist, verification, dev/prod boundaries, env vars, and
+troubleshooting. This file is a Railway-specific quick reference.
 
 Railway is the production environment for Anime Local. The retired localhost
 production install at `127.0.0.1:8766` must not be used for releases.
@@ -66,7 +66,8 @@ https://anime-srez.up.railway.app
 
 ## Release Checklist
 
-Use the full checklist in `OPERATIONS.md`. The abbreviated Railway sequence is:
+Use the full checklist in `../../instructions/Operations_Runbook.md`. The
+abbreviated Railway sequence is:
 
 1. Verify the intended local state on dev:
 
