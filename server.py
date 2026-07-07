@@ -14,6 +14,7 @@ import os
 import re
 import secrets
 import sqlite3
+import sys
 import threading
 import time
 import unicodedata
@@ -192,7 +193,7 @@ def configure_logging():
         performance_handler.setFormatter(logging.Formatter("%(message)s"))
         performance_logger_obj.addHandler(performance_handler)
 
-        performance_stream_handler = logging.StreamHandler()
+        performance_stream_handler = logging.StreamHandler(sys.stdout)
         performance_stream_handler._anime_log_handler = True
         performance_stream_handler.setFormatter(logging.Formatter("%(message)s"))
         performance_logger_obj.addHandler(performance_stream_handler)
