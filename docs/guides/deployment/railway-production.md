@@ -72,8 +72,8 @@ abbreviated Railway sequence is:
 1. Verify the intended local state on dev:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
-.venv/bin/python -m unittest -v test_app.py
+.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
+.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
 node --check static/app.js
 node --check static/login.js
 node --check static/admin.js
@@ -87,28 +87,50 @@ railway status
 railway volume list --json
 ```
 
-3. For routine title/episode data changes, run an incremental update inside
-   Railway instead of uploading the whole SQLite file:
+3. For routine title/episode data changes, generate a private SQL data patch
+   instead of uploading or replacing the whole SQLite file:
 
 ```bash
-.venv/bin/python scripts/prod_incremental_update.py \
+.venv/bin/python sync_videos.py \
+  --db db/animego.sqlite \
   --mode hourly \
   --source yummyanime \
   --source animego \
+  --emit-migration 2026-07-08_hourly-catalog-refresh \
   --stop-on-error
 ```
 
 For a specific title:
 
 ```bash
-.venv/bin/python scripts/prod_incremental_update.py \
+.venv/bin/python sync_videos.py \
+  --db db/animego.sqlite \
+  --mode manual \
   --yummy-ref https://ru.yummyani.me/catalog/item/example \
+  --emit-migration 2026-07-08_example-title \
   --stop-on-error
 ```
 
+For older catalog years, generate the SQL locally, keep it outside git, and
+apply it after deploy. Do not run the broad scraper inside Railway:
+
+```bash
+PYTHONUNBUFFERED=1 .venv/bin/python sync_videos.py \
+  --db db/animego.sqlite \
+  --mode manual \
+  --source yummyanime \
+  --source animego \
+  --yummy-catalog-year 2020 \
+  --yummy-catalog-year 2019 \
+  --animego-season-year 2020 \
+  --animego-season-year 2019 \
+  --emit-migration 2026-07-08_catalog-2020-2019
+```
+
 `db/animego.sqlite` is ignored by git. It is not included in `railway up`.
-Routine production data changes should mutate `/data/animego.sqlite` in place
-through `scripts/prod_incremental_update.py`; see
+Routine production data patches should stay under ignored
+`data/private-migrations/`, be copied to the Railway volume, and be applied
+through `scripts/db_migrate.py`; see
 `../../instructions/Incremental_DB_Update.md`.
 
 Full upload is emergency-only for deliberate full restores:
@@ -126,14 +148,39 @@ railway up --service web --environment production --detach --message "production
 `railway up` uploads from the current directory and respects `.gitignore`.
 Use it only when the current working tree is the intended production code.
 
-5. Watch deployment state and logs:
+5. Copy private data patches to the Railway volume if production data should
+   change:
+
+```bash
+railway volume files -v web-volume upload \
+  data/private-migrations/2026-07-08_catalog-2020-2019 \
+  /private-migrations/2026-07-08_catalog-2020-2019 \
+  --overwrite \
+  --json
+```
+
+6. Apply pending migrations if production data should change:
+
+```bash
+railway ssh --service web --environment production '
+  db="${ANIMEGO_DB:-/data/animego.sqlite}"
+  python3 scripts/db_migrate.py apply \
+    --db "$db" \
+    --root migrations \
+    --root /data/private-migrations \
+    --backup-dir /data/backups \
+    --wait-lock
+'
+```
+
+7. Watch deployment state and logs:
 
 ```bash
 railway deployment list --json
 railway logs --latest --lines 100
 ```
 
-6. Smoke-check production:
+8. Smoke-check production:
 
 ```bash
 curl -fsS https://anime-srez.up.railway.app/api/health

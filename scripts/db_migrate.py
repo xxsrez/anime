@@ -128,6 +128,14 @@ def file_checksum(path):
     return digest.hexdigest()
 
 
+def normalize_roots(roots):
+    if roots is None:
+        return [DEFAULT_MIGRATIONS]
+    if isinstance(roots, (str, Path)):
+        return [Path(roots)]
+    return [Path(root) for root in roots]
+
+
 def discover_migrations(root):
     root = Path(root)
     if not root.exists():
@@ -154,6 +162,22 @@ def discover_migrations(root):
                     size_bytes=script.stat().st_size,
                 )
             )
+    return migrations
+
+
+def discover_migrations_from_roots(roots):
+    migrations = []
+    seen = {}
+    for root in normalize_roots(roots):
+        for migration in discover_migrations(root):
+            previous = seen.get(migration.path)
+            if previous is not None:
+                raise MigrationError(
+                    f"duplicate migration path {migration.path}: "
+                    f"{previous} and {migration.full_path}"
+                )
+            seen[migration.path] = migration.full_path
+            migrations.append(migration)
     return migrations
 
 
@@ -188,8 +212,8 @@ def assert_runner_owns_transaction(statement, migration):
         )
 
 
-def collect_plan(db_path, root):
-    migrations = discover_migrations(root)
+def collect_plan(db_path, roots):
+    migrations = discover_migrations_from_roots(roots)
     con = connect_existing(db_path)
     try:
         history = read_history(con)
@@ -301,7 +325,7 @@ def verify_database(db_path):
 
 def apply_pending(
     db_path,
-    root,
+    roots,
     backup_dir=None,
     no_backup=False,
     lock_path=None,
@@ -309,11 +333,10 @@ def apply_pending(
     verify=True,
 ):
     db_path = Path(db_path)
-    root = Path(root)
     lock_path = Path(lock_path) if lock_path else Path(f"{db_path}.migrate.lock")
 
     with FileLock(lock_path, wait=wait_lock):
-        plan = collect_plan(db_path, root)
+        plan = collect_plan(db_path, roots)
         fail_on_drift(plan)
         pending = plan["pending"]
         if not pending:
@@ -355,8 +378,8 @@ def print_plan(plan):
             print(f"  {path}")
 
 
-def print_status(db_path, root):
-    plan = collect_plan(db_path, root)
+def print_status(db_path, roots):
+    plan = collect_plan(db_path, roots)
     if plan["drift"]:
         print("status: drift")
         for migration, old_checksum in plan["drift"]:
@@ -377,8 +400,9 @@ def add_common_args(parser):
     parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument(
         "--root",
-        default=str(DEFAULT_MIGRATIONS),
-        help="migration root directory",
+        dest="roots",
+        action="append",
+        help="migration root directory; pass multiple times to apply multiple roots in order",
     )
 
 
@@ -407,14 +431,14 @@ def main(argv=None):
     args = parse_args(argv)
     try:
         if args.command == "plan":
-            print_plan(collect_plan(args.db, args.root))
+            print_plan(collect_plan(args.db, args.roots))
             return 0
         if args.command == "status":
-            return print_status(args.db, args.root)
+            return print_status(args.db, args.roots)
         if args.command == "apply":
             result = apply_pending(
                 args.db,
-                args.root,
+                args.roots,
                 backup_dir=args.backup_dir,
                 no_backup=args.no_backup,
                 lock_path=args.lock_file,

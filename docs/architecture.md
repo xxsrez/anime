@@ -336,7 +336,7 @@ Use this command set after behavior changes:
 
 ```bash
 .venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
-.venv/bin/python -m unittest -v test_app.py
+.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
 node --check static/app.js
 node --check static/login.js
 node --check static/admin.js

@@ -63,9 +63,9 @@ process management, Railway variables, production deploys, or database uploads.
 Run the current verification set:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
+.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
 .venv/bin/python scripts/check_repo_hygiene.py
-.venv/bin/python -m unittest -v test_app.py
+.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
 node --check static/app.js
 node --check static/login.js
 node --check static/admin.js

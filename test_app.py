@@ -283,9 +283,48 @@ class LocalAppTest(unittest.TestCase):
         self.assertEqual(args.sources, ["yummyanime"])
         self.assertEqual(args.yummy_refs, ["https://ru.yummyani.me/catalog/item/vanpanchmen-2"])
 
+    def test_video_sync_manual_catalog_years_infer_sources(self):
+        args = sync_videos.parse_args(
+            [
+                "--mode",
+                "manual",
+                "--yummy-catalog-year",
+                "2020",
+                "--animego-season-year",
+                "2019",
+            ]
+        )
+
+        self.assertEqual(args.sources, ["yummyanime", "animego"])
+        self.assertEqual(args.yummy_catalog_years, [2020])
+        self.assertEqual(args.animego_season_years, [2019])
+
     def test_video_sync_manual_mode_requires_refs(self):
         with self.assertRaises(SystemExit):
             sync_videos.parse_args(["--mode", "manual"])
+
+    def test_video_sync_legacy_yummy_ref_uses_legacy_parser(self):
+        args = sync_videos.parse_args(
+            [
+                "--mode",
+                "manual",
+                "--yummy-ref",
+                "https://yummyanime.tv/4085-belaja-zmeja-proishozhdenie.html",
+            ]
+        )
+
+        with patch.object(scrape_yummyanime, "fetch_text", return_value="<html></html>") as fetch_text:
+            with patch.object(
+                scrape_yummyanime,
+                "parse_detail",
+                return_value=({"id": 1}, {}, [], []),
+            ) as parse_detail:
+                with patch.object(scrape_yummyanime, "parse_modern_detail") as parse_modern_detail:
+                    sync_videos.parse_yummy_detail_for_sync(args.yummy_refs[0], args)
+
+        fetch_text.assert_called_once_with(args.yummy_refs[0], delay=args.delay)
+        parse_detail.assert_called_once()
+        parse_modern_detail.assert_not_called()
 
     def test_video_sync_builds_animego_manual_item_from_url(self):
         item = sync_videos.animego_item_from_ref("https://animego.me/anime/vanpanchmen-3-2854")

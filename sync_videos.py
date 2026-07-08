@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import argparse
 from collections import OrderedDict, defaultdict
+import copy
 import fcntl
 import json
+import os
+from pathlib import Path
 import sqlite3
+import tempfile
 import time
 import traceback
 import urllib.error
@@ -13,11 +17,14 @@ from urllib.request import Request, urlopen
 import backfill_players
 import scrape_animego as animego
 import scrape_yummyanime as yummy
+from scripts import db_data_diff
 
 
 YUMMY_FEED_URL = f"{yummy.YUMMYANI_API_BASE}/feed"
 YUMMY_ONGOING_PAGE_SIZE = 100
 RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
+ROOT = Path(__file__).resolve().parent
+DEFAULT_PRIVATE_MIGRATIONS = ROOT / "data" / "private-migrations"
 
 
 class FileLock:
@@ -229,6 +236,40 @@ def yummy_page_url(anime_ref):
     return f"{yummy.YUMMYANI_BASE_URL}/catalog/item/{value}"
 
 
+def selected_years(years, from_year, to_year):
+    if years:
+        return sorted(set(years), reverse=True)
+    if from_year is None and to_year is None:
+        return []
+    if from_year is None or to_year is None:
+        raise ValueError("--from-year and --to-year must be used together")
+    if from_year > to_year:
+        raise ValueError("--from-year must be less than or equal to --to-year")
+    return list(range(to_year, from_year - 1, -1))
+
+
+def parse_yummy_detail_for_sync(page_url, args):
+    if yummy.is_modern_yummyani_url(page_url):
+        return call_with_retries(
+            args,
+            page_url,
+            lambda: yummy.parse_modern_detail(page_url, include_embed_urls=True, delay=args.delay),
+        )
+
+    html_text = call_with_retries(
+        args,
+        page_url,
+        lambda: yummy.fetch_text(page_url, delay=args.delay),
+    )
+    return yummy.parse_detail(
+        page_url,
+        html_text,
+        include_embed_urls=True,
+        skip_player=False,
+        delay=args.delay,
+    )
+
+
 def yummy_feed_provider_id(row):
     provider_title = yummy.modern_provider_title(row.get("player_title"))
     if yummy.should_skip_modern_provider(provider_title):
@@ -242,11 +283,7 @@ def yummy_feed_provider_id(row):
 def sync_yummy_title(con, anime_ref, args, stats, reason):
     page_url = yummy_page_url(anime_ref)
     stats["titles_checked"] += 1
-    item, detail, episodes, providers = call_with_retries(
-        args,
-        page_url,
-        lambda: yummy.parse_modern_detail(page_url, include_embed_urls=True, delay=args.delay),
-    )
+    item, detail, episodes, providers = parse_yummy_detail_for_sync(page_url, args)
     providers = [provider for provider in providers if provider_has_embed(provider)]
     selected = selected_episodes(episodes, args.episode_limit)
     selected = filter_episodes_with_providers(selected, providers) if not args.include_empty_episodes else selected
@@ -390,6 +427,34 @@ def sync_yummyanime(con, args):
                 traceback.print_exc()
             if args.stop_on_error:
                 raise
+
+    catalog_years = selected_years(
+        args.yummy_catalog_years,
+        args.yummy_from_year,
+        args.yummy_to_year,
+    )
+    catalog_refs = []
+    if catalog_years:
+        catalog_refs = yummy.collect_catalog_urls(catalog_years, args.yummy_catalog_max_pages, delay=args.delay)
+        if args.yummy_limit:
+            catalog_refs = catalog_refs[: args.yummy_limit]
+        print(f"yummyanime catalog candidates: {len(catalog_refs)}")
+
+    for index, anime_ref in enumerate(catalog_refs, start=1):
+        print(f"[yummyanime catalog {index}/{len(catalog_refs)}] {anime_ref}")
+        begin_title(con, args)
+        try:
+            sync_yummy_title(con, anime_ref, args, stats, "catalog")
+            finish_title(con, args)
+        except Exception as exc:
+            abort_title(con, args)
+            stats["failed"] += 1
+            print(f"  ERROR: {exc}")
+            if args.verbose:
+                traceback.print_exc()
+            if args.stop_on_error:
+                raise
+
     if args.mode == "manual":
         return stats
 
@@ -441,31 +506,41 @@ def animego_item_from_ref(anime_ref):
 
 
 def collect_animego_listing(args):
-    source_url = args.animego_start_url.rstrip("/")
+    years = selected_years(
+        args.animego_season_years,
+        args.animego_from_year,
+        args.animego_to_year,
+    )
+    source_urls = [f"{animego.BASE_URL}/anime/season/{year}" for year in years]
+    if not source_urls:
+        source_urls = [args.animego_start_url]
+
     items = []
     seen = set()
     max_pages = args.animego_discover_pages
     if max_pages == 0:
         max_pages = args.animego_max_pages
-    for page in range(1, max_pages + 1):
-        page_url = source_url if page == 1 else f"{source_url}/{page}"
-        try:
-            page_html = call_with_retries(args, page_url, lambda: animego.fetch_text(page_url, delay=args.delay))
-        except urllib.error.HTTPError as exc:
-            if exc.code == 404 and args.animego_discover_pages == 0:
-                print(f"animego listing page {page}: 404, stopping")
+    for source_url in source_urls:
+        source_url = source_url.rstrip("/")
+        for page in range(1, max_pages + 1):
+            page_url = source_url if page == 1 else f"{source_url}/{page}"
+            try:
+                page_html = call_with_retries(args, page_url, lambda: animego.fetch_text(page_url, delay=args.delay))
+            except urllib.error.HTTPError as exc:
+                if exc.code == 404 and args.animego_discover_pages == 0:
+                    print(f"animego listing {source_url} page {page}: 404, stopping")
+                    break
+                raise
+            page_items = animego.parse_listing(page_html)
+            new_items = [item for item in page_items if item["id"] not in seen]
+            for item in new_items:
+                seen.add(item["id"])
+                item["source"] = "animego"
+                item["source_id"] = str(item["id"])
+                items.append(item)
+            print(f"animego listing {source_url} page {page}: {len(new_items)} new titles")
+            if args.animego_discover_pages == 0 and not new_items:
                 break
-            raise
-        page_items = animego.parse_listing(page_html)
-        new_items = [item for item in page_items if item["id"] not in seen]
-        for item in new_items:
-            seen.add(item["id"])
-            item["source"] = "animego"
-            item["source_id"] = str(item["id"])
-            items.append(item)
-        print(f"animego listing page {page}: {len(new_items)} new titles")
-        if args.animego_discover_pages == 0 and not new_items:
-            break
     return items
 
 
@@ -566,6 +641,7 @@ def sync_animego_item(con, item, args, stats, reason):
 
 def sync_animego(con, args):
     stats = defaultdict(int)
+    candidates = OrderedDict()
     for index, anime_ref in enumerate(args.animego_refs or [], start=1):
         print(f"[animego manual {index}/{len(args.animego_refs)}] {anime_ref}")
         begin_title(con, args)
@@ -580,12 +656,36 @@ def sync_animego(con, args):
                 traceback.print_exc()
             if args.stop_on_error:
                 raise
-    if args.mode == "manual":
-        return stats
 
-    candidates = OrderedDict()
-    for item in collect_animego_listing(args):
-        candidates[item["id"]] = (item, "listing")
+    should_collect_listing = args.mode != "manual" or selected_years(
+        args.animego_season_years,
+        args.animego_from_year,
+        args.animego_to_year,
+    )
+    if should_collect_listing:
+        for item in collect_animego_listing(args):
+            candidates[item["id"]] = (item, "listing")
+
+    if args.mode == "manual":
+        items = list(candidates.values())
+        if args.animego_limit:
+            items = items[: args.animego_limit]
+        print(f"animego candidates: {len(items)}")
+        for index, (item, reason) in enumerate(items, start=1):
+            print(f"[animego {index}/{len(items)}] {item['title']}")
+            begin_title(con, args)
+            try:
+                sync_animego_item(con, item, args, stats, reason)
+                finish_title(con, args)
+            except Exception as exc:
+                abort_title(con, args)
+                stats["failed"] += 1
+                print(f"  ERROR: {exc}")
+                if args.verbose:
+                    traceback.print_exc()
+                if args.stop_on_error:
+                    raise
+        return stats
 
     for row in animego_ongoing_rows(con):
         candidates.setdefault(row["id"], (animego_item_from_row(row), "existing ongoing"))
@@ -621,22 +721,29 @@ def sync_animego(con, args):
 
 
 def apply_mode_defaults(args):
+    yummy_catalog_requested = bool(args.yummy_catalog_years or args.yummy_from_year or args.yummy_to_year)
+    animego_catalog_requested = bool(args.animego_season_years or args.animego_from_year or args.animego_to_year)
     if not args.sources:
         if args.mode == "manual":
             args.sources = []
-            if args.yummy_refs:
+            if args.yummy_refs or yummy_catalog_requested:
                 args.sources.append("yummyanime")
-            if args.animego_refs:
+            if args.animego_refs or animego_catalog_requested:
                 args.sources.append("animego")
         else:
             args.sources = ["yummyanime", "animego"]
-    if args.mode == "manual" and not (args.yummy_refs or args.animego_refs):
-        raise SystemExit("--mode manual requires at least one --yummy-ref or --animego-ref")
+    if args.mode == "manual" and not (
+        args.yummy_refs
+        or args.animego_refs
+        or yummy_catalog_requested
+        or animego_catalog_requested
+    ):
+        raise SystemExit("--mode manual requires at least one title ref or catalog year selector")
     if args.mode == "manual":
-        if args.yummy_refs and "yummyanime" not in args.sources:
-            raise SystemExit("--yummy-ref requires --source yummyanime in manual mode")
-        if args.animego_refs and "animego" not in args.sources:
-            raise SystemExit("--animego-ref requires --source animego in manual mode")
+        if (args.yummy_refs or yummy_catalog_requested) and "yummyanime" not in args.sources:
+            raise SystemExit("YummyAnime refs/catalog years require --source yummyanime in manual mode")
+        if (args.animego_refs or animego_catalog_requested) and "animego" not in args.sources:
+            raise SystemExit("AnimeGO refs/catalog years require --source animego in manual mode")
     if args.missing_only is None:
         args.missing_only = args.mode == "hourly"
     if args.animego_discover_pages is None:
@@ -665,11 +772,18 @@ def parse_args(argv=None):
     parser.add_argument("--no-missing-only", dest="missing_only", action="store_false", help="check known episodes for newly added providers")
     parser.set_defaults(missing_only=None)
     parser.add_argument("--animego-start-url", default=animego.START_URL)
+    parser.add_argument("--animego-season-year", dest="animego_season_years", action="append", type=int)
+    parser.add_argument("--animego-from-year", type=int)
+    parser.add_argument("--animego-to-year", type=int)
     parser.add_argument("--animego-discover-pages", type=int, help="AnimeGO listing pages; 0 means all until stop/max")
     parser.add_argument("--animego-max-pages", type=int, default=20)
     parser.add_argument("--animego-limit", type=int, help="limit AnimeGO title candidates; 0 means no limit")
     parser.add_argument("--animego-missing-limit", type=int, help="limit AnimeGO underfilled candidates; 0 means no limit")
     parser.add_argument("--yummy-limit", type=int, help="limit YummyAni title candidates; 0 means no limit")
+    parser.add_argument("--yummy-catalog-year", dest="yummy_catalog_years", action="append", type=int)
+    parser.add_argument("--yummy-from-year", type=int)
+    parser.add_argument("--yummy-to-year", type=int)
+    parser.add_argument("--yummy-catalog-max-pages", type=int, default=100)
     parser.add_argument("--yummyani-token", default="", help="optional X-Application header value for api.yani.tv")
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--retry-attempts", type=int, default=4)
@@ -679,11 +793,110 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--emit-migration",
+        metavar="NAME",
+        help="write the resulting catalog/player data patch instead of changing --db",
+    )
+    parser.add_argument(
+        "--migrations-root",
+        default=str(DEFAULT_PRIVATE_MIGRATIONS),
+        help="output root for generated catalog/player SQL data patches",
+    )
+    parser.add_argument("--migration-script", default="00_data-update.sql")
+    parser.add_argument("--migration-overwrite", action="store_true")
+    parser.add_argument("--migration-max-bytes", type=int, default=900_000)
     return apply_mode_defaults(parser.parse_args(argv))
 
 
-def main():
-    args = parse_args()
+def copy_database(source_path, target_path):
+    source = sqlite3.connect(source_path)
+    target = sqlite3.connect(target_path)
+    try:
+        with target:
+            source.backup(target)
+    finally:
+        target.close()
+        source.close()
+
+
+def migration_folder_name(value):
+    raw = str(value).strip().replace(os.sep, "-")
+    if os.altsep:
+        raw = raw.replace(os.altsep, "-")
+    safe = "".join(char if char.isalnum() or char in "-_." else "-" for char in raw).strip("-_.")
+    if not safe:
+        raise ValueError("--emit-migration must not be empty")
+    if len(safe) >= 10 and safe[4:5] == "-" and safe[7:8] == "-":
+        return safe
+    return f"{animego.now_iso()[:10]}_{safe}"
+
+
+def write_migration_file(root, folder, filename, sql, overwrite=False):
+    if not sql.strip():
+        return None
+    if "/" in filename or (os.altsep and os.altsep in filename):
+        raise ValueError("--migration-script must be a file name, not a path")
+    if not filename.lower().endswith(".sql"):
+        raise ValueError("--migration-script must end with .sql")
+    path = Path(root) / folder / filename
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"migration file already exists: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(sql, encoding="utf-8")
+    return path
+
+
+def chunked_migration_filename(filename, index):
+    path = Path(filename)
+    return f"{path.stem}-{index:02d}{path.suffix}"
+
+
+def write_migration_files(root, folder, filename, header, statements, overwrite=False, max_bytes=900_000):
+    statements = [statement.rstrip() for statement in statements if statement.strip()]
+    if not statements:
+        return []
+
+    if max_bytes is not None and max_bytes < 1:
+        max_bytes = None
+
+    full_sql = header + "\n\n".join(statements).rstrip() + "\n"
+    if max_bytes is None or len(full_sql.encode("utf-8")) <= max_bytes:
+        path = write_migration_file(root, folder, filename, full_sql, overwrite=overwrite)
+        return [path] if path else []
+
+    paths = []
+    chunk = []
+    chunk_size = 0
+    chunk_index = 0
+
+    def flush_chunk():
+        nonlocal chunk, chunk_size, chunk_index
+        if not chunk:
+            return
+        chunk_header = header if chunk_index == 0 else ""
+        chunk_sql = chunk_header + "\n\n".join(chunk).rstrip() + "\n"
+        chunk_name = chunked_migration_filename(filename, chunk_index)
+        path = write_migration_file(root, folder, chunk_name, chunk_sql, overwrite=overwrite)
+        if path:
+            paths.append(path)
+        chunk = []
+        chunk_size = 0
+        chunk_index += 1
+
+    for statement in statements:
+        candidate_size = len(statement.encode("utf-8")) + 2
+        header_size = len(header.encode("utf-8")) if chunk_index == 0 and not chunk else 0
+        if chunk and max_bytes is not None and header_size + chunk_size + candidate_size > max_bytes:
+            flush_chunk()
+        chunk.append(statement)
+        chunk_size += candidate_size
+
+    flush_chunk()
+    return paths
+
+
+def run_sync(args):
     started_at = animego.now_iso()
     lock_path = args.lock_file or f"{args.db}.sync.lock"
     all_stats = {}
@@ -713,6 +926,66 @@ def main():
             con.close()
 
     print(json.dumps(all_stats, ensure_ascii=False, indent=2, sort_keys=True))
+    return all_stats
+
+
+def emit_update_migration(args):
+    source_db = Path(args.db)
+    if not source_db.exists():
+        raise FileNotFoundError(f"database does not exist: {source_db}")
+    if args.dry_run:
+        raise ValueError("--emit-migration cannot be combined with --dry-run")
+
+    folder = migration_folder_name(args.emit_migration)
+    lock_path = args.lock_file or f"{args.db}.sync.lock"
+    with FileLock(lock_path, wait=args.wait_lock):
+        with tempfile.TemporaryDirectory(prefix="anime-sync-migration-") as tmpdir:
+            before_db = Path(tmpdir) / "before.sqlite"
+            after_db = Path(tmpdir) / "after.sqlite"
+            copy_database(source_db, before_db)
+            copy_database(source_db, after_db)
+
+            sync_args = copy.copy(args)
+            sync_args.db = str(after_db)
+            sync_args.lock_file = str(after_db) + ".sync.lock"
+            sync_args.wait_lock = False
+            sync_args.emit_migration = None
+            run_sync(sync_args)
+
+            statements = db_data_diff.generate_data_migration_statements(before_db, after_db)
+
+    if not statements:
+        print("migration: no catalog/player data changes detected")
+        return None
+
+    header = "\n".join(
+        [
+            "-- Generated by sync_videos.py --emit-migration.",
+            f"-- Source database: {source_db}",
+            f"-- Sync mode: {args.mode}",
+            "",
+        ]
+    )
+    paths = write_migration_files(
+        args.migrations_root,
+        folder,
+        args.migration_script,
+        header,
+        statements,
+        overwrite=args.migration_overwrite,
+        max_bytes=args.migration_max_bytes,
+    )
+    for path in paths:
+        print(f"migration: {path}")
+    return paths
+
+
+def main():
+    args = parse_args()
+    if args.emit_migration:
+        emit_update_migration(args)
+        return
+    run_sync(args)
 
 
 if __name__ == "__main__":

@@ -551,11 +551,15 @@ def maybe_apply_database_migrations(path):
 
     from scripts import db_migrate
 
-    root = Path(os.environ.get("ANIME_MIGRATIONS_ROOT") or ROOT / "migrations")
+    roots_env = os.environ.get("ANIME_MIGRATIONS_ROOTS")
+    if roots_env:
+        roots = [Path(part) for part in roots_env.split(os.pathsep) if part]
+    else:
+        roots = [Path(os.environ.get("ANIME_MIGRATIONS_ROOT") or ROOT / "migrations")]
     backup_dir = os.environ.get("ANIME_MIGRATION_BACKUP_DIR")
     result = db_migrate.apply_pending(
         path,
-        root,
+        roots,
         backup_dir=backup_dir,
         no_backup=truthy_env("ANIME_MIGRATION_NO_BACKUP"),
         wait_lock=True,

@@ -48,6 +48,7 @@ def is_forbidden_path(path):
         path in FORBIDDEN_EXACT
         or path.startswith(FORBIDDEN_PREFIXES)
         or path.endswith(FORBIDDEN_SUFFIXES)
+        or (path.startswith("migrations/") and "data-update" in Path(path).name)
     )
 
 
@@ -74,9 +75,15 @@ def check_history_paths():
     return errors
 
 
+def check_internal_refs():
+    refs = git("for-each-ref", "--format=%(refname)", "refs/codex/turn-diffs")
+    return [f"forbidden local git ref: {ref}" for ref in refs]
+
+
 def main():
     tracked, errors = check_tracked_files()
     errors.extend(check_history_paths())
+    errors.extend(check_internal_refs())
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
