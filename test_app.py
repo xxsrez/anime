@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -161,6 +162,81 @@ class LocalAppTest(unittest.TestCase):
         self.assertEqual(len(slugs), len(set(slugs)))
         self.assertTrue(all(item["internal_id"] == item["slug"] for item in items))
         self.assertTrue(all("-" in item["slug"] for item in items))
+
+    def test_frontend_search_scorer_handles_typos_and_variant_titles(self):
+        script = r"""
+const assert = require("assert");
+const search = require("./static/search.js");
+const items = search.prepareSearchIndexes([
+  {
+    id: "hei",
+    title: "Легенда о Хэй",
+    subtitle: "Luo Xiaohei Zhan Ji",
+    genres: ["Фэнтези"],
+    source_variants: [],
+  },
+  {
+    id: "opm",
+    title: "Ванпанчмен",
+    subtitle: "One Punch Man",
+    genres: ["Экшен"],
+    source_variants: [],
+  },
+  {
+    id: "onmyo",
+    title: "Реинкарнация сильнейшего оммёдзи",
+    subtitle: "Saikyou Onmyouji no Isekai Tenseiki",
+    genres: ["Исэкай"],
+    source_variants: [],
+  },
+  {
+    id: "moon",
+    title: "Лунное путешествие приведёт к новому миру",
+    subtitle: "Tsuki ga Michibiku Isekai Douchuu",
+    genres: ["Приключения"],
+    source_variants: [
+      {title: "Moonlit Fantasy", subtitle: "Tsukimichi", source: "yummyanime"},
+    ],
+  },
+]);
+
+function rankedIds(queryText) {
+  const query = search.searchQuery(queryText);
+  return items
+    .map((item, index) => ({item, index, score: search.scoreSearchItem(item, query)}))
+    .filter(entry => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .map(entry => entry.item.id);
+}
+
+assert.strictEqual(search.searchText("Хэй"), search.searchText("хей"));
+assert.strictEqual(rankedIds("легенда хей")[0], "hei");
+assert.strictEqual(rankedIds("one punc man")[0], "opm");
+assert.strictEqual(rankedIds("реинкарнация омедзи")[0], "onmyo");
+assert.strictEqual(rankedIds("moonlit")[0], "moon");
+assert.deepStrictEqual(rankedIds("zz"), []);
+"""
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=server.ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+    def test_api_search_query_is_fuzzy_and_ranked(self):
+        hei = server.get_anime_list(q="легенда хей")
+        self.assertTrue(hei)
+        self.assertIn("Хэй", hei[0]["title"])
+
+        one_punch = server.get_anime_list(q="one punc man")
+        self.assertTrue(one_punch)
+        self.assertIn("One Punch Man", one_punch[0]["subtitle"])
+
+        onmyo = server.get_anime_list(q="реинкарнация омедзи")
+        self.assertTrue(onmyo)
+        self.assertIn("оммёдзи", onmyo[0]["title"])
 
     def test_title_detail_can_be_loaded_by_slug(self):
         item = server.get_anime_list()[0]

@@ -286,8 +286,9 @@ Current sorts:
 - Title.
 
 The filter option lists are computed from the loaded catalog and include counts.
-Search normalizes `ё` to `е` and `э` to `е`, so a query like `исекай` can match
-the scraped tag `Исэкай`.
+Catalog search is ranked client-side while the catalog remains small. It
+normalizes Russian text, folds common Japanese transcription variants, matches
+tokens out of order, and allows small typos on longer words.
 
 ## Recommendations
 

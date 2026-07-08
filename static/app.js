@@ -18,6 +18,11 @@ const reportActionError = window.reportActionError || (() => error => console.er
 const PERFORMANCE_ENDPOINT = "/api/performance";
 const MAX_PERFORMANCE_API_REQUESTS = 40;
 const MAX_PERFORMANCE_RESOURCES = 24;
+const catalogSearch = window.AnimeSearch;
+
+if (!catalogSearch) {
+  throw new Error("AnimeSearch is not loaded");
+}
 
 function performanceNow() {
   return window.performance?.now ? window.performance.now() : Date.now();
@@ -313,7 +318,7 @@ async function logout() {
 }
 
 function searchText(value) {
-  return String(value || "").toLocaleLowerCase("ru").replaceAll("ё", "е").replaceAll("э", "е");
+  return catalogSearch.searchText(value);
 }
 
 function isMobileLayout() {
@@ -1673,26 +1678,17 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
 }
 
 function applyFilter({ selectFirst = false } = {}) {
-  const query = searchText(el.search.value.trim());
+  const query = catalogSearch.searchQuery(el.search.value.trim());
   const baseItems = baseItemsForView();
   state.renderLimit = INITIAL_RENDER_LIMIT;
-  state.filtered = baseItems.filter(item => {
-    const variantText = (item.source_variants || []).flatMap(variant => [
-      variant.title,
-      variant.subtitle,
-      sourceLabel(variant.source),
-    ]);
-    const haystack = searchText([
-      item.title,
-      item.subtitle,
-      item.kind,
-      item.status,
-      item.year,
-      sourceLabelList(item),
-      ...(item.genres || []),
-      ...variantText,
-    ].join(" "));
-    const queryMatch = haystack.includes(query);
+  const fallbackCompare = isRecommendationView() ? compareRecommendations : compareAnime;
+
+  state.filtered = baseItems.map((item, index) => {
+    const searchScore = query.tokens.length ? catalogSearch.scoreSearchItem(item, query) : 0;
+    return { item, index, searchScore };
+  }).filter(entry => {
+    const item = entry.item;
+    const queryMatch = !query.tokens.length || entry.searchScore > 0;
     const viewMatch =
       state.viewMode === "recommendations"
         ? true
@@ -1705,7 +1701,13 @@ function applyFilter({ selectFirst = false } = {}) {
       definition.match(item, state.filters[definition.id])
     ));
     return queryMatch && viewMatch && filterMatch;
-  }).sort(isRecommendationView() ? compareRecommendations : compareAnime);
+  }).sort((left, right) => {
+    if (query.tokens.length && left.searchScore !== right.searchScore) {
+      return right.searchScore - left.searchScore;
+    }
+    const result = fallbackCompare(left.item, right.item);
+    return result || left.index - right.index;
+  }).map(entry => entry.item);
   renderList();
   renderActiveFilters();
   el.resetFilters.hidden = !hasActiveCatalogTools();
@@ -1718,10 +1720,10 @@ function applyFilter({ selectFirst = false } = {}) {
 async function loadRecommendations() {
   const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
   state.recommendationProfile = payload.profile || null;
-  state.recommendations = (payload.items || []).map(item => {
+  state.recommendations = catalogSearch.prepareSearchIndexes((payload.items || []).map(item => {
     const local = state.anime.find(entry => entry.id === item.id);
     return local ? { ...local, ...item } : item;
-  });
+  }));
   state.recommendationsLoaded = true;
   state.recommendationsError = null;
   return state.recommendations;
@@ -1872,7 +1874,7 @@ async function boot() {
   state.user = me.user;
   renderAccount();
   markPerformanceCheckpoint("me_loaded", { is_admin: Boolean(state.user?.is_admin) });
-  state.anime = payload.items || [];
+  state.anime = catalogSearch.prepareSearchIndexes(payload.items || []);
   markPerformanceCheckpoint("catalog_loaded", { items: state.anime.length });
   markPerformanceCheckpoint("recommendations_deferred");
   renderFilterControls();

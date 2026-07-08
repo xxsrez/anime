@@ -75,6 +75,19 @@ TRANSLATION_PREFIXES = ("озвучка ",)
 UNKNOWN_TRANSLATION_RANK = 9999
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
+SEARCH_FOLDS = (
+    (re.compile("тсу"), "цу"),
+    (re.compile("дж([аеёиоуыэюя])"), r"дз\1"),
+    (re.compile("ши"), "си"),
+    (re.compile("чи"), "ти"),
+    (re.compile("tsu"), "tu"),
+    (re.compile("shi"), "si"),
+    (re.compile("chi"), "ti"),
+    (re.compile("ji"), "zi"),
+    (re.compile("ou"), "o"),
+    (re.compile("oo"), "o"),
+)
+MIN_SEARCH_FUZZY_LENGTH = 4
 LOGGING_LOCK = threading.RLock()
 LOGGING_DIR = None
 SERVER_LOGGER_NAME = "anime.server"
@@ -703,6 +716,194 @@ def normalize_match_title(value):
     return re.sub(r"\s+", " ", text).strip()
 
 
+def fold_search_text(value):
+    text = value
+    for pattern, replacement in SEARCH_FOLDS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+def normalize_search_text(value):
+    return fold_search_text(normalize_match_title(value))
+
+
+def search_tokens(value):
+    return [token for token in normalize_search_text(value).split() if token]
+
+
+def unique_search_tokens(tokens):
+    return list(dict.fromkeys(tokens))
+
+
+def search_query_info(value):
+    text = normalize_search_text(value)
+    return {
+        "text": text,
+        "tokens": unique_search_tokens(token for token in text.split() if token),
+    }
+
+
+def add_search_field(fields, value, weight):
+    text = normalize_search_text(value)
+    if not text:
+        return
+    fields.append({
+        "text": text,
+        "tokens": unique_search_tokens(token for token in text.split() if token),
+        "weight": weight,
+    })
+
+
+def item_search_fields(item):
+    fields = []
+    add_search_field(fields, item.get("title"), 12)
+    add_search_field(fields, item.get("subtitle"), 10)
+    for variant in item.get("source_variants") or []:
+        add_search_field(fields, variant.get("title"), 8)
+        add_search_field(fields, variant.get("subtitle"), 7)
+        add_search_field(fields, variant.get("source"), 3)
+    for genre in item.get("genres") or []:
+        add_search_field(fields, genre, 5)
+    add_search_field(fields, item.get("kind"), 3)
+    add_search_field(fields, item.get("status"), 3)
+    add_search_field(fields, item.get("year"), 2)
+    add_search_field(fields, item.get("source"), 3)
+    for source in item.get("sources") or []:
+        add_search_field(fields, source, 3)
+    return fields
+
+
+def item_search_index(item):
+    fields = item_search_fields(item)
+    token_weights = {}
+    for field in fields:
+        for token in field["tokens"]:
+            token_weights[token] = max(token_weights.get(token, 0), field["weight"])
+    return {
+        "fields": fields,
+        "tokens": [{"token": token, "weight": weight} for token, weight in token_weights.items()],
+    }
+
+
+def max_search_edit_distance(token):
+    if len(token) < MIN_SEARCH_FUZZY_LENGTH:
+        return 0
+    return 2 if len(token) >= 8 else 1
+
+
+def bounded_damerau_levenshtein(left, right, max_distance):
+    if left == right:
+        return 0
+    if abs(len(left) - len(right)) > max_distance:
+        return max_distance + 1
+
+    previous = list(range(len(right) + 1))
+    before_previous = None
+    for i, left_char in enumerate(left, 1):
+        current = [i]
+        row_min = current[0]
+        for j, right_char in enumerate(right, 1):
+            cost = 0 if left_char == right_char else 1
+            value = min(
+                previous[j] + 1,
+                current[j - 1] + 1,
+                previous[j - 1] + cost,
+            )
+            if (
+                before_previous is not None
+                and i > 1
+                and j > 1
+                and left[i - 1] == right[j - 2]
+                and left[i - 2] == right[j - 1]
+            ):
+                value = min(value, before_previous[j - 2] + 1)
+            current.append(value)
+            row_min = min(row_min, value)
+        if row_min > max_distance:
+            return max_distance + 1
+        before_previous = previous
+        previous = current
+    return previous[-1]
+
+
+def search_token_match_score(query_token, candidate):
+    token = candidate["token"]
+    weight = candidate["weight"]
+    if token == query_token:
+        return 120 + weight * 12 + len(token)
+
+    if len(token) >= 3 and len(query_token) >= 3:
+        if token.startswith(query_token):
+            return 92 + weight * 10 + len(query_token)
+        if query_token.startswith(token):
+            return 78 + weight * 8 + len(token)
+        if query_token in token or token in query_token:
+            return 66 + weight * 7
+
+    max_distance = min(max_search_edit_distance(query_token), max_search_edit_distance(token))
+    if not max_distance:
+        return 0
+    distance = bounded_damerau_levenshtein(query_token, token, max_distance)
+    if distance <= max_distance:
+        return 48 + weight * 6 + min(len(query_token), len(token)) - distance * 10
+    return 0
+
+
+def best_search_token_score(query_token, candidates):
+    return max((search_token_match_score(query_token, candidate) for candidate in candidates), default=0)
+
+
+def search_phrase_score(query, field):
+    if not query["text"] or not field["text"]:
+        return 0
+    if field["text"] == query["text"]:
+        return 500 + field["weight"] * 30
+    if query["text"] in field["text"]:
+        return 360 + field["weight"] * 24 + len(query["text"])
+    if field["text"] in query["text"] and len(field["text"]) >= 4:
+        return 240 + field["weight"] * 12
+    return 0
+
+
+def required_search_token_matches(count):
+    if count <= 2:
+        return count
+    return math.ceil(count * 0.67)
+
+
+def item_search_score(item, query):
+    return search_index_score(item_search_index(item), query)
+
+
+def search_index_score(index, query):
+    if not query.get("tokens"):
+        return 0
+
+    phrase = max((search_phrase_score(query, field) for field in index["fields"]), default=0)
+    matched = 0
+    token_score = 0
+    for token in query["tokens"]:
+        score = best_search_token_score(token, index["tokens"])
+        if score > 0:
+            matched += 1
+            token_score += score
+
+    if matched < required_search_token_matches(len(query["tokens"])):
+        return phrase
+    coverage = matched / len(query["tokens"])
+    return phrase + token_score * coverage + matched * 20
+
+
+def catalog_search_indexes(cache):
+    indexes = cache.get("search_indexes")
+    if indexes is not None:
+        return indexes
+
+    built = {item["id"]: item_search_index(item) for item in cache["items"]}
+    with CATALOG_CACHE_LOCK:
+        return cache.setdefault("search_indexes", built)
+
+
 def external_rating_source(label):
     return EXTERNAL_RATING_SOURCES.get(normalize_match_title(label))
 
@@ -1028,27 +1229,7 @@ def canonicalize_items(items):
 def item_matches_query(item, query):
     if not query:
         return True
-    variant_text = []
-    for variant in item.get("source_variants") or []:
-        variant_text.extend([variant.get("title"), variant.get("subtitle"), variant.get("source")])
-    haystack = normalize_key(
-        " ".join(
-            str(part)
-            for part in [
-                item.get("title"),
-                item.get("subtitle"),
-                item.get("kind"),
-                item.get("status"),
-                item.get("year"),
-                item.get("source"),
-                *item.get("sources", []),
-                *item.get("genres", []),
-                *variant_text,
-            ]
-            if part
-        )
-    )
-    return normalize_key(query) in haystack
+    return item_search_score(item, search_query_info(query)) > 0
 
 
 def parse_json_object(value):
@@ -1600,8 +1781,21 @@ def build_translation_rankings(con):
 
 
 def get_anime_list(db_path=None, q=None, user_id=None):
-    items = clone_catalog_items(get_catalog_items(db_path, user_id))
-    return [item for item in items if item_matches_query(item, q)]
+    cache = get_catalog_cache(db_path, user_id)
+    items = cache["items"]
+    if not q:
+        return clone_catalog_items(items)
+    query = search_query_info(q)
+    search_indexes = catalog_search_indexes(cache)
+    scored = [
+        (search_index_score(search_indexes.get(item["id"]) or item_search_index(item), query), index, item)
+        for index, item in enumerate(items)
+    ]
+    return [
+        clone_catalog_item(item)
+        for score, _, item in sorted(scored, key=lambda entry: (-entry[0], entry[1]))
+        if score > 0
+    ]
 
 
 def sql_placeholders(values):
