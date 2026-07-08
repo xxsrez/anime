@@ -410,7 +410,7 @@ class LocalAppTest(unittest.TestCase):
             finally:
                 con.close()
 
-    def test_prod_incremental_update_uses_railway_ssh_and_remote_backup(self):
+    def test_prod_incremental_update_uses_railway_ssh_without_remote_backup(self):
         path = Path("scripts/prod_incremental_update.py")
         spec = importlib.util.spec_from_file_location("prod_incremental_update", path)
         module = importlib.util.module_from_spec(spec)
@@ -428,7 +428,9 @@ class LocalAppTest(unittest.TestCase):
         self.assertIn("python3 sync_videos.py", command)
         self.assertIn("--mode manual", command)
         self.assertIn("--wait-lock", command)
-        self.assertIn("animego-pre-incremental-", command)
+        self.assertNotIn("animego-pre-incremental-", command)
+        self.assertNotIn("BACKUP_DIR", command)
+        self.assertNotIn("/data/backups", command)
         self.assertIn("integrity_check", command)
         self.assertNotIn("volume files upload", command)
 

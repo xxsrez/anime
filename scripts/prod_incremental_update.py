@@ -41,8 +41,6 @@ def build_sync_args(args):
 
 def build_remote_command(args):
     sync_command = build_sync_args(args)
-    backup_dir = shlex.quote(args.backup_dir)
-    keep = shlex.quote(str(args.keep_backups))
     blocks = [
         "set -eu",
         'db="${ANIMEGO_DB:-/data/animego.sqlite}"',
@@ -51,46 +49,6 @@ def build_remote_command(args):
         "  exit 1",
         "fi",
     ]
-    if not args.dry_run and not args.no_backup:
-        backup_python = textwrap.dedent(
-            """
-            import datetime as dt
-            import os
-            from pathlib import Path
-            import sqlite3
-
-            db_path = Path(os.environ["DB_PATH"])
-            backup_dir = Path(os.environ["BACKUP_DIR"])
-            keep = int(os.environ["BACKUP_KEEP"])
-            backup_dir.mkdir(parents=True, exist_ok=True)
-            stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-            backup_path = backup_dir / f"animego-pre-incremental-{stamp}.sqlite"
-            source = sqlite3.connect(db_path)
-            target = sqlite3.connect(backup_path)
-            try:
-                with target:
-                    source.backup(target)
-            finally:
-                target.close()
-                source.close()
-            print(f"backup={backup_path}")
-            backups = sorted(
-                backup_dir.glob("animego-pre-incremental-*.sqlite"),
-                key=lambda path: path.stat().st_mtime,
-                reverse=True,
-            )
-            for old in backups[keep:]:
-                old.unlink()
-                print(f"pruned_backup={old}")
-            """
-        ).strip()
-        blocks.extend(
-            [
-                f'DB_PATH="$db" BACKUP_DIR={backup_dir} BACKUP_KEEP={keep} python3 - <<\'PY\'',
-                backup_python,
-                "PY",
-            ]
-        )
 
     verify_python = textwrap.dedent(
         """
@@ -156,9 +114,9 @@ def parse_args(argv=None):
     parser.add_argument("--episode-limit", type=int)
     parser.add_argument("--refresh-known", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--no-backup", action="store_true")
-    parser.add_argument("--backup-dir", default="/data/backups")
-    parser.add_argument("--keep-backups", type=int, default=5)
+    parser.add_argument("--no-backup", action="store_true", help="deprecated no-op; remote backups are disabled")
+    parser.add_argument("--backup-dir", help=argparse.SUPPRESS)
+    parser.add_argument("--keep-backups", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--print-command", action="store_true")
@@ -167,8 +125,6 @@ def parse_args(argv=None):
         args.mode = "manual" if args.yummy_refs or args.animego_refs else "hourly"
     if args.mode == "manual" and not (args.yummy_refs or args.animego_refs):
         parser.error("--mode manual requires at least one --yummy-ref or --animego-ref")
-    if args.keep_backups < 1:
-        parser.error("--keep-backups must be >= 1")
     return args
 
 

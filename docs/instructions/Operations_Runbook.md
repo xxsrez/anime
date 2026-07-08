@@ -286,7 +286,7 @@ railway ssh --service web --environment production '
     --db "$db" \
     --root migrations \
     --root /data/private-migrations \
-    --backup-dir /data/backups \
+    --no-backup \
     --wait-lock
 '
 ```

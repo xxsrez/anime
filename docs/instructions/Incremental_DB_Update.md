@@ -50,7 +50,7 @@ fresh production `user_title_state` rows. The safe path is:
 | `backfill_players.py` | Finds rows with missing/partial playable coverage for backfill. |
 | `prune_non_playable.py` | Removes metadata-only rows from the watchable catalog. |
 | `update_backup.py` | Updates the local ignored `db/backups/current` snapshot. It is for local recovery, not production incremental updates. |
-| `scripts/prod_incremental_update.py` | Legacy fallback wrapper for direct in-place production sync via Railway SSH. Prefer migration generation for routine updates. |
+| `scripts/prod_incremental_update.py` | Legacy fallback wrapper for direct in-place production sync via Railway SSH. It does not create Railway backups; prefer migration generation for routine updates. |
 | `scripts/db_migrate.py` | Applies ordered SQL migrations and records them in `schema_migrations`. |
 | `scripts/check_data_health.py` | Local health check for a SQLite DB plus local backup checks. |
 | `scripts/railway_start.sh` | Production start command; serves `server.py` using `ANIMEGO_DB` or `/data/animego.sqlite`. |
@@ -169,27 +169,22 @@ railway ssh --service web --environment production '
     --db "$db" \
     --root migrations \
     --root /data/private-migrations \
-    --backup-dir /data/backups \
+    --no-backup \
     --wait-lock
 '
 ```
 
-`db_migrate.py` creates a SQLite backup before applying pending migrations and
-records applied files in `schema_migrations`. The tracked `migrations/` root is
-for license-clean schema/control scripts. The `/data/private-migrations` root is
-for copied private catalog/player patches.
+`db_migrate.py` records applied files in `schema_migrations`. The tracked
+`migrations/` root is for license-clean schema/control scripts. The
+`/data/private-migrations` root is for copied private catalog/player patches.
 
-## Production Backup Policy
+## Backup Policy
 
-Before applying pending migrations, `scripts/db_migrate.py` creates a SQLite
-backup inside the configured backup directory:
-
-```text
-/data/backups/animego-pre-migrate-YYYYMMDDTHHMMSSZ.sqlite
-```
-
-These backups are on the Railway volume. They are not git artifacts and are not
-the same as local `db/backups/current`.
+Do not keep SQLite backup files on Railway. Production migration commands pass
+`--no-backup`, and the Railway volume should only contain the live database,
+logs, and private migration artifacts needed for replay. Keep recovery snapshots
+locally under ignored paths such as `db/backups/` or another explicit local
+restore folder.
 
 ## Verification Gate
 
@@ -229,7 +224,7 @@ Use this decision table:
 | Parser/updater/server/frontend code changed | Run tests, commit, push/deploy code with `railway up`. |
 | Only new title/episode data is needed and current code supports it | Generate a private SQL patch with `sync_videos.py --emit-migration`, copy it outside git to `/data/private-migrations`, then apply with `scripts/db_migrate.py`. |
 | New updater flag or parser fix is required for the data update | Generate the private patch with the fixed code, deploy code only through git/Railway, copy the private patch to the volume, then apply both roots with `scripts/db_migrate.py`. |
-| Local DB should be refreshed from production | Download a production backup/copy intentionally; do not assume local DB is fresher. |
+| Local DB should be refreshed from production | Download a production copy intentionally only for an explicit spot audit or repair; do not do this as a routine release step. |
 | Local/prod drift is suspected or a spot audit was explicitly requested | Download a production copy to ignored local storage, compare catalog/player signatures, then decide whether to repair with a private patch. |
 | Production DB is corrupted or intentionally being replaced wholesale | Follow an explicit disaster-recovery restore plan; full upload is allowed only then. |
 

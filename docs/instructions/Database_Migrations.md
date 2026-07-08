@@ -6,8 +6,8 @@ Git-tracked migrations are only for license-clean schema/control changes:
 schema changes, static seed data that we own, cleanups, and operational fixes.
 Scraped catalog/player data patches are private deployment artifacts and must
 stay outside git under an ignored root such as `data/private-migrations/`.
-Rollback scripts are not supported yet; rollback is a manual restore from
-backup.
+Rollback scripts are not supported yet; rollback is a manual restore from a
+local backup or another explicit restore artifact.
 
 ## Layout
 
@@ -89,7 +89,7 @@ database mutation is intended:
 ```text
 ANIME_AUTO_MIGRATE=1
 ANIME_MIGRATIONS_ROOTS=migrations:/data/private-migrations
-ANIME_MIGRATION_BACKUP_DIR=/data/backups
+ANIME_MIGRATION_NO_BACKUP=1
 ```
 
 `ANIME_MIGRATIONS_ROOT` is still supported for a single root.
@@ -115,14 +115,16 @@ railway ssh --service web --environment production '
     --db "${ANIMEGO_DB:-/data/animego.sqlite}" \
     --root migrations \
     --root /data/private-migrations \
-    --backup-dir /data/backups \
+    --no-backup \
     --wait-lock
 '
 ```
 
-The runner creates a pre-migration SQLite backup unless `--no-backup` is passed,
-uses a file lock next to the database, applies each SQL file in one transaction,
-and then runs `pragma integrity_check` plus `pragma foreign_key_check`.
+The runner uses a file lock next to the database, applies each SQL file in one
+transaction, and then runs `pragma integrity_check` plus
+`pragma foreign_key_check`. It can create a pre-migration SQLite backup, but the
+Railway production runbook intentionally disables that with `--no-backup`; keep
+backup files only in ignored local storage.
 
 ## Safety Rules
 
