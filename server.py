@@ -3,6 +3,7 @@ import argparse
 import base64
 import binascii
 import datetime as dt
+import gzip
 import hashlib
 import html
 import hmac
@@ -20,6 +21,7 @@ import time
 import unicodedata
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from functools import lru_cache
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
@@ -716,6 +718,10 @@ def truthy_env(name):
     return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def catalog_prewarm_enabled():
+    return os.environ.get("ANIME_PREWARM_CATALOG", "1").strip().lower() not in {"0", "false", "no", "off"}
+
+
 def maybe_apply_database_migrations(path):
     if not truthy_env("ANIME_AUTO_MIGRATE"):
         return False
@@ -856,12 +862,18 @@ def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
 
 
-def normalize_key(value):
-    text = str(value or "").strip().casefold().replace("ё", "е").replace("э", "е")
+@lru_cache(maxsize=200_000)
+def normalize_key_text(value):
+    text = value.strip().casefold().replace("ё", "е").replace("э", "е")
     return "".join(char for char in unicodedata.normalize("NFKD", text) if not unicodedata.combining(char))
 
 
 def normalize_match_title(value):
+    return normalize_match_title_text(str(value or ""))
+
+
+@lru_cache(maxsize=200_000)
+def normalize_match_title_text(value):
     text = normalize_key(value)
     text = re.sub(r"[^\w\s]+", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
@@ -875,6 +887,15 @@ def fold_search_text(value):
 
 
 def normalize_search_text(value):
+    return normalize_search_text_text(str(value or ""))
+
+
+def normalize_key(value):
+    return normalize_key_text(str(value or ""))
+
+
+@lru_cache(maxsize=200_000)
+def normalize_search_text_text(value):
     return fold_search_text(normalize_match_title(value))
 
 
@@ -1115,12 +1136,16 @@ def search_index_score(index, query):
     return phrase + token_score * coverage + matched * 20
 
 
-def catalog_search_indexes(cache):
+def catalog_search_indexes(cache, db_path=None):
     indexes = cache.get("search_indexes")
     if indexes is not None:
         return indexes
 
-    built = {item["id"]: item_search_index(item) for item in cache["items"]}
+    search_fields = catalog_search_fields(cache, db_path)
+    built = {
+        item["id"]: item_search_index(catalog_item_with_search_fields(item, search_fields.get(item["id"]) or []))
+        for item in cache["items"]
+    }
     with CATALOG_CACHE_LOCK:
         return cache.setdefault("search_indexes", built)
 
@@ -1979,7 +2004,20 @@ def load_metadata_search_fields(con):
     }
 
 
-def get_source_anime_items(con, user_id=None):
+def load_catalog_search_fields(con):
+    title_alias_search_fields = load_title_alias_search_fields(con)
+    metadata_search_fields = load_metadata_search_fields(con)
+    anime_ids = set(title_alias_search_fields) | set(metadata_search_fields)
+    return {
+        anime_id: unique_structured_search_fields(
+            (title_alias_search_fields.get(anime_id) or [])
+            + (metadata_search_fields.get(anime_id) or [])
+        )
+        for anime_id in anime_ids
+    }
+
+
+def get_source_anime_items(con, user_id=None, include_search_fields=True):
     user_id = resolved_user_id(con, user_id)
     rows = con.execute(
         """
@@ -2044,16 +2082,12 @@ def get_source_anime_items(con, user_id=None):
 
     items = rows_to_dicts(rows)
     apply_external_ratings(items, load_external_ratings(con))
-    title_alias_search_fields = load_title_alias_search_fields(con)
-    metadata_search_fields = load_metadata_search_fields(con)
+    search_fields_by_anime_id = load_catalog_search_fields(con) if include_search_fields else {}
     for item in items:
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
         item["available_episode_count"] = item["available_episode_count"] or 0
-        item["search_fields"] = unique_structured_search_fields(
-            (title_alias_search_fields.get(item["id"]) or [])
-            + (metadata_search_fields.get(item["id"]) or [])
-        )
+        item["search_fields"] = [dict(field) for field in search_fields_by_anime_id.get(item["id"], [])]
     return items
 
 
@@ -2092,19 +2126,28 @@ def build_translation_rankings(con):
     }
 
 
-def get_anime_list(db_path=None, q=None, user_id=None):
+def get_anime_list(db_path=None, q=None, user_id=None, include_search_fields=False):
     cache = get_catalog_cache(db_path, user_id)
     items = cache["items"]
+    user_state_by_source_id = load_user_state_by_source_id(db_path, user_id)
     if not q:
-        return clone_catalog_items(items)
+        return clone_catalog_items(
+            items,
+            include_search_fields=include_search_fields,
+            user_state_by_source_id=user_state_by_source_id,
+        )
     query = search_query_info(q)
-    search_indexes = catalog_search_indexes(cache)
+    search_indexes = catalog_search_indexes(cache, db_path)
     scored = [
         (search_index_score(search_indexes.get(item["id"]) or item_search_index(item), query), index, item)
         for index, item in enumerate(items)
     ]
     return [
-        clone_catalog_item(item)
+        clone_catalog_item(
+            item,
+            include_search_fields=include_search_fields,
+            user_state_by_source_id=user_state_by_source_id,
+        )
         for score, _, item in sorted(scored, key=lambda entry: (-entry[0], entry[1]))
         if score > 0
     ]
@@ -2114,28 +2157,188 @@ def sql_placeholders(values):
     return ",".join("?" for _ in values)
 
 
-def clone_catalog_item(item):
+def load_user_state_by_source_id(db_path=None, user_id=None):
+    if user_id is None:
+        return None
+    path = resolve_db_path(db_path)
+    con = sqlite3.connect(path)
+    con.execute("pragma busy_timeout=30000")
+    con.row_factory = sqlite3.Row
+    try:
+        rows = con.execute(
+            """
+            select anime_id, is_favorite, progress_episode_number, watched, updated_at
+            from user_title_state
+            where user_id = ?
+            """,
+            (int(user_id),),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return {}
+    finally:
+        con.close()
+    return {row["anime_id"]: dict(row) for row in rows}
+
+
+def catalog_item_user_state(item, user_state_by_source_id):
+    if user_state_by_source_id is None:
+        return None
+    rows = [
+        user_state_by_source_id[source_id]
+        for source_id in item.get("source_member_ids") or [item.get("id")]
+        if source_id in user_state_by_source_id
+    ]
+    return aggregate_state_rows(rows)
+
+
+def clone_catalog_item(item, include_search_fields=False, user_state_by_source_id=None):
     cloned = dict(item)
+    user_state = catalog_item_user_state(item, user_state_by_source_id)
+    if user_state is not None:
+        cloned.update(user_state)
     cloned["genres"] = list(item.get("genres") or [])
     cloned["sources"] = list(item.get("sources") or [])
     cloned["source_member_ids"] = list(item.get("source_member_ids") or [])
-    cloned["source_variants"] = [dict(variant) for variant in item.get("source_variants") or []]
-    cloned["search_fields"] = [dict(field) for field in item.get("search_fields") or []]
+    cloned["source_variants"] = [compact_catalog_variant(variant) for variant in item.get("source_variants") or []]
+    if include_search_fields:
+        cloned["search_fields"] = [dict(field) for field in item.get("search_fields") or []]
+    else:
+        cloned.pop("search_fields", None)
     cloned["recent_updates"] = [dict(update) for update in item.get("recent_updates") or []]
     cloned["recent_update_summary"] = dict(item["recent_update_summary"]) if item.get("recent_update_summary") else None
     return cloned
 
 
-def clone_catalog_items(items):
-    return [clone_catalog_item(item) for item in items]
+def compact_catalog_variant(variant):
+    return {
+        key: variant.get(key)
+        for key in ("id", "source", "title", "subtitle")
+        if variant.get(key) not in (None, "")
+    }
 
 
-def build_catalog_cache(db_path=None, user_id=None):
+CATALOG_API_ITEM_FIELDS = (
+    "id",
+    "slug",
+    "title",
+    "subtitle",
+    "cover_url",
+    "kind",
+    "status",
+    "episodes_text",
+    "year",
+    "date_published",
+    "source",
+    "source_count",
+    "available_episode_count",
+    "is_favorite",
+    "watched",
+    "progress_episode_number",
+    "listing_score",
+    "aggregate_score",
+    "aggregate_count",
+    "effective_score",
+    "effective_score_source",
+)
+
+
+def keep_public_value(value):
+    return value not in (None, "", False)
+
+
+def catalog_api_item(item):
+    payload = {
+        key: item.get(key)
+        for key in CATALOG_API_ITEM_FIELDS
+        if keep_public_value(item.get(key))
+    }
+    genres = list(item.get("genres") or [])
+    if genres:
+        payload["genres"] = genres
+    sources = list(item.get("sources") or [])
+    if sources:
+        payload["sources"] = sources
+    variants = [
+        compact_catalog_variant(variant)
+        for variant in item.get("source_variants") or []
+        if variant.get("id") != item.get("id")
+    ]
+    if variants:
+        payload["source_variants"] = variants
+    if item.get("recent_update_summary"):
+        payload["recent_update_summary"] = dict(item["recent_update_summary"])
+    return payload
+
+
+def catalog_api_items(items):
+    return [catalog_api_item(item) for item in items]
+
+
+def clone_catalog_items(items, include_search_fields=False, user_state_by_source_id=None):
+    return [
+        clone_catalog_item(
+            item,
+            include_search_fields=include_search_fields,
+            user_state_by_source_id=user_state_by_source_id,
+        )
+        for item in items
+    ]
+
+
+def catalog_item_with_search_fields(item, search_fields):
+    merged = dict(item)
+    merged["search_fields"] = [dict(field) for field in search_fields or []]
+    return merged
+
+
+def build_catalog_search_fields(cache, db_path=None):
     path = resolve_db_path(db_path)
     con = connect(path)
     try:
-        user_id = resolved_user_id(con, user_id)
-        items = canonicalize_items(get_source_anime_items(con, user_id))
+        fields_by_source_id = load_catalog_search_fields(con)
+    finally:
+        con.close()
+
+    fields_by_item_id = {}
+    for item in cache["items"]:
+        fields = unique_structured_search_fields(
+            field
+            for source_id in item.get("source_member_ids") or [item.get("id")]
+            for field in fields_by_source_id.get(source_id, [])
+        )
+        if fields:
+            fields_by_item_id[item["id"]] = fields
+    return fields_by_item_id
+
+
+def catalog_search_fields(cache, db_path=None):
+    fields = cache.get("search_fields_by_item_id")
+    if fields is not None:
+        return fields
+
+    built = build_catalog_search_fields(cache, db_path)
+    with CATALOG_CACHE_LOCK:
+        return cache.setdefault("search_fields_by_item_id", built)
+
+
+def get_anime_search_fields(db_path=None, user_id=None):
+    cache = get_catalog_cache(db_path, user_id)
+    fields = catalog_search_fields(cache, db_path)
+    return [
+        {
+            "id": item["id"],
+            "search_fields": [dict(field) for field in fields.get(item["id"]) or []],
+        }
+        for item in cache["items"]
+        if fields.get(item["id"])
+    ]
+
+
+def build_catalog_cache(db_path=None):
+    path = resolve_db_path(db_path)
+    con = connect(path)
+    try:
+        items = canonicalize_items(get_source_anime_items(con, include_search_fields=False))
         attach_recent_updates(con, items)
         translation_rankings = build_translation_rankings(con)
     finally:
@@ -2160,13 +2363,13 @@ def build_catalog_cache(db_path=None, user_id=None):
 
 def get_catalog_cache(db_path=None, user_id=None):
     path = resolve_db_path(db_path)
-    key = (str(path.resolve()), int(user_id) if user_id is not None else None)
+    key = str(path.resolve())
     signature = db_signature(path)
     with CATALOG_CACHE_LOCK:
         cached = CATALOG_CACHE.get(key)
         if cached and cached.get("signature") == signature:
             return cached
-        cached = build_catalog_cache(path, user_id)
+        cached = build_catalog_cache(path)
         CATALOG_CACHE[key] = cached
         return cached
 
@@ -2182,6 +2385,23 @@ def invalidate_catalog_cache(db_path=None):
 
 def get_catalog_items(db_path=None, user_id=None):
     return get_catalog_cache(db_path, user_id)["items"]
+
+
+def prewarm_catalog_cache(db_path=None):
+    if not catalog_prewarm_enabled():
+        return
+    started = time.perf_counter()
+    try:
+        cache = get_catalog_cache(db_path)
+    except Exception:
+        server_logger().exception("catalog cache prewarm failed")
+        return
+    duration_ms = (time.perf_counter() - started) * 1000
+    server_logger().info(
+        "Catalog cache prewarmed in %.1f ms (%d items)",
+        duration_ms,
+        len(cache.get("items") or []),
+    )
 
 
 def canonical_group_for_anime_id(con, anime_id, user_id=None):
@@ -2565,7 +2785,6 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
         )
     con.commit()
     con.close()
-    invalidate_catalog_cache(db_path)
     return next_state
 
 
@@ -3194,11 +3413,19 @@ class AnimeHandler(BaseHTTPRequestHandler):
             )
 
     def send_json(self, payload, status=200, headers=None):
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        encoding_headers = []
+        if len(body) > 1024 and "gzip" in self.headers.get("Accept-Encoding", "").lower():
+            compressed = gzip.compress(body, compresslevel=5)
+            if len(compressed) < len(body):
+                body = compressed
+                encoding_headers = [("Content-Encoding", "gzip"), ("Vary", "Accept-Encoding")]
         self._last_response_bytes = len(body)
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        for name, value in encoding_headers:
+            self.send_header(name, value)
         for name, value in (headers or []):
             self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
@@ -3614,7 +3841,12 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path == "/api/anime":
             query = parse_qs(parsed.query).get("q", [""])[0].strip()
-            self.send_json({"items": get_anime_list(self.server.db_path, query or None, user["id"])})
+            items = get_anime_list(self.server.db_path, query or None, user["id"])
+            self.send_json({"items": catalog_api_items(items)})
+            return
+
+        if path == "/api/anime/search-fields":
+            self.send_json({"items": get_anime_search_fields(self.server.db_path, user["id"])})
             return
 
         if path == "/api/recommendations":
@@ -3773,6 +4005,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 def run(port, host, db_path):
     db_path = prepare_database(db_path)
     configure_logging()
+    prewarm_catalog_cache(db_path)
     server = ThreadingHTTPServer((host, port), AnimeHandler)
     server.db_path = str(db_path)
     message = f"Serving http://{host}:{port} using {db_path}"

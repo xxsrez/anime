@@ -47,6 +47,9 @@ const state = {
   recommendationsLoaded: false,
   recommendationsLoading: null,
   recommendationsError: null,
+  searchFieldsLoaded: false,
+  searchFieldsLoading: null,
+  searchFieldsError: null,
   filtered: [],
   selectedAnimeId: null,
   detail: null,
@@ -319,6 +322,19 @@ async function logout() {
 
 function searchText(value) {
   return catalogSearch.searchText(value);
+}
+
+function clearSearchIndex(item) {
+  if (item && Object.prototype.hasOwnProperty.call(item, "_searchIndex")) {
+    delete item._searchIndex;
+  }
+}
+
+function setItemSearchFields(item, searchFields) {
+  if (!item) return;
+  item.search_fields = Array.isArray(searchFields) ? searchFields : [];
+  clearSearchIndex(item);
+  catalogSearch.ensureSearchIndex(item);
 }
 
 function isMobileLayout() {
@@ -1717,6 +1733,53 @@ function applyFilter({ selectFirst = false } = {}) {
   }
 }
 
+async function loadSearchFields() {
+  const payload = await api("/api/anime/search-fields");
+  const fieldsById = new Map(
+    (payload.items || []).map(item => [String(item.id), item.search_fields || []])
+  );
+  const applyFields = item => setItemSearchFields(item, fieldsById.get(String(item.id)) || []);
+
+  for (const item of state.anime) applyFields(item);
+  for (const item of state.recommendations) applyFields(item);
+
+  state.searchFieldsLoaded = true;
+  state.searchFieldsError = null;
+  markPerformanceCheckpoint("search_fields_loaded", { items: fieldsById.size });
+
+  if (el.search.value.trim()) {
+    applyFilter({ selectFirst: true });
+  }
+}
+
+function ensureSearchFields() {
+  if (state.searchFieldsLoaded) return Promise.resolve();
+  if (state.searchFieldsLoading) return state.searchFieldsLoading;
+
+  state.searchFieldsError = null;
+  state.searchFieldsLoading = loadSearchFields()
+    .catch(error => {
+      state.searchFieldsError = error;
+      throw error;
+    })
+    .finally(() => {
+      state.searchFieldsLoading = null;
+    });
+  return state.searchFieldsLoading;
+}
+
+function loadSearchFieldsInBackground() {
+  ensureSearchFields().catch(reportActionError("load search fields"));
+}
+
+function scheduleSearchFieldsLoad() {
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(loadSearchFieldsInBackground, { timeout: 3000 });
+    return;
+  }
+  window.setTimeout(loadSearchFieldsInBackground, 1000);
+}
+
 async function loadRecommendations() {
   const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
   state.recommendationProfile = payload.profile || null;
@@ -1758,7 +1821,10 @@ function loadRecommendationsForView({ force = false } = {}) {
     .catch(reportActionError("load recommendations"));
 }
 
-el.search.addEventListener("input", () => applyFilter({ selectFirst: true }));
+el.search.addEventListener("input", () => {
+  if (el.search.value.trim()) loadSearchFieldsInBackground();
+  applyFilter({ selectFirst: true });
+});
 el.sortBy.addEventListener("change", () => {
   state.sortBy = el.sortBy.value;
   state.sortDir = sortDefinition(state.sortBy).defaultDir;
@@ -1885,6 +1951,7 @@ async function boot() {
   markPerformanceCheckpoint("initial_detail_loaded", { selected_anime_id: state.selectedAnimeId });
   markPerformanceCheckpoint("boot_complete");
   reportHomePerformance("success");
+  scheduleSearchFieldsLoad();
 }
 
 boot().catch(error => {

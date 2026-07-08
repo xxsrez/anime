@@ -943,6 +943,46 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
 
+    def test_catalog_api_defers_search_fields_to_dedicated_endpoint(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=1, title="Как поживаете?")
+            con = server.connect(db_path)
+            try:
+                timestamp = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime_title_aliases (
+                        anime_id, alias, normalized_alias, language, alias_type,
+                        source, created_at, updated_at
+                    ) values (1, 'Мальчик и херон', ?, 'ru', 'manual', 'test', ?, ?)
+                    """,
+                    (server.normalize_search_text("Мальчик и херон"), timestamp, timestamp),
+                )
+                con.commit()
+            finally:
+                con.close()
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"}
+
+            status, _, body = self.request_test_server(db_path, "GET", "/api/anime", headers=cookie)
+            self.assertEqual(status, 200)
+            catalog_items = json.loads(body)["items"]
+            self.assertTrue(catalog_items)
+            self.assertNotIn("search_fields", catalog_items[0])
+
+            status, _, body = self.request_test_server(
+                db_path,
+                "GET",
+                "/api/anime/search-fields",
+                headers=cookie,
+            )
+            self.assertEqual(status, 200)
+            search_items = json.loads(body)["items"]
+            self.assertEqual(search_items[0]["id"], 1)
+            self.assertEqual(search_items[0]["search_fields"][0]["value"], "Мальчик и херон")
+
     def test_admin_access_is_limited_to_configured_email(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
