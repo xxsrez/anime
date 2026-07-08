@@ -541,6 +541,30 @@ def resolve_db_path(db_path=None):
     return Path(db_path or os.environ.get("ANIMEGO_DB") or DEFAULT_DB)
 
 
+def truthy_env(name):
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def maybe_apply_database_migrations(path):
+    if not truthy_env("ANIME_AUTO_MIGRATE"):
+        return False
+
+    from scripts import db_migrate
+
+    root = Path(os.environ.get("ANIME_MIGRATIONS_ROOT") or ROOT / "migrations")
+    backup_dir = os.environ.get("ANIME_MIGRATION_BACKUP_DIR")
+    result = db_migrate.apply_pending(
+        path,
+        root,
+        backup_dir=backup_dir,
+        no_backup=truthy_env("ANIME_MIGRATION_NO_BACKUP"),
+        wait_lock=True,
+    )
+    for migration, duration_ms in result["applied"]:
+        print(f"Applied database migration {migration.path} ({duration_ms} ms)")
+    return bool(result["applied"])
+
+
 def db_signature(path):
     stat = path.stat()
     return (stat.st_mtime_ns, stat.st_size)
@@ -582,6 +606,7 @@ def connect(db_path=None):
 def prepare_database(db_path=None):
     path = resolve_db_path(db_path)
     ensure_base_database(path)
+    maybe_apply_database_migrations(path)
     con = connect(path)
     try:
         con.commit()
