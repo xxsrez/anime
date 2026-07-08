@@ -20,6 +20,10 @@ Railway production, and releasing code or database changes.
   Use `sync_videos.py --emit-migration`, keep generated catalog/player SQL in
   ignored `data/private-migrations/`, copy it to the Railway volume, and apply
   it through `scripts/db_migrate.py`.
+- Do not download the whole production SQLite database during normal releases.
+  Local and production catalog/player state should stay synchronized because the
+  same private patches are applied locally first and then on production. Full DB
+  download is for explicit spot audits or concrete drift evidence.
 - GitHub must contain only license-clean project source, docs, tests, and
   schema/control migrations. Do not commit scraped catalog/player data patches.
 
@@ -197,7 +201,8 @@ railway volume list --json
 2. Run verification from `## Verification Before Release`.
 
 3. If production data should change, generate a migration from the intended
-   database snapshot:
+   local database state. Do not download production SQLite just to generate a
+   routine patch:
 
 ```bash
 .venv/bin/python sync_videos.py \
@@ -240,7 +245,8 @@ PYTHONUNBUFFERED=1 .venv/bin/python sync_videos.py \
 
 Review the generated SQL locally, but do not commit it. It should stay under
 ignored `data/private-migrations/`. Skip private-patch upload for code-only
-releases. See `Incremental_DB_Update.md` for the full data-update workflow.
+releases. Apply the patch locally and verify dev before uploading it to
+Railway. See `Incremental_DB_Update.md` for the full data-update workflow.
 
 Full SQLite upload is emergency-only. Use it only for a deliberate full restore,
 not for adding titles or episodes:

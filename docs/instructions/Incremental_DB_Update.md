@@ -7,11 +7,17 @@ making small catalog/player changes in production.
 
 Do not upload the whole SQLite database for normal catalog updates.
 
-The Railway production database at `/data/animego.sqlite` is the source of
-truth for production user state. Routine updates should be represented as
-ordered private SQL data patches when practical, then applied through
-`scripts/db_migrate.py`. Direct in-place sync remains a fallback for emergency
-or exploratory production operations, not the default release path.
+The local dev database and the Railway production database should normally move
+in lockstep by applying the same ordered private SQL data patches locally and
+then on production through `scripts/db_migrate.py`. Treat those patches as the
+routine source of synchronization. Do not download or upload the whole
+production SQLite file during normal releases unless there is concrete evidence
+that local and production databases diverged or an explicit spot audit is
+requested.
+
+The Railway production database at `/data/animego.sqlite` is still the source
+of truth for production user state. Direct in-place sync remains a fallback for
+emergency or exploratory production operations, not the default release path.
 
 Full database upload/download is reserved for disaster recovery or a deliberate
 full restore.
@@ -22,16 +28,17 @@ The database is already large enough that blob upload/download is slow. More
 importantly, replacing `/data/animego.sqlite` from a local copy can overwrite
 fresh production `user_title_state` rows. The safe path is:
 
-1. Start from the intended target database snapshot.
+1. Start from the local dev database unless there is evidence of drift.
 2. Generate a migration from a scratch sync using `sync_videos.py --emit-migration`.
-3. Review the generated SQL locally, but keep catalog/player data outside git.
-4. Commit and deploy only license-clean code plus tracked schema/control
+3. Apply the generated private patch locally and verify dev.
+4. Review the generated SQL locally, but keep catalog/player data outside git.
+5. Commit and deploy only license-clean code plus tracked schema/control
    migrations.
-5. Copy private data patches to `/data/private-migrations` on the Railway
+6. Copy private data patches to `/data/private-migrations` on the Railway
    volume outside GitHub.
-6. Apply both migration roots next to `/data/animego.sqlite` through
+7. Apply both migration roots next to `/data/animego.sqlite` through
    `scripts/db_migrate.py`.
-7. Verify SQLite integrity and playable-catalog invariants.
+8. Verify SQLite integrity and playable-catalog invariants.
 
 ## Script Inventory
 
@@ -223,6 +230,7 @@ Use this decision table:
 | Only new title/episode data is needed and current code supports it | Generate a private SQL patch with `sync_videos.py --emit-migration`, copy it outside git to `/data/private-migrations`, then apply with `scripts/db_migrate.py`. |
 | New updater flag or parser fix is required for the data update | Generate the private patch with the fixed code, deploy code only through git/Railway, copy the private patch to the volume, then apply both roots with `scripts/db_migrate.py`. |
 | Local DB should be refreshed from production | Download a production backup/copy intentionally; do not assume local DB is fresher. |
+| Local/prod drift is suspected or a spot audit was explicitly requested | Download a production copy to ignored local storage, compare catalog/player signatures, then decide whether to repair with a private patch. |
 | Production DB is corrupted or intentionally being replaced wholesale | Follow an explicit disaster-recovery restore plan; full upload is allowed only then. |
 
 ## Cache Behavior
@@ -247,6 +255,8 @@ For future AI agents:
    title/episode updates.
 5. Do not commit generated catalog/player SQL. It may contain scraped
    copyright-sensitive source data.
-6. Preserve production `user_title_state`; never replace prod DB with an older
+6. Apply each private patch locally before production so local and production
+   catalog/player state stay synchronized without full DB transfers.
+7. Preserve production `user_title_state`; never replace prod DB with an older
    local DB just because local tests passed.
-7. Report whether code was deployed, data was mutated, both, or neither.
+8. Report whether code was deployed, data was mutated, both, or neither.

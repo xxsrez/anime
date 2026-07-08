@@ -133,6 +133,12 @@ Routine production data patches should stay under ignored
 through `scripts/db_migrate.py`; see
 `../../instructions/Incremental_DB_Update.md`.
 
+Do not download or upload the whole production SQLite database for routine
+releases. Local and production catalog/player data should stay synchronized by
+applying the same private patches locally first and then on Railway. Full
+database transfers are for explicit spot audits, concrete drift evidence, or
+disaster recovery.
+
 Full upload is emergency-only for deliberate full restores:
 
 ```bash
