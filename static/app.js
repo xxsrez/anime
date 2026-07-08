@@ -88,6 +88,7 @@ const el = {
   watchedToggle: document.getElementById("watched-toggle"),
   progressSummary: document.getElementById("progress-summary"),
   recommendationContext: document.getElementById("recommendation-context"),
+  recentUpdates: document.getElementById("recent-updates"),
   genres: document.getElementById("genres"),
   description: document.getElementById("description"),
   fields: document.getElementById("fields"),
@@ -663,6 +664,52 @@ function formatPercent(value) {
   return score == null ? "" : `${Math.round(score)}%`;
 }
 
+function recentUpdateSummary(item) {
+  return item?.recent_update_summary || null;
+}
+
+function hasRecentUpdates(item) {
+  return Boolean(recentUpdateSummary(item)?.count);
+}
+
+function recentUpdateBadgeText(item) {
+  return recentUpdateSummary(item)?.badge || "";
+}
+
+function updateTimeLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const diffDays = Math.floor((now.setHours(0, 0, 0, 0) - date.setHours(0, 0, 0, 0)) / 86400000);
+  if (diffDays <= 0) return "сегодня";
+  if (diffDays === 1) return "вчера";
+  return `${diffDays} дн. назад`;
+}
+
+function updateEventTitle(event) {
+  if (event.event_type === "new_title") return "Новый тайтл";
+  if (event.event_type === "new_episode") {
+    return event.episode_number ? `Добавлена ${event.episode_number} серия` : "Добавлена серия";
+  }
+  if (event.event_type === "new_translation") {
+    return `Новая озвучка${event.translation_title ? `: ${event.translation_title}` : ""}`;
+  }
+  if (event.event_type === "new_provider") {
+    return `Новый плеер${event.provider_title ? `: ${event.provider_title}` : ""}`;
+  }
+  return event.description || "Обновление";
+}
+
+function updateEventMeta(event) {
+  return [
+    event.episode_number ? `серия ${event.episode_number}` : "",
+    event.translation_title,
+    event.provider_title,
+    sourceLabel(event.source),
+    updateTimeLabel(event.occurred_at),
+  ].filter(Boolean).join(" · ");
+}
+
 function isRecommendationView() {
   return state.viewMode === "recommendations";
 }
@@ -1016,6 +1063,7 @@ function renderList() {
     if (item.is_favorite) button.classList.add("favorite");
     if (item.watched) button.classList.add("watched");
     if (item.recommendation_score != null) button.classList.add("recommended");
+    if (hasRecentUpdates(item)) button.classList.add("recently-updated");
 
     const img = document.createElement("img");
     img.alt = "";
@@ -1024,10 +1072,20 @@ function renderList() {
     observeListImage(img, item.cover_url || "");
 
     const body = document.createElement("div");
+    const titleRow = document.createElement("div");
+    titleRow.className = "anime-title-row";
     const title = document.createElement("strong");
     const rank = isRecommendationView() && item.recommendation_rank ? `${item.recommendation_rank}. ` : "";
     title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
     button.dataset.fullTitle = item.title || title.textContent;
+    titleRow.append(title);
+    const badgeText = recentUpdateBadgeText(item);
+    if (badgeText) {
+      const badge = document.createElement("span");
+      badge.className = "recent-update-badge";
+      badge.textContent = badgeText;
+      titleRow.append(badge);
+    }
     const meta = document.createElement("span");
     const available = item.available_episode_count || 0;
     const score = ratingText(item);
@@ -1041,7 +1099,7 @@ function renderList() {
       meta.textContent = `${text(item.kind, "тайтл")} ${text(item.episodes_text, "")} · ${available} видео${score ? ` · ${score}` : ""}${source ? ` · ${source}` : ""}${watch ? ` · ${watch}` : ""}`;
     }
 
-    body.append(title, meta);
+    body.append(titleRow, meta);
     if (isRecommendationView()) {
       const note = document.createElement("span");
       note.className = "recommendation-note";
@@ -1121,6 +1179,7 @@ function renderDetail() {
   el.description.textContent = detail.description || "";
   renderWatchState(detail);
   renderRecommendationContext(detail);
+  renderRecentUpdates(detail);
   renderFields(detail);
 
   el.genres.replaceChildren(...(detail.genres || []).map(genre => {
@@ -1177,6 +1236,45 @@ function renderRecommendationContext(detail) {
   }
 
   el.recommendationContext.append(header, reasons);
+}
+
+function renderRecentUpdates(detail) {
+  const events = detail.recent_updates || [];
+  el.recentUpdates.replaceChildren();
+  if (!events.length) {
+    el.recentUpdates.hidden = true;
+    return;
+  }
+
+  el.recentUpdates.hidden = false;
+  const header = document.createElement("div");
+  header.className = "recent-updates-header";
+  const title = document.createElement("strong");
+  title.textContent = "Новое за 3 дня";
+  const summary = document.createElement("span");
+  summary.textContent = recentUpdateSummary(detail)?.label || `${events.length} обновлений`;
+  header.append(title, summary);
+
+  const list = document.createElement("div");
+  list.className = "recent-updates-list";
+  for (const event of events.slice(0, 6)) {
+    const row = document.createElement(event.episode_id ? "button" : "div");
+    row.className = "recent-update-row";
+    if (event.episode_id) {
+      row.type = "button";
+      row.addEventListener("click", () => {
+        selectEpisode(event.episode_id).catch(reportActionError("select recent update episode"));
+      });
+    }
+    const rowTitle = document.createElement("strong");
+    rowTitle.textContent = updateEventTitle(event);
+    const meta = document.createElement("span");
+    meta.textContent = updateEventMeta(event);
+    row.append(rowTitle, meta);
+    list.append(row);
+  }
+
+  el.recentUpdates.append(header, list);
 }
 
 function renderFields(detail) {

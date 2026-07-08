@@ -523,6 +523,11 @@ select {
   border-color: rgba(116, 198, 157, 0.35);
 }
 
+.anime-item.recently-updated:not(.active) {
+  border-color: rgba(255, 104, 93, 0.36);
+  box-shadow: inset 3px 0 0 rgba(255, 104, 93, 0.72);
+}
+
 .list-more {
   width: 100%;
   min-height: 36px;
@@ -561,6 +566,17 @@ select {
   text-overflow: ellipsis;
 }
 
+.anime-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.anime-title-row strong {
+  flex: 1 1 auto;
+}
+
 .anime-item strong {
   line-height: 1.25;
   max-height: 50px;
@@ -575,6 +591,24 @@ select {
 
 .anime-item .recommendation-note {
   color: #c7d7ce;
+  white-space: nowrap;
+}
+
+.anime-item .recent-update-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  max-width: 96px;
+  min-height: 20px;
+  align-items: center;
+  border: 1px solid rgba(255, 104, 93, 0.44);
+  border-radius: 999px;
+  background: rgba(255, 104, 93, 0.12);
+  color: #ffd6d2;
+  padding: 2px 7px;
+  margin-top: 0;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -770,6 +804,81 @@ select {
   background: rgba(17, 20, 23, 0.5);
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.recent-updates {
+  margin-top: 12px;
+  border: 1px solid rgba(255, 104, 93, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 104, 93, 0.075);
+  padding: 10px 12px;
+  max-width: 980px;
+}
+
+.recent-updates[hidden] {
+  display: none;
+}
+
+.recent-updates-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+}
+
+.recent-updates-header strong {
+  color: #ffd6d2;
+  font-size: 15px;
+}
+
+.recent-updates-header span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.recent-updates-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.recent-update-row {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(255, 104, 93, 0.18);
+  border-radius: 6px;
+  background: rgba(17, 20, 23, 0.42);
+  color: var(--text);
+  padding: 7px 8px;
+  text-align: left;
+}
+
+button.recent-update-row {
+  cursor: pointer;
+}
+
+button.recent-update-row:hover,
+button.recent-update-row:focus-visible {
+  border-color: rgba(244, 184, 96, 0.5);
+  outline: none;
+}
+
+.recent-update-row strong,
+.recent-update-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-update-row strong {
+  font-size: 13px;
+}
+
+.recent-update-row span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .chip-row {

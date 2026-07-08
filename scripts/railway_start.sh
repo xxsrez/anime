@@ -1,6 +1,10 @@
 #!/usr/bin/env sh
 set -eu
 
+if [ "${ANIME_SERVICE_ROLE:-web}" = "daily-sync" ]; then
+  exec python3 scripts/railway_daily_sync.py
+fi
+
 volume_dir="${RAILWAY_VOLUME_MOUNT_PATH:-/data}"
 db_path="${ANIMEGO_DB:-${volume_dir}/animego.sqlite}"
 log_dir="${ANIME_LOG_DIR:-${volume_dir}/logs}"

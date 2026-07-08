@@ -34,6 +34,7 @@ ANIME_ADMIN_EMAIL
 ANIME_SESSION_SECURE=1
 ANIMEGO_DB=/data/animego.sqlite
 ANIME_LOG_DIR=/data/logs
+ANIME_SYNC_TOKEN
 ```
 
 Optional access controls may also be set:
@@ -41,6 +42,7 @@ Optional access controls may also be set:
 ```text
 ANIME_AUTH_ALLOWED_EMAILS
 ANIME_AUTH_ALLOWED_DOMAINS
+ANIME_SYNC_MODE=daily
 ```
 
 If `ANIME_AUTH_ALLOWED_EMAILS` is set, it must include `ANIME_ADMIN_EMAIL`.
@@ -200,6 +202,39 @@ Expected smoke results:
 - `/api/me` returns `401` without a session.
 - `/login` returns HTML with the Google login page.
 - Authenticated browser login succeeds and catalog pages load.
+
+## Daily Content Sync Cron
+
+Use a separate Railway Cron service or Function that calls the production web
+endpoint and exits. Do not mount/write the production SQLite volume from a
+second service. The production Function entrypoint is
+`railway-functions/daily-sync.ts`.
+
+When using a same-repo Railway service, keep the normal Railway start command
+and set the cron service role instead of using the Function entrypoint:
+
+```text
+ANIME_SERVICE_ROLE=daily-sync
+```
+
+Cron variables:
+
+```text
+ANIME_PUBLIC_URL=https://anime-srez.up.railway.app
+ANIME_SYNC_TOKEN=<same secret as web>
+ANIME_SYNC_MODE=daily
+```
+
+Railway evaluates cron schedules in UTC. For 03:00 Portugal/Madeira summer
+time, set:
+
+```text
+0 2 * * *
+```
+
+The web endpoint records run duration/status/stats in `content_update_runs`,
+records user-visible changes in `content_update_events`, and writes a JSON
+`content_sync` line to `/data/logs/server.log`.
 
 ## References
 

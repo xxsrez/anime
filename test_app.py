@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from unittest.mock import patch
 
 import backfill_players
+import content_updates
 import scrape_animego
 import scrape_yummyanime
 import server
@@ -252,6 +253,71 @@ class LocalAppTest(unittest.TestCase):
             status, _, body = self.request_test_server(str(db_path), "GET", "/login")
             self.assertEqual(status, 200)
             self.assertIn(b"Anime Catalog", body)
+
+    def test_recent_update_events_are_exposed_in_list_and_detail(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=91, title="Fresh Update")
+            con = server.connect(db_path)
+            try:
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_episode",
+                    anime_id,
+                    episode_id=anime_id * 1000 + 1,
+                    source="animego",
+                    source_id=str(anime_id),
+                    episode_number="1",
+                    title="Fresh Update",
+                    description="Добавлена серия 1",
+                    metadata={"provider_count": 1},
+                )
+                con.commit()
+            finally:
+                con.close()
+            server.invalidate_catalog_cache(db_path)
+
+            item = next(entry for entry in server.get_anime_list(db_path) if entry["id"] == anime_id)
+            self.assertEqual(item["recent_update_summary"]["badge"], "+1 серия")
+            self.assertEqual(item["recent_updates"][0]["event_type"], "new_episode")
+
+            detail = server.get_anime_detail(anime_id, db_path)
+            self.assertEqual(detail["recent_update_summary"]["label"], "Добавлено 1 серия")
+            self.assertEqual(detail["recent_updates"][0]["episode_number"], "1")
+
+    def test_internal_daily_sync_requires_token_and_runs_wrapper(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=92, title="Cron Sync")
+            with patch.dict(os.environ, {"ANIME_SYNC_TOKEN": "secret"}, clear=False):
+                status, _, body = self.request_test_server(db_path, "POST", "/api/internal/daily-sync?mode=daily")
+                self.assertEqual(status, 401)
+                self.assertIn("authentication required", body.decode("utf-8"))
+
+                with patch.object(
+                    server,
+                    "run_content_sync",
+                    return_value={
+                        "event": "content_sync",
+                        "mode": "daily",
+                        "trigger": "railway-cron",
+                        "duration_ms": 12,
+                        "stats": {"animego": {"known_skipped": 1}},
+                        "timestamp": server.now_iso(),
+                    },
+                ) as sync_mock:
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/daily-sync?mode=daily",
+                        headers={"Authorization": "Bearer secret"},
+                    )
+                    self.assertEqual(status, 200)
+                    payload = json.loads(body)
+                    self.assertTrue(payload["ok"])
+                    self.assertEqual(payload["duration_ms"], 12)
+                    sync_mock.assert_called_once()
 
     def test_video_sync_filters_empty_episodes(self):
         episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]

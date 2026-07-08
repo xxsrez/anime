@@ -326,3 +326,56 @@ ANIME_ADMIN_EMAIL=...
 The admin UI is `/admin`; admin data API is `/api/admin/users`. Non-admin users
 must not see an admin link, and direct `/admin` or `/api/admin/users` requests
 must not work for them.
+
+## Daily Content Sync
+
+Automatic title/episode discovery should run through the production web
+service, not by mounting the SQLite volume into a separate writer. The web
+service exposes a token-protected endpoint:
+
+```text
+POST /api/internal/daily-sync?mode=daily
+Authorization: Bearer $ANIME_SYNC_TOKEN
+```
+
+The endpoint runs `sync_videos.py` with both sources, writes
+`content_update_runs` and `content_update_events`, invalidates the catalog
+cache, and logs a JSON `content_sync` entry to `server.log`.
+
+Create a separate Railway Cron service or Function that exits after calling the
+endpoint. The production Function entrypoint is
+`railway-functions/daily-sync.ts`.
+
+For a same-repo Railway service, keep the normal Railway start command and
+select the Python cron script through the service role:
+
+```text
+ANIME_SERVICE_ROLE=daily-sync
+```
+
+Required cron-service variables:
+
+```text
+ANIME_PUBLIC_URL=https://anime-srez.up.railway.app
+ANIME_SYNC_TOKEN=<same secret as web>
+ANIME_SYNC_MODE=daily
+```
+
+Optional:
+
+```text
+ANIME_SYNC_TIMEOUT_SECONDS=1800
+ANIME_CRON_LOG_PATH=/tmp/anime-daily-sync.jsonl
+```
+
+Railway evaluates cron schedules in UTC. For 03:00 Portugal/Madeira summer
+time, set:
+
+```text
+0 2 * * *
+```
+
+The cron script logs JSON start/finish/error lines to stdout and, if
+`ANIME_CRON_LOG_PATH` is set, appends them to that file. Persistent production
+run history lives in SQLite table `content_update_runs`; user-visible recent
+changes live in `content_update_events`.

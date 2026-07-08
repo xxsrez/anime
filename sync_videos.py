@@ -15,6 +15,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import backfill_players
+import content_updates
 import scrape_animego as animego
 import scrape_yummyanime as yummy
 from scripts import db_data_diff
@@ -73,6 +74,150 @@ def ensure_sync_tables(con):
         );
         """
     )
+    content_updates.ensure_schema(con)
+
+
+def anime_row_exists(con, anime_id):
+    return con.execute("select 1 from anime where id = ? limit 1", (anime_id,)).fetchone() is not None
+
+
+def translation_known_for_episode(con, episode_id, translation_title):
+    normalized = content_updates.normalize_key(translation_title)
+    row = con.execute(
+        """
+        select 1
+        from video_sources
+        where episode_id = ?
+          and embed_url is not null
+          and lower(trim(coalesce(translation_title, ''))) = ?
+        limit 1
+        """,
+        (episode_id, normalized),
+    ).fetchone()
+    return row is not None
+
+
+def record_update_events(con, args, item, writes, *, new_title, reason):
+    if args.dry_run:
+        return 0
+    run_id = getattr(args, "content_update_run_id", None)
+    source = item.get("source")
+    source_id = str(item.get("source_id", item.get("id")))
+    event_count = 0
+
+    if new_title:
+        provider_count = sum(len(providers) for episode, providers, *_ in writes)
+        translation_titles = sorted(
+            {
+                provider.get("translation_title")
+                for episode, providers, *_ in writes
+                for provider in providers
+                if provider.get("translation_title")
+            }
+        )
+        event_count += int(
+            content_updates.insert_event(
+                con,
+                run_id,
+                "new_title",
+                item["id"],
+                source=source,
+                source_id=source_id,
+                title=item.get("title"),
+                description=f"Новый тайтл: {item.get('title')}",
+                metadata={
+                    "reason": reason,
+                    "episode_count": len(writes),
+                    "provider_count": provider_count,
+                    "translations": translation_titles[:12],
+                },
+            )
+        )
+        return event_count
+
+    for write in writes:
+        episode = write[0]
+        providers = write[1]
+        before = write[-1] if isinstance(write[-1], dict) else {}
+        episode_id = episode["id"]
+        episode_number = episode.get("number")
+        if not before.get("episode_had_playable"):
+            event_count += int(
+                content_updates.insert_event(
+                    con,
+                    run_id,
+                    "new_episode",
+                    item["id"],
+                    episode_id=episode_id,
+                    source=source,
+                    source_id=source_id,
+                    episode_number=episode_number,
+                    title=item.get("title"),
+                    description=f"Добавлена серия {episode_number or ''}".strip(),
+                    metadata={
+                        "reason": reason,
+                        "provider_count": len(providers),
+                    },
+                )
+            )
+            continue
+
+        seen_translation_events = set()
+        for provider in providers:
+            translation_title = provider.get("translation_title")
+            translation_key = content_updates.normalize_key(translation_title)
+            if not before.get("known_translations", {}).get(translation_key):
+                if translation_key in seen_translation_events:
+                    continue
+                seen_translation_events.add(translation_key)
+                event_count += int(
+                    content_updates.insert_event(
+                        con,
+                        run_id,
+                        "new_translation",
+                        item["id"],
+                        episode_id=episode_id,
+                        source=source,
+                        source_id=source_id,
+                        episode_number=episode_number,
+                        translation_title=translation_title,
+                        provider_title=provider.get("provider_title"),
+                        title=item.get("title"),
+                        description=f"Новая озвучка: {translation_title or 'без названия'}",
+                        metadata={"reason": reason},
+                        dedupe_key=content_updates.event_dedupe_key(
+                            "new_translation",
+                            item["id"],
+                            episode_id,
+                            translation_title=translation_title,
+                        ),
+                    )
+                )
+            else:
+                event_count += int(
+                    content_updates.insert_event(
+                        con,
+                        run_id,
+                        "new_provider",
+                        item["id"],
+                        episode_id=episode_id,
+                        source=source,
+                        source_id=source_id,
+                        episode_number=episode_number,
+                        translation_title=translation_title,
+                        provider_title=provider.get("provider_title"),
+                        title=item.get("title"),
+                        description=f"Новый плеер: {provider.get('provider_title') or 'без названия'}",
+                        metadata={"reason": reason, "embed_host": provider.get("embed_host")},
+                        dedupe_key=content_updates.event_dedupe_key(
+                            "new_provider",
+                            item["id"],
+                            episode_id,
+                            provider=provider,
+                        ),
+                    )
+                )
+    return event_count
 
 
 def call_with_retries(args, label, func):
@@ -284,6 +429,7 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
     page_url = yummy_page_url(anime_ref)
     stats["titles_checked"] += 1
     item, detail, episodes, providers = parse_yummy_detail_for_sync(page_url, args)
+    new_title = not anime_row_exists(con, item["id"])
     providers = [provider for provider in providers if provider_has_embed(provider)]
     selected = selected_episodes(episodes, args.episode_limit)
     selected = filter_episodes_with_providers(selected, providers) if not args.include_empty_episodes else selected
@@ -301,14 +447,31 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
                 if not provider_known(con, episode["id"], provider)
             ]
         if episode_providers or args.include_empty_episodes:
-            writes.append((episode, episode_providers))
+            known_translations = {
+                content_updates.normalize_key(provider.get("translation_title")): translation_known_for_episode(
+                    con,
+                    episode["id"],
+                    provider.get("translation_title"),
+                )
+                for provider in episode_providers
+            }
+            writes.append(
+                (
+                    episode,
+                    episode_providers,
+                    {
+                        "episode_had_playable": episode_has_playable(con, episode["id"]),
+                        "known_translations": known_translations,
+                    },
+                )
+            )
 
     if not writes:
         stats["known_skipped"] += 1
         return
 
     animego.upsert_anime(con, item, detail, args.scraped_at)
-    for episode, episode_providers in writes:
+    for episode, episode_providers, _before in writes:
         animego.upsert_episode(
             con,
             item["id"],
@@ -321,6 +484,7 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
         for provider in episode_providers:
             animego.upsert_provider(con, item["id"], episode["id"], provider, True, args.scraped_at)
             stats["providers_written"] += 1
+    stats["update_events_written"] += record_update_events(con, args, item, writes, new_title=new_title, reason=reason)
 
     stats["titles_imported"] += 1
     print(f"  yummyanime {item['id']} {item['title']}: {len(writes)} episodes from {reason}")
@@ -559,6 +723,7 @@ def animego_ongoing_rows(con):
 
 def sync_animego_item(con, item, args, stats, reason):
     stats["titles_checked"] += 1
+    new_title = not anime_row_exists(con, item["id"])
     detail = call_with_retries(
         args,
         item["url"],
@@ -612,7 +777,25 @@ def sync_animego_item(con, item, args, stats, reason):
                 if not provider_known(con, episode["id"], provider)
             ]
         if providers or args.include_empty_episodes:
-            writes.append((episode, providers, unavailable_reason))
+            known_translations = {
+                content_updates.normalize_key(provider.get("translation_title")): translation_known_for_episode(
+                    con,
+                    episode["id"],
+                    provider.get("translation_title"),
+                )
+                for provider in providers
+            }
+            writes.append(
+                (
+                    episode,
+                    providers,
+                    unavailable_reason,
+                    {
+                        "episode_had_playable": episode_has_playable(con, episode["id"]),
+                        "known_translations": known_translations,
+                    },
+                )
+            )
         else:
             stats["episode_without_new_provider_skipped"] += 1
 
@@ -621,7 +804,7 @@ def sync_animego_item(con, item, args, stats, reason):
         return
 
     animego.upsert_anime(con, item, detail, args.scraped_at)
-    for episode, providers, unavailable_reason in writes:
+    for episode, providers, unavailable_reason, _before in writes:
         animego.upsert_episode(
             con,
             item["id"],
@@ -634,6 +817,7 @@ def sync_animego_item(con, item, args, stats, reason):
         for provider in providers:
             animego.upsert_provider(con, item["id"], episode["id"], provider, True, args.scraped_at)
             stats["providers_written"] += 1
+    stats["update_events_written"] += record_update_events(con, args, item, writes, new_title=new_title, reason=reason)
 
     stats["titles_imported"] += 1
     print(f"  animego {item['id']} {item['title']}: {len(writes)} episodes from {reason}")
@@ -793,6 +977,7 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--trigger", default="manual", help="free-form run trigger label for content_update_runs")
     parser.add_argument(
         "--emit-migration",
         metavar="NAME",
@@ -903,9 +1088,18 @@ def run_sync(args):
 
     with FileLock(lock_path, wait=args.wait_lock):
         con = connect(args.db)
+        run_id = None
         try:
             if not args.dry_run:
                 ensure_sync_tables(con)
+                run_id = content_updates.create_run(
+                    con,
+                    args.mode,
+                    getattr(args, "trigger", "manual"),
+                    args.sources,
+                    started_at=started_at,
+                )
+                args.content_update_run_id = run_id
                 con.commit()
 
             for source in args.sources:
@@ -922,6 +1116,18 @@ def run_sync(args):
                     con.commit()
             if args.dry_run:
                 con.rollback()
+            elif run_id:
+                status = "partial" if any((stats.get("failed") or 0) for stats in all_stats.values()) else "success"
+                content_updates.finish_run(con, run_id, started_at, status, all_stats)
+                con.commit()
+        except Exception as exc:
+            if not args.dry_run and run_id:
+                try:
+                    content_updates.finish_run(con, run_id, started_at, "failed", all_stats, error=exc)
+                    con.commit()
+                except sqlite3.Error:
+                    con.rollback()
+            raise
         finally:
             con.close()
 

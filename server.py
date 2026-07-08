@@ -24,6 +24,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
+import content_updates
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
@@ -36,6 +37,7 @@ MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
+SYNC_MODES = {"hourly", "daily", "full"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
 SESSION_COOKIE_NAME = "anime_session"
@@ -518,7 +520,11 @@ def ensure_catalog_schema(con):
 
 
 def ensure_runtime_indexes(con):
-    changed = False
+    had_content_updates = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'content_update_events'"
+    ).fetchone()
+    content_updates.ensure_schema(con)
+    changed = not bool(had_content_updates)
     changed |= ensure_index(
         con,
         "idx_episodes_anime_id",
@@ -1044,6 +1050,118 @@ def item_matches_query(item, query):
     return normalize_key(query) in haystack
 
 
+def parse_json_object(value):
+    try:
+        payload = json.loads(value or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def russian_plural(count, one, few, many):
+    count = abs(int(count))
+    if count % 10 == 1 and count % 100 != 11:
+        return one
+    if 2 <= count % 10 <= 4 and not 12 <= count % 100 <= 14:
+        return few
+    return many
+
+
+def update_event_payload(row):
+    event = dict(row)
+    event["metadata"] = parse_json_object(event.pop("metadata_json", "{}"))
+    return event
+
+
+def recent_update_summary(events):
+    if not events:
+        return None
+    counts = {}
+    for event in events:
+        counts[event["event_type"]] = counts.get(event["event_type"], 0) + 1
+
+    if counts.get("new_title"):
+        badge = "новый"
+        label = "Новый тайтл"
+    elif counts.get("new_episode"):
+        count = counts["new_episode"]
+        word = russian_plural(count, "серия", "серии", "серий")
+        badge = f"+{count} {word}"
+        label = f"Добавлено {count} {word}"
+    elif counts.get("new_translation"):
+        count = counts["new_translation"]
+        word = russian_plural(count, "озвучка", "озвучки", "озвучек")
+        badge = f"+{count} {word}"
+        label = f"Добавлено {count} {word}"
+    else:
+        count = counts.get("new_provider", len(events))
+        word = russian_plural(count, "плеер", "плеера", "плееров")
+        badge = f"+{count} {word}"
+        label = f"Добавлено {count} {word}"
+
+    return {
+        "badge": badge,
+        "label": label,
+        "count": len(events),
+        "event_counts": counts,
+        "latest_at": events[0]["occurred_at"],
+        "days": content_updates.RECENT_UPDATE_DAYS,
+    }
+
+
+def load_recent_update_events(con, anime_ids, days=content_updates.RECENT_UPDATE_DAYS):
+    anime_ids = [int(value) for value in anime_ids if value is not None]
+    if not anime_ids:
+        return []
+    placeholders = ",".join("?" for _ in anime_ids)
+    rows = con.execute(
+        f"""
+        select
+            id,
+            run_id,
+            event_type,
+            anime_id,
+            episode_id,
+            video_source_id,
+            source,
+            source_id,
+            episode_number,
+            translation_title,
+            provider_title,
+            title,
+            description,
+            occurred_at,
+            metadata_json
+        from content_update_events
+        where anime_id in ({placeholders})
+          and occurred_at >= ?
+        order by occurred_at desc, id desc
+        """,
+        (*anime_ids, content_updates.recent_cutoff(days)),
+    ).fetchall()
+    return [update_event_payload(row) for row in rows]
+
+
+def attach_recent_updates(con, items):
+    source_ids = []
+    for item in items:
+        source_ids.extend(item.get("source_member_ids") or [item.get("id")])
+    events = load_recent_update_events(con, source_ids)
+    events_by_anime_id = {}
+    for event in events:
+        events_by_anime_id.setdefault(event["anime_id"], []).append(event)
+
+    for item in items:
+        member_ids = item.get("source_member_ids") or [item.get("id")]
+        item_events = []
+        for anime_id in member_ids:
+            item_events.extend(events_by_anime_id.get(anime_id, []))
+        item_events.sort(key=lambda event: (event["occurred_at"], event["id"]), reverse=True)
+        item["recent_updates"] = item_events[:12]
+        item["recent_update_summary"] = recent_update_summary(item["recent_updates"])
+    return items
+
+
 def format_number(value):
     number = numeric(value)
     if number is None:
@@ -1495,6 +1613,8 @@ def clone_catalog_item(item):
     cloned["sources"] = list(item.get("sources") or [])
     cloned["source_member_ids"] = list(item.get("source_member_ids") or [])
     cloned["source_variants"] = [dict(variant) for variant in item.get("source_variants") or []]
+    cloned["recent_updates"] = [dict(update) for update in item.get("recent_updates") or []]
+    cloned["recent_update_summary"] = dict(item["recent_update_summary"]) if item.get("recent_update_summary") else None
     return cloned
 
 
@@ -1508,6 +1628,7 @@ def build_catalog_cache(db_path=None, user_id=None):
     try:
         user_id = resolved_user_id(con, user_id)
         items = canonicalize_items(get_source_anime_items(con, user_id))
+        attach_recent_updates(con, items)
         translation_rankings = build_translation_rankings(con)
     finally:
         con.close()
@@ -1860,6 +1981,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["internal_id"] = group.get("internal_id")
     detail["source_count"] = sum(len(sources) for sources in by_episode.values())
     detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
+    detail["recent_updates"] = [dict(update) for update in group.get("recent_updates") or []]
+    detail["recent_update_summary"] = dict(group["recent_update_summary"]) if group.get("recent_update_summary") else None
     return detail
 
 
@@ -2270,6 +2393,60 @@ def admin_users_payload(db_path=None):
         con.close()
 
 
+def configured_sync_token():
+    return os.environ.get("ANIME_SYNC_TOKEN", "").strip()
+
+
+def run_content_sync(db_path, mode="daily", trigger="internal-api"):
+    if mode not in SYNC_MODES:
+        raise ValueError(f"unsupported sync mode: {mode}")
+
+    import sync_videos
+
+    started = time.perf_counter()
+    args = sync_videos.parse_args(
+        [
+            "--db",
+            str(db_path),
+            "--mode",
+            mode,
+            "--source",
+            "yummyanime",
+            "--source",
+            "animego",
+            "--wait-lock",
+            "--trigger",
+            trigger,
+        ]
+    )
+    try:
+        stats = sync_videos.run_sync(args)
+    except Exception as exc:
+        duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+        event = {
+            "event": "content_sync_error",
+            "mode": mode,
+            "trigger": trigger,
+            "duration_ms": duration_ms,
+            "error": str(exc),
+            "timestamp": now_iso(),
+        }
+        server_logger().exception(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        raise
+    duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+    event = {
+        "event": "content_sync",
+        "mode": mode,
+        "trigger": trigger,
+        "duration_ms": duration_ms,
+        "stats": stats,
+        "timestamp": now_iso(),
+    }
+    server_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
+    invalidate_catalog_cache(db_path)
+    return event
+
+
 def safe_next_path(value):
     parsed = urlparse(value or "/")
     if parsed.scheme or parsed.netloc:
@@ -2641,6 +2818,24 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_json({"error": "not found"}, 404)
         return None
 
+    def sync_request_token(self):
+        auth = self.headers.get("Authorization", "").strip()
+        prefix = "bearer "
+        if auth.lower().startswith(prefix):
+            return auth[len(prefix):].strip()
+        return self.headers.get("X-Anime-Sync-Token", "").strip()
+
+    def require_sync_token(self):
+        expected = configured_sync_token()
+        if not expected:
+            self.send_json({"error": "sync token is not configured"}, 503)
+            return False
+        received = self.sync_request_token()
+        if not received or not hmac.compare_digest(received, expected):
+            self.send_json({"error": "authentication required"}, 401)
+            return False
+        return True
+
     def current_user_is_admin(self):
         user = self.current_user()
         return bool(user and user.get("is_admin"))
@@ -2855,6 +3050,22 @@ class AnimeHandler(BaseHTTPRequestHandler):
     def handle_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
+
+        if path == "/api/internal/daily-sync":
+            if not self.require_sync_token():
+                return
+            mode = parse_qs(parsed.query).get("mode", [os.environ.get("ANIME_SYNC_MODE", "daily")])[0]
+            try:
+                result = run_content_sync(self.server.db_path, mode=mode, trigger="railway-cron")
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+            except Exception as exc:
+                server_logger().exception("content sync failed")
+                self.send_json({"error": str(exc) or "sync failed"}, 500)
+                return
+            self.send_json({"ok": True, **result})
+            return
 
         if path == "/api/client-errors":
             self.handle_client_error_post()
