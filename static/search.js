@@ -12,6 +12,12 @@
     [/oo/g, "o"],
   ];
   const MIN_FUZZY_LENGTH = 4;
+  const PRIMARY_TITLE_WEIGHT = 14;
+  const SUBTITLE_WEIGHT = 11;
+  const VARIANT_TITLE_WEIGHT = 10;
+  const VARIANT_SUBTITLE_WEIGHT = 9;
+  const SOURCE_WEIGHT = 3;
+  const GENRE_WEIGHT = 5;
 
   function foldSearchText(value) {
     return SEARCH_FOLDS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value);
@@ -49,23 +55,35 @@
     });
   }
 
+  function addStructuredSearchFields(fields, searchFields) {
+    for (const field of searchFields || []) {
+      if (!field || typeof field !== "object") {
+        addSearchField(fields, field, 1);
+        continue;
+      }
+      const weight = Number.isFinite(Number(field.weight)) ? Number(field.weight) : 1;
+      addSearchField(fields, field.value, weight);
+    }
+  }
+
   function buildSearchIndex(item) {
     const fields = [];
-    addSearchField(fields, item?.title, 12);
-    addSearchField(fields, item?.subtitle, 10);
+    addSearchField(fields, item?.title, PRIMARY_TITLE_WEIGHT);
+    addSearchField(fields, item?.subtitle, SUBTITLE_WEIGHT);
 
     for (const variant of item?.source_variants || []) {
-      addSearchField(fields, variant.title, 8);
-      addSearchField(fields, variant.subtitle, 7);
-      addSearchField(fields, variant.source, 3);
+      addSearchField(fields, variant.title, VARIANT_TITLE_WEIGHT);
+      addSearchField(fields, variant.subtitle, VARIANT_SUBTITLE_WEIGHT);
+      addSearchField(fields, variant.source, SOURCE_WEIGHT);
     }
 
-    for (const genre of item?.genres || []) addSearchField(fields, genre, 5);
+    for (const genre of item?.genres || []) addSearchField(fields, genre, GENRE_WEIGHT);
     addSearchField(fields, item?.kind, 3);
     addSearchField(fields, item?.status, 3);
     addSearchField(fields, item?.year, 2);
-    addSearchField(fields, item?.source, 3);
-    for (const source of item?.sources || []) addSearchField(fields, source, 3);
+    addSearchField(fields, item?.source, SOURCE_WEIGHT);
+    for (const source of item?.sources || []) addSearchField(fields, source, SOURCE_WEIGHT);
+    addStructuredSearchFields(fields, item?.search_fields);
 
     const tokenWeights = new Map();
     for (const field of fields) {
@@ -106,7 +124,7 @@
 
   function maxEditDistance(token) {
     if (token.length < MIN_FUZZY_LENGTH) return 0;
-    return token.length >= 8 ? 2 : 1;
+    return token.length >= 10 ? 2 : 1;
   }
 
   function boundedDamerauLevenshtein(left, right, maxDistance) {
@@ -153,8 +171,21 @@
 
     if (token.length >= 3 && queryToken.length >= 3) {
       if (token.startsWith(queryToken)) return 92 + weight * 10 + queryToken.length;
-      if (queryToken.startsWith(token)) return 78 + weight * 8 + token.length;
-      if (token.includes(queryToken) || queryToken.includes(token)) return 66 + weight * 7;
+      if (
+        queryToken.startsWith(token)
+        && token.length >= MIN_FUZZY_LENGTH
+        && token.length / queryToken.length >= 0.6
+      ) {
+        return 78 + weight * 8 + token.length;
+      }
+      if (token.includes(queryToken)) return 66 + weight * 7;
+      if (
+        queryToken.includes(token)
+        && token.length >= MIN_FUZZY_LENGTH
+        && token.length / queryToken.length >= 0.6
+      ) {
+        return 66 + weight * 7;
+      }
     }
 
     const maxDistance = Math.min(maxEditDistance(queryToken), maxEditDistance(token));

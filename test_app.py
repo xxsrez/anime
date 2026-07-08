@@ -20,6 +20,7 @@ import scrape_animego
 import scrape_yummyanime
 import server
 import sync_videos
+from scripts import enrich_title_aliases
 
 
 class LocalAppTest(unittest.TestCase):
@@ -198,6 +199,46 @@ const items = search.prepareSearchIndexes([
       {title: "Moonlit Fantasy", subtitle: "Tsukimichi", source: "yummyanime"},
     ],
   },
+  {
+    id: "heron",
+    title: "Как поживаете?",
+    subtitle: "Kimitachi wa Dou Ikiru ka",
+    genres: ["Приключения"],
+    source_variants: [],
+    search_fields: [
+      {value: "Мальчик и херон", weight: 9, kind: "alias"},
+      {value: "The Boy and the Heron", weight: 8, kind: "alias"},
+      {value: "君たちはどう生きるか", weight: 8, kind: "alias"},
+      {value: "Хаяо Миядзаки", weight: 5, kind: "metadata"},
+    ],
+  },
+  {
+    id: "miyazaki-title",
+    title: "Миядзаки: тестовый тайтл",
+    subtitle: null,
+    genres: [],
+    source_variants: [],
+  },
+  {
+    id: "short-miya",
+    title: "Короткое имя",
+    subtitle: null,
+    genres: [],
+    source_variants: [],
+    search_fields: [
+      {value: "Сигэюки Мия", weight: 5, kind: "metadata"},
+    ],
+  },
+  {
+    id: "imadzaki",
+    title: "Другая фамилия",
+    subtitle: null,
+    genres: [],
+    source_variants: [],
+    search_fields: [
+      {value: "Ицуки Имадзаки", weight: 5, kind: "metadata"},
+    ],
+  },
 ]);
 
 function rankedIds(queryText) {
@@ -214,6 +255,15 @@ assert.strictEqual(rankedIds("легенда хей")[0], "hei");
 assert.strictEqual(rankedIds("one punc man")[0], "opm");
 assert.strictEqual(rankedIds("реинкарнация омедзи")[0], "onmyo");
 assert.strictEqual(rankedIds("moonlit")[0], "moon");
+assert.strictEqual(rankedIds("мальчик херон")[0], "heron");
+assert.strictEqual(rankedIds("the boy heron")[0], "heron");
+assert.strictEqual(rankedIds("君たちはどう生きるか")[0], "heron");
+assert.strictEqual(rankedIds("хаяо миядзаки")[0], "heron");
+assert.strictEqual(rankedIds("миядзаки")[0], "miyazaki-title");
+assert.strictEqual(rankedIds("сигэюки мия")[0], "short-miya");
+assert.strictEqual(rankedIds("ицуки имадзаки")[0], "imadzaki");
+assert.ok(!rankedIds("миядзаки").includes("short-miya"));
+assert.ok(!rankedIds("миядзаки").includes("imadzaki"));
 assert.deepStrictEqual(rankedIds("zz"), []);
 """
         result = subprocess.run(
@@ -237,6 +287,145 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         onmyo = server.get_anime_list(q="реинкарнация омедзи")
         self.assertTrue(onmyo)
         self.assertIn("оммёдзи", onmyo[0]["title"])
+
+        heron = server.get_anime_list(q="мальчик херон")
+        self.assertTrue(heron)
+        self.assertEqual(heron[0]["id"], 10001570)
+
+        miyazaki = server.get_anime_list(q="хаяо миядзаки")
+        self.assertTrue(miyazaki)
+        self.assertEqual(miyazaki[0]["id"], 10001570)
+
+    def test_api_search_uses_aliases_and_selected_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=1, title="Миядзаки: тестовый тайтл")
+            self.seed_watchable_title(db_path, anime_id=2, title="Как поживаете?")
+            self.seed_watchable_title(db_path, anime_id=3, title="Шумная карточка")
+            self.seed_watchable_title(db_path, anime_id=4, title="Короткое имя")
+            self.seed_watchable_title(db_path, anime_id=5, title="Другая фамилия")
+
+            con = server.connect(db_path)
+            try:
+                timestamp = server.now_iso()
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (2, 'Режиссер', 'Хаяо Миядзаки')"
+                )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (2, 'Студия', 'Studio Ghibli')"
+                )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (3, 'Главные герои', 'Иссэй Миядзаки')"
+                )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (4, 'Режиссер', 'Сигэюки Мия')"
+                )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (5, 'Режиссер', 'Ицуки Имадзаки')"
+                )
+                for alias, alias_type in [
+                    ("Мальчик и херон", "manual"),
+                    ("The Boy and the Heron", "english"),
+                    ("君たちはどう生きるか", "native"),
+                ]:
+                    con.execute(
+                        """
+                        insert into anime_title_aliases (
+                            anime_id, alias, normalized_alias, language, alias_type,
+                            source, created_at, updated_at
+                        ) values (2, ?, ?, null, ?, 'test', ?, ?)
+                        """,
+                        (alias, server.normalize_search_text(alias), alias_type, timestamp, timestamp),
+                    )
+                con.commit()
+            finally:
+                con.close()
+            server.invalidate_catalog_cache(db_path)
+
+            self.assertEqual(server.get_anime_list(db_path, q="мальчик херон")[0]["title"], "Как поживаете?")
+            self.assertEqual(server.get_anime_list(db_path, q="the boy heron")[0]["title"], "Как поживаете?")
+            self.assertEqual(server.get_anime_list(db_path, q="君たちはどう生きるか")[0]["title"], "Как поживаете?")
+            self.assertEqual(server.get_anime_list(db_path, q="хаяо миядзаки")[0]["title"], "Как поживаете?")
+            self.assertEqual(server.get_anime_list(db_path, q="режиссер хаяо миядзаки")[0]["title"], "Как поживаете?")
+            self.assertEqual(server.get_anime_list(db_path, q="миядзаки")[0]["title"], "Миядзаки: тестовый тайтл")
+            self.assertEqual(server.get_anime_list(db_path, q="сигэюки мия")[0]["title"], "Короткое имя")
+            self.assertEqual(server.get_anime_list(db_path, q="ицуки имадзаки")[0]["title"], "Другая фамилия")
+            short_name_hits = [
+                item for item in server.get_anime_list(db_path, q="миядзаки")
+                if item["title"] == "Короткое имя"
+            ]
+            self.assertEqual(short_name_hits, [])
+            imadzaki_hits = [
+                item for item in server.get_anime_list(db_path, q="миядзаки")
+                if item["title"] == "Другая фамилия"
+            ]
+            self.assertEqual(imadzaki_hits, [])
+            noisy_hits = [
+                item for item in server.get_anime_list(db_path, q="иссэй миядзаки")
+                if item["title"] == "Шумная карточка"
+            ]
+            self.assertEqual(noisy_hits, [])
+
+    def test_title_alias_enricher_matches_aod_and_builds_anidb_aliases(self):
+        rows = [
+            {
+                "id": 2,
+                "title": "Как поживаете?",
+                "subtitle": "Kimitachi wa Dou Ikiru ka",
+                "year": "2023",
+                "episodes_text": "1",
+                "kind": "Фильм",
+                "source": "yummyanime",
+            }
+        ]
+        aod_entries = [
+            {
+                "title": "Kimitachi wa Dou Ikiru ka",
+                "synonyms": ["The Boy and the Heron"],
+                "animeSeason": {"year": 2023},
+                "episodes": 1,
+                "sources": [
+                    "https://myanimelist.net/anime/36699",
+                    "https://anidb.net/anime/13545",
+                    "https://anilist.co/anime/109979",
+                ],
+            },
+            {
+                "title": "Kimitachi wa Dou Ikiru ka",
+                "synonyms": [],
+                "animeSeason": {"year": 1999},
+                "episodes": 1,
+                "sources": ["https://myanimelist.net/anime/1"],
+            },
+        ]
+
+        result = enrich_title_aliases.match_aod_entries(rows, aod_entries)
+        self.assertEqual(result["matches"][2]["mal_id"], 36699)
+        self.assertEqual(result["matches"][2]["anidb_id"], 13545)
+        self.assertEqual(result["ambiguous"], {})
+
+        aliases, missing = enrich_title_aliases.build_anidb_aliases(
+            {2: rows[0]},
+            result["matches"],
+            {
+                13545: {
+                    "id": 13545,
+                    "titles": [
+                        {"language": "x-jat", "type": "main", "title": "Kimitachi wa Dou Ikiru ka"},
+                        {"language": "en", "type": "official", "title": "The Boy and the Heron"},
+                        {"language": "ja", "type": "official", "title": "君たちはどう生きるか"},
+                        {"language": "ru", "type": "official", "title": "Мальчик и птица"},
+                    ],
+                }
+            },
+        )
+
+        self.assertEqual(missing, 0)
+        alias_values = {alias["alias"]: alias for alias in aliases}
+        self.assertNotIn("Kimitachi wa Dou Ikiru ka", alias_values)
+        self.assertEqual(alias_values["The Boy and the Heron"]["language"], "en")
+        self.assertEqual(alias_values["君たちはどう生きるか"]["alias_type"], "native")
+        self.assertEqual(alias_values["Мальчик и птица"]["language"], "ru")
 
     def test_title_detail_can_be_loaded_by_slug(self):
         item = server.get_anime_list()[0]

@@ -4,6 +4,7 @@ import sqlite3
 
 CATALOG_TABLES = [
     "anime",
+    "anime_title_aliases",
     "translations",
     "episodes",
     "anime_fields",
@@ -14,6 +15,7 @@ CATALOG_TABLES = [
 
 DELETE_TABLES = [
     "video_sources",
+    "anime_title_aliases",
     "anime_fields",
     "anime_genres",
     "anime_dubbings",
@@ -35,6 +37,11 @@ class TableSpec:
 
 TABLE_SPECS = {
     "anime": TableSpec("anime", ("id",), ("id",)),
+    "anime_title_aliases": TableSpec(
+        "anime_title_aliases",
+        ("anime_id", "normalized_alias", "source", "alias_type"),
+        ("anime_id", "normalized_alias", "source", "alias_type"),
+    ),
     "translations": TableSpec("translations", ("id",), ("id",)),
     "episodes": TableSpec("episodes", ("id",), ("id",)),
     "anime_fields": TableSpec("anime_fields", ("anime_id", "label"), ("anime_id", "label")),
@@ -70,6 +77,15 @@ def table_columns(con, table):
     if not rows:
         raise ValueError(f"missing table: {table}")
     return [row[1] for row in rows]
+
+
+def table_exists(con, table):
+    return bool(
+        con.execute(
+            "select 1 from sqlite_master where type = 'table' and name = ?",
+            (table,),
+        ).fetchone()
+    )
 
 
 def row_key(row, key_columns):
@@ -149,8 +165,17 @@ def generate_data_migration_statements(before_db, after_db, tables=None):
         loaded = {}
         for table in tables:
             spec = TABLE_SPECS[table]
-            before_columns, before_rows = load_table(before, spec)
+            before_has_table = table_exists(before, table)
+            after_has_table = table_exists(after, table)
+            if not before_has_table and not after_has_table:
+                continue
+            if not after_has_table:
+                raise ValueError(f"missing table: {table}")
             after_columns, after_rows = load_table(after, spec)
+            if before_has_table:
+                before_columns, before_rows = load_table(before, spec)
+            else:
+                before_columns, before_rows = after_columns, {}
             if before_columns != after_columns:
                 raise ValueError(f"schema mismatch for {table}")
             loaded[table] = (spec, before_columns, before_rows, after_rows)

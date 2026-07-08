@@ -88,6 +88,76 @@ SEARCH_FOLDS = (
     (re.compile("oo"), "o"),
 )
 MIN_SEARCH_FUZZY_LENGTH = 4
+PRIMARY_TITLE_SEARCH_WEIGHT = 14
+SUBTITLE_SEARCH_WEIGHT = 11
+VARIANT_TITLE_SEARCH_WEIGHT = 10
+VARIANT_SUBTITLE_SEARCH_WEIGHT = 9
+SOURCE_SEARCH_WEIGHT = 3
+GENRE_SEARCH_WEIGHT = 5
+TITLE_ALIAS_SEARCH_WEIGHTS = {
+    "manual": 9,
+    "ru_alt": 9,
+    "english": 8,
+    "native": 8,
+    "romaji": 8,
+    "synonym": 7,
+    "other_title": 7,
+}
+SEARCH_METADATA_LABEL_WEIGHTS = {
+    "Режиссер": 5,
+    "Режиссёр": 5,
+    "Автор оригинала": 5,
+    "Студия": 4,
+    "Франшиза": 4,
+    "Жанр": 3,
+    "Жанры": 3,
+    "Тема": 3,
+    "Первоисточник": 2,
+}
+CURATED_TITLE_ALIASES = (
+    {
+        "anime_id": 10001570,
+        "alias": "Мальчик и херон",
+        "language": "ru",
+        "alias_type": "manual",
+        "source": "curated",
+    },
+    {
+        "anime_id": 10001570,
+        "alias": "Мальчик и цапля",
+        "language": "ru",
+        "alias_type": "ru_alt",
+        "source": "curated",
+    },
+    {
+        "anime_id": 10001570,
+        "alias": "Мальчик и птица",
+        "language": "ru",
+        "alias_type": "ru_alt",
+        "source": "curated",
+    },
+    {
+        "anime_id": 10001570,
+        "alias": "The Boy and the Heron",
+        "language": "en",
+        "alias_type": "english",
+        "source": "curated",
+    },
+    {
+        "anime_id": 10001570,
+        "alias": "How Do You Live?",
+        "language": "en",
+        "alias_type": "synonym",
+        "source": "curated",
+    },
+    {
+        "anime_id": 10001570,
+        "alias": "君たちはどう生きるか",
+        "language": "ja",
+        "alias_type": "native",
+        "source": "curated",
+    },
+)
 LOGGING_LOCK = threading.RLock()
 LOGGING_DIR = None
 SERVER_LOGGER_NAME = "anime.server"
@@ -515,8 +585,88 @@ def ensure_index(con, name, sql):
     return True
 
 
+def ensure_title_alias_schema(con):
+    changed = False
+    if not con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'anime_title_aliases'"
+    ).fetchone():
+        con.execute(
+            """
+            create table anime_title_aliases (
+                anime_id integer not null references anime(id) on delete cascade,
+                alias text not null,
+                normalized_alias text not null,
+                language text,
+                alias_type text not null default 'alias',
+                source text not null default 'manual',
+                source_ref text,
+                confidence real not null default 1.0,
+                created_at text not null,
+                updated_at text not null,
+                primary key (anime_id, normalized_alias, source, alias_type)
+            )
+            """
+        )
+        changed = True
+    changed |= ensure_index(
+        con,
+        "idx_anime_title_aliases_anime_id",
+        "create index idx_anime_title_aliases_anime_id on anime_title_aliases(anime_id)",
+    )
+    changed |= ensure_index(
+        con,
+        "idx_anime_title_aliases_normalized",
+        "create index idx_anime_title_aliases_normalized on anime_title_aliases(normalized_alias)",
+    )
+    return changed
+
+
+def ensure_curated_title_aliases(con):
+    before = con.total_changes
+    timestamp = now_iso()
+    for alias in CURATED_TITLE_ALIASES:
+        anime_id = alias["anime_id"]
+        if not con.execute("select 1 from anime where id = ?", (anime_id,)).fetchone():
+            continue
+        normalized_alias = normalize_search_text(alias["alias"])
+        if not normalized_alias:
+            continue
+        con.execute(
+            """
+            insert into anime_title_aliases (
+                anime_id, alias, normalized_alias, language, alias_type, source,
+                source_ref, confidence, created_at, updated_at
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            on conflict(anime_id, normalized_alias, source, alias_type) do update set
+                alias = excluded.alias,
+                language = excluded.language,
+                source_ref = excluded.source_ref,
+                confidence = excluded.confidence,
+                updated_at = excluded.updated_at
+            where anime_title_aliases.alias is not excluded.alias
+               or anime_title_aliases.language is not excluded.language
+               or anime_title_aliases.source_ref is not excluded.source_ref
+               or anime_title_aliases.confidence is not excluded.confidence
+            """,
+            (
+                anime_id,
+                alias["alias"],
+                normalized_alias,
+                alias.get("language"),
+                alias.get("alias_type") or "alias",
+                alias.get("source") or "manual",
+                alias.get("source_ref"),
+                alias.get("confidence", 1.0),
+                timestamp,
+                timestamp,
+            ),
+        )
+    return con.total_changes != before
+
+
 def ensure_catalog_schema(con):
-    changed = ensure_columns(
+    changed = ensure_title_alias_schema(con)
+    changed |= ensure_columns(
         con,
         "anime",
         {
@@ -530,6 +680,7 @@ def ensure_catalog_schema(con):
     if con.execute("select 1 from anime where source_id is null limit 1").fetchone():
         con.execute("update anime set source_id = cast(id as text) where source_id is null")
         changed = True
+    changed |= ensure_curated_title_aliases(con)
     return changed
 
 
@@ -754,22 +905,82 @@ def add_search_field(fields, value, weight):
     })
 
 
+def split_search_values(value):
+    text = str(value or "").strip()
+    if not text:
+        return []
+    parts = [part.strip() for part in re.split(r"\s*(?:,|;|、|，)\s*", text) if part.strip()]
+    values = [text]
+    if len(parts) > 1:
+        values.extend(parts)
+    return unique_values(values, lambda item: item)
+
+
+def make_search_field(value, weight, kind, label=None, source=None):
+    if normalize_search_text(value) == "":
+        return None
+    field = {
+        "value": str(value).strip(),
+        "weight": int(weight),
+        "kind": kind,
+    }
+    if label:
+        field["label"] = label
+    if source:
+        field["source"] = source
+    return field
+
+
+def unique_structured_search_fields(fields):
+    by_key = {}
+    for field in fields or []:
+        if not isinstance(field, dict):
+            field = make_search_field(field, 1, "extra")
+        if not field:
+            continue
+        text = normalize_search_text(field.get("value"))
+        if not text:
+            continue
+        weight = int(numeric(field.get("weight")) or 1)
+        cleaned = {
+            key: value
+            for key, value in field.items()
+            if key in {"value", "weight", "kind", "label", "source"} and value not in (None, "")
+        }
+        cleaned["weight"] = weight
+        cleaned.setdefault("kind", "extra")
+        key = (text, cleaned.get("kind") or "")
+        existing = by_key.get(key)
+        if existing is None or cleaned["weight"] > existing["weight"]:
+            by_key[key] = cleaned
+    return list(by_key.values())
+
+
+def add_structured_search_fields(fields, search_fields):
+    for search_field in search_fields or []:
+        if isinstance(search_field, dict):
+            add_search_field(fields, search_field.get("value"), int(numeric(search_field.get("weight")) or 1))
+        else:
+            add_search_field(fields, search_field, 1)
+
+
 def item_search_fields(item):
     fields = []
-    add_search_field(fields, item.get("title"), 12)
-    add_search_field(fields, item.get("subtitle"), 10)
+    add_search_field(fields, item.get("title"), PRIMARY_TITLE_SEARCH_WEIGHT)
+    add_search_field(fields, item.get("subtitle"), SUBTITLE_SEARCH_WEIGHT)
     for variant in item.get("source_variants") or []:
-        add_search_field(fields, variant.get("title"), 8)
-        add_search_field(fields, variant.get("subtitle"), 7)
-        add_search_field(fields, variant.get("source"), 3)
+        add_search_field(fields, variant.get("title"), VARIANT_TITLE_SEARCH_WEIGHT)
+        add_search_field(fields, variant.get("subtitle"), VARIANT_SUBTITLE_SEARCH_WEIGHT)
+        add_search_field(fields, variant.get("source"), SOURCE_SEARCH_WEIGHT)
     for genre in item.get("genres") or []:
-        add_search_field(fields, genre, 5)
+        add_search_field(fields, genre, GENRE_SEARCH_WEIGHT)
     add_search_field(fields, item.get("kind"), 3)
     add_search_field(fields, item.get("status"), 3)
     add_search_field(fields, item.get("year"), 2)
-    add_search_field(fields, item.get("source"), 3)
+    add_search_field(fields, item.get("source"), SOURCE_SEARCH_WEIGHT)
     for source in item.get("sources") or []:
-        add_search_field(fields, source, 3)
+        add_search_field(fields, source, SOURCE_SEARCH_WEIGHT)
+    add_structured_search_fields(fields, item.get("search_fields"))
     return fields
 
 
@@ -788,7 +999,7 @@ def item_search_index(item):
 def max_search_edit_distance(token):
     if len(token) < MIN_SEARCH_FUZZY_LENGTH:
         return 0
-    return 2 if len(token) >= 8 else 1
+    return 2 if len(token) >= 10 else 1
 
 
 def bounded_damerau_levenshtein(left, right, max_distance):
@@ -835,9 +1046,19 @@ def search_token_match_score(query_token, candidate):
     if len(token) >= 3 and len(query_token) >= 3:
         if token.startswith(query_token):
             return 92 + weight * 10 + len(query_token)
-        if query_token.startswith(token):
+        if (
+            query_token.startswith(token)
+            and len(token) >= MIN_SEARCH_FUZZY_LENGTH
+            and len(token) / len(query_token) >= 0.6
+        ):
             return 78 + weight * 8 + len(token)
-        if query_token in token or token in query_token:
+        if query_token in token:
+            return 66 + weight * 7
+        if (
+            token in query_token
+            and len(token) >= MIN_SEARCH_FUZZY_LENGTH
+            and len(token) / len(query_token) >= 0.6
+        ):
             return 66 + weight * 7
 
     max_distance = min(max_search_edit_distance(query_token), max_search_edit_distance(token))
@@ -1164,6 +1385,11 @@ def merge_canonical_items(items):
     merged["available_episode_count"] = max((item.get("available_episode_count") or 0) for item in sorted_items)
     merged["episode_count"] = max((item.get("episode_count") or 0) for item in sorted_items)
     merged["genres"] = unique_values(sorted_items, lambda item: item.get("genres") or [])
+    merged["search_fields"] = unique_structured_search_fields(
+        field
+        for item in sorted_items
+        for field in (item.get("search_fields") or [])
+    )
     rating_item = preferred_rating_item(sorted_items)
     for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
         merged[field] = rating_item.get(field)
@@ -1673,6 +1899,86 @@ def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT, user_i
     }
 
 
+def load_title_alias_search_fields(con):
+    rows = con.execute(
+        """
+        select anime_id, alias, alias_type, source
+        from anime_title_aliases
+        where alias is not null and trim(alias) <> ''
+        order by anime_id, source, alias_type, alias
+        """
+    ).fetchall()
+    fields_by_anime_id = {}
+    for row in rows:
+        alias_type = row["alias_type"] or "alias"
+        weight = TITLE_ALIAS_SEARCH_WEIGHTS.get(alias_type, TITLE_ALIAS_SEARCH_WEIGHTS["other_title"])
+        field = make_search_field(
+            row["alias"],
+            weight,
+            "alias",
+            label=alias_type,
+            source=row["source"] or "manual",
+        )
+        if field:
+            fields_by_anime_id.setdefault(row["anime_id"], []).append(field)
+    return {
+        anime_id: unique_structured_search_fields(fields)
+        for anime_id, fields in fields_by_anime_id.items()
+    }
+
+
+def load_metadata_search_fields(con):
+    other_titles_label = "Другие названия"
+    labels = list(SEARCH_METADATA_LABEL_WEIGHTS) + [other_titles_label]
+    rows = con.execute(
+        f"""
+        select anime_id, label, value
+        from anime_fields
+        where label in ({sql_placeholders(labels)})
+          and value is not null
+          and trim(value) <> ''
+        order by anime_id, label
+        """,
+        labels,
+    ).fetchall()
+    fields_by_anime_id = {}
+    for row in rows:
+        label = row["label"]
+        values = split_search_values(row["value"])
+        fields = fields_by_anime_id.setdefault(row["anime_id"], [])
+        if label == other_titles_label:
+            for value in values:
+                field = make_search_field(
+                    value,
+                    TITLE_ALIAS_SEARCH_WEIGHTS["other_title"],
+                    "alias",
+                    label="other_title",
+                    source="anime_fields",
+                )
+                if field:
+                    fields.append(field)
+            continue
+
+        weight = SEARCH_METADATA_LABEL_WEIGHTS[label]
+        for value in values:
+            field = make_search_field(value, weight, "metadata", label=label, source="anime_fields")
+            if field:
+                fields.append(field)
+            labeled_field = make_search_field(
+                f"{label} {value}",
+                max(weight - 1, 1),
+                "metadata",
+                label=label,
+                source="anime_fields",
+            )
+            if labeled_field:
+                fields.append(labeled_field)
+    return {
+        anime_id: unique_structured_search_fields(fields)
+        for anime_id, fields in fields_by_anime_id.items()
+    }
+
+
 def get_source_anime_items(con, user_id=None):
     user_id = resolved_user_id(con, user_id)
     rows = con.execute(
@@ -1738,10 +2044,16 @@ def get_source_anime_items(con, user_id=None):
 
     items = rows_to_dicts(rows)
     apply_external_ratings(items, load_external_ratings(con))
+    title_alias_search_fields = load_title_alias_search_fields(con)
+    metadata_search_fields = load_metadata_search_fields(con)
     for item in items:
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
         item["available_episode_count"] = item["available_episode_count"] or 0
+        item["search_fields"] = unique_structured_search_fields(
+            (title_alias_search_fields.get(item["id"]) or [])
+            + (metadata_search_fields.get(item["id"]) or [])
+        )
     return items
 
 
@@ -1808,6 +2120,7 @@ def clone_catalog_item(item):
     cloned["sources"] = list(item.get("sources") or [])
     cloned["source_member_ids"] = list(item.get("source_member_ids") or [])
     cloned["source_variants"] = [dict(variant) for variant in item.get("source_variants") or []]
+    cloned["search_fields"] = [dict(field) for field in item.get("search_fields") or []]
     cloned["recent_updates"] = [dict(update) for update in item.get("recent_updates") or []]
     cloned["recent_update_summary"] = dict(item["recent_update_summary"]) if item.get("recent_update_summary") else None
     return cloned
