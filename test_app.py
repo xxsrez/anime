@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime as dt
 import http.client
 import importlib.util
 import json
@@ -318,6 +319,19 @@ class LocalAppTest(unittest.TestCase):
                     self.assertTrue(payload["ok"])
                     self.assertEqual(payload["duration_ms"], 12)
                     sync_mock.assert_called_once()
+
+    def test_next_daily_sync_run_uses_configured_utc_time(self):
+        before_cutoff = dt.datetime(2026, 7, 8, 1, 59, tzinfo=dt.timezone.utc)
+        after_cutoff = dt.datetime(2026, 7, 8, 20, 0, tzinfo=dt.timezone.utc)
+
+        self.assertEqual(
+            server.next_daily_sync_run(before_cutoff, hour=2, minute=0),
+            dt.datetime(2026, 7, 8, 2, 0, tzinfo=dt.timezone.utc),
+        )
+        self.assertEqual(
+            server.next_daily_sync_run(after_cutoff, hour=2, minute=0),
+            dt.datetime(2026, 7, 9, 2, 0, tzinfo=dt.timezone.utc),
+        )
 
     def test_video_sync_filters_empty_episodes(self):
         episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]

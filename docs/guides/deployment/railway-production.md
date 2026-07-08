@@ -225,6 +225,15 @@ ANIME_SYNC_TOKEN=<same secret as web>
 ANIME_SYNC_MODE=daily
 ```
 
+If Railway Function/Cron service deployment is unavailable, enable the web
+service scheduler instead:
+
+```text
+ANIME_INTERNAL_DAILY_SYNC=1
+ANIME_DAILY_SYNC_UTC_HOUR=2
+ANIME_DAILY_SYNC_UTC_MINUTE=0
+```
+
 Railway evaluates cron schedules in UTC. For 03:00 Portugal/Madeira summer
 time, set:
 

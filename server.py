@@ -38,6 +38,7 @@ MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNC_MODES = {"hourly", "daily", "full"}
+TRUTHY_VALUES = {"1", "true", "yes", "on"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
 SESSION_COOKIE_NAME = "anime_session"
@@ -2447,6 +2448,95 @@ def run_content_sync(db_path, mode="daily", trigger="internal-api"):
     return event
 
 
+def env_flag(name):
+    return os.environ.get(name, "").strip().lower() in TRUTHY_VALUES
+
+
+def sync_schedule_time():
+    hour = int(os.environ.get("ANIME_DAILY_SYNC_UTC_HOUR", "2"))
+    minute = int(os.environ.get("ANIME_DAILY_SYNC_UTC_MINUTE", "0"))
+    if not 0 <= hour <= 23:
+        raise ValueError("ANIME_DAILY_SYNC_UTC_HOUR must be between 0 and 23")
+    if not 0 <= minute <= 59:
+        raise ValueError("ANIME_DAILY_SYNC_UTC_MINUTE must be between 0 and 59")
+    return hour, minute
+
+
+def next_daily_sync_run(now=None, hour=2, minute=0):
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    else:
+        now = now.astimezone(dt.timezone.utc)
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target <= now:
+        target += dt.timedelta(days=1)
+    return target
+
+
+def sleep_until(target):
+    while True:
+        delay = (target - dt.datetime.now(dt.timezone.utc)).total_seconds()
+        if delay <= 0:
+            return
+        time.sleep(min(delay, 60))
+
+
+def daily_sync_scheduler_loop(db_path):
+    try:
+        hour, minute = sync_schedule_time()
+    except Exception:
+        server_logger().exception("daily sync scheduler has invalid schedule")
+        return
+
+    while True:
+        scheduled_at = next_daily_sync_run(hour=hour, minute=minute)
+        server_logger().info(
+            json.dumps(
+                {
+                    "event": "content_sync_scheduler_scheduled",
+                    "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
+                    "hour_utc": hour,
+                    "minute_utc": minute,
+                    "timestamp": now_iso(),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        sleep_until(scheduled_at)
+        mode = os.environ.get("ANIME_SYNC_MODE", "daily").strip() or "daily"
+        server_logger().info(
+            json.dumps(
+                {
+                    "event": "content_sync_scheduler_start",
+                    "mode": mode,
+                    "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
+                    "timestamp": now_iso(),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        try:
+            run_content_sync(db_path, mode=mode, trigger="internal-daily-scheduler")
+        except Exception:
+            server_logger().exception("content sync scheduler failed")
+
+
+def start_daily_sync_scheduler(db_path):
+    if not env_flag("ANIME_INTERNAL_DAILY_SYNC"):
+        return None
+    thread = threading.Thread(
+        target=daily_sync_scheduler_loop,
+        args=(str(db_path),),
+        name="anime-daily-sync-scheduler",
+        daemon=True,
+    )
+    thread.start()
+    return thread
+
+
 def safe_next_path(value):
     parsed = urlparse(value or "/")
     if parsed.scheme or parsed.netloc:
@@ -3181,6 +3271,7 @@ def run(port, host, db_path):
     message = f"Serving http://{host}:{port} using {db_path}"
     print(message)
     server_logger().info(message)
+    start_daily_sync_scheduler(db_path)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
