@@ -2149,6 +2149,72 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertLess(progress_index, first_available_index)
         self.assertIn("lastWatch?.video_source_id", apply_detail)
 
+    def test_frontend_progress_view_excludes_watched_titles(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        start = js.index("function applyFilter")
+        end = js.index("async function loadSearchFields", start)
+        apply_filter = js[start:end]
+
+        self.assertIn('state.viewMode === "progress"', apply_filter)
+        self.assertIn("!item.watched && item.progress_episode_number != null", apply_filter)
+        self.assertNotIn("item.watched || item.progress_episode_number != null", apply_filter)
+
+    def test_frontend_hides_episode_count_meta_from_title_cards(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        start = js.index("function progressText")
+        end = js.index("function effectiveProgressEpisodeNumber", start)
+        progress_text = js[start:end]
+        self.assertIn('if (item.watched) return "просмотрено";', progress_text)
+        self.assertNotIn("effectiveProgressEpisodeNumber", progress_text)
+        self.assertNotIn("серия", progress_text)
+
+        start = js.index("function renderList")
+        end = js.index("function renderRecommendationMeta", start)
+        render_list = js[start:end]
+        self.assertNotIn("item.episodes_text", render_list)
+
+        start = js.index("function renderDetail")
+        end = js.index("function createEpisodeNavButton", start)
+        render_detail = js[start:end]
+        self.assertNotIn("detail.episodes_text", render_detail)
+
+    def test_frontend_recommendations_use_request_generation_for_race_safety(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn("recommendationsRequestId: 0", js)
+        self.assertIn("function invalidateRecommendations()", js)
+        self.assertIn("state.recommendationsRequestId += 1", js)
+
+        start = js.index("async function loadRecommendations")
+        end = js.index("function ensureRecommendations", start)
+        load_recommendations = js[start:end]
+        self.assertIn("requestId !== state.recommendationsRequestId", load_recommendations)
+        self.assertIn("return state.recommendations", load_recommendations)
+
+        start = js.index("function ensureRecommendations")
+        end = js.index("function loadRecommendationsForView", start)
+        ensure_recommendations = js[start:end]
+        self.assertIn("if (!force && state.recommendationsLoading)", ensure_recommendations)
+        self.assertNotIn("if (state.recommendationsLoading) return", ensure_recommendations)
+        self.assertIn("const requestId = state.recommendationsRequestId + 1", ensure_recommendations)
+        self.assertIn("state.recommendationsLoading === request", ensure_recommendations)
+
+    def test_frontend_recommendations_reload_after_watch_state_changes_in_view(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        start = js.index("function applyWatchState")
+        end = js.index("function postWatchPayload", start)
+        apply_watch_state = js[start:end]
+
+        self.assertIn("invalidateRecommendations();", apply_watch_state)
+        self.assertIn("if (isRecommendationView()) loadRecommendationsForView({ force: true });", apply_watch_state)
+
+        start = js.index("function loadRecommendationsForView")
+        end = js.index("el.search.addEventListener", start)
+        load_for_view = js[start:end]
+        self.assertIn("reportActionError(\"load recommendations\")(error);", load_for_view)
+        self.assertIn("if (isRecommendationView()) applyFilter();", load_for_view)
+
     def test_admin_link_is_created_only_after_admin_user_payload(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         self.assertIn("function renderAdminLink", js)

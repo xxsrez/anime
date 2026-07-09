@@ -50,6 +50,7 @@ const state = {
   recommendationsLoaded: false,
   recommendationsLoading: null,
   recommendationsError: null,
+  recommendationsRequestId: 0,
   continueWatching: null,
   searchFieldsLoaded: false,
   searchFieldsLoading: null,
@@ -559,8 +560,6 @@ function numberFrom(value) {
 
 function progressText(item) {
   if (item.watched) return "просмотрено";
-  const progress = effectiveProgressEpisodeNumber(item);
-  if (progress != null) return `серия ${progress}`;
   return "";
 }
 
@@ -758,9 +757,18 @@ function recommendationFor(id) {
   return state.recommendations.find(item => String(item.id) === String(id)) || null;
 }
 
+function invalidateRecommendations() {
+  state.recommendationsLoaded = false;
+  state.recommendationProfile = null;
+  state.recommendationsError = null;
+  state.recommendationsRequestId += 1;
+}
+
 function baseItemsForView() {
   if (!isRecommendationView()) return state.anime;
-  return state.recommendationsLoaded ? state.recommendations : [];
+  return state.recommendationsLoaded || (state.recommendationsLoading && state.recommendations.length)
+    ? state.recommendations
+    : [];
 }
 
 function normalizeOptionValues(value) {
@@ -1136,7 +1144,7 @@ function renderList() {
       const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
       meta.textContent = [recScore, confidence, `${available} видео`, score, source].filter(Boolean).join(" · ");
     } else {
-      meta.textContent = `${text(item.kind, "тайтл")} ${text(item.episodes_text, "")} · ${available} видео${score ? ` · ${score}` : ""}${source ? ` · ${source}` : ""}${watch ? ` · ${watch}` : ""}`;
+      meta.textContent = [text(item.kind, "тайтл"), `${available} видео`, score, source, watch].filter(Boolean).join(" · ");
     }
 
     body.append(titleRow, meta);
@@ -1213,7 +1221,7 @@ function renderDetail() {
   el.poster.src = detail.cover_url || "";
   el.poster.alt = detail.title || "";
   const scoreText = ratingText(detail);
-  el.meta.textContent = [detail.kind, detail.status, detail.episodes_text, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
+  el.meta.textContent = [detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
   el.description.textContent = detail.description || "";
@@ -1590,8 +1598,8 @@ function applyWatchState(nextState, animeId = state.selectedAnimeId) {
   const changed = catalogChanged || recommendationsChanged || detailChanged;
 
   if (!changed) return;
-  state.recommendationsLoaded = false;
-  state.recommendationProfile = null;
+  invalidateRecommendations();
+  if (isRecommendationView()) loadRecommendationsForView({ force: true });
   applyFilter();
   if (state.detail?.id === animeId) renderWatchState(state.detail);
 }
@@ -1887,8 +1895,7 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
     if (item) Object.assign(item, visibleState);
     const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in patch);
     if (affectsRecommendations) {
-      state.recommendationsLoaded = false;
-      state.recommendationProfile = null;
+      invalidateRecommendations();
       if (isRecommendationView()) {
         loadRecommendationsForView({ force: true });
       }
@@ -1924,7 +1931,7 @@ function applyFilter({ selectFirst = false } = {}) {
         : state.viewMode === "favorites"
         ? item.is_favorite
         : state.viewMode === "progress"
-          ? item.watched || item.progress_episode_number != null
+          ? !item.watched && item.progress_episode_number != null
           : true;
     const filterMatch = filterDefinitions.every(definition => (
       definition.match(item, state.filters[definition.id])
@@ -1985,8 +1992,9 @@ function loadSearchFieldsInBackground() {
   ensureSearchFields().catch(reportActionError("load search fields"));
 }
 
-async function loadRecommendations() {
+async function loadRecommendations(requestId) {
   const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
+  if (requestId !== state.recommendationsRequestId) return state.recommendations;
   state.recommendationProfile = payload.profile || null;
   state.recommendations = catalogSearch.prepareSearchIndexes((payload.items || []).map(item => {
     const local = state.anime.find(entry => entry.id === item.id);
@@ -2001,17 +2009,23 @@ function ensureRecommendations({ force = false } = {}) {
   if (!force && state.recommendationsLoaded) {
     return Promise.resolve(state.recommendations);
   }
-  if (state.recommendationsLoading) return state.recommendationsLoading;
+  if (!force && state.recommendationsLoading) return state.recommendationsLoading;
 
   state.recommendationsError = null;
-  state.recommendationsLoading = loadRecommendations()
+  const requestId = state.recommendationsRequestId + 1;
+  state.recommendationsRequestId = requestId;
+  const request = loadRecommendations(requestId)
     .catch(error => {
+      if (requestId !== state.recommendationsRequestId) return state.recommendations;
       state.recommendationsError = error;
       throw error;
     })
     .finally(() => {
-      state.recommendationsLoading = null;
+      if (state.recommendationsLoading === request) {
+        state.recommendationsLoading = null;
+      }
     });
+  state.recommendationsLoading = request;
   return state.recommendationsLoading;
 }
 
@@ -2023,7 +2037,10 @@ function loadRecommendationsForView({ force = false } = {}) {
       if (isRecommendationView()) applyFilter({ selectFirst: true });
       if (state.detail) renderRecommendationContext(state.detail);
     })
-    .catch(reportActionError("load recommendations"));
+    .catch(error => {
+      reportActionError("load recommendations")(error);
+      if (isRecommendationView()) applyFilter();
+    });
 }
 
 el.search.addEventListener("input", () => {
