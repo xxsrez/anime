@@ -238,8 +238,7 @@ select {
 .search-box input,
 .tool-field select,
 .source-panel select,
-.episode-select,
-.progress-control input {
+.episode-select {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--line);
@@ -254,7 +253,6 @@ select {
 .tool-field select:focus,
 .source-panel select:focus,
 .episode-select:focus,
-.progress-control input:focus,
 .anime-item:focus-visible,
 .watch-button:focus-visible,
 .icon-button:focus-visible,
@@ -720,21 +718,6 @@ select {
   background: rgba(244, 184, 96, 0.14);
 }
 
-.progress-control {
-  display: grid;
-  grid-template-columns: auto 86px;
-  gap: 8px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  min-width: 0;
-}
-
-.progress-control input {
-  text-align: center;
-}
-
 .watched-control {
   display: inline-flex;
   gap: 8px;
@@ -749,14 +732,6 @@ select {
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
-}
-
-.progress-summary {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--accent-2);
-  font-size: 14px;
 }
 
 .recommendation-context {
@@ -1417,9 +1392,6 @@ button.recent-update-row:focus-visible {
     align-items: stretch;
   }
 
-  .progress-control {
-    grid-template-columns: auto minmax(72px, 86px);
-  }
 }
 
 @media (max-width: 640px) {

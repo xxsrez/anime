@@ -99,9 +99,7 @@ const el = {
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
   favoriteToggle: document.getElementById("favorite-toggle"),
-  progressEpisode: document.getElementById("progress-episode"),
   watchedToggle: document.getElementById("watched-toggle"),
-  progressSummary: document.getElementById("progress-summary"),
   recommendationContext: document.getElementById("recommendation-context"),
   recentUpdates: document.getElementById("recent-updates"),
   genres: document.getElementById("genres"),
@@ -568,25 +566,6 @@ function progressText(item) {
 
 function effectiveProgressEpisodeNumber(detail) {
   return detail?.last_watch?.progress_episode_number ?? detail?.progress_episode_number;
-}
-
-function progressSummary(detail) {
-  if (!detail) return "Не начато";
-  const progress = effectiveProgressEpisodeNumber(detail);
-  const total = numberFrom(detail.episodes_text);
-  if (detail.watched) return "Просмотрено";
-  if (progress != null && total) return `Серия ${progress} из ${total}`;
-  if (progress != null) return `Серия ${progress}`;
-  return "Не начато";
-}
-
-function progressInputValue() {
-  if (el.progressEpisode.value === "") return null;
-  const parsed = Number.parseInt(el.progressEpisode.value, 10);
-  if (!Number.isFinite(parsed)) return null;
-  const total = numberFrom(state.detail?.episodes_text);
-  const normalized = Math.max(0, parsed);
-  return total ? Math.min(total, normalized) : normalized;
 }
 
 function sourceLabel(source) {
@@ -1259,16 +1238,7 @@ function renderWatchState(detail) {
   el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
-  const progress = effectiveProgressEpisodeNumber(detail);
-  el.progressEpisode.value = progress == null ? "" : progress;
-  const total = numberFrom(detail.episodes_text);
-  if (total) {
-    el.progressEpisode.max = total;
-  } else {
-    el.progressEpisode.removeAttribute("max");
-  }
   el.watchedToggle.checked = Boolean(detail.watched);
-  el.progressSummary.textContent = progressSummary(detail);
 }
 
 function renderRecommendationContext(detail) {
@@ -1645,7 +1615,6 @@ function postWatchPayload(payload, { beacon = false } = {}) {
 
 function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session = state.watchSession } = {}) {
   if (!session) return Promise.resolve(null);
-  if (session.manuallyCorrected && eventType !== "session_end") return Promise.resolve(null);
   const payload = watchPayloadForSession(session, eventType, engagedSeconds);
   return postWatchPayload(payload, { beacon })
     .then(result => {
@@ -1687,7 +1656,6 @@ function stopWatchHeartbeat() {
 function markWatchEngaged(eventType) {
   const session = state.watchSession;
   if (!session) return;
-  if (session.manuallyCorrected) return;
   if (!session.engaged) {
     session.engaged = true;
     session.activeSince = performanceNow();
@@ -1731,7 +1699,6 @@ function ensureWatchSession(source, episode) {
     embedHost: source.embed_host,
     engaged: false,
     activeSince: null,
-    manuallyCorrected: false,
   };
   state.watchSession = session;
   return session;
@@ -1745,7 +1712,6 @@ function clearWatchSession({ beacon = true } = {}) {
 }
 
 function handlePlayerLoaded() {
-  if (state.watchSession?.manuallyCorrected) return;
   sendWatchEvent("player_loaded").catch(() => {});
 }
 
@@ -1756,26 +1722,9 @@ function handlePlayerEngaged() {
 function handleVisibilityChange() {
   if (document.hidden) {
     flushWatchSession("page_hidden", { beacon: true });
-  } else if (state.watchSession?.engaged && !state.watchSession.manuallyCorrected && !state.watchSession.activeSince) {
+  } else if (state.watchSession?.engaged && !state.watchSession.activeSince) {
     state.watchSession.activeSince = performanceNow();
   }
-}
-
-function markWatchSessionManuallyCorrected(progressEpisodeNumber) {
-  const session = state.watchSession;
-  if (!session || progressEpisodeNumber === session.progressEpisodeNumber) return;
-  session.manuallyCorrected = true;
-  session.engaged = false;
-  session.activeSince = null;
-  stopWatchHeartbeat();
-}
-
-function applyManualProgressSelection(progressEpisodeNumber) {
-  const episodeId = episodeIdForProgress(progressEpisodeNumber);
-  if (!episodeId) return;
-  state.selectedEpisodeId = episodeId;
-  state.selectedTranslation = null;
-  state.selectedSourceId = null;
 }
 
 function handleFullscreenStateChange() {
@@ -2121,16 +2070,6 @@ el.favoriteToggle.addEventListener("click", () => {
 });
 el.logoutButton.addEventListener("click", () => {
   logout().catch(reportActionError("logout"));
-});
-el.progressEpisode.addEventListener("change", () => {
-  if (!state.detail) return;
-  const progress = progressInputValue();
-  markWatchSessionManuallyCorrected(progress);
-  applyManualProgressSelection(progress);
-  saveUserState({
-    progress_episode_number: progress,
-    watched: false,
-  }).catch(reportActionError("save progress episode"));
 });
 el.watchedToggle.addEventListener("change", () => {
   if (!state.detail) return;
