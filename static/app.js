@@ -13,6 +13,9 @@ const INITIAL_RENDER_LIMIT = 40;
 const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
+const WATCH_ENDPOINT = "/api/watch-events";
+const WATCH_HEARTBEAT_MS = 30000;
+const WATCH_MAX_DELTA_SECONDS = 300;
 const reportClientError = window.reportClientError || (() => {});
 const reportActionError = window.reportActionError || (() => error => console.error(error));
 const PERFORMANCE_ENDPOINT = "/api/performance";
@@ -47,6 +50,7 @@ const state = {
   recommendationsLoaded: false,
   recommendationsLoading: null,
   recommendationsError: null,
+  continueWatching: null,
   searchFieldsLoaded: false,
   searchFieldsLoading: null,
   searchFieldsError: null,
@@ -67,6 +71,9 @@ const state = {
   savingState: false,
   pendingStateSave: null,
   urlSyncSuspended: false,
+  watchSession: null,
+  watchHeartbeatTimer: null,
+  watchFullscreenActive: false,
 };
 
 const el = {
@@ -474,6 +481,11 @@ function syncUrlFromDetail({ replace = true } = {}) {
 function sourcesForEpisode(episodeId) {
   return allSourcesForEpisode(episodeId)
     .filter(source => !state.selectedContentSource || source.source === state.selectedContentSource);
+}
+
+function selectedSourceForEpisode(episodeId = state.selectedEpisodeId) {
+  const sources = sourcesForEpisode(episodeId);
+  return sources.find(source => String(source.id) === String(state.selectedSourceId)) || sources[0] || null;
 }
 
 function activeEpisode() {
@@ -1497,15 +1509,19 @@ function renderSources() {
 }
 
 function setPlayer(source, episode) {
+  ensureWatchSession(source, episode);
   el.wrap.classList.remove("empty");
   configurePlayerIframe(el.player);
-  el.player.src = source.embed_url;
+  if (el.player.getAttribute("src") !== source.embed_url) {
+    el.player.src = source.embed_url;
+  }
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
   el.empty.textContent = "";
 }
 
 function clearPlayer(message) {
+  clearWatchSession();
   el.player.removeAttribute("src");
   el.wrap.classList.add("empty");
   el.empty.textContent = message;
@@ -1521,6 +1537,215 @@ function configurePlayerIframe(iframe = el.player) {
   iframe.allowFullscreen = true;
   iframe.referrerPolicy = iframe.referrerPolicy || "origin";
   return iframe;
+}
+
+function newWatchSessionId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function watchContextKey(source, episode) {
+  return [
+    state.detail?.id,
+    episode?.id,
+    source?.id,
+  ].map(value => value == null ? "" : String(value)).join(":");
+}
+
+function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
+  return {
+    client_session_id: session.id,
+    event_type: eventType,
+    anime_id: session.animeId,
+    episode_id: session.episodeId,
+    episode_number: session.episodeNumber,
+    progress_episode_number: session.progressEpisodeNumber,
+    video_source_id: session.videoSourceId,
+    source: session.source,
+    source_anime_id: session.sourceAnimeId,
+    translation_id: session.translationId,
+    translation_title: session.translationTitle,
+    provider_id: session.providerId,
+    provider_title: session.providerTitle,
+    embed_host: session.embedHost,
+    engaged_seconds: Math.max(0, Math.min(WATCH_MAX_DELTA_SECONDS, Math.round(engagedSeconds || 0))),
+    page_visible: !document.hidden,
+    player_focused: document.activeElement === el.player,
+  };
+}
+
+function applyWatchState(nextState, animeId = state.selectedAnimeId) {
+  if (!nextState || !animeId) return;
+  const watched = Boolean(nextState.watched);
+  const progress = nextState.progress_episode_number == null ? null : nextState.progress_episode_number;
+  const applyToItem = item => {
+    if (!item) return false;
+    const changed = item.progress_episode_number !== progress || Boolean(item.watched) !== watched;
+    Object.assign(item, nextState);
+    return changed;
+  };
+
+  const catalogChanged = applyToItem(state.anime.find(entry => entry.id === animeId));
+  const recommendationsChanged = applyToItem(state.recommendations.find(entry => entry.id === animeId));
+  const detailChanged = state.detail?.id === animeId ? applyToItem(state.detail) : false;
+  const changed = catalogChanged || recommendationsChanged || detailChanged;
+
+  if (!changed) return;
+  state.recommendationsLoaded = false;
+  state.recommendationProfile = null;
+  applyFilter();
+  if (state.detail?.id === animeId) renderWatchState(state.detail);
+}
+
+function postWatchPayload(payload, { beacon = false } = {}) {
+  if (beacon && navigator.sendBeacon) {
+    const body = new Blob([JSON.stringify(payload)], { type: "application/json" });
+    if (navigator.sendBeacon(WATCH_ENDPOINT, body)) return Promise.resolve(null);
+  }
+  return fetch(WATCH_ENDPOINT, {
+    method: "POST",
+    credentials: "same-origin",
+    keepalive: beacon,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(async response => {
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return response.json();
+  });
+}
+
+function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session = state.watchSession } = {}) {
+  if (!session) return Promise.resolve(null);
+  if (session.manuallyCorrected && eventType !== "session_end") return Promise.resolve(null);
+  const payload = watchPayloadForSession(session, eventType, engagedSeconds);
+  return postWatchPayload(payload, { beacon })
+    .then(result => {
+      if (result?.state) applyWatchState(result.state, session.animeId);
+      return result;
+    })
+    .catch(error => {
+      if (!beacon) reportClientError(error, { action: "watch event", eventType });
+    });
+}
+
+function consumeWatchEngagedSeconds({ stop = false } = {}) {
+  const session = state.watchSession;
+  if (!session?.engaged || !session.activeSince) return 0;
+  const now = performanceNow();
+  const seconds = Math.max(0, Math.round((now - session.activeSince) / 1000));
+  session.activeSince = stop || document.hidden ? null : now;
+  return Math.min(WATCH_MAX_DELTA_SECONDS, seconds);
+}
+
+function startWatchHeartbeat() {
+  if (state.watchHeartbeatTimer) return;
+  state.watchHeartbeatTimer = window.setInterval(() => {
+    const session = state.watchSession;
+    if (!session?.engaged || document.hidden) return;
+    const seconds = consumeWatchEngagedSeconds();
+    if (seconds > 0) {
+      sendWatchEvent("heartbeat", { engagedSeconds: seconds }).catch(() => {});
+    }
+  }, WATCH_HEARTBEAT_MS);
+}
+
+function stopWatchHeartbeat() {
+  if (!state.watchHeartbeatTimer) return;
+  window.clearInterval(state.watchHeartbeatTimer);
+  state.watchHeartbeatTimer = null;
+}
+
+function markWatchEngaged(eventType) {
+  const session = state.watchSession;
+  if (!session) return;
+  if (session.manuallyCorrected) return;
+  if (!session.engaged) {
+    session.engaged = true;
+    session.activeSince = performanceNow();
+  } else if (!session.activeSince) {
+    session.activeSince = performanceNow();
+  }
+  startWatchHeartbeat();
+  sendWatchEvent(eventType).catch(() => {});
+}
+
+function flushWatchSession(eventType = "session_end", { beacon = false } = {}) {
+  const session = state.watchSession;
+  if (!session) return;
+  const seconds = consumeWatchEngagedSeconds({ stop: true });
+  if (session.engaged || eventType !== "session_end") {
+    sendWatchEvent(eventType, { engagedSeconds: seconds, beacon, session }).catch(() => {});
+  }
+  if (eventType === "session_end") stopWatchHeartbeat();
+}
+
+function ensureWatchSession(source, episode) {
+  if (!source || !episode || !state.detail) return null;
+  const key = watchContextKey(source, episode);
+  if (state.watchSession?.key === key) return state.watchSession;
+
+  flushWatchSession("session_end", { beacon: true });
+  const session = {
+    id: newWatchSessionId(),
+    key,
+    animeId: state.detail.id,
+    episodeId: episode.id,
+    episodeNumber: episode.number,
+    progressEpisodeNumber: numberFrom(episode.number),
+    videoSourceId: source.id,
+    source: source.source,
+    sourceAnimeId: source.source_anime_id,
+    translationId: source.translation_id,
+    translationTitle: source.translation_title,
+    providerId: source.provider_id,
+    providerTitle: source.provider_title,
+    embedHost: source.embed_host,
+    engaged: false,
+    activeSince: null,
+    manuallyCorrected: false,
+  };
+  state.watchSession = session;
+  return session;
+}
+
+function clearWatchSession({ beacon = true } = {}) {
+  if (!state.watchSession) return;
+  flushWatchSession("session_end", { beacon });
+  state.watchSession = null;
+  stopWatchHeartbeat();
+}
+
+function handlePlayerLoaded() {
+  if (state.watchSession?.manuallyCorrected) return;
+  sendWatchEvent("player_loaded").catch(() => {});
+}
+
+function handlePlayerEngaged() {
+  markWatchEngaged("player_engaged");
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    flushWatchSession("page_hidden", { beacon: true });
+  } else if (state.watchSession?.engaged && !state.watchSession.manuallyCorrected && !state.watchSession.activeSince) {
+    state.watchSession.activeSince = performanceNow();
+  }
+}
+
+function markWatchSessionManuallyCorrected(progressEpisodeNumber) {
+  const session = state.watchSession;
+  if (!session || progressEpisodeNumber === session.progressEpisodeNumber) return;
+  session.manuallyCorrected = true;
+  session.engaged = false;
+  session.activeSince = null;
+  stopWatchHeartbeat();
+}
+
+function handleFullscreenStateChange() {
+  const active = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
+  updateFullscreenControl();
+  if (active && !state.watchFullscreenActive) markWatchEngaged("fullscreen_enter");
+  state.watchFullscreenActive = active;
 }
 
 function setPlayerActionState(message = "", tone = "") {
@@ -1604,6 +1829,7 @@ async function openPictureInPicture() {
       });
       clonePlayerForPipWindow(pipWindow);
       setPlayerActionState("PiP открыт", "ok");
+      markWatchEngaged("pip_open");
       return;
     } catch (error) {
       if (error.name !== "NotAllowedError") {
@@ -1639,6 +1865,7 @@ async function selectEpisode(id) {
   const number = numberFrom(episode?.number);
   if (number != null) {
     renderDetail();
+    markWatchEngaged("episode_selected");
     await saveUserState({ progress_episode_number: number, watched: false });
     return;
   }
@@ -1868,8 +2095,10 @@ el.logoutButton.addEventListener("click", () => {
 });
 el.progressEpisode.addEventListener("change", () => {
   if (!state.detail) return;
+  const progress = progressInputValue();
+  markWatchSessionManuallyCorrected(progress);
   saveUserState({
-    progress_episode_number: progressInputValue(),
+    progress_episode_number: progress,
     watched: false,
   }).catch(reportActionError("save progress episode"));
 });
@@ -1882,15 +2111,18 @@ el.contentSource.addEventListener("change", event => {
   state.selectedTranslation = null;
   state.selectedSourceId = null;
   renderSources();
+  markWatchEngaged("source_changed");
 });
 el.translation.addEventListener("change", event => {
   state.selectedTranslation = event.target.value;
   state.selectedSourceId = null;
   renderSources();
+  markWatchEngaged("source_changed");
 });
 el.provider.addEventListener("change", event => {
   state.selectedSourceId = event.target.value;
   renderSources();
+  markWatchEngaged("source_changed");
 });
 el.fullscreenToggle.addEventListener("click", () => {
   toggleFullscreen().catch(reportActionError("fullscreen button"));
@@ -1898,12 +2130,24 @@ el.fullscreenToggle.addEventListener("click", () => {
 el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(reportActionError("picture in picture button"));
 });
-document.addEventListener("fullscreenchange", updateFullscreenControl);
-document.addEventListener("webkitfullscreenchange", updateFullscreenControl);
+el.player.addEventListener("load", handlePlayerLoaded);
+el.player.addEventListener("focus", handlePlayerEngaged);
+el.player.addEventListener("pointerdown", handlePlayerEngaged);
+document.addEventListener("fullscreenchange", handleFullscreenStateChange);
+document.addEventListener("webkitfullscreenchange", handleFullscreenStateChange);
+document.addEventListener("visibilitychange", handleVisibilityChange);
 document.addEventListener("keydown", event => {
   if (!isFullscreenHotkey(event)) return;
   event.preventDefault();
   toggleFullscreen().catch(reportActionError("fullscreen hotkey"));
+});
+window.addEventListener("blur", () => {
+  window.setTimeout(() => {
+    if (document.activeElement === el.player) handlePlayerEngaged();
+  }, 0);
+});
+window.addEventListener("pagehide", () => {
+  clearWatchSession({ beacon: true });
 });
 window.addEventListener("resize", hideTitleTooltip);
 el.list.addEventListener("scroll", hideTitleTooltip);
@@ -1926,6 +2170,24 @@ async function selectInitialAnime() {
     }
   }
 
+  if (state.continueWatching?.anime_ref) {
+    const target = state.continueWatching;
+    try {
+      await selectAnime(target.anime_ref, {
+        linkState: {
+          episodeId: target.episode_id,
+          contentSource: target.source,
+          translation: target.translation_id,
+          provider: target.video_source_id,
+        },
+      });
+      return;
+    } catch (error) {
+      reportClientError(error, { action: "open continue watching", animeId: target.anime_id });
+      console.warn("Failed to open continue target", error);
+    }
+  }
+
   const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
   if (first) await selectAnime(titleRefForItem(first));
 }
@@ -1933,11 +2195,17 @@ async function selectInitialAnime() {
 async function boot() {
   markPerformanceCheckpoint("boot_start");
   configurePlayerIframe(el.player);
-  const [me, payload] = await Promise.all([
+  const continuePromise = api("/api/continue-watching").catch(error => {
+    reportClientError(error, { action: "load continue watching" });
+    return { item: null };
+  });
+  const [me, payload, continuePayload] = await Promise.all([
     api("/api/me"),
     api("/api/anime"),
+    continuePromise,
   ]);
   state.user = me.user;
+  state.continueWatching = continuePayload.item || null;
   renderAccount();
   markPerformanceCheckpoint("me_loaded", { is_admin: Boolean(state.user?.is_admin) });
   state.anime = catalogSearch.prepareSearchIndexes(payload.items || []);

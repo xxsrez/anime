@@ -107,7 +107,7 @@ class LocalAppTest(unittest.TestCase):
             "embed_host": "kodikplayer.com" if provider.startswith("Kodik") else "example.test",
         }
 
-    def seed_watchable_title(self, db_path, anime_id=1, title="Smoke Title"):
+    def seed_watchable_title(self, db_path, anime_id=1, title="Smoke Title", episode_count=1):
         con = scrape_animego.init_db(db_path)
         try:
             scraped_at = server.now_iso()
@@ -125,30 +125,32 @@ class LocalAppTest(unittest.TestCase):
                     scraped_at,
                 ),
             )
-            con.execute(
-                """
-                insert into episodes(id, anime_id, number, has_video, scraped_at)
-                values (?, ?, '1', 1, ?)
-                """,
-                (anime_id * 1000 + 1, anime_id, scraped_at),
-            )
-            con.execute(
-                """
-                insert into video_sources(
-                    anime_id, episode_id, provider_id, provider_title,
-                    translation_id, translation_title, embed_url, embed_url_redacted,
-                    embed_host, scraped_at
+            for episode_number in range(1, episode_count + 1):
+                episode_id = anime_id * 1000 + episode_number
+                con.execute(
+                    """
+                    insert into episodes(id, anime_id, number, has_video, scraped_at)
+                    values (?, ?, ?, 1, ?)
+                    """,
+                    (episode_id, anime_id, str(episode_number), scraped_at),
                 )
-                values (?, ?, 'kodik', 'Kodik', 1, 'Dream Cast', ?, ?, 'kodikplayer.com', ?)
-                """,
-                (
-                    anime_id,
-                    anime_id * 1000 + 1,
-                    f"https://kodikplayer.com/serial/{anime_id}/hash/720p?season=1&episode=1",
-                    f"https://kodikplayer.com/serial/{anime_id}/<redacted>/720p",
-                    scraped_at,
-                ),
-            )
+                con.execute(
+                    """
+                    insert into video_sources(
+                        anime_id, episode_id, provider_id, provider_title,
+                        translation_id, translation_title, embed_url, embed_url_redacted,
+                        embed_host, scraped_at
+                    )
+                    values (?, ?, 'kodik', 'Kodik', 1, 'Dream Cast', ?, ?, 'kodikplayer.com', ?)
+                    """,
+                    (
+                        anime_id,
+                        episode_id,
+                        f"https://kodikplayer.com/serial/{anime_id}/hash/720p?season=1&episode={episode_number}",
+                        f"https://kodikplayer.com/serial/{anime_id}/<redacted>/720p",
+                        scraped_at,
+                    ),
+                )
             con.commit()
         finally:
             con.close()
@@ -977,6 +979,110 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 server.update_user_state(anime_id, {"is_favorite": True}, db_path)
             with self.assertRaisesRegex(ValueError, "user_id does not exist"):
                 server.update_user_state(anime_id, {"is_favorite": True}, db_path, 999999)
+
+    def watch_payload(self, detail, episode_index=0, event_type="player_engaged", session_id="watch-test"):
+        episode = detail["episodes"][episode_index]
+        source = detail["sources_by_episode"][episode["id"]][0]
+        return {
+            "client_session_id": session_id,
+            "event_type": event_type,
+            "anime_id": detail["id"],
+            "episode_id": episode["id"],
+            "episode_number": episode["number"],
+            "progress_episode_number": int(episode["number"]),
+            "video_source_id": source["id"],
+            "source": source["source"],
+            "source_anime_id": source["source_anime_id"],
+            "translation_id": source["translation_id"],
+            "translation_title": source["translation_title"],
+            "provider_id": source["provider_id"],
+            "provider_title": source["provider_title"],
+            "embed_host": source["embed_host"],
+            "page_visible": True,
+            "player_focused": True,
+        }
+
+    def test_watch_event_loaded_does_not_update_manual_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=10, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            payload = self.watch_payload(detail, event_type="player_loaded")
+            result = server.record_watch_event(payload, db_path, user_id)
+
+            self.assertEqual(result["event"]["event_type"], "player_loaded")
+            self.assertIsNone(result["state"]["progress_episode_number"])
+            con = server.connect(db_path)
+            try:
+                state_row = con.execute("select * from user_episode_state where user_id = ?", (user_id,)).fetchone()
+                self.assertIsNotNone(state_row)
+                self.assertIsNone(state_row["started_at"])
+                self.assertEqual(state_row["engaged_seconds"], 0)
+            finally:
+                con.close()
+
+    def test_watch_engagement_updates_title_progress_and_continue_resume(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=11, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            result = server.record_watch_event(self.watch_payload(detail), db_path, user_id)
+
+            self.assertEqual(result["state"]["progress_episode_number"], 1)
+            self.assertFalse(result["state"]["watched"])
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertEqual(updated["progress_episode_number"], 1)
+
+            target = server.get_continue_watching(db_path, user_id)["item"]
+            self.assertEqual(target["anime_id"], anime_id)
+            self.assertEqual(target["episode_number"], "1")
+            self.assertEqual(target["reason"], "resume")
+
+    def test_continue_watching_opens_next_episode_after_likely_completion(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=12, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            with patch.object(server, "WATCH_LIKELY_COMPLETED_SECONDS", 60):
+                server.record_watch_event(self.watch_payload(detail), db_path, user_id)
+                heartbeat = self.watch_payload(detail, event_type="heartbeat")
+                heartbeat["engaged_seconds"] = 75
+                server.record_watch_event(heartbeat, db_path, user_id)
+
+            target = server.get_continue_watching(db_path, user_id)["item"]
+            self.assertEqual(target["anime_id"], anime_id)
+            self.assertEqual(target["episode_number"], "2")
+            self.assertEqual(target["reason"], "next_episode")
+
+    def test_watch_event_api_requires_auth_and_records_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=13, episode_count=1)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            body = json.dumps(self.watch_payload(detail)).encode("utf-8")
+
+            status, _, response = self.request_test_server(
+                db_path,
+                "POST",
+                "/api/watch-events",
+                headers={
+                    "Cookie": f"{server.SESSION_COOKIE_NAME}={token}",
+                    "Content-Type": "application/json",
+                },
+                body=body,
+            )
+
+            self.assertEqual(status, 200)
+            payload = json.loads(response)
+            self.assertEqual(payload["state"]["progress_episode_number"], 1)
 
     def test_api_requires_authenticated_session(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1851,6 +1957,16 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("readLinkState", js)
         self.assertIn("syncUrlFromDetail", js)
         self.assertIn("window.history", js)
+
+    def test_frontend_tracks_watch_events_from_iframe_boundary(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        self.assertIn('const WATCH_ENDPOINT = "/api/watch-events"', js)
+        self.assertIn('api("/api/continue-watching")', js)
+        self.assertIn('el.player.addEventListener("focus", handlePlayerEngaged)', js)
+        self.assertIn("document.activeElement === el.player", js)
+        self.assertIn('sendWatchEvent("heartbeat"', js)
+        self.assertIn("markWatchSessionManuallyCorrected", js)
+        self.assertIn("session.manuallyCorrected", js)
 
     def test_admin_link_is_created_only_after_admin_user_payload(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

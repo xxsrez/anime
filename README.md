@@ -81,14 +81,17 @@ The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
 `http://localhost:8765`.
 
-The local app stores favorites and watch progress per Google user in SQLite
-table `user_title_state`. Use the title page controls to add a title to
-favorites, set the current episode, or mark the title as watched. The sidebar
-can filter all titles, favorites, titles with progress, or the top
-recommendation list. Recommendations are computed from the current user's
-favorites/progress/watched state and show the 20 strongest candidates first
-with short reasons. A newly created Google user starts with empty local state;
-anonymous/local profile state is not supported.
+The local app stores favorites and watch progress per Google user in SQLite.
+`user_title_state` is the current per-title summary, while `user_watch_events`
+and `user_episode_state` keep automatic watch history around the embedded
+player. Use the title page controls to add a title to favorites, correct the
+current episode manually, or mark the title as watched. Automatic iframe-focus,
+fullscreen/PiP, source-change, and heartbeat signals update the same current
+episode control. The sidebar can filter all titles, favorites, titles with
+progress, or the top recommendation list. Recommendations are computed from the
+current user's favorites/progress/watched state and show the 20 strongest
+candidates first with short reasons. A newly created Google user starts with
+empty local state; anonymous/local profile state is not supported.
 
 Refresh the watchable catalog with player data:
 

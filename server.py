@@ -37,6 +37,7 @@ MAX_RECOMMENDATION_LIMIT = 50
 MAX_JSON_BODY_BYTES = 64 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
+MAX_WATCH_METADATA_BYTES = 4096
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNC_MODES = {"hourly", "daily", "full"}
@@ -75,6 +76,29 @@ TRANSLATION_KEY_ALIASES = {
 }
 TRANSLATION_PREFIXES = ("озвучка ",)
 UNKNOWN_TRANSLATION_RANK = 9999
+WATCH_EVENT_TYPES = {
+    "player_loaded",
+    "player_engaged",
+    "heartbeat",
+    "fullscreen_enter",
+    "pip_open",
+    "episode_selected",
+    "source_changed",
+    "page_hidden",
+    "session_end",
+}
+WATCH_PROGRESS_EVENT_TYPES = {
+    "player_engaged",
+    "heartbeat",
+    "fullscreen_enter",
+    "pip_open",
+    "episode_selected",
+    "source_changed",
+}
+WATCH_STARTED_CONFIDENCE = 0.65
+WATCH_LIKELY_COMPLETED_SECONDS = 18 * 60
+WATCH_NEXT_EPISODE_COMPLETION_SECONDS = 60
+MAX_WATCH_EVENT_ENGAGED_SECONDS = 5 * 60
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
 SEARCH_FOLDS = (
@@ -507,6 +531,94 @@ def ensure_user_state_schema(con):
     return True
 
 
+def ensure_watch_tracking_schema(con):
+    had_events = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_watch_events'"
+    ).fetchone()
+    had_state = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_episode_state'"
+    ).fetchone()
+    con.executescript(
+        """
+        create table if not exists user_watch_events (
+            id integer primary key autoincrement,
+            user_id integer not null references users(id) on delete cascade,
+            anime_id integer not null references anime(id) on delete cascade,
+            episode_id integer references episodes(id) on delete set null,
+            video_source_id integer references video_sources(id) on delete set null,
+            client_session_id text not null,
+            event_type text not null,
+            event_at text not null,
+            episode_number text,
+            progress_episode_number integer,
+            source text,
+            source_anime_id integer references anime(id) on delete set null,
+            translation_id text,
+            translation_title text,
+            provider_id text,
+            provider_title text,
+            embed_host text,
+            engaged_seconds integer not null default 0,
+            page_visible integer,
+            player_focused integer,
+            confidence real not null default 0,
+            metadata_json text not null default '{}',
+            created_at text not null,
+            check (event_type in (
+                'player_loaded',
+                'player_engaged',
+                'heartbeat',
+                'fullscreen_enter',
+                'pip_open',
+                'episode_selected',
+                'source_changed',
+                'page_hidden',
+                'session_end'
+            ))
+        );
+
+        create table if not exists user_episode_state (
+            user_id integer not null references users(id) on delete cascade,
+            anime_id integer not null references anime(id) on delete cascade,
+            episode_id integer not null references episodes(id) on delete cascade,
+            episode_number text,
+            progress_episode_number integer,
+            video_source_id integer references video_sources(id) on delete set null,
+            source text,
+            source_anime_id integer references anime(id) on delete set null,
+            translation_id text,
+            translation_title text,
+            provider_id text,
+            provider_title text,
+            embed_host text,
+            first_seen_at text not null,
+            last_seen_at text not null,
+            started_at text,
+            completed_at text,
+            engaged_seconds integer not null default 0,
+            heartbeat_count integer not null default 0,
+            last_event_type text not null,
+            last_confidence real not null default 0,
+            completion_confidence real,
+            updated_at text not null,
+            primary key (user_id, anime_id, episode_id)
+        );
+
+        create index if not exists idx_user_watch_events_user_at
+            on user_watch_events(user_id, event_at desc);
+        create index if not exists idx_user_watch_events_session
+            on user_watch_events(user_id, client_session_id, event_at);
+        create index if not exists idx_user_watch_events_episode
+            on user_watch_events(user_id, anime_id, episode_id, event_at desc);
+        create index if not exists idx_user_episode_state_user_seen
+            on user_episode_state(user_id, last_seen_at desc);
+        create index if not exists idx_user_episode_state_anime_progress
+            on user_episode_state(user_id, anime_id, progress_episode_number);
+        """
+    )
+    return not bool(had_events and had_state)
+
+
 def purge_orphaned_user_data(con):
     if not con.execute("select 1 from sqlite_master where type = 'table' and name = 'users'").fetchone():
         return False
@@ -777,6 +889,7 @@ def connect(db_path=None):
     changed = ensure_catalog_schema(con)
     changed |= ensure_auth_schema(con)
     changed |= ensure_user_state_schema(con)
+    changed |= ensure_watch_tracking_schema(con)
     changed |= purge_orphaned_user_data(con)
     changed |= ensure_runtime_indexes(con)
     if changed:
@@ -2873,6 +2986,652 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
     return next_state
 
 
+def bounded_text(value, limit=200):
+    if value in (None, ""):
+        return None
+    return str(value).strip()[:limit] or None
+
+
+def int_from_value(value):
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        match = re.search(r"\d+", str(value))
+        return int(match.group(0)) if match else None
+
+
+def nonnegative_int(value, default=0, maximum=None):
+    parsed = int_from_value(value)
+    if parsed is None:
+        parsed = default
+    parsed = max(0, parsed)
+    return min(parsed, maximum) if maximum is not None else parsed
+
+
+def bool_payload_value(value):
+    if value is None:
+        return None
+    return 1 if bool(value) else 0
+
+
+def sanitize_watch_metadata(payload):
+    metadata = payload.get("metadata") if isinstance(payload, dict) else None
+    if not isinstance(metadata, dict):
+        return "{}"
+    cleaned = sanitize_client_error_value(metadata)
+    encoded = json.dumps(cleaned, ensure_ascii=False, sort_keys=True)
+    if len(encoded.encode("utf-8")) > MAX_WATCH_METADATA_BYTES:
+        return json.dumps({"truncated": True}, ensure_ascii=False, sort_keys=True)
+    return encoded
+
+
+def watch_event_confidence(event_type, engaged_seconds=0, page_visible=None, player_focused=None):
+    if event_type == "player_loaded":
+        return 0.15
+    if event_type in {"fullscreen_enter", "pip_open"}:
+        return 0.95
+    if event_type in {"player_engaged", "episode_selected", "source_changed"}:
+        return 0.85
+    if event_type == "heartbeat":
+        if engaged_seconds <= 0:
+            return 0.35
+        if page_visible is False:
+            return 0.35
+        return 0.8 if player_focused else 0.7
+    if event_type in {"page_hidden", "session_end"}:
+        return 0.45 if engaged_seconds > 0 else 0.25
+    return 0.0
+
+
+def episode_progress_number(value):
+    return int_from_value(value)
+
+
+def load_event_episode(con, member_ids, payload):
+    episode_id = int_from_value(payload.get("episode_id"))
+    if episode_id is not None:
+        row = con.execute(
+            f"""
+            select *
+            from episodes
+            where id = ?
+              and anime_id in ({sql_placeholders(member_ids)})
+            """,
+            (episode_id, *member_ids),
+        ).fetchone()
+        if row:
+            return row
+        raise ValueError("episode_id is invalid for this title")
+
+    progress_number = int_from_value(payload.get("progress_episode_number") or payload.get("episode_number"))
+    if progress_number is None:
+        raise ValueError("episode_id or episode_number is required")
+    row = con.execute(
+        f"""
+        select *
+        from episodes
+        where anime_id in ({sql_placeholders(member_ids)})
+          and cast(number as integer) = ?
+        order by anime_id, id
+        limit 1
+        """,
+        (*member_ids, progress_number),
+    ).fetchone()
+    if not row:
+        raise ValueError("episode_number is invalid for this title")
+    return row
+
+
+def load_event_video_source(con, member_ids, video_source_id):
+    source_id = int_from_value(video_source_id)
+    if source_id is None:
+        return None
+    row = con.execute(
+        f"""
+        select *
+        from video_sources
+        where id = ?
+          and anime_id in ({sql_placeholders(member_ids)})
+        """,
+        (source_id, *member_ids),
+    ).fetchone()
+    if not row:
+        raise ValueError("video_source_id is invalid for this title")
+    return row
+
+
+def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_number, timestamp):
+    if progress_episode_number is None:
+        return get_group_state(con, [variant["id"] for variant in group.get("source_variants") or []], user_id)
+
+    target_id = group["id"]
+    member_ids = [variant["id"] for variant in group.get("source_variants") or []]
+    current = get_group_state(con, member_ids, user_id)
+    next_state = {
+        "is_favorite": current["is_favorite"],
+        "progress_episode_number": max(0, int(progress_episode_number)),
+        "watched": False,
+        "updated_at": timestamp,
+    }
+    con.execute(
+        """
+        insert into user_title_state (
+            user_id,
+            anime_id,
+            is_favorite,
+            progress_episode_number,
+            watched,
+            updated_at
+        )
+        values (?, ?, ?, ?, ?, ?)
+        on conflict(user_id, anime_id) do update set
+            is_favorite = excluded.is_favorite,
+            progress_episode_number = excluded.progress_episode_number,
+            watched = excluded.watched,
+            updated_at = excluded.updated_at
+        """,
+        (
+            user_id,
+            target_id,
+            1 if next_state["is_favorite"] else 0,
+            next_state["progress_episode_number"],
+            1 if next_state["watched"] else 0,
+            next_state["updated_at"],
+        ),
+    )
+    duplicate_state_ids = [item for item in member_ids if item != target_id]
+    if duplicate_state_ids:
+        con.execute(
+            f"""
+            delete from user_title_state
+            where user_id = ?
+              and anime_id in ({sql_placeholders(duplicate_state_ids)})
+            """,
+            (user_id, *duplicate_state_ids),
+        )
+    return next_state
+
+
+def mark_previous_episode_completed(con, user_id, anime_id, progress_episode_number, timestamp):
+    if progress_episode_number is None:
+        return None
+    previous = con.execute(
+        """
+        select *
+        from user_episode_state
+        where user_id = ?
+          and anime_id = ?
+          and progress_episode_number is not null
+          and progress_episode_number < ?
+          and completed_at is null
+          and started_at is not null
+          and engaged_seconds >= ?
+        order by progress_episode_number desc, last_seen_at desc
+        limit 1
+        """,
+        (user_id, anime_id, progress_episode_number, WATCH_NEXT_EPISODE_COMPLETION_SECONDS),
+    ).fetchone()
+    if not previous:
+        return None
+    con.execute(
+        """
+        update user_episode_state
+        set completed_at = ?,
+            completion_confidence = ?,
+            updated_at = ?
+        where user_id = ?
+          and anime_id = ?
+          and episode_id = ?
+          and completed_at is null
+        """,
+        (timestamp, 0.8, timestamp, user_id, anime_id, previous["episode_id"]),
+    )
+    return dict(previous)
+
+
+def upsert_episode_watch_state(
+    con,
+    *,
+    user_id,
+    anime_id,
+    episode_id,
+    timestamp,
+    event_type,
+    confidence,
+    engaged_seconds,
+    heartbeat_count,
+    started,
+    episode_number,
+    progress_episode_number,
+    video_source_id,
+    source,
+    source_anime_id,
+    translation_id,
+    translation_title,
+    provider_id,
+    provider_title,
+    embed_host,
+):
+    existing = con.execute(
+        """
+        select *
+        from user_episode_state
+        where user_id = ?
+          and anime_id = ?
+          and episode_id = ?
+        """,
+        (user_id, anime_id, episode_id),
+    ).fetchone()
+    total_engaged = nonnegative_int(engaged_seconds)
+    if existing:
+        total_engaged += int(existing["engaged_seconds"] or 0)
+    started_at = existing["started_at"] if existing and existing["started_at"] else (timestamp if started else None)
+    completed_at = existing["completed_at"] if existing and existing["completed_at"] else None
+    completion_confidence = existing["completion_confidence"] if existing and existing["completion_confidence"] else None
+    if started_at and not completed_at and total_engaged >= WATCH_LIKELY_COMPLETED_SECONDS:
+        completed_at = timestamp
+        completion_confidence = 0.7
+
+    next_row = {
+        "user_id": user_id,
+        "anime_id": anime_id,
+        "episode_id": episode_id,
+        "episode_number": episode_number,
+        "progress_episode_number": progress_episode_number,
+        "video_source_id": video_source_id,
+        "source": source,
+        "source_anime_id": source_anime_id,
+        "translation_id": translation_id,
+        "translation_title": translation_title,
+        "provider_id": provider_id,
+        "provider_title": provider_title,
+        "embed_host": embed_host,
+        "first_seen_at": existing["first_seen_at"] if existing else timestamp,
+        "last_seen_at": timestamp,
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "engaged_seconds": total_engaged,
+        "heartbeat_count": (int(existing["heartbeat_count"] or 0) if existing else 0) + heartbeat_count,
+        "last_event_type": event_type,
+        "last_confidence": confidence,
+        "completion_confidence": completion_confidence,
+        "updated_at": timestamp,
+    }
+    con.execute(
+        """
+        insert into user_episode_state (
+            user_id,
+            anime_id,
+            episode_id,
+            episode_number,
+            progress_episode_number,
+            video_source_id,
+            source,
+            source_anime_id,
+            translation_id,
+            translation_title,
+            provider_id,
+            provider_title,
+            embed_host,
+            first_seen_at,
+            last_seen_at,
+            started_at,
+            completed_at,
+            engaged_seconds,
+            heartbeat_count,
+            last_event_type,
+            last_confidence,
+            completion_confidence,
+            updated_at
+        )
+        values (
+            :user_id,
+            :anime_id,
+            :episode_id,
+            :episode_number,
+            :progress_episode_number,
+            :video_source_id,
+            :source,
+            :source_anime_id,
+            :translation_id,
+            :translation_title,
+            :provider_id,
+            :provider_title,
+            :embed_host,
+            :first_seen_at,
+            :last_seen_at,
+            :started_at,
+            :completed_at,
+            :engaged_seconds,
+            :heartbeat_count,
+            :last_event_type,
+            :last_confidence,
+            :completion_confidence,
+            :updated_at
+        )
+        on conflict(user_id, anime_id, episode_id) do update set
+            episode_number = coalesce(excluded.episode_number, user_episode_state.episode_number),
+            progress_episode_number = coalesce(excluded.progress_episode_number, user_episode_state.progress_episode_number),
+            video_source_id = coalesce(excluded.video_source_id, user_episode_state.video_source_id),
+            source = coalesce(excluded.source, user_episode_state.source),
+            source_anime_id = coalesce(excluded.source_anime_id, user_episode_state.source_anime_id),
+            translation_id = coalesce(excluded.translation_id, user_episode_state.translation_id),
+            translation_title = coalesce(excluded.translation_title, user_episode_state.translation_title),
+            provider_id = coalesce(excluded.provider_id, user_episode_state.provider_id),
+            provider_title = coalesce(excluded.provider_title, user_episode_state.provider_title),
+            embed_host = coalesce(excluded.embed_host, user_episode_state.embed_host),
+            last_seen_at = excluded.last_seen_at,
+            started_at = coalesce(user_episode_state.started_at, excluded.started_at),
+            completed_at = coalesce(user_episode_state.completed_at, excluded.completed_at),
+            engaged_seconds = excluded.engaged_seconds,
+            heartbeat_count = excluded.heartbeat_count,
+            last_event_type = excluded.last_event_type,
+            last_confidence = excluded.last_confidence,
+            completion_confidence = coalesce(user_episode_state.completion_confidence, excluded.completion_confidence),
+            updated_at = excluded.updated_at
+        """,
+        next_row,
+    )
+    return next_row
+
+
+def record_watch_event(payload, db_path=None, user_id=None):
+    if not isinstance(payload, dict):
+        raise ValueError("watch event payload must be an object")
+
+    event_type = bounded_text(payload.get("event_type"), 40)
+    if event_type not in WATCH_EVENT_TYPES:
+        raise ValueError("unsupported watch event type")
+
+    client_session_id = bounded_text(payload.get("client_session_id"), 120)
+    if not client_session_id:
+        raise ValueError("client_session_id is required")
+
+    con = connect(db_path)
+    try:
+        user_id = require_user_id(con, user_id)
+        group = canonical_group_for_anime_ref(con, payload.get("anime_id"), user_id)
+        if not group:
+            raise ValueError("anime_id is invalid")
+        anime_id = group["id"]
+        member_ids = [variant["id"] for variant in group.get("source_variants") or []]
+        episode = load_event_episode(con, member_ids, payload)
+        video_source = load_event_video_source(con, member_ids, payload.get("video_source_id"))
+        timestamp = now_iso()
+        engaged_seconds = nonnegative_int(
+            payload.get("engaged_seconds"),
+            default=0,
+            maximum=MAX_WATCH_EVENT_ENGAGED_SECONDS,
+        )
+        page_visible = bool_payload_value(payload.get("page_visible"))
+        player_focused = bool_payload_value(payload.get("player_focused"))
+        confidence = watch_event_confidence(
+            event_type,
+            engaged_seconds,
+            page_visible=bool(page_visible) if page_visible is not None else None,
+            player_focused=bool(player_focused) if player_focused is not None else None,
+        )
+
+        episode_number = bounded_text(payload.get("episode_number") or episode["number"], 40)
+        progress_episode_number = int_from_value(payload.get("progress_episode_number"))
+        if progress_episode_number is None:
+            progress_episode_number = episode_progress_number(episode_number)
+
+        source_anime_id = int_from_value(payload.get("source_anime_id"))
+        if video_source:
+            source_anime_id = video_source["anime_id"]
+        source = bounded_text(payload.get("source") or (video_source["source"] if video_source and "source" in video_source.keys() else None), 40)
+        translation_id = bounded_text(
+            payload.get("translation_id") or (video_source["translation_id"] if video_source else None),
+            80,
+        )
+        translation_title = bounded_text(
+            payload.get("translation_title") or (video_source["translation_title"] if video_source else None),
+            200,
+        )
+        provider_id = bounded_text(
+            payload.get("provider_id") or (video_source["provider_id"] if video_source else None),
+            80,
+        )
+        provider_title = bounded_text(
+            payload.get("provider_title") or (video_source["provider_title"] if video_source else None),
+            200,
+        )
+        embed_host = bounded_text(payload.get("embed_host") or (video_source["embed_host"] if video_source else None), 200)
+
+        cur = con.execute(
+            """
+            insert into user_watch_events (
+                user_id,
+                anime_id,
+                episode_id,
+                video_source_id,
+                client_session_id,
+                event_type,
+                event_at,
+                episode_number,
+                progress_episode_number,
+                source,
+                source_anime_id,
+                translation_id,
+                translation_title,
+                provider_id,
+                provider_title,
+                embed_host,
+                engaged_seconds,
+                page_visible,
+                player_focused,
+                confidence,
+                metadata_json,
+                created_at
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                anime_id,
+                episode["id"],
+                int_from_value(payload.get("video_source_id")),
+                client_session_id,
+                event_type,
+                timestamp,
+                episode_number,
+                progress_episode_number,
+                source,
+                source_anime_id,
+                translation_id,
+                translation_title,
+                provider_id,
+                provider_title,
+                embed_host,
+                engaged_seconds,
+                page_visible,
+                player_focused,
+                confidence,
+                sanitize_watch_metadata(payload),
+                timestamp,
+            ),
+        )
+        started = event_type in WATCH_PROGRESS_EVENT_TYPES and confidence >= WATCH_STARTED_CONFIDENCE
+        episode_state = upsert_episode_watch_state(
+            con,
+            user_id=user_id,
+            anime_id=anime_id,
+            episode_id=episode["id"],
+            timestamp=timestamp,
+            event_type=event_type,
+            confidence=confidence,
+            engaged_seconds=engaged_seconds,
+            heartbeat_count=1 if event_type == "heartbeat" else 0,
+            started=started,
+            episode_number=episode_number,
+            progress_episode_number=progress_episode_number,
+            video_source_id=int_from_value(payload.get("video_source_id")),
+            source=source,
+            source_anime_id=source_anime_id,
+            translation_id=translation_id,
+            translation_title=translation_title,
+            provider_id=provider_id,
+            provider_title=provider_title,
+            embed_host=embed_host,
+        )
+
+        title_state = None
+        if started:
+            mark_previous_episode_completed(con, user_id, anime_id, progress_episode_number, timestamp)
+            title_state = apply_watch_progress_to_user_state(
+                con,
+                group,
+                user_id,
+                progress_episode_number,
+                timestamp,
+            )
+        con.commit()
+        if title_state is None:
+            title_state = get_group_state(con, member_ids, user_id)
+        return {
+            "ok": True,
+            "event": {
+                "id": cur.lastrowid,
+                "event_type": event_type,
+                "confidence": confidence,
+                "engaged_seconds": engaged_seconds,
+                "event_at": timestamp,
+            },
+            "episode_state": {
+                key: episode_state.get(key)
+                for key in (
+                    "anime_id",
+                    "episode_id",
+                    "episode_number",
+                    "progress_episode_number",
+                    "started_at",
+                    "completed_at",
+                    "engaged_seconds",
+                    "last_seen_at",
+                )
+            },
+            "state": title_state,
+        }
+    finally:
+        con.close()
+
+
+def source_for_continue_target(detail, episode_id, row):
+    sources = detail.get("sources_by_episode", {}).get(str(episode_id))
+    if sources is None:
+        sources = detail.get("sources_by_episode", {}).get(episode_id, [])
+    if not sources:
+        return None
+
+    video_source_id = row.get("video_source_id")
+    if video_source_id is not None:
+        for source in sources:
+            if str(source.get("id")) == str(video_source_id):
+                return source
+
+    translation_id = row.get("translation_id")
+    provider_id = row.get("provider_id")
+    if translation_id is not None or provider_id is not None:
+        for source in sources:
+            translation_match = translation_id is None or str(source.get("translation_id")) == str(translation_id)
+            provider_match = provider_id is None or str(source.get("provider_id")) == str(provider_id)
+            if translation_match and provider_match:
+                return source
+
+    return sources[0]
+
+
+def next_available_episode(episodes, progress_episode_number):
+    if progress_episode_number is None:
+        return None
+    candidates = [
+        episode
+        for episode in episodes
+        if (episode.get("source_count") or 0) > 0
+        and (episode_progress_number(episode.get("number")) or -1) > progress_episode_number
+    ]
+    return candidates[0] if candidates else None
+
+
+def continue_target_from_episode_state(row, db_path=None, user_id=None):
+    detail = get_anime_detail(row["anime_id"], db_path, user_id)
+    if not detail:
+        return None
+
+    episodes = detail.get("episodes") or []
+    current = next((episode for episode in episodes if str(episode.get("id")) == str(row["episode_id"])), None)
+    if not current and row["progress_episode_number"] is not None:
+        current = next(
+            (
+                episode
+                for episode in episodes
+                if episode_progress_number(episode.get("number")) == row["progress_episode_number"]
+            ),
+            None,
+        )
+    if not current:
+        return None
+
+    target = current
+    reason = "resume"
+    if row["completed_at"]:
+        follow_up = next_available_episode(episodes, row["progress_episode_number"])
+        if follow_up:
+            target = follow_up
+            reason = "next_episode"
+        else:
+            reason = "latest_completed"
+
+    selected_source = source_for_continue_target(detail, target["id"], row)
+    if not selected_source:
+        return None
+
+    return {
+        "anime_id": detail["id"],
+        "anime_ref": detail.get("slug") or detail.get("internal_id") or detail["id"],
+        "title": detail.get("title"),
+        "cover_url": detail.get("cover_url"),
+        "episode_id": target["id"],
+        "episode_number": target.get("number"),
+        "source": selected_source.get("source"),
+        "translation_id": selected_source.get("translation_id"),
+        "provider_id": selected_source.get("provider_id"),
+        "video_source_id": selected_source.get("id"),
+        "reason": reason,
+        "last_seen_at": row["last_seen_at"],
+        "completed_at": row["completed_at"],
+        "engaged_seconds": row["engaged_seconds"],
+    }
+
+
+def get_continue_watching(db_path=None, user_id=None):
+    con = connect(db_path)
+    try:
+        user_id = require_user_id(con, user_id)
+        rows = con.execute(
+            """
+            select *
+            from user_episode_state
+            where user_id = ?
+              and started_at is not null
+            order by last_seen_at desc
+            limit 20
+            """,
+            (user_id,),
+        ).fetchall()
+    finally:
+        con.close()
+
+    for row in rows:
+        target = continue_target_from_episode_state(dict(row), db_path, user_id)
+        if target:
+            return {"item": target}
+    return {"item": None}
+
+
 def public_user(row):
     if row is None:
         return None
@@ -3939,6 +4698,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_json(get_recommendations(self.server.db_path, raw_limit, user["id"]))
             return
 
+        if path == "/api/continue-watching":
+            self.send_json(get_continue_watching(self.server.db_path, user["id"]))
+            return
+
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
             if len(parts) == 3 and parts[0] == "api" and parts[1] == "anime":
@@ -3989,6 +4752,25 @@ class AnimeHandler(BaseHTTPRequestHandler):
             user = self.require_user()
             if user:
                 self.handle_performance_post(user)
+            return
+
+        if path == "/api/watch-events":
+            user = self.require_user()
+            if not user:
+                return
+            try:
+                payload = self.read_json_body()
+                result = record_watch_event(payload, self.server.db_path, user["id"])
+            except ClientErrorPayloadTooLarge:
+                self.send_json({"error": "payload too large"}, 413)
+                return
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+            self.send_json(result)
             return
 
         if path == "/api/auth/google":

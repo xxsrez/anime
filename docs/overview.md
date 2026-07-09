@@ -18,9 +18,12 @@ choosing a provider/translation, and tracking personal progress.
 - Open a title detail view with poster, metadata, description, genres, fields,
   episodes, and player source selectors.
 - Add a title to favorites.
-- Store current episode progress.
+- Store current episode progress manually or through automatic watch signals
+  around the embedded player.
 - Mark a title as watched.
 - View only favorites or titles with progress.
+- Resume the latest in-progress title on the home page when there is no explicit
+  title in the URL.
 - View the top 20 recommended titles in `Советы`, sorted by estimated fit and
   shown with short reasons.
 - Open the player wrapper in fullscreen or request Picture-in-Picture when the

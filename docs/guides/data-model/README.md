@@ -107,6 +107,36 @@ themselves are computed at request time and are not persisted. New Google users
 start with no `user_title_state` rows. Anonymous/local profile state is not
 supported.
 
+`user_watch_events`
+
+Append-only per-user playback boundary events. These rows record what the app can
+observe around the embedded player:
+
+- `user_id`, `anime_id`, `episode_id`, `video_source_id`.
+- `client_session_id`.
+- `event_type`: `player_loaded`, `player_engaged`, `heartbeat`,
+  `fullscreen_enter`, `pip_open`, `episode_selected`, `source_changed`,
+  `page_hidden`, or `session_end`.
+- Episode/source/provider labels, `engaged_seconds`, visibility/focus flags,
+  confidence, and small JSON metadata.
+
+`player_loaded` is only a technical signal. It does not update user progress by
+itself.
+
+`user_episode_state`
+
+Aggregated per-user episode state derived from `user_watch_events`:
+
+- Primary key `(user_id, anime_id, episode_id)`.
+- Episode/source/provider labels for the latest known source.
+- `first_seen_at`, `last_seen_at`, `started_at`, `completed_at`.
+- `engaged_seconds`, `heartbeat_count`, `last_event_type`, and confidence
+  fields.
+
+Strong watch signals update the existing `user_title_state.progress_episode_number`
+so the old manual `Серия` control and the automatic tracker share the same title
+summary. The manual control remains available as a correction layer.
+
 ## Canonical Title View
 
 The API presents a canonical catalog view over the source-specific `anime` rows.

@@ -194,6 +194,13 @@ fields include:
 - `profile` - seed counts, top weighted genres, and mode:
   `personalized` or `popular`.
 
+`GET /api/continue-watching`
+
+Requires authentication. Returns the best current playback target for the user:
+the latest in-progress episode, the next available episode after a likely
+completed one, or `null` when there is no watch history yet. The frontend uses it
+only when the URL does not already point to a specific title.
+
 `PATCH /api/anime/<id>/state`
 
 Requires authentication. Updates local state for the current user. Supported
@@ -202,6 +209,15 @@ fields:
 - `is_favorite`
 - `progress_episode_number`
 - `watched`
+
+`POST /api/watch-events`
+
+Requires authentication. Records an observed playback-boundary event for the
+current user. The frontend sends these from the iframe boundary and local player
+controls: iframe load/focus, window blur when the active element is the player
+iframe, fullscreen/PiP, episode/source changes, heartbeat, visibility changes,
+and session end. Strong signals update `user_title_state.progress_episode_number`
+so the existing manual progress control stays in sync with automatic tracking.
 
 ## Data Flow
 
@@ -217,15 +233,21 @@ fields:
    accepts it when possible, then either opens the requested app route or falls
    back through `/login?...auth_complete=1` so the login page can recover from
    delayed cookie visibility without manual refresh.
-6. `static/app.js` loads `/api/me`, `/api/anime`, and `/api/recommendations`,
-   renders the sidebar, and fetches detail JSON when a title is selected.
+6. `static/app.js` loads `/api/me`, `/api/anime`, and
+   `/api/continue-watching`, renders the sidebar, and fetches detail JSON when a
+   title is selected. Recommendations remain lazy-loaded when the `Советы` view
+   needs them.
 7. The user can choose the source variant, translation, and provider; the player
    iframe receives the selected provider's `embed_url`.
 8. The browser URL is synchronized with the right-pane state using the canonical
    title slug in the path and query params for `episode`, `source`,
    `translation`, and `provider`.
-9. Favorites and progress are written back through `PATCH /api/anime/<id>/state`.
-10. Recommendation data is reloaded after favorite/progress/watched changes.
+9. Favorites and manual progress corrections are written back through
+   `PATCH /api/anime/<id>/state`.
+10. Automatic watch signals are written through `POST /api/watch-events`, which
+   appends raw events, updates per-episode aggregate state, and updates the same
+   per-title progress summary used by the manual controls.
+11. Recommendation data is reloaded after favorite/progress/watched changes.
 
 ## Scraper Notes
 
@@ -320,6 +342,12 @@ The PiP button uses `window.documentPictureInPicture` when the browser supports
 it. If unavailable or blocked, the UI reports that PiP is available inside the
 embedded player. The local app cannot directly control a cross-origin player's
 internal video element.
+
+Automatic watch tracking therefore attaches to the iframe boundary, not to the
+third-party player's internal `video.play`, `timeupdate`, or `ended` events.
+`iframe load` is stored as low-confidence history only. Progress starts moving
+after stronger user signals such as iframe focus, fullscreen/PiP, explicit
+episode selection, source changes, or heartbeat after engagement.
 
 ## Shared Links
 
