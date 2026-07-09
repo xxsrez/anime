@@ -718,6 +718,17 @@ select {
   background: rgba(244, 184, 96, 0.14);
 }
 
+.clear-watch-button {
+  border-color: rgba(255, 104, 93, 0.45);
+  color: #ffd6d2;
+  background: rgba(255, 104, 93, 0.08);
+}
+
+.clear-watch-button:hover {
+  border-color: rgba(255, 104, 93, 0.72);
+  background: rgba(255, 104, 93, 0.14);
+}
+
 .watched-control {
   display: inline-flex;
   gap: 8px;

@@ -1130,6 +1130,44 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             finally:
                 con.close()
 
+    def test_manual_progress_clear_removes_title_from_continue_watching(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=16, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            server.record_watch_event(self.watch_payload(detail), db_path, user_id)
+
+            saved = server.update_user_state(
+                anime_id,
+                {"progress_episode_number": None, "watched": False},
+                db_path,
+                user_id,
+            )
+
+            self.assertIsNone(saved["progress_episode_number"])
+            self.assertIsNone(saved["last_watch"])
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertIsNone(updated["progress_episode_number"])
+            self.assertNotIn("last_watch", updated)
+            self.assertIsNone(server.get_continue_watching(db_path, user_id)["item"])
+            con = server.connect(db_path)
+            try:
+                cleared_row = con.execute(
+                    """
+                    select *
+                    from user_episode_state
+                    where user_id = ?
+                      and anime_id = ?
+                    """,
+                    (user_id, anime_id),
+                ).fetchone()
+                self.assertIsNotNone(cleared_row)
+                self.assertEqual(cleared_row["last_event_type"], "manual_clear")
+                self.assertIsNone(cleared_row["started_at"])
+            finally:
+                con.close()
+
     def test_continue_watching_opens_next_episode_after_likely_completion(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -2132,6 +2170,12 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn("progress-summary", html)
         self.assertNotIn('document.getElementById("progress-episode")', js)
         self.assertNotIn("el.progressEpisode", js)
+        self.assertIn('id="not-watching-button"', html)
+        self.assertIn("Не смотрю", html)
+        self.assertIn('document.getElementById("not-watching-button")', js)
+        self.assertIn("function discardWatchSession", js)
+        self.assertIn("progress_episode_number: null", js)
+        self.assertIn("el.notWatchingButton.hidden = !hasProgress || Boolean(detail.watched)", js)
 
         start = js.index("function applyDetailLinkState")
         end = js.index("function numericValue", start)

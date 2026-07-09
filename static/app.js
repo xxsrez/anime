@@ -100,6 +100,7 @@ const el = {
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
   favoriteToggle: document.getElementById("favorite-toggle"),
+  notWatchingButton: document.getElementById("not-watching-button"),
   watchedToggle: document.getElementById("watched-toggle"),
   recommendationContext: document.getElementById("recommendation-context"),
   recentUpdates: document.getElementById("recent-updates"),
@@ -1247,6 +1248,9 @@ function renderWatchState(detail) {
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
   el.watchedToggle.checked = Boolean(detail.watched);
+  const hasProgress = effectiveProgressEpisodeNumber(detail) != null;
+  el.notWatchingButton.hidden = !hasProgress || Boolean(detail.watched);
+  el.notWatchingButton.setAttribute("aria-label", "Убрать тайтл из «Смотрю»");
 }
 
 function renderRecommendationContext(detail) {
@@ -1719,6 +1723,11 @@ function clearWatchSession({ beacon = true } = {}) {
   stopWatchHeartbeat();
 }
 
+function discardWatchSession() {
+  state.watchSession = null;
+  stopWatchHeartbeat();
+}
+
 function handlePlayerLoaded() {
   sendWatchEvent("player_loaded").catch(() => {});
 }
@@ -2088,6 +2097,11 @@ for (const button of el.viewTabs) {
 el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
   saveUserState({ is_favorite: !state.detail.is_favorite }).catch(reportActionError("toggle favorite"));
+});
+el.notWatchingButton.addEventListener("click", () => {
+  if (!state.detail) return;
+  discardWatchSession();
+  saveUserState({ progress_episode_number: null, watched: false }).catch(reportActionError("clear watching state"));
 });
 el.logoutButton.addEventListener("click", () => {
   logout().catch(reportActionError("logout"));
