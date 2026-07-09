@@ -2207,11 +2207,14 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         apply_watch_state = js[start:end]
 
         self.assertIn("invalidateRecommendations();", apply_watch_state)
-        self.assertIn("if (isRecommendationView()) loadRecommendationsForView({ force: true });", apply_watch_state)
+        self.assertIn("if (isRecommendationView()) loadRecommendationsForView({ force: true, selectFirst: false });", apply_watch_state)
 
         start = js.index("function loadRecommendationsForView")
         end = js.index("el.search.addEventListener", start)
         load_for_view = js[start:end]
+        self.assertIn("function loadRecommendationsForView({ force = false, selectFirst = true } = {})", load_for_view)
+        self.assertIn("applyFilter({ selectFirst });", load_for_view)
+        self.assertNotIn("applyFilter({ selectFirst: true });", load_for_view)
         self.assertIn("reportActionError(\"load recommendations\")(error);", load_for_view)
         self.assertIn("if (isRecommendationView()) applyFilter();", load_for_view)
 
@@ -2228,7 +2231,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         save_user_state = js[start:end]
 
         self.assertIn("applyFilter();", save_user_state)
-        self.assertNotIn("selectFirst", save_user_state)
+        self.assertIn("loadRecommendationsForView({ force: true, selectFirst: false });", save_user_state)
+        self.assertNotIn("applyFilter({ selectFirst", save_user_state)
+        self.assertNotIn("selectFirst: true", save_user_state)
 
     def test_yummyanime_mushoku_titles_are_available(self):
         items = server.get_anime_list()

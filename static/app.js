@@ -1599,7 +1599,7 @@ function applyWatchState(nextState, animeId = state.selectedAnimeId) {
 
   if (!changed) return;
   invalidateRecommendations();
-  if (isRecommendationView()) loadRecommendationsForView({ force: true });
+  if (isRecommendationView()) loadRecommendationsForView({ force: true, selectFirst: false });
   applyFilter();
   if (state.detail?.id === animeId) renderWatchState(state.detail);
 }
@@ -1897,7 +1897,7 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
     if (affectsRecommendations) {
       invalidateRecommendations();
       if (isRecommendationView()) {
-        loadRecommendationsForView({ force: true });
+        loadRecommendationsForView({ force: true, selectFirst: false });
       }
     }
     const recommended = state.recommendations.find(entry => entry.id === animeId);
@@ -2029,12 +2029,12 @@ function ensureRecommendations({ force = false } = {}) {
   return state.recommendationsLoading;
 }
 
-function loadRecommendationsForView({ force = false } = {}) {
+function loadRecommendationsForView({ force = false, selectFirst = true } = {}) {
   if (!isRecommendationView()) return;
   if (!force && state.recommendationsLoaded) return;
   ensureRecommendations({ force })
     .then(() => {
-      if (isRecommendationView()) applyFilter({ selectFirst: true });
+      if (isRecommendationView()) applyFilter({ selectFirst });
       if (state.detail) renderRecommendationContext(state.detail);
     })
     .catch(error => {
