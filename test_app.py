@@ -1063,6 +1063,25 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(target["episode_number"], "1")
             self.assertEqual(target["reason"], "resume")
 
+    def test_detail_exposes_last_watch_episode_before_title_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=14, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            server.record_watch_event(self.watch_payload(detail, episode_index=1), db_path, user_id)
+            server.update_user_state(anime_id, {"progress_episode_number": 1}, db_path, user_id)
+
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+
+            self.assertEqual(updated["progress_episode_number"], 1)
+            self.assertEqual(updated["last_watch"]["episode_number"], "2")
+            self.assertEqual(updated["last_watch"]["progress_episode_number"], 2)
+            self.assertEqual(
+                updated["last_watch"]["video_source_id"],
+                updated["sources_by_episode"][updated["last_watch"]["episode_id"]][0]["id"],
+            )
+
     def test_continue_watching_opens_next_episode_after_likely_completion(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -2057,16 +2076,24 @@ assert.deepStrictEqual(rankedIds("zz"), []);
     def test_frontend_opens_saved_progress_episode_without_deep_link(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         self.assertIn("function episodeIdForProgress(progressEpisodeNumber)", js)
+        self.assertIn("function episodeIdForLastWatch(lastWatch)", js)
         self.assertIn("numberFrom(episode.number) === progress", js)
 
         start = js.index("function applyDetailLinkState")
         end = js.index("function numericValue", start)
         apply_detail = js[start:end]
-        explicit_index = apply_detail.index("matchingEpisodeId(linkState.episodeId)")
-        progress_index = apply_detail.index("episodeIdForProgress(state.detail.progress_episode_number)")
-        first_available_index = apply_detail.index("firstAvailable || state.detail.episodes[0]")
-        self.assertLess(explicit_index, progress_index)
+        self.assertIn("episodeIdForLastWatch(lastWatch)", apply_detail)
+        selected_start = apply_detail.index("state.selectedEpisodeId")
+        selected_end = apply_detail.index("state.selectedContentSource", selected_start)
+        selected_chain = apply_detail[selected_start:selected_end]
+        explicit_index = selected_chain.index("matchingEpisodeId(linkState.episodeId)")
+        last_watch_index = selected_chain.index("lastWatchEpisodeId")
+        progress_index = selected_chain.index("episodeIdForProgress(state.detail.progress_episode_number)")
+        first_available_index = selected_chain.index("firstAvailable || state.detail.episodes[0]")
+        self.assertLess(explicit_index, last_watch_index)
+        self.assertLess(last_watch_index, progress_index)
         self.assertLess(progress_index, first_available_index)
+        self.assertIn("lastWatch?.video_source_id", apply_detail)
 
     def test_admin_link_is_created_only_after_admin_user_payload(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

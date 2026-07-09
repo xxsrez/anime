@@ -650,6 +650,12 @@ function episodeIdForProgress(progressEpisodeNumber) {
   return matching ? matching.id : null;
 }
 
+function episodeIdForLastWatch(lastWatch) {
+  if (!lastWatch) return null;
+  return matchingEpisodeId(lastWatch.episode_id)
+    || episodeIdForProgress(lastWatch.progress_episode_number || lastWatch.episode_number);
+}
+
 function matchingContentSource(source) {
   if (!source) return null;
   return sourceVariants(state.detail).some(variant => variant.source === source) ? source : null;
@@ -657,16 +663,20 @@ function matchingContentSource(source) {
 
 function applyDetailLinkState(linkState = {}) {
   const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
+  const lastWatch = state.detail.last_watch || null;
+  const lastWatchEpisodeId = !linkState.episodeId ? episodeIdForLastWatch(lastWatch) : null;
   state.selectedEpisodeId = matchingEpisodeId(linkState.episodeId)
+    || lastWatchEpisodeId
     || episodeIdForProgress(state.detail.progress_episode_number)
     || (firstAvailable || state.detail.episodes[0] || {}).id
     || null;
 
   state.selectedContentSource = matchingContentSource(linkState.contentSource)
+    || (lastWatchEpisodeId ? matchingContentSource(lastWatch?.source) : null)
     || preferredContentSource(state.detail, state.selectedEpisodeId);
 
-  state.selectedTranslation = linkState.translation || null;
-  state.selectedSourceId = linkState.provider || null;
+  state.selectedTranslation = linkState.translation || (lastWatchEpisodeId ? lastWatch?.translation_id : null) || null;
+  state.selectedSourceId = linkState.provider || (lastWatchEpisodeId ? lastWatch?.video_source_id : null) || null;
 }
 
 function numericValue(value) {

@@ -2916,6 +2916,21 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     state = get_group_state(con, member_ids, user_id)
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
+    latest_watch_row = None
+    if user_id is not None:
+        latest_watch_row = con.execute(
+            f"""
+            select *
+            from user_episode_state
+            where user_id = ?
+              and anime_id in ({member_sql})
+              and started_at is not null
+            order by last_seen_at desc
+            limit 1
+            """,
+            (user_id, *member_ids),
+        ).fetchone()
+        latest_watch_row = dict(latest_watch_row) if latest_watch_row else None
     con.close()
 
     episode_buckets = {}
@@ -2977,6 +2992,10 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
     detail["recent_updates"] = [dict(update) for update in group.get("recent_updates") or []]
     detail["recent_update_summary"] = dict(group["recent_update_summary"]) if group.get("recent_update_summary") else None
+    if latest_watch_row:
+        last_watch = detail_watch_target_from_episode_state(latest_watch_row, detail)
+        if last_watch:
+            detail["last_watch"] = last_watch
     return detail
 
 
@@ -3610,6 +3629,35 @@ def source_for_continue_target(detail, episode_id, row):
                 return source
 
     return sources[0]
+
+
+def detail_watch_target_from_episode_state(row, detail):
+    episodes = detail.get("episodes") or []
+    current = next((episode for episode in episodes if str(episode.get("id")) == str(row.get("episode_id"))), None)
+    if not current and row.get("progress_episode_number") is not None:
+        current = next(
+            (
+                episode
+                for episode in episodes
+                if episode_progress_number(episode.get("number")) == row.get("progress_episode_number")
+            ),
+            None,
+        )
+    if not current:
+        return None
+
+    selected_source = source_for_continue_target(detail, current["id"], row)
+    return {
+        "episode_id": current["id"],
+        "episode_number": current.get("number"),
+        "progress_episode_number": row.get("progress_episode_number"),
+        "source": selected_source.get("source") if selected_source else row.get("source"),
+        "translation_id": selected_source.get("translation_id") if selected_source else row.get("translation_id"),
+        "provider_id": selected_source.get("provider_id") if selected_source else row.get("provider_id"),
+        "video_source_id": selected_source.get("id") if selected_source else row.get("video_source_id"),
+        "last_seen_at": row.get("last_seen_at"),
+        "engaged_seconds": row.get("engaged_seconds"),
+    }
 
 
 def next_available_episode(episodes, progress_episode_number):
