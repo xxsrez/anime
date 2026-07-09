@@ -2213,6 +2213,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         end = js.index("el.search.addEventListener", start)
         load_for_view = js[start:end]
         self.assertIn("function loadRecommendationsForView({ force = false, selectFirst = true } = {})", load_for_view)
+        self.assertIn("const request = ensureRecommendations({ force });", load_for_view)
+        self.assertIn("const requestId = state.recommendationsRequestId;", load_for_view)
+        self.assertIn("if (requestId !== state.recommendationsRequestId) return;", load_for_view)
         self.assertIn("applyFilter({ selectFirst });", load_for_view)
         self.assertNotIn("applyFilter({ selectFirst: true });", load_for_view)
         self.assertIn("reportActionError(\"load recommendations\")(error);", load_for_view)

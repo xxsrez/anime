@@ -2032,12 +2032,16 @@ function ensureRecommendations({ force = false } = {}) {
 function loadRecommendationsForView({ force = false, selectFirst = true } = {}) {
   if (!isRecommendationView()) return;
   if (!force && state.recommendationsLoaded) return;
-  ensureRecommendations({ force })
+  const request = ensureRecommendations({ force });
+  const requestId = state.recommendationsRequestId;
+  request
     .then(() => {
+      if (requestId !== state.recommendationsRequestId) return;
       if (isRecommendationView()) applyFilter({ selectFirst });
       if (state.detail) renderRecommendationContext(state.detail);
     })
     .catch(error => {
+      if (requestId !== state.recommendationsRequestId) return;
       reportActionError("load recommendations")(error);
       if (isRecommendationView()) applyFilter();
     });
