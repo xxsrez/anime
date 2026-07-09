@@ -89,9 +89,11 @@ current episode manually, or mark the title as watched. Automatic iframe-focus,
 fullscreen/PiP, source-change, and heartbeat signals update the same current
 episode control. The sidebar can filter all titles, favorites, titles with
 progress, or the top recommendation list. Recommendations are computed from the
-current user's favorites/progress/watched state and show the 20 strongest
-candidates first with short reasons. A newly created Google user starts with
-empty local state; anonymous/local profile state is not supported.
+current user's favorites, explicitly watched titles, and meaningful watch
+history from the player; a short accidental visit does not become a taste seed.
+Favorites and explicitly watched titles are weighted much higher than automatic
+watch history. A newly created Google user starts with empty local state;
+anonymous/local profile state is not supported.
 
 Refresh the watchable catalog with player data:
 

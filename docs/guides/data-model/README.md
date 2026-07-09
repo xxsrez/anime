@@ -100,12 +100,15 @@ Per-user mutable state:
 - `watched`.
 - `updated_at`.
 
-The primary key is `(user_id, anime_id)`. The recommendation endpoint reads
-this table for the current user as the taste profile. Favorites are strongest,
-watched titles are weaker, and in-progress titles also count. Recommendations
-themselves are computed at request time and are not persisted. New Google users
-start with no `user_title_state` rows. Anonymous/local profile state is not
-supported.
+The primary key is `(user_id, anime_id)`. The recommendation endpoint reads this
+table together with `user_episode_state` for the current-user taste profile.
+Favorites and explicit watched titles are strongest, while automatic watch
+history only counts after an episode has at least five engaged minutes and uses
+a lighter seed weight.
+In-progress titles from short visits still support progress/continue-watching
+but do not become taste seeds. Recommendations themselves are computed at request
+time and are not persisted. New Google users start with no `user_title_state`
+rows. Anonymous/local profile state is not supported.
 
 `user_watch_events`
 

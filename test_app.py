@@ -969,6 +969,27 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(detail["progress_episode_number"], 7)
             self.assertTrue(detail["watched"])
 
+    def test_user_activity_does_not_rebuild_catalog_cache(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=14, episode_count=1)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            server.invalidate_catalog_cache(db_path)
+            with patch.object(server, "build_catalog_cache", wraps=server.build_catalog_cache) as build_cache:
+                server.get_anime_detail(anime_id, db_path, user_id)
+                self.assertEqual(build_cache.call_count, 1)
+
+                server.update_user_state(anime_id, {"is_favorite": True}, db_path, user_id)
+                server.record_watch_event(self.watch_payload(detail), db_path, user_id)
+                os.utime(db_path, None)
+
+                updated = server.get_anime_detail(anime_id, db_path, user_id)
+                self.assertTrue(updated["is_favorite"])
+                self.assertEqual(updated["progress_episode_number"], 1)
+                self.assertEqual(build_cache.call_count, 1)
+
     def test_user_state_update_requires_real_user(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -1083,6 +1104,71 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(status, 200)
             payload = json.loads(response)
             self.assertEqual(payload["state"]["progress_episode_number"], 1)
+
+    def test_recommendation_profile_ignores_short_watch_and_weights_explicit_intent_higher(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            short_id = self.seed_watchable_title(db_path, anime_id=20, title="Short Watch", episode_count=1)
+            meaningful_id = self.seed_watchable_title(db_path, anime_id=21, title="Meaningful Watch", episode_count=1)
+            favorite_id = self.seed_watchable_title(db_path, anime_id=22, title="Favorite Seed", episode_count=1)
+            watched_id = self.seed_watchable_title(db_path, anime_id=23, title="Watched Seed", episode_count=1)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            con = server.connect(db_path)
+            try:
+                con.executemany(
+                    "insert into anime_genres(anime_id, genre) values (?, ?)",
+                    [
+                        (short_id, "Short Genre"),
+                        (meaningful_id, "Meaningful Genre"),
+                        (favorite_id, "Favorite Genre"),
+                        (watched_id, "Watched Genre"),
+                    ],
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            short_detail = server.get_anime_detail(short_id, db_path, user_id)
+            server.record_watch_event(self.watch_payload(short_detail), db_path, user_id)
+
+            meaningful_detail = server.get_anime_detail(meaningful_id, db_path, user_id)
+            server.record_watch_event(self.watch_payload(meaningful_detail), db_path, user_id)
+            heartbeat = self.watch_payload(meaningful_detail, event_type="heartbeat")
+            heartbeat["engaged_seconds"] = server.MEANINGFUL_WATCH_SECONDS
+            server.record_watch_event(heartbeat, db_path, user_id)
+
+            server.update_user_state(favorite_id, {"is_favorite": True}, db_path, user_id)
+            server.update_user_state(watched_id, {"watched": True}, db_path, user_id)
+
+            items = {item["id"]: item for item in server.get_anime_list(db_path, user_id=user_id)}
+            self.assertEqual(items[short_id]["progress_episode_number"], 1)
+            self.assertEqual(server.seed_weight(items[short_id]), 0.0)
+            self.assertEqual(items[meaningful_id]["meaningful_watch_seconds"], server.MEANINGFUL_WATCH_SECONDS)
+            self.assertEqual(server.seed_weight(items[meaningful_id]), server.MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT)
+            self.assertEqual(server.seed_weight(items[favorite_id]), server.FAVORITE_RECOMMENDATION_SEED_WEIGHT)
+            self.assertEqual(server.seed_weight(items[watched_id]), server.WATCHED_RECOMMENDATION_SEED_WEIGHT)
+            self.assertEqual(server.seed_weight(items[favorite_id]), 3.0)
+            self.assertEqual(server.seed_weight(items[watched_id]), 3.0)
+            self.assertEqual(server.seed_weight(items[meaningful_id]), 1.0)
+            self.assertGreaterEqual(
+                server.seed_weight(items[favorite_id]) / server.seed_weight(items[meaningful_id]),
+                3.0,
+            )
+
+            profile = server.build_recommendation_profile(items.values())
+            self.assertNotIn(server.normalize_key("Short Genre"), profile["genre_weights"])
+            self.assertEqual(
+                profile["genre_weights"][server.normalize_key("Meaningful Genre")],
+                server.MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT,
+            )
+            self.assertEqual(
+                profile["genre_weights"][server.normalize_key("Favorite Genre")],
+                server.FAVORITE_RECOMMENDATION_SEED_WEIGHT,
+            )
+            self.assertEqual(
+                profile["genre_weights"][server.normalize_key("Watched Genre")],
+                server.WATCHED_RECOMMENDATION_SEED_WEIGHT,
+            )
 
     def test_api_requires_authenticated_session(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1967,6 +2053,20 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('sendWatchEvent("heartbeat"', js)
         self.assertIn("markWatchSessionManuallyCorrected", js)
         self.assertIn("session.manuallyCorrected", js)
+
+    def test_frontend_opens_saved_progress_episode_without_deep_link(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        self.assertIn("function episodeIdForProgress(progressEpisodeNumber)", js)
+        self.assertIn("numberFrom(episode.number) === progress", js)
+
+        start = js.index("function applyDetailLinkState")
+        end = js.index("function numericValue", start)
+        apply_detail = js[start:end]
+        explicit_index = apply_detail.index("matchingEpisodeId(linkState.episodeId)")
+        progress_index = apply_detail.index("episodeIdForProgress(state.detail.progress_episode_number)")
+        first_available_index = apply_detail.index("firstAvailable || state.detail.episodes[0]")
+        self.assertLess(explicit_index, progress_index)
+        self.assertLess(progress_index, first_available_index)
 
     def test_admin_link_is_created_only_after_admin_user_payload(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

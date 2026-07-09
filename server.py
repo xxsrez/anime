@@ -96,9 +96,13 @@ WATCH_PROGRESS_EVENT_TYPES = {
     "source_changed",
 }
 WATCH_STARTED_CONFIDENCE = 0.65
+MEANINGFUL_WATCH_SECONDS = 5 * 60
 WATCH_LIKELY_COMPLETED_SECONDS = 18 * 60
 WATCH_NEXT_EPISODE_COMPLETION_SECONDS = 60
 MAX_WATCH_EVENT_ENGAGED_SECONDS = 5 * 60
+FAVORITE_RECOMMENDATION_SEED_WEIGHT = 3.0
+WATCHED_RECOMMENDATION_SEED_WEIGHT = 3.0
+MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT = 1.0
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
 SEARCH_FOLDS = (
@@ -858,11 +862,6 @@ def maybe_apply_database_migrations(path):
     return bool(result["applied"])
 
 
-def db_signature(path):
-    stat = path.stat()
-    return (stat.st_mtime_ns, stat.st_size)
-
-
 def ensure_base_database(path):
     if path.parent != Path("."):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1530,6 +1529,13 @@ def aggregate_item_state(item, variants):
         (variant.get("state_updated_at") for variant in variants if variant.get("state_updated_at")),
         default=None,
     )
+    item["watch_engaged_seconds"] = sum(int(variant.get("watch_engaged_seconds") or 0) for variant in variants)
+    item["meaningful_watch_seconds"] = sum(int(variant.get("meaningful_watch_seconds") or 0) for variant in variants)
+    item["meaningful_watch_episode_count"] = sum(int(variant.get("meaningful_watch_episode_count") or 0) for variant in variants)
+    item["watch_last_seen_at"] = max(
+        (variant.get("watch_last_seen_at") for variant in variants if variant.get("watch_last_seen_at")),
+        default=None,
+    )
     return item
 
 
@@ -1818,11 +1824,11 @@ def normalize_recommendation_limit(limit):
 
 def seed_weight(item):
     if item.get("is_favorite"):
-        return 2.0
+        return FAVORITE_RECOMMENDATION_SEED_WEIGHT
     if item.get("watched"):
-        return 1.1
-    if item.get("progress_episode_number") is not None:
-        return 0.8
+        return WATCHED_RECOMMENDATION_SEED_WEIGHT
+    if (numeric(item.get("meaningful_watch_seconds")) or 0) >= MEANINGFUL_WATCH_SECONDS:
+        return MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT
     return 0.0
 
 
@@ -2006,7 +2012,7 @@ def recommendation_reasons(item, matched_genres, based_on):
         reasons.append(f"Совпали жанры: {', '.join(matched_genres[:4])}")
     if based_on:
         titles = ", ".join(match["title"] for match in based_on[:2])
-        reasons.append(f"Близко к избранному: {titles}")
+        reasons.append(f"Похоже на: {titles}")
 
     score = best_score(item)
     if score is not None:
@@ -2365,11 +2371,51 @@ def load_user_state_by_source_id(db_path=None, user_id=None):
     try:
         rows = con.execute(
             """
-            select anime_id, is_favorite, progress_episode_number, watched, updated_at
-            from user_title_state
-            where user_id = ?
+            with
+                watch_stats as (
+                    select
+                        anime_id,
+                        sum(engaged_seconds) as watch_engaged_seconds,
+                        sum(case when engaged_seconds >= ? then engaged_seconds else 0 end) as meaningful_watch_seconds,
+                        sum(case when engaged_seconds >= ? then 1 else 0 end) as meaningful_watch_episode_count,
+                        max(last_seen_at) as watch_last_seen_at
+                    from user_episode_state
+                    where user_id = ?
+                      and started_at is not null
+                    group by anime_id
+                ),
+                anime_keys as (
+                    select anime_id
+                    from user_title_state
+                    where user_id = ?
+                    union
+                    select anime_id
+                    from watch_stats
+                )
+            select
+                k.anime_id,
+                coalesce(us.is_favorite, 0) as is_favorite,
+                us.progress_episode_number,
+                coalesce(us.watched, 0) as watched,
+                us.updated_at,
+                coalesce(ws.watch_engaged_seconds, 0) as watch_engaged_seconds,
+                coalesce(ws.meaningful_watch_seconds, 0) as meaningful_watch_seconds,
+                coalesce(ws.meaningful_watch_episode_count, 0) as meaningful_watch_episode_count,
+                ws.watch_last_seen_at
+            from anime_keys k
+            left join user_title_state us
+              on us.anime_id = k.anime_id
+             and us.user_id = ?
+            left join watch_stats ws
+              on ws.anime_id = k.anime_id
             """,
-            (int(user_id),),
+            (
+                MEANINGFUL_WATCH_SECONDS,
+                MEANINGFUL_WATCH_SECONDS,
+                int(user_id),
+                int(user_id),
+                int(user_id),
+            ),
         ).fetchall()
     except sqlite3.OperationalError:
         return {}
@@ -2551,7 +2597,6 @@ def build_catalog_cache(db_path=None):
             id_map[int(variant["id"])] = item
 
     return {
-        "signature": db_signature(path),
         "items": items,
         "id_map": id_map,
         "slug_map": slug_map,
@@ -2562,11 +2607,13 @@ def build_catalog_cache(db_path=None):
 def get_catalog_cache(db_path=None, user_id=None):
     path = resolve_db_path(db_path)
     key = str(path.resolve())
-    signature = db_signature(path)
     with CATALOG_CACHE_LOCK:
         cached = CATALOG_CACHE.get(key)
-        if cached and cached.get("signature") == signature:
+        if cached:
             return cached
+        # The catalog cache intentionally ignores mutable user tables. Progress,
+        # watch events, and favorites are overlaid per request; catalog-changing
+        # sync/import paths must call invalidate_catalog_cache explicitly.
         cached = build_catalog_cache(path)
         CATALOG_CACHE[key] = cached
         return cached
@@ -2617,20 +2664,41 @@ def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
     return get_catalog_cache(db_path, user_id)["slug_map"].get(value)
 
 
+def row_value(row, key, default=None):
+    if isinstance(row, sqlite3.Row):
+        return row[key] if key in row.keys() else default
+    return row.get(key, default)
+
+
 def aggregate_state_rows(rows):
     if not rows:
         return normalize_state(None)
     progress_values = [
-        row["progress_episode_number"]
+        row_value(row, "progress_episode_number")
         for row in rows
-        if row["progress_episode_number"] is not None
+        if row_value(row, "progress_episode_number") is not None
     ]
-    return {
-        "is_favorite": any(bool(row["is_favorite"]) for row in rows),
+    state = {
+        "is_favorite": any(bool(row_value(row, "is_favorite")) for row in rows),
         "progress_episode_number": max(progress_values) if progress_values else None,
-        "watched": any(bool(row["watched"]) for row in rows),
-        "updated_at": max((row["updated_at"] for row in rows if row["updated_at"]), default=None),
+        "watched": any(bool(row_value(row, "watched")) for row in rows),
+        "updated_at": max((row_value(row, "updated_at") for row in rows if row_value(row, "updated_at")), default=None),
     }
+    watch_engaged_seconds = sum(int(row_value(row, "watch_engaged_seconds", 0) or 0) for row in rows)
+    meaningful_watch_seconds = sum(int(row_value(row, "meaningful_watch_seconds", 0) or 0) for row in rows)
+    meaningful_watch_episode_count = sum(int(row_value(row, "meaningful_watch_episode_count", 0) or 0) for row in rows)
+    watch_last_seen_at = max(
+        (row_value(row, "watch_last_seen_at") for row in rows if row_value(row, "watch_last_seen_at")),
+        default=None,
+    )
+    if watch_engaged_seconds or meaningful_watch_seconds or meaningful_watch_episode_count or watch_last_seen_at:
+        state.update({
+            "watch_engaged_seconds": watch_engaged_seconds,
+            "meaningful_watch_seconds": meaningful_watch_seconds,
+            "meaningful_watch_episode_count": meaningful_watch_episode_count,
+            "watch_last_seen_at": watch_last_seen_at,
+        })
+    return state
 
 
 def get_group_state(con, anime_ids, user_id=None):

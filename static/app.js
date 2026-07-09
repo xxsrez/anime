@@ -638,6 +638,18 @@ function matchingEpisodeId(episodeId) {
   return episode ? episode.id : null;
 }
 
+function episodeIdForProgress(progressEpisodeNumber) {
+  const progress = numberFrom(progressEpisodeNumber);
+  if (progress == null) return null;
+  const episodes = state.detail?.episodes || [];
+  const withVideo = episodes.find(episode => (
+    (episode.source_count || 0) > 0
+    && numberFrom(episode.number) === progress
+  ));
+  const matching = withVideo || episodes.find(episode => numberFrom(episode.number) === progress);
+  return matching ? matching.id : null;
+}
+
 function matchingContentSource(source) {
   if (!source) return null;
   return sourceVariants(state.detail).some(variant => variant.source === source) ? source : null;
@@ -646,6 +658,7 @@ function matchingContentSource(source) {
 function applyDetailLinkState(linkState = {}) {
   const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
   state.selectedEpisodeId = matchingEpisodeId(linkState.episodeId)
+    || episodeIdForProgress(state.detail.progress_episode_number)
     || (firstAvailable || state.detail.episodes[0] || {}).id
     || null;
 
@@ -1999,14 +2012,6 @@ function loadSearchFieldsInBackground() {
   ensureSearchFields().catch(reportActionError("load search fields"));
 }
 
-function scheduleSearchFieldsLoad() {
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(loadSearchFieldsInBackground, { timeout: 3000 });
-    return;
-  }
-  window.setTimeout(loadSearchFieldsInBackground, 1000);
-}
-
 async function loadRecommendations() {
   const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
   state.recommendationProfile = payload.profile || null;
@@ -2219,7 +2224,6 @@ async function boot() {
   markPerformanceCheckpoint("initial_detail_loaded", { selected_anime_id: state.selectedAnimeId });
   markPerformanceCheckpoint("boot_complete");
   reportHomePerformance("success");
-  scheduleSearchFieldsLoad();
 }
 
 boot().catch(error => {

@@ -184,8 +184,11 @@ YummyAnime variant ID resolve to the same AnimeGO-primary canonical detail.
 `GET /api/recommendations`
 
 Requires authentication. Returns recommended titles plus current-user profile
-metadata. Optional `limit` defaults to 20 and is clamped to 1..50. Response
-fields include:
+metadata. Optional `limit` defaults to 20 and is clamped to 1..50. The taste
+profile uses favorites and explicit watched state as the strongest signals, and
+automatic watch history only as a lighter signal after an episode has at least
+five engaged minutes. Short player visits update progress/continue-watching but
+do not become recommendation seeds. Response fields include:
 
 - `items` - ranked title rows with `recommendation_score`,
   `recommendation_rank`, `recommendation_confidence`, `recommendation_reasons`,
