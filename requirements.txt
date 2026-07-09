@@ -1,5 +1,4 @@
-beautifulsoup4
-google-auth
-lxml
-playwright
-requests
+beautifulsoup4==4.15.0
+google-auth==2.55.1
+lxml==6.1.1
+requests==2.34.2

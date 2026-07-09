@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# Browser smoke/e2e tooling; not required by the production runtime.
+playwright==1.61.0
+
+# Reproducible local quality/security checks.
+bandit==1.9.4
+pip-audit==2.10.1
+ruff==0.15.21

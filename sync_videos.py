@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 import argparse
 from collections import OrderedDict, defaultdict
+from contextlib import ExitStack
 import copy
-import fcntl
 import json
 import os
 from pathlib import Path
+import shutil
 import sqlite3
+import sys
 import tempfile
 import time
 import traceback
 import urllib.error
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 import backfill_players
 import content_updates
 import scrape_animego as animego
 import scrape_yummyanime as yummy
 from scripts import db_data_diff
+from scripts.atomic_publish import atomic_publish_directory
+from scripts.http_safety import open_validated_url
+from scripts.operation_lock import DatabaseOperationLock, OperationLockError, default_lock_path
 
 
 YUMMY_FEED_URL = f"{yummy.YUMMYANI_API_BASE}/feed"
@@ -28,25 +33,18 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_PRIVATE_MIGRATIONS = ROOT / "data" / "private-migrations"
 
 
-class FileLock:
-    def __init__(self, path, wait=False):
-        self.path = path
-        self.wait = wait
-        self.handle = None
+class SyncFailedError(RuntimeError):
+    def __init__(self, stats):
+        self.stats = stats
+        failed = sum(int(source_stats.get("failed") or 0) for source_stats in stats.values())
+        super().__init__(f"sync completed with {failed} failed operation(s)")
 
-    def __enter__(self):
-        self.handle = open(self.path, "w", encoding="utf-8")
-        flags = fcntl.LOCK_EX if self.wait else fcntl.LOCK_EX | fcntl.LOCK_NB
-        try:
-            fcntl.flock(self.handle, flags)
-        except BlockingIOError as exc:
-            raise RuntimeError(f"sync already running: {self.path}") from exc
-        return self
 
-    def __exit__(self, exc_type, exc, tb):
-        if self.handle:
-            fcntl.flock(self.handle, fcntl.LOCK_UN)
-            self.handle.close()
+class FileLock(DatabaseOperationLock):
+    """Backward-compatible wrapper used by older callers and tests."""
+
+    def __init__(self, path, wait=False, timeout=30.0):
+        super().__init__("", path=path, wait=wait, timeout=timeout, operation="content sync")
 
 
 def connect(db_path):
@@ -228,10 +226,12 @@ def call_with_retries(args, label, func):
             return func()
         except urllib.error.HTTPError as exc:
             last_exc = exc
-            if exc.code not in RETRYABLE_HTTP_CODES or attempt == attempts:
+            code = exc.code
+            exc.close()
+            if code not in RETRYABLE_HTTP_CODES or attempt == attempts:
                 raise
             wait = args.retry_backoff * attempt
-            print(f"  retry {label} after HTTP {exc.code} ({attempt}/{attempts}), sleeping {wait:.1f}s")
+            print(f"  retry {label} after HTTP {code} ({attempt}/{attempts}), sleeping {wait:.1f}s")
             time.sleep(wait)
         except urllib.error.URLError as exc:
             last_exc = exc
@@ -258,7 +258,7 @@ def fetch_json_url(url, args):
         if args.delay:
             time.sleep(args.delay)
         req = Request(url, headers=api_headers(args))
-        with urlopen(req, timeout=30) as response:
+        with open_validated_url(req, timeout=30, allowed_hosts=("api.yani.tv",)) as response:
             return json.loads(response.read().decode("utf-8", "replace"))
 
     return call_with_retries(args, url, fetch)
@@ -333,6 +333,7 @@ def filter_episodes_with_providers(episodes, providers):
 
 def write_sync_run(con, mode, source, started_at, stats):
     finished_at = animego.now_iso()
+    succeeded = not int(stats.get("failed") or 0)
     con.execute(
         """
         insert into video_sync_runs(mode, source, started_at, finished_at, stats_json)
@@ -340,14 +341,27 @@ def write_sync_run(con, mode, source, started_at, stats):
         """,
         (mode, source, started_at, finished_at, json.dumps(dict(stats), ensure_ascii=False, sort_keys=True)),
     )
-    con.execute(
+    for suffix, value in (
+        ("last_attempt", finished_at),
+        ("last_status", "success" if succeeded else "failed"),
+    ):
+        con.execute(
+            """
+            insert into video_sync_state(key, value, updated_at)
+            values (?, ?, ?)
+            on conflict(key) do update set value=excluded.value, updated_at=excluded.updated_at
+            """,
+            (f"{source}:{mode}:{suffix}", value, finished_at),
+        )
+    if succeeded:
+        con.execute(
         """
         insert into video_sync_state(key, value, updated_at)
         values (?, ?, ?)
         on conflict(key) do update set value=excluded.value, updated_at=excluded.updated_at
         """,
         (f"{source}:{mode}:last_success", finished_at, finished_at),
-    )
+        )
 
 
 def finish_title(con, args):
@@ -470,7 +484,13 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
-    animego.upsert_anime(con, item, detail, args.scraped_at)
+    animego.upsert_anime(
+        con,
+        item,
+        detail,
+        args.scraped_at,
+        authoritative_metadata=reason != "manual",
+    )
     for episode, episode_providers, _before in writes:
         animego.upsert_episode(
             con,
@@ -539,7 +559,10 @@ def sync_yummy_ongoing(con, args, stats):
     refs = []
     seen = set()
     offset = 0
-    while True:
+    max_pages = max(1, int(getattr(args, "yummy_ongoing_max_pages", 100)))
+    page_count = 0
+    while page_count < max_pages:
+        page_count += 1
         query = urlencode(
             {
                 "status": "ongoing",
@@ -561,6 +584,7 @@ def sync_yummy_ongoing(con, args, stats):
         rows = payload.get("response") or []
         if not rows:
             break
+        before_count = len(refs)
         for row in rows:
             anime_url = row.get("anime_url")
             if anime_url and anime_url not in seen:
@@ -570,7 +594,22 @@ def sync_yummy_ongoing(con, args, stats):
             break
         if args.yummy_limit and len(refs) >= args.yummy_limit:
             break
+        if len(refs) == before_count:
+            stats["ongoing_failed"] += 1
+            stats["failed"] += 1
+            print(
+                f"yummyanime ongoing offset {offset}: full page contained no new titles; "
+                "stopping to avoid an infinite pagination loop"
+            )
+            break
         offset += YUMMY_ONGOING_PAGE_SIZE
+    else:
+        stats["ongoing_failed"] += 1
+        stats["failed"] += 1
+        print(
+            f"yummyanime ongoing: reached --yummy-ongoing-max-pages="
+            f"{max_pages} before the feed ended"
+        )
 
     if args.yummy_limit:
         refs = refs[: args.yummy_limit]
@@ -662,13 +701,13 @@ def animego_item_from_row(row):
     }
 
 
-def animego_item_from_ref(anime_ref):
+def animego_item_from_ref(anime_ref, con=None):
     url = animego.absolute_url(str(anime_ref))
     anime_id = animego.parse_anime_id(url)
     if not anime_id:
         raise ValueError(f"AnimeGO manual refs must be title URLs with numeric ids: {anime_ref}")
     slug = animego.parse_slug(url)
-    return {
+    item = {
         "id": anime_id,
         "slug": slug,
         "title": slug,
@@ -683,6 +722,16 @@ def animego_item_from_ref(anime_ref):
         "genres": [],
         "listing_description": None,
     }
+    if con is not None:
+        cursor = con.execute("select * from anime where id = ?", (anime_id,))
+        row = cursor.fetchone()
+        if row is not None:
+            if not hasattr(row, "keys"):
+                row = dict(zip((column[0] for column in cursor.description), row, strict=True))
+            item = animego_item_from_row(row)
+            item["slug"] = slug or item["slug"]
+            item["url"] = url
+    return item
 
 
 def collect_animego_listing(args, stats=None):
@@ -705,7 +754,11 @@ def collect_animego_listing(args, stats=None):
         for page in range(1, max_pages + 1):
             page_url = source_url if page == 1 else f"{source_url}/{page}"
             try:
-                page_html = call_with_retries(args, page_url, lambda: animego.fetch_text(page_url, delay=args.delay))
+                page_html = call_with_retries(
+                    args,
+                    page_url,
+                    lambda page_url=page_url: animego.fetch_text(page_url, delay=args.delay),
+                )
             except urllib.error.HTTPError as exc:
                 if exc.code == 404 and args.animego_discover_pages == 0:
                     print(f"animego listing {source_url} page {page}: 404, stopping")
@@ -787,11 +840,12 @@ def sync_animego_item(con, item, args, stats, reason):
             providers = initial_providers
             unavailable_reason = None
         else:
+            episode_id = episode["id"]
             video_json = call_with_retries(
                 args,
-                f"/player/videos/{episode['id']}",
-                lambda: json.loads(
-                    animego.fetch_text(f"/player/videos/{episode['id']}", ajax=True, referer=item["url"], delay=args.delay)
+                f"/player/videos/{episode_id}",
+                lambda episode_id=episode_id: json.loads(
+                    animego.fetch_text(f"/player/videos/{episode_id}", ajax=True, referer=item["url"], delay=args.delay)
                 ),
             )
             data = video_json.get("data", {})
@@ -833,7 +887,13 @@ def sync_animego_item(con, item, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
-    animego.upsert_anime(con, item, detail, args.scraped_at)
+    animego.upsert_anime(
+        con,
+        item,
+        detail,
+        args.scraped_at,
+        authoritative_metadata=reason != "manual",
+    )
     for episode, providers, unavailable_reason, _before in writes:
         animego.upsert_episode(
             con,
@@ -860,7 +920,7 @@ def sync_animego(con, args):
         print(f"[animego manual {index}/{len(args.animego_refs)}] {anime_ref}")
         begin_title(con, args)
         try:
-            sync_animego_item(con, animego_item_from_ref(anime_ref), args, stats, "manual")
+            sync_animego_item(con, animego_item_from_ref(anime_ref, con), args, stats, "manual")
             finish_title(con, args)
         except Exception as exc:
             abort_title(con, args)
@@ -998,12 +1058,19 @@ def parse_args(argv=None):
     parser.add_argument("--yummy-from-year", type=int)
     parser.add_argument("--yummy-to-year", type=int)
     parser.add_argument("--yummy-catalog-max-pages", type=int, default=100)
+    parser.add_argument(
+        "--yummy-ongoing-max-pages",
+        type=int,
+        default=100,
+        help="hard safety limit for ongoing-feed pagination",
+    )
     parser.add_argument("--yummyani-token", default="", help="optional X-Application header value for api.yani.tv")
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--retry-attempts", type=int, default=4)
     parser.add_argument("--retry-backoff", type=float, default=8.0)
     parser.add_argument("--lock-file", help="override sync lock path")
     parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
@@ -1067,56 +1134,154 @@ def chunked_migration_filename(filename, index):
     return f"{path.stem}-{index:02d}{path.suffix}"
 
 
-def write_migration_files(root, folder, filename, header, statements, overwrite=False, max_bytes=900_000):
-    statements = [statement.rstrip() for statement in statements if statement.strip()]
-    if not statements:
-        return []
+def migration_bundle_members(folder_path, filename):
+    base = Path(filename)
+    chunk_pattern = f"{base.stem}-*{base.suffix}"
+    members = []
+    direct = folder_path / base.name
+    if direct.exists():
+        members.append(direct)
+    members.extend(
+        path
+        for path in folder_path.glob(chunk_pattern)
+        if path.is_file()
+        and path.stem[len(base.stem) + 1 :].isdigit()
+    )
+    return sorted(set(members))
+
+
+def write_migration_files(
+    root,
+    folder,
+    filename,
+    header,
+    statements,
+    overwrite=False,
+    max_bytes=900_000,
+    publish_wait=False,
+    publish_timeout=30.0,
+):
+    if "/" in filename or (os.altsep and os.altsep in filename):
+        raise ValueError("--migration-script must be a file name, not a path")
+    if not filename.lower().endswith(".sql"):
+        raise ValueError("--migration-script must end with .sql")
 
     if max_bytes is not None and max_bytes < 1:
         max_bytes = None
 
-    full_sql = header + "\n\n".join(statements).rstrip() + "\n"
-    if max_bytes is None or len(full_sql.encode("utf-8")) <= max_bytes:
-        path = write_migration_file(root, folder, filename, full_sql, overwrite=overwrite)
-        return [path] if path else []
+    iterator = iter(statements)
+    try:
+        first_statement = None
+        for statement in iterator:
+            if statement and statement.strip():
+                first_statement = statement.rstrip()
+                break
+        if first_statement is None:
+            return []
 
-    paths = []
-    chunk = []
-    chunk_size = 0
-    chunk_index = 0
+        root = Path(root)
+        target_folder = root / folder
+        root.mkdir(parents=True, exist_ok=True)
+        with (
+            atomic_publish_directory(
+                target_folder,
+                stage_prefix=f".{folder}.stage-",
+                previous_prefix=f".{folder}.old-",
+                wait=publish_wait,
+                timeout=publish_timeout,
+                operation=f"migration publication: {folder}",
+            ) as stage,
+            ExitStack() as handles,
+        ):
+            existing = (
+                migration_bundle_members(target_folder, filename)
+                if target_folder.exists()
+                else []
+            )
+            if existing and not overwrite:
+                raise FileExistsError(
+                    "migration bundle already exists: "
+                    + ", ".join(str(path) for path in existing)
+                )
+            if target_folder.exists():
+                shutil.copytree(target_folder, stage, dirs_exist_ok=True)
+            for path in migration_bundle_members(stage, filename):
+                path.unlink()
 
-    def flush_chunk():
-        nonlocal chunk, chunk_size, chunk_index
-        if not chunk:
-            return
-        chunk_header = header if chunk_index == 0 else ""
-        chunk_sql = chunk_header + "\n\n".join(chunk).rstrip() + "\n"
-        chunk_name = chunked_migration_filename(filename, chunk_index)
-        path = write_migration_file(root, folder, chunk_name, chunk_sql, overwrite=overwrite)
-        if path:
-            paths.append(path)
-        chunk = []
-        chunk_size = 0
-        chunk_index += 1
+            provisional = stage / f".{Path(filename).stem}.building"
+            output_names = []
+            chunk_index = 0
+            chunked = False
+            handle = handles.enter_context(provisional.open("w", encoding="utf-8", newline="\n"))
+            handle.write(header)
+            current_size = len(header.encode("utf-8"))
+            current_has_statement = False
 
-    for statement in statements:
-        candidate_size = len(statement.encode("utf-8")) + 2
-        header_size = len(header.encode("utf-8")) if chunk_index == 0 and not chunk else 0
-        if chunk and max_bytes is not None and header_size + chunk_size + candidate_size > max_bytes:
-            flush_chunk()
-        chunk.append(statement)
-        chunk_size += candidate_size
+            def finish_chunk(output_name):
+                nonlocal handle
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+                handle.close()
+                os.replace(provisional, stage / output_name)
+                output_names.append(output_name)
 
-    flush_chunk()
-    return paths
+            def start_chunk():
+                nonlocal handle, current_size, current_has_statement
+                handle = handles.enter_context(
+                    provisional.open("w", encoding="utf-8", newline="\n")
+                )
+                current_size = 0
+                current_has_statement = False
+
+            def append_statement(statement):
+                nonlocal current_size, current_has_statement
+                prefix = "\n\n" if current_has_statement else ""
+                handle.write(prefix)
+                handle.write(statement)
+                current_size += len(prefix.encode("utf-8")) + len(statement.encode("utf-8"))
+                current_has_statement = True
+
+            pending_statement = first_statement
+            while pending_statement is not None:
+                prefix_size = 2 if current_has_statement else 0
+                candidate_size = prefix_size + len(pending_statement.encode("utf-8")) + 1
+                if (
+                    current_has_statement
+                    and max_bytes is not None
+                    and current_size + candidate_size > max_bytes
+                ):
+                    finish_chunk(chunked_migration_filename(filename, chunk_index))
+                    chunk_index += 1
+                    chunked = True
+                    start_chunk()
+                append_statement(pending_statement)
+                pending_statement = None
+                for statement in iterator:
+                    if statement and statement.strip():
+                        pending_statement = statement.rstrip()
+                        break
+
+            final_size = current_size + 1
+            final_name = (
+                chunked_migration_filename(filename, chunk_index)
+                if chunked or (max_bytes is not None and final_size > max_bytes)
+                else filename
+            )
+            finish_chunk(final_name)
+        return [target_folder / output_name for output_name in output_names]
+    finally:
+        close = getattr(iterator, "close", None)
+        if close:
+            close()
 
 
 def run_sync(args):
     started_at = animego.now_iso()
-    lock_path = args.lock_file or f"{args.db}.sync.lock"
+    lock_path = args.lock_file or default_lock_path(args.db)
     all_stats = {}
 
-    with FileLock(lock_path, wait=args.wait_lock):
+    with FileLock(lock_path, wait=args.wait_lock, timeout=args.lock_timeout):
         con = connect(args.db)
         run_id = None
         try:
@@ -1134,6 +1299,7 @@ def run_sync(args):
 
             for source in args.sources:
                 print(f"== {source} {args.mode} sync ==")
+                source_error = None
                 try:
                     if source == "yummyanime":
                         stats = sync_yummyanime(con, args)
@@ -1142,17 +1308,19 @@ def run_sync(args):
                     else:
                         raise ValueError(f"unsupported source: {source}")
                 except Exception as exc:
-                    if args.stop_on_error:
-                        raise
                     stats = defaultdict(int)
                     stats["failed"] += 1
                     stats["source_failed"] += 1
                     stats["error"] = str(exc)[:500]
-                    print(f"== {source} {args.mode} sync failed after retries, continuing: {exc}")
+                    source_error = exc
+                    action = "stopping" if args.stop_on_error else "continuing"
+                    print(f"== {source} {args.mode} sync failed after retries, {action}: {exc}")
                 all_stats[source] = dict(stats)
                 if not args.dry_run:
                     write_sync_run(con, args.mode, source, started_at, stats)
                     con.commit()
+                if source_error is not None and args.stop_on_error:
+                    raise SyncFailedError(all_stats) from source_error
             if args.dry_run:
                 con.rollback()
             elif run_id:
@@ -1171,6 +1339,8 @@ def run_sync(args):
             con.close()
 
     print(json.dumps(all_stats, ensure_ascii=False, indent=2, sort_keys=True))
+    if any(int(stats.get("failed") or 0) for stats in all_stats.values()):
+        raise SyncFailedError(all_stats)
     return all_stats
 
 
@@ -1182,56 +1352,60 @@ def emit_update_migration(args):
         raise ValueError("--emit-migration cannot be combined with --dry-run")
 
     folder = migration_folder_name(args.emit_migration)
-    lock_path = args.lock_file or f"{args.db}.sync.lock"
-    with FileLock(lock_path, wait=args.wait_lock):
-        with tempfile.TemporaryDirectory(prefix="anime-sync-migration-") as tmpdir:
-            before_db = Path(tmpdir) / "before.sqlite"
-            after_db = Path(tmpdir) / "after.sqlite"
+    lock_path = args.lock_file or default_lock_path(args.db)
+    paths = []
+    with tempfile.TemporaryDirectory(prefix="anime-sync-migration-") as tmpdir:
+        before_db = Path(tmpdir) / "before.sqlite"
+        after_db = Path(tmpdir) / "after.sqlite"
+        with FileLock(lock_path, wait=args.wait_lock, timeout=args.lock_timeout):
             copy_database(source_db, before_db)
-            copy_database(source_db, after_db)
 
-            sync_args = copy.copy(args)
-            sync_args.db = str(after_db)
-            sync_args.lock_file = str(after_db) + ".sync.lock"
-            sync_args.wait_lock = False
-            sync_args.emit_migration = None
-            run_sync(sync_args)
+        copy_database(before_db, after_db)
+        sync_args = copy.copy(args)
+        sync_args.db = str(after_db)
+        sync_args.lock_file = str(after_db) + ".sync.lock"
+        sync_args.wait_lock = False
+        sync_args.emit_migration = None
+        run_sync(sync_args)
 
-            statements = db_data_diff.generate_data_migration_statements(before_db, after_db)
+        header = "\n".join(
+            [
+                "-- Generated by sync_videos.py --emit-migration.",
+                f"-- Source database: {source_db}",
+                f"-- Sync mode: {args.mode}",
+                "",
+            ]
+        )
+        paths = write_migration_files(
+            args.migrations_root,
+            folder,
+            args.migration_script,
+            header,
+            db_data_diff.iter_data_migration_statements(before_db, after_db),
+            overwrite=args.migration_overwrite,
+            max_bytes=args.migration_max_bytes,
+        )
 
-    if not statements:
+    if not paths:
         print("migration: no catalog/player data changes detected")
         return None
-
-    header = "\n".join(
-        [
-            "-- Generated by sync_videos.py --emit-migration.",
-            f"-- Source database: {source_db}",
-            f"-- Sync mode: {args.mode}",
-            "",
-        ]
-    )
-    paths = write_migration_files(
-        args.migrations_root,
-        folder,
-        args.migration_script,
-        header,
-        statements,
-        overwrite=args.migration_overwrite,
-        max_bytes=args.migration_max_bytes,
-    )
     for path in paths:
         print(f"migration: {path}")
     return paths
 
 
-def main():
-    args = parse_args()
-    if args.emit_migration:
-        emit_update_migration(args)
-        return
-    run_sync(args)
+def main(argv=None):
+    args = parse_args(argv)
+    try:
+        if args.emit_migration:
+            emit_update_migration(args)
+        else:
+            run_sync(args)
+        return 0
+    except (SyncFailedError, OperationLockError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

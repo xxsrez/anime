@@ -4,12 +4,13 @@ import json
 import re
 import time
 import zlib
-from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import quote, urlencode, urljoin, urlparse, parse_qsl, urlunparse
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from bs4 import BeautifulSoup
+from scripts.http_safety import open_validated_url
+from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 
 from scrape_animego import (
     clean_text,
@@ -56,8 +57,19 @@ def fetch_text(url, referer=None, delay=0.0):
     headers = {"User-Agent": USER_AGENT}
     if referer:
         headers["Referer"] = referer
-    req = Request(absolute_url(url), headers=headers)
-    with urlopen(req, timeout=30) as response:
+    target = absolute_url(url)
+    req = Request(target, headers=headers)
+    with open_validated_url(
+        req,
+        timeout=30,
+        allowed_hosts=(
+            "yummyanime.tv",
+            "yummyani.me",
+            "yani.tv",
+            "kodikplayer.com",
+            "aniboom.one",
+        ),
+    ) as response:
         return response.read().decode("utf-8", "replace")
 
 
@@ -116,7 +128,9 @@ def collect_catalog_urls(years, max_pages, delay=0.0):
             try:
                 page_html = fetch_text(page_url, delay=delay)
             except HTTPError as exc:
-                if exc.code == 404:
+                code = exc.code
+                exc.close()
+                if code == 404:
                     print(f"catalog {year} page {page}: 404, stopping")
                     break
                 raise
@@ -627,7 +641,7 @@ def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False
     return item, detail, episodes, providers
 
 
-def scrape(args):
+def _scrape(args):
     if args.catalog_years or args.from_year or args.to_year:
         if args.catalog_years:
             years = sorted(set(args.catalog_years), reverse=True)
@@ -655,7 +669,7 @@ def scrape(args):
             delay=args.delay,
         )
         print(f"  {item['title']}: {len(episodes)} episodes, {len(providers)} providers")
-        upsert_anime(con, item, detail, scraped_at)
+        upsert_anime(con, item, detail, scraped_at, authoritative_metadata=True)
 
         if args.skip_player:
             con.commit()
@@ -702,7 +716,18 @@ def scrape(args):
     print(f"saved {imported} YummyAnime titles, {episode_count} episodes, {source_count} provider rows to {args.db}")
 
 
-def main():
+def scrape(args):
+    with DatabaseOperationLock(
+        args.db,
+        path=getattr(args, "lock_file", None) or default_lock_path(args.db),
+        wait=getattr(args, "wait_lock", False),
+        timeout=getattr(args, "lock_timeout", 30.0),
+        operation="YummyAnime scrape",
+    ):
+        return _scrape(args)
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Scrape selected YummyAnime title pages into the local SQLite app.")
     parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--delay", type=float, default=0.25)
@@ -712,10 +737,14 @@ def main():
     parser.add_argument("--from-year", type=int)
     parser.add_argument("--to-year", type=int)
     parser.add_argument("--max-pages", type=int, default=100)
+    parser.add_argument("--lock-file")
+    parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
     parser.add_argument("urls", nargs="*", default=DEFAULT_URLS)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     scrape(args)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

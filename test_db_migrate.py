@@ -36,6 +36,8 @@ class DatabaseMigrationTest(unittest.TestCase):
     def history_paths(self, db_path):
         con = sqlite3.connect(db_path)
         try:
+            if not db_migrate.history_table_exists(con):
+                return []
             return [
                 row[0]
                 for row in con.execute(
@@ -156,12 +158,302 @@ class DatabaseMigrationTest(unittest.TestCase):
                         "select 1 from sqlite_master where type = 'table' and name = 'should_rollback'"
                     ).fetchone()
                 )
+                self.assertFalse(db_migrate.history_table_exists(con))
+            finally:
+                con.close()
+
+    def test_pending_batch_is_atomic_across_multiple_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            db_path = Path(tmpdir) / "anime.sqlite"
+            self.create_db(db_path)
+            self.write_migration(
+                root,
+                "2026-07-08_batch",
+                "00_first.sql",
+                "insert into migration_log(label) values ('must-rollback');",
+            )
+            self.write_migration(
+                root,
+                "2026-07-08_batch",
+                "01_bad.sql",
+                "select missing_column from missing_table;",
+            )
+
+            with self.assertRaises(sqlite3.Error):
+                db_migrate.apply_pending(db_path, root, no_backup=True)
+
+            self.assertEqual(self.labels(db_path), [])
+            self.assertEqual(self.history_paths(db_path), [])
+
+    def test_verified_batch_reuses_recovery_backup_for_rolled_back_preflight(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            backup_dir = Path(tmpdir) / "backups"
+            db_path = Path(tmpdir) / "anime.sqlite"
+            self.create_db(db_path)
+            self.write_migration(
+                root,
+                "2026-07-09_verified",
+                "00_verified.sql",
+                "insert into migration_log(label) values ('verified');",
+            )
+
+            copy_database = db_migrate.copy_database
+            quick_check = db_migrate.verify_quick_integrity
+            full_check = db_migrate.verify_connection
+            preflight = db_migrate.preflight_migrations
+            with patch("scripts.db_migrate.copy_database", wraps=copy_database) as copy:
+                with patch(
+                    "scripts.db_migrate.verify_quick_integrity",
+                    wraps=quick_check,
+                ) as quick:
+                    with patch(
+                        "scripts.db_migrate.verify_connection",
+                        wraps=full_check,
+                    ) as full:
+                        with patch(
+                            "scripts.db_migrate.preflight_migrations",
+                            wraps=preflight,
+                        ) as prove:
+                            result = db_migrate.apply_pending(
+                                db_path,
+                                root,
+                                backup_dir=backup_dir,
+                                verify=True,
+                            )
+
+            self.assertEqual(copy.call_count, 1)
+            self.assertEqual(quick.call_count, 1)
+            self.assertEqual(full.call_count, 2)
+            self.assertEqual(Path(prove.call_args.args[0]), result["backup"])
+            self.assertEqual(self.labels(db_path), ["verified"])
+
+            backup = sqlite3.connect(result["backup"])
+            try:
                 self.assertEqual(
-                    con.execute(f"select count(*) from {db_migrate.HISTORY_TABLE}").fetchone()[0],
-                    0,
+                    backup.execute("select label from migration_log order by id").fetchall(),
+                    [],
+                )
+                self.assertFalse(db_migrate.history_table_exists(backup))
+                self.assertEqual(backup.execute("pragma integrity_check").fetchone()[0], "ok")
+            finally:
+                backup.close()
+
+    def test_preflight_leaves_original_untouched_when_final_fk_check_would_fail(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = sqlite3.connect(db_path)
+            con.executescript(
+                """
+                create table parent(id integer primary key);
+                create table child(parent_id integer references parent(id));
+                create table migration_log (id integer primary key, label text not null);
+                insert into child(parent_id) values (999);
+                """
+            )
+            con.commit()
+            con.close()
+            self.write_migration(
+                root,
+                "2026-07-08_marker",
+                "00_marker.sql",
+                "insert into migration_log(label) values ('must-not-commit');",
+            )
+
+            with self.assertRaises(db_migrate.MigrationError):
+                db_migrate.apply_pending(db_path, root, no_backup=True, verify=True)
+
+            self.assertEqual(self.labels(db_path), [])
+            con = sqlite3.connect(db_path)
+            try:
+                self.assertFalse(db_migrate.history_table_exists(con))
+            finally:
+                con.close()
+
+    def test_statement_parser_checks_completeness_only_at_statement_boundaries(self):
+        sql = "-- " + ("x" * 200_000) + "\nselect 1;\nselect 2;"
+        original = sqlite3.complete_statement
+        with patch(
+            "scripts.db_migrate.sqlite3.complete_statement",
+            wraps=original,
+        ) as complete:
+            statements = list(db_migrate.iter_sql_statements(sql))
+
+        self.assertEqual(len(statements), 2)
+        self.assertEqual(complete.call_count, 2)
+
+    def test_integrity_repair_migration_removes_watch_orphans_and_adds_index(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = sqlite3.connect(db_path)
+            con.executescript(
+                """
+                create table users(id integer primary key);
+                create table anime(id integer primary key);
+                create table episodes(id integer primary key, anime_id integer references anime(id));
+                create table video_sources(
+                    id integer primary key,
+                    episode_id integer references episodes(id),
+                    provider_id text,
+                    embed_url text
+                );
+                create table user_title_state(
+                    user_id integer references users(id),
+                    anime_id integer references anime(id),
+                    primary key(user_id, anime_id)
+                );
+                create table user_watch_events(
+                    id integer primary key,
+                    user_id integer references users(id),
+                    anime_id integer references anime(id),
+                    episode_id integer references episodes(id),
+                    video_source_id integer references video_sources(id),
+                    source_anime_id integer references anime(id)
+                );
+                create table user_episode_state(
+                    user_id integer references users(id),
+                    anime_id integer references anime(id),
+                    episode_id integer references episodes(id),
+                    video_source_id integer references video_sources(id),
+                    source_anime_id integer references anime(id),
+                    primary key(user_id, anime_id, episode_id)
+                );
+                insert into user_title_state values (99, 98);
+                insert into user_watch_events values (1, 99, 98, 97, 96, 95);
+                insert into user_episode_state values (99, 98, 97, 96, 95);
+                """
+            )
+            con.commit()
+            con.close()
+            repair_sql = (
+                Path(__file__).parent
+                / "migrations/2026-07-09_zz-data-integrity-repair/00_repair_foreign_keys_and_provider_index.sql"
+            ).read_text(encoding="utf-8")
+            self.write_migration(root, "2026-07-09_zz-data-integrity-repair", "00_repair.sql", repair_sql)
+
+            db_migrate.apply_pending(db_path, root, no_backup=True, verify=True)
+
+            con = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(con.execute("pragma foreign_key_check").fetchall(), [])
+                self.assertEqual(con.execute("select count(*) from user_watch_events").fetchone()[0], 0)
+                self.assertIsNotNone(
+                    con.execute(
+                        "select 1 from sqlite_master where type='index' and name='idx_video_sources_provider_playable'"
+                    ).fetchone()
                 )
             finally:
                 con.close()
+
+    def test_external_rating_index_is_partial_covering_and_used_by_hot_query(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = scrape_animego.init_db(db_path)
+            try:
+                for anime_id in range(1, 21):
+                    con.execute(
+                        """
+                        insert into anime(id, slug, title, url, scraped_at)
+                        values (?, ?, ?, ?, '2026-07-09T00:00:00+00:00')
+                        """,
+                        (
+                            anime_id,
+                            f"rating-{anime_id}",
+                            f"Rating {anime_id}",
+                            f"https://example.test/rating-{anime_id}",
+                        ),
+                    )
+                    con.execute(
+                        "insert into anime_fields(anime_id, label, value) values (?, 'Статус', 'Онгоинг')",
+                        (anime_id,),
+                    )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (1, 'IMDB', '8.4')"
+                )
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (2, 'Shikimori', '7.9')"
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            migration_path = (
+                Path(__file__).parent
+                / "migrations/2026-07-09_zzzz-external-rating-index/00_add_external_rating_index.sql"
+            )
+            migration_sql = migration_path.read_text(encoding="utf-8")
+            self.write_migration(
+                root,
+                migration_path.parent.name,
+                migration_path.name,
+                migration_sql,
+            )
+            db_migrate.apply_pending(db_path, root, no_backup=True, verify=True)
+
+            con = sqlite3.connect(db_path)
+            con.row_factory = sqlite3.Row
+            try:
+                plan = con.execute(
+                    f"""
+                    explain query plan
+                    select anime_id, label, value
+                    from anime_fields
+                    where {server.EXTERNAL_RATING_FIELD_PREDICATE_SQL}
+                    """
+                ).fetchall()
+                plan_text = " ".join(str(row[3]) for row in plan)
+                self.assertIn(
+                    f"USING COVERING INDEX {server.EXTERNAL_RATING_INDEX_NAME}",
+                    plan_text,
+                )
+                self.assertEqual(
+                    server.load_external_ratings(con),
+                    {
+                        1: {
+                            "external_score": 8.4,
+                            "external_score_source": "IMDB",
+                            "priority": 4,
+                        },
+                        2: {
+                            "external_score": 7.9,
+                            "external_score_source": "Shikimori",
+                            "priority": 3,
+                        },
+                    },
+                )
+                index_sql = con.execute(
+                    "select sql from sqlite_master where type='index' and name=?",
+                    (server.EXTERNAL_RATING_INDEX_NAME,),
+                ).fetchone()[0]
+                normalized_index_sql = " ".join(index_sql.lower().split())
+                normalized_predicate = " ".join(
+                    server.EXTERNAL_RATING_FIELD_PREDICATE_SQL.lower().split()
+                )
+                self.assertIn(normalized_predicate, normalized_index_sql)
+            finally:
+                con.close()
+
+            runtime_db = Path(tmpdir) / "runtime.sqlite"
+            runtime_con = scrape_animego.init_db(runtime_db)
+            try:
+                self.assertTrue(server.ensure_runtime_indexes(runtime_con))
+                self.assertIsNotNone(
+                    runtime_con.execute(
+                        "select 1 from sqlite_master where type='index' and name=?",
+                        (server.EXTERNAL_RATING_INDEX_NAME,),
+                    ).fetchone()
+                )
+            finally:
+                runtime_con.close()
+
+            self.assertGreater(
+                migration_path.parent.name,
+                "2026-07-09_zzz-catalog-cache-revision",
+            )
 
     def test_transaction_control_inside_script_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -270,7 +562,9 @@ class DatabaseMigrationTest(unittest.TestCase):
                     "embed_url": "https://example.test/embed/1",
                     "embed_url_redacted": "https://example.test/embed/<redacted>",
                 }
-                scrape_animego.upsert_anime(con, item, detail, scraped_at)
+                scrape_animego.upsert_anime(
+                    con, item, detail, scraped_at, authoritative_metadata=True
+                )
                 scrape_animego.upsert_episode(con, item["id"], episode, True, None, scraped_at)
                 scrape_animego.upsert_provider(con, item["id"], episode["id"], provider, True, scraped_at)
                 con.commit()
@@ -357,6 +651,46 @@ class DatabaseMigrationTest(unittest.TestCase):
 
             self.assertFalse(migration_root.exists())
 
+    def test_emit_update_migration_releases_live_lock_after_single_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            lock_path = Path(tmpdir) / "anime.operation.lock"
+            migration_root = Path(tmpdir) / "migrations"
+            scrape_animego.init_db(db_path).close()
+            args = sync_videos.parse_args(
+                [
+                    "--db",
+                    str(db_path),
+                    "--mode",
+                    "manual",
+                    "--yummy-ref",
+                    "dummy-title",
+                    "--emit-migration",
+                    "snapshot-scope",
+                    "--migrations-root",
+                    str(migration_root),
+                    "--lock-file",
+                    str(lock_path),
+                ]
+            )
+
+            def assert_live_lock_released(_sync_args):
+                with sync_videos.FileLock(lock_path, wait=False):
+                    pass
+                return {"yummyanime": {"known_skipped": 1}}
+
+            copy_database = sync_videos.copy_database
+            with patch("sync_videos.copy_database", wraps=copy_database) as copy:
+                with patch("sync_videos.run_sync", side_effect=assert_live_lock_released):
+                    self.assertIsNone(sync_videos.emit_update_migration(args))
+
+            self.assertEqual(copy.call_count, 2)
+            first_source, first_target = map(Path, copy.call_args_list[0].args)
+            second_source, _second_target = map(Path, copy.call_args_list[1].args)
+            self.assertEqual(first_source, db_path)
+            self.assertEqual(second_source, first_target)
+            self.assertFalse(migration_root.exists())
+
     def test_write_migration_files_splits_large_sql_on_statement_boundaries(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             migration_root = Path(tmpdir) / "migrations"
@@ -385,6 +719,35 @@ class DatabaseMigrationTest(unittest.TestCase):
             con = sqlite3.connect(db_path)
             try:
                 self.assertEqual(con.execute("select count(*) from split_test").fetchone()[0], 2)
+            finally:
+                con.close()
+
+    def test_write_migration_files_consumes_one_shot_generator_in_bounded_chunks(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            migration_root = Path(tmpdir) / "migrations"
+
+            def statements():
+                yield "create table streamed(id integer primary key);"
+                for index in range(1_000):
+                    yield f"insert into streamed(id) values ({index});"
+
+            paths = sync_videos.write_migration_files(
+                migration_root,
+                "2026-07-09_streamed",
+                "00_data.sql",
+                "-- generated\n",
+                statements(),
+                max_bytes=2_048,
+            )
+
+            self.assertGreater(len(paths), 1)
+            self.assertTrue(all(path.stat().st_size <= 2_100 for path in paths))
+            db_path = Path(tmpdir) / "anime.sqlite"
+            self.create_db(db_path)
+            db_migrate.apply_pending(db_path, migration_root, no_backup=True)
+            con = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(con.execute("select count(*) from streamed").fetchone()[0], 1_000)
             finally:
                 con.close()
 

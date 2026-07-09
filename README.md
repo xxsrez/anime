@@ -77,6 +77,8 @@ export it before starting the server; optionally restrict access with
 `ANIME_AUTH_ALLOWED_EMAILS` or `ANIME_AUTH_ALLOWED_DOMAINS`.
 Set `ANIME_ADMIN_EMAIL` to the single Google email that may open `/admin`; if
 `ANIME_AUTH_ALLOWED_EMAILS` is set, include the same email there too.
+Set a durable random `ANIME_GOOGLE_AUTH_STATE_SECRET` of at least 32 bytes in
+production so Google callbacks remain valid across restarts or replicas.
 The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
 `http://localhost:8765`.
@@ -143,7 +145,13 @@ curl 'http://127.0.0.1:8765/api/recommendations?limit=20'
 Run local health and smoke checks:
 
 ```bash
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+node --test static/frontend_runtime.test.js
 .venv/bin/python scripts/check_repo_hygiene.py
 .venv/bin/python scripts/check_data_health.py
 .venv/bin/python scripts/smoke_dev_app.py
 ```
+
+Production has an independent content-sync cron and can legitimately contain
+newer episodes than dev. Treat that freshness difference as expected; never
+replace production with the older local database just to align row counts.

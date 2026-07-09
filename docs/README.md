@@ -29,6 +29,8 @@ and player prototype. It follows the `project-docs` layout:
    conventions, and mutable data.
 10. `instructions/Code_Style_Instructions.md` - coding rules and contribution
    conventions.
+11. `tasks/project-hardening/README.md` - 2026-07-09 repository-wide
+    correctness, concurrency, recovery, security, and performance hardening.
 
 ## Directory Map
 
@@ -63,12 +65,12 @@ process management, Railway variables, production deploys, or database uploads.
 Run the current verification set:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
+ruff check .
+pip-audit -r requirements.txt
 .venv/bin/python scripts/check_repo_hygiene.py
-.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
-node --check static/app.js
-node --check static/login.js
-node --check static/admin.js
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+find static -name '*.js' -print0 | xargs -0 -n1 node --check
+node --test static/frontend_runtime.test.js
 ```
 
 For local database changes, also run:
@@ -96,5 +98,8 @@ long-running process.
   not contain titles that have no playable `embed_url`.
 - `db/animego.sqlite` is local mutable state and can change after scraping or
   user progress updates.
+- The production database advances independently through its cron. A fresher
+  production catalog than dev is expected and must not be "fixed" by replacing
+  production with the local database.
 - Scraping depends on upstream site structure and can break when those sites
   change.

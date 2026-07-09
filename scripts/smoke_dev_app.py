@@ -13,7 +13,7 @@ import threading
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-import server
+import server  # noqa: E402 -- ROOT bootstrap is intentional
 
 
 def request(host, port, method, path, headers=None, body=None):

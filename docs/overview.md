@@ -38,23 +38,17 @@ The project currently knows about two source families:
 - A canonical API layer merges conservative AnimeGO/YummyAnime duplicate
   matches into one visible title with multiple source variants.
 
-As of the current local SQLite snapshot on 2026-07-06, the database contains:
-
-- 4,036 source title rows, exposed as 3,202 canonical catalog titles.
-- 1,170 AnimeGO source titles.
-- 2,866 YummyAnime/YummyAni source titles.
-- 212 episode rows.
-- 175 video source rows.
-- 16,011 genre rows.
-- User progress/favorite rows are per Google user. New Google accounts start
-  empty; anonymous/local profile state is not supported.
+Catalog counts are intentionally not fixed in documentation. Inspect the
+current dev snapshot with `scripts/check_data_health.py`; production has its own
+cron and may be newer. User progress/favorite rows are per Google user. New
+Google accounts start empty; anonymous/local profile state is not supported.
 
 The local recovery snapshot is in `db/backups/current/`. It includes a full
 SQLite backup and readable exports of favorites/progress/watched state. The
 `db/` directory is intentionally ignored by git.
 
-These counts are not product constants. They are a local database snapshot and
-will change after scraping or user activity.
+The local snapshot changes after scraping or user activity and is not expected
+to match production row-for-row.
 
 ## Playback Model
 

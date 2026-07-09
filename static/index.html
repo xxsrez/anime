@@ -97,6 +97,7 @@
             <div id="recent-updates" class="recent-updates" hidden></div>
             <div id="genres" class="chip-row"></div>
             <p id="description" class="description"></p>
+            <button id="description-toggle" class="description-toggle" type="button" hidden aria-expanded="false">Показать полностью</button>
             <div id="fields" class="field-grid"></div>
           </div>
         </div>
@@ -109,11 +110,12 @@
               <iframe
                 id="player"
                 title="Аниме плеер"
-                allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share; screen-wake-lock"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"
                 allowfullscreen
                 webkitallowfullscreen
                 mozallowfullscreen
-                referrerpolicy="origin">
+                referrerpolicy="strict-origin-when-cross-origin">
               </iframe>
               <div id="empty-player" class="empty-player"></div>
             </div>
@@ -152,8 +154,10 @@
       </div>
     </section>
   </main>
+  <div id="app-status" class="app-status" role="status" aria-live="polite" hidden></div>
   <script src="/static/client_errors.js"></script>
   <script src="/static/search.js"></script>
+  <script src="/static/frontend_runtime.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

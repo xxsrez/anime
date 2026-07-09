@@ -2,13 +2,18 @@
 import argparse
 from dataclasses import dataclass
 import datetime as dt
-import fcntl
 import hashlib
 from pathlib import Path
 import re
 import sqlite3
 import sys
+import tempfile
 import time
+
+try:
+    from scripts.operation_lock import DatabaseOperationLock, OperationLockError, default_lock_path
+except ModuleNotFoundError:  # Direct execution: python3 scripts/db_migrate.py
+    from operation_lock import DatabaseOperationLock, OperationLockError, default_lock_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,26 +44,15 @@ class Migration:
     size_bytes: int
 
 
-class FileLock:
-    def __init__(self, path, wait=False):
-        self.path = Path(path)
-        self.wait = wait
-        self.handle = None
+class FileLock(DatabaseOperationLock):
+    def __init__(self, path, wait=False, timeout=30.0):
+        super().__init__("", path=path, wait=wait, timeout=timeout, operation="database migration")
 
     def __enter__(self):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.handle = self.path.open("w", encoding="utf-8")
-        flags = fcntl.LOCK_EX if self.wait else fcntl.LOCK_EX | fcntl.LOCK_NB
         try:
-            fcntl.flock(self.handle, flags)
-        except BlockingIOError as exc:
+            return super().__enter__()
+        except OperationLockError as exc:
             raise MigrationError(f"migration lock is already held: {self.path}") from exc
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        if self.handle:
-            fcntl.flock(self.handle, fcntl.LOCK_UN)
-            self.handle.close()
 
 
 def now_iso():
@@ -193,6 +187,8 @@ def iter_sql_statements(sql):
     buffer = []
     for char in sql:
         buffer.append(char)
+        if char != ";":
+            continue
         statement = "".join(buffer)
         if sqlite3.complete_statement(statement):
             if has_effective_sql(statement):
@@ -256,6 +252,17 @@ def fail_on_drift(plan):
     raise MigrationDriftError("\n".join(lines))
 
 
+def copy_database(source_path, target_path):
+    source = sqlite3.connect(source_path)
+    target = sqlite3.connect(target_path)
+    try:
+        with target:
+            source.backup(target)
+    finally:
+        target.close()
+        source.close()
+
+
 def backup_database(db_path, backup_dir):
     db_path = Path(db_path)
     backup_dir = Path(backup_dir)
@@ -266,59 +273,88 @@ def backup_database(db_path, backup_dir):
     while backup_path.exists():
         backup_path = backup_dir / f"{backup_stem}-{counter}.sqlite"
         counter += 1
-    source = sqlite3.connect(db_path)
-    target = sqlite3.connect(backup_path)
-    try:
-        with target:
-            source.backup(target)
-    finally:
-        target.close()
-        source.close()
+    copy_database(db_path, backup_path)
     return backup_path
 
 
-def apply_migration(con, migration):
+def apply_migration_body(con, migration):
     sql = migration.full_path.read_text(encoding="utf-8")
     started = time.perf_counter()
-    con.execute("begin immediate")
-    try:
-        for statement in iter_sql_statements(sql):
-            assert_runner_owns_transaction(statement, migration)
-            con.execute(statement)
-        duration_ms = max(0, int((time.perf_counter() - started) * 1000))
-        con.execute(
-            f"""
-            insert into {HISTORY_TABLE} (
-                path, folder, filename, checksum_sha256, size_bytes,
-                applied_at, duration_ms, status
-            ) values (?, ?, ?, ?, ?, ?, ?, 'applied')
-            """,
-            (
-                migration.path,
-                migration.folder,
-                migration.filename,
-                migration.checksum_sha256,
-                migration.size_bytes,
-                now_iso(),
-                duration_ms,
-            ),
-        )
-        con.execute("commit")
-    except Exception:
-        con.execute("rollback")
-        raise
+    for statement in iter_sql_statements(sql):
+        assert_runner_owns_transaction(statement, migration)
+        con.execute(statement)
+    duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+    con.execute(
+        f"""
+        insert into {HISTORY_TABLE} (
+            path, folder, filename, checksum_sha256, size_bytes,
+            applied_at, duration_ms, status
+        ) values (?, ?, ?, ?, ?, ?, ?, 'applied')
+        """,
+        (
+            migration.path,
+            migration.folder,
+            migration.filename,
+            migration.checksum_sha256,
+            migration.size_bytes,
+            now_iso(),
+            duration_ms,
+        ),
+    )
     return duration_ms
+
+
+def verify_connection(con):
+    integrity = con.execute("pragma integrity_check").fetchone()[0]
+    if integrity != "ok":
+        raise MigrationError(f"integrity_check failed: {integrity}")
+    fk_errors = con.execute("pragma foreign_key_check").fetchall()
+    if fk_errors:
+        raise MigrationError(f"foreign_key_check failed: {[tuple(row) for row in fk_errors[:5]]}")
 
 
 def verify_database(db_path):
     con = connect_existing(db_path)
     try:
-        integrity = con.execute("pragma integrity_check").fetchone()[0]
+        verify_connection(con)
+    finally:
+        con.close()
+
+
+def verify_quick_integrity(db_path):
+    """Reject obvious source damage before spending work on a snapshot.
+
+    The exact candidate and final live result receive full integrity and FK
+    checks later. Repeating a full source scan here has no distinct safety
+    value because the candidate is copied from this same locked database.
+    """
+    con = connect_existing(db_path)
+    try:
+        integrity = con.execute("pragma quick_check(1)").fetchone()[0]
         if integrity != "ok":
-            raise MigrationError(f"integrity_check failed: {integrity}")
-        fk_errors = con.execute("pragma foreign_key_check").fetchall()
-        if fk_errors:
-            raise MigrationError(f"foreign_key_check failed: {fk_errors[:5]}")
+            raise MigrationError(f"quick_check failed: {integrity}")
+    finally:
+        con.close()
+
+
+def preflight_migrations(candidate_db, pending):
+    """Apply and fully verify a batch on an isolated snapshot, then roll it back.
+
+    The rollback leaves a recovery backup logically unchanged, so the same
+    locked SQLite snapshot can safely serve both recovery and preflight roles.
+    Callers that opt out of a backup provide a disposable temporary snapshot.
+    """
+    con = connect_existing(candidate_db)
+    try:
+        con.execute("begin immediate")
+        try:
+            ensure_history_table(con)
+            for migration in pending:
+                apply_migration_body(con, migration)
+            verify_connection(con)
+        finally:
+            if con.in_transaction:
+                con.execute("rollback")
     finally:
         con.close()
 
@@ -330,12 +366,13 @@ def apply_pending(
     no_backup=False,
     lock_path=None,
     wait_lock=False,
+    lock_timeout=30.0,
     verify=True,
 ):
     db_path = Path(db_path)
-    lock_path = Path(lock_path) if lock_path else Path(f"{db_path}.migrate.lock")
+    lock_path = Path(lock_path) if lock_path else default_lock_path(db_path)
 
-    with FileLock(lock_path, wait=wait_lock):
+    with FileLock(lock_path, wait=wait_lock, timeout=lock_timeout):
         plan = collect_plan(db_path, roots)
         fail_on_drift(plan)
         pending = plan["pending"]
@@ -344,22 +381,46 @@ def apply_pending(
                 verify_database(db_path)
             return {"applied": [], "backup": None, "missing_files": plan["missing_files"]}
 
+        # The checks have distinct roles: a cheap source quick-check rejects
+        # obvious damage, a full candidate check proves the complete batch and
+        # its FKs before live writes, and a final full check proves the actual
+        # live result before commit. FK damage in the source may deliberately be
+        # repaired by a pending migration, so it is checked after the batch.
+        if verify:
+            verify_quick_integrity(db_path)
+
         backup_path = None
         if not no_backup:
             backup_path = backup_database(db_path, backup_dir or db_path.parent / "backups")
 
+        if verify:
+            if backup_path is not None:
+                # The transaction in preflight_migrations is always rolled
+                # back, preserving this exact pre-migration recovery snapshot.
+                preflight_migrations(backup_path, pending)
+            else:
+                with tempfile.TemporaryDirectory(prefix="anime-migration-preflight-") as tmpdir:
+                    candidate = Path(tmpdir) / "candidate.sqlite"
+                    copy_database(db_path, candidate)
+                    preflight_migrations(candidate, pending)
+
         con = connect_existing(db_path)
         try:
-            ensure_history_table(con)
             applied = []
-            for migration in pending:
-                duration_ms = apply_migration(con, migration)
-                applied.append((migration, duration_ms))
+            con.execute("begin immediate")
+            try:
+                ensure_history_table(con)
+                for migration in pending:
+                    duration_ms = apply_migration_body(con, migration)
+                    applied.append((migration, duration_ms))
+                if verify:
+                    verify_connection(con)
+                con.execute("commit")
+            except Exception:
+                con.execute("rollback")
+                raise
         finally:
             con.close()
-
-        if verify:
-            verify_database(db_path)
         return {"applied": applied, "backup": backup_path, "missing_files": plan["missing_files"]}
 
 
@@ -422,6 +483,7 @@ def parse_args(argv=None):
     apply_parser.add_argument("--no-backup", action="store_true", help="skip the pre-migration backup")
     apply_parser.add_argument("--lock-file", help="override migration lock path")
     apply_parser.add_argument("--wait-lock", action="store_true")
+    apply_parser.add_argument("--lock-timeout", type=float, default=30.0)
     apply_parser.add_argument("--no-verify", action="store_true", help="skip integrity and foreign-key checks")
 
     return parser.parse_args(argv)
@@ -443,6 +505,7 @@ def main(argv=None):
                 no_backup=args.no_backup,
                 lock_path=args.lock_file,
                 wait_lock=args.wait_lock,
+                lock_timeout=args.lock_timeout,
                 verify=not args.no_verify,
             )
             if result["backup"]:

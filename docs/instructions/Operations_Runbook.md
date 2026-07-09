@@ -20,10 +20,16 @@ Railway production, and releasing code or database changes.
   Use `sync_videos.py --emit-migration`, keep generated catalog/player SQL in
   ignored `data/private-migrations/`, copy it to the Railway volume, and apply
   it through `scripts/db_migrate.py`.
+- Production has its own content-sync cron and normally advances independently
+  of dev. Different catalog counts or fresher production episodes are expected,
+  not a defect. Do not overwrite production with the older dev database merely
+  to make the environments match.
 - Do not download the whole production SQLite database during normal releases.
-  Local and production catalog/player state should stay synchronized because the
-  same private patches are applied locally first and then on production. Full DB
-  download is for explicit spot audits or concrete drift evidence.
+  Use an explicit read-only snapshot only for a requested audit or concrete
+  drift investigation; keep user state and scraped data out of Git.
+- Configure exactly one scheduler for production: a Railway Cron/Function or
+  `ANIME_INTERNAL_DAILY_SYNC`, never both. All writers share the SQLite
+  operation lock; cron fails fast when another data operation owns it.
 - GitHub must contain only license-clean project source, docs, tests, and
   schema/control migrations. Do not commit scraped catalog/player data patches.
 
@@ -39,7 +45,7 @@ Railway production, and releasing code or database changes.
 Install/use the project virtualenv:
 
 ```bash
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
 
 Required local `.env` values:
@@ -55,6 +61,16 @@ Optional local access controls:
 ANIME_AUTH_ALLOWED_EMAILS=...
 ANIME_AUTH_ALLOWED_DOMAINS=...
 ```
+
+Use a durable random signing secret in production or any multi-process setup so
+an in-flight Google callback survives a restart or lands on another replica:
+
+```text
+ANIME_GOOGLE_AUTH_STATE_SECRET=...
+```
+
+When unset, the server uses a secure process-local fallback; outstanding login
+states then expire on restart, while existing application sessions remain valid.
 
 If `ANIME_AUTH_ALLOWED_EMAILS` is set, it must include `ANIME_ADMIN_EMAIL`.
 
@@ -129,11 +145,18 @@ dev through `.venv/bin/python`.
 Run these before any release:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
-.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
-node --check static/app.js
-node --check static/login.js
-node --check static/admin.js
+ruff check .
+pip-audit -r requirements.txt
+.venv/bin/python -m compileall -q server.py content_updates.py scrape_animego.py \
+  scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py \
+  update_backup.py scripts test_app.py test_db_migrate.py test_pipeline_hardening.py
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+find static -name '*.js' -print0 | xargs -0 -n1 node --check
+node --test static/frontend_runtime.test.js
+npx --yes --package typescript@5.9.3 tsc railway-functions/daily-sync.ts \
+  --noEmit --target ES2022 --module ES2022 --lib ES2022,DOM --strict
+sh -n scripts/*.sh
+.venv/bin/python scripts/check_repo_hygiene.py
 .venv/bin/python scripts/smoke_dev_app.py
 ```
 
@@ -166,6 +189,7 @@ Required Railway variables for `web` in `production`:
 ```text
 GOOGLE_CLIENT_ID
 ANIME_ADMIN_EMAIL
+ANIME_GOOGLE_AUTH_STATE_SECRET
 ANIME_SESSION_SECURE=1
 ANIMEGO_DB=/data/animego.sqlite
 ANIME_LOG_DIR=/data/logs
@@ -277,7 +301,8 @@ railway volume files -v web-volume upload \
 
 Skip this step for code-only releases.
 
-6. Apply pending migrations when production data should change:
+6. Apply tracked schema/control migrations on every release. Add the private
+   migration root only when this release deliberately changes catalog data:
 
 ```bash
 railway ssh --service web --environment production '
@@ -285,13 +310,14 @@ railway ssh --service web --environment production '
   python3 scripts/db_migrate.py apply \
     --db "$db" \
     --root migrations \
-    --root /data/private-migrations \
     --no-backup \
-    --wait-lock
+    --wait-lock \
+    --lock-timeout 1800
 '
 ```
 
-Skip this step for code-only releases.
+For a data release, add `--root /data/private-migrations`. A cron run that loses
+the lock returns `423` and must fail rather than queue behind the release.
 
 7. Watch deployment:
 
@@ -344,7 +370,8 @@ cache, and logs a JSON `content_sync` entry to `server.log`.
 
 Create a separate Railway Cron service or Function that exits after calling the
 endpoint. The production Function entrypoint is
-`railway-functions/daily-sync.ts`.
+`railway-functions/daily-sync.ts`. Enable exactly one scheduler path; do not
+also enable the built-in scheduler on the web service.
 
 For a same-repo Railway service, keep the normal Railway start command and
 select the Python cron script through the service role:
@@ -368,8 +395,8 @@ ANIME_SYNC_TIMEOUT_SECONDS=1800
 ANIME_CRON_LOG_PATH=/tmp/anime-daily-sync.jsonl
 ```
 
-If Railway Function/Cron service deployment is unavailable, the web service can
-run the same daily sync through its built-in scheduler:
+If Railway Function/Cron service deployment is unavailable, disable that
+external scheduler and let the web service run the same daily sync internally:
 
 ```text
 ANIME_INTERNAL_DAILY_SYNC=1
@@ -387,4 +414,5 @@ time, set:
 The cron script logs JSON start/finish/error lines to stdout and, if
 `ANIME_CRON_LOG_PATH` is set, appends them to that file. Persistent production
 run history lives in SQLite table `content_update_runs`; user-visible recent
-changes live in `content_update_events`.
+changes live in `content_update_events`. Partial source results return `502` and
+do not advance `last_success`; overlapping data operations return `423`.

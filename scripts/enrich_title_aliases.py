@@ -2,19 +2,20 @@
 import argparse
 import json
 import re
-import sqlite3
 import sys
 import time
 from collections import defaultdict
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-import server
+import server  # noqa: E402 -- ROOT bootstrap is intentional
+from scripts.http_safety import open_validated_url  # noqa: E402 -- ROOT bootstrap is intentional
+from scripts.operation_lock import DatabaseOperationLock, default_lock_path  # noqa: E402 -- ROOT bootstrap is intentional
 
 
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
@@ -30,15 +31,22 @@ SHIKIMORI_BATCH_SIZE = 50
 
 
 def http_get(url, timeout=60, retries=4):
+    allowed_hosts = ("github.com", "githubusercontent.com", "shikimori.one")
     for attempt in range(retries):
         request = Request(url, headers={"User-Agent": USER_AGENT})
         try:
-            with urlopen(request, timeout=timeout) as response:
+            with open_validated_url(
+                request,
+                timeout=timeout,
+                allowed_hosts=allowed_hosts,
+            ) as response:
                 return response.read()
         except HTTPError as exc:
-            if exc.code != 429 or attempt == retries - 1:
-                raise
+            code = exc.code
             retry_after = exc.headers.get("Retry-After")
+            exc.close()
+            if code != 429 or attempt == retries - 1:
+                raise
             delay = float(retry_after) if retry_after and retry_after.isdigit() else 2 ** (attempt + 1)
             time.sleep(delay)
     raise RuntimeError(f"failed to fetch {url}")
@@ -428,7 +436,7 @@ def write_ambiguous_report(path, anime_rows_by_id, ambiguous):
             )
 
 
-def run(args):
+def _run(args):
     con = server.connect(args.db)
     try:
         anime_rows = load_anime_rows(con)
@@ -477,11 +485,23 @@ def run(args):
 
         aliases = unique_aliases(all_aliases)
         stats["unique_aliases"] = len(aliases)
-        stats["changed_rows"] = upsert_aliases(con, aliases, dry_run=args.dry_run)
         if args.dry_run:
+            stats["changed_rows"] = 0
             con.rollback()
         else:
-            con.commit()
+            lock_path = args.lock_file or default_lock_path(args.db)
+            with DatabaseOperationLock(
+                args.db,
+                path=lock_path,
+                wait=args.wait_lock,
+                timeout=args.lock_timeout,
+                operation="title alias enrichment write",
+            ):
+                valid_ids = {row[0] for row in con.execute("select id from anime")}
+                writable_aliases = [alias for alias in aliases if alias["anime_id"] in valid_ids]
+                stats["stale_aliases_skipped"] = len(aliases) - len(writable_aliases)
+                stats["changed_rows"] = upsert_aliases(con, writable_aliases)
+                con.commit()
 
         if args.ambiguous_report:
             write_ambiguous_report(args.ambiguous_report, anime_rows_by_id, aod_result["ambiguous"])
@@ -491,12 +511,19 @@ def run(args):
         con.close()
 
 
+def run(args):
+    return _run(args)
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Enrich anime_title_aliases from external title metadata sources.")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_DIR)
     parser.add_argument("--refresh", action="store_true", help="re-download cached source datasets")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--lock-file", type=Path)
+    parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
     parser.add_argument(
         "--source",
         dest="sources",

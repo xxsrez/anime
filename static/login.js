@@ -7,14 +7,17 @@ const GOOGLE_LOCALE = "ru";
 const reportClientError = window.reportClientError || (() => {});
 const LOGIN_RECOVERY_STARTED_KEY = "anime-login-recovery-started-at";
 const LOGIN_RECOVERY_MAX_AGE_MS = 60_000;
-const LOGIN_SESSION_POLL_INTERVAL_MS = 1_000;
-const LOGIN_RECOVERY_POLL_INTERVAL_MS = 150;
+const LOGIN_SESSION_POLL_INTERVAL_MS = 5_000;
+const LOGIN_RECOVERY_POLL_INTERVAL_MS = 250;
 const LOGIN_RECOVERY_FAST_WINDOW_MS = 12_000;
+const LOGIN_RECOVERY_MAX_CHECKS = 10;
 
 let credentialSubmitInFlight = false;
 let sessionCheckInFlight = false;
 let sessionCheckTimer = 0;
 let fastSessionChecksUntil = 0;
+let sessionWatcherMode = "idle";
+let sessionCheckAttempts = 0;
 let redirectingAfterSession = false;
 let sessionCheckErrorReported = false;
 
@@ -89,6 +92,8 @@ function stopSessionWatcher() {
     window.clearTimeout(sessionCheckTimer);
     sessionCheckTimer = 0;
   }
+  sessionWatcherMode = "idle";
+  sessionCheckAttempts = 0;
 }
 
 async function checkExistingSession() {
@@ -118,21 +123,37 @@ async function checkExistingSession() {
 }
 
 function scheduleSessionCheck(delayMs = 0) {
-  if (sessionCheckTimer || redirectingAfterSession) return;
+  if (sessionCheckTimer || redirectingAfterSession || sessionWatcherMode === "idle") return;
+  if (document.hidden) return;
   sessionCheckTimer = window.setTimeout(runSessionCheck, delayMs);
 }
 
 async function runSessionCheck() {
   sessionCheckTimer = 0;
+  if (document.hidden) return;
   const foundSession = await checkExistingSession();
   if (foundSession || redirectingAfterSession) return;
-  const delayMs = Date.now() < fastSessionChecksUntil
-    ? LOGIN_RECOVERY_POLL_INTERVAL_MS
-    : LOGIN_SESSION_POLL_INTERVAL_MS;
+  sessionCheckAttempts += 1;
+  if (sessionWatcherMode !== "recovery") {
+    stopSessionWatcher();
+    return;
+  }
+  if (Date.now() >= fastSessionChecksUntil || sessionCheckAttempts >= LOGIN_RECOVERY_MAX_CHECKS) {
+    clearLoginRecovery();
+    stopSessionWatcher();
+    setLoginState("Сессия пока не появилась. Попробуйте войти ещё раз.", "warn");
+    return;
+  }
+  const delayMs = Math.min(
+    LOGIN_SESSION_POLL_INTERVAL_MS,
+    Math.round(LOGIN_RECOVERY_POLL_INTERVAL_MS * (1.7 ** Math.max(0, sessionCheckAttempts - 1))),
+  );
   scheduleSessionCheck(delayMs);
 }
 
 function startSessionWatcher({ recovery = false } = {}) {
+  stopSessionWatcher();
+  sessionWatcherMode = recovery ? "recovery" : "single";
   if (recovery) {
     fastSessionChecksUntil = Math.max(
       fastSessionChecksUntil,
@@ -141,6 +162,15 @@ function startSessionWatcher({ recovery = false } = {}) {
     setLoginState("Завершаю вход...", "ok");
   }
   scheduleSessionCheck(0);
+}
+
+function requestSingleSessionCheck() {
+  if (redirectingAfterSession || sessionCheckInFlight || document.hidden) return;
+  if (sessionWatcherMode === "recovery") {
+    scheduleSessionCheck(0);
+    return;
+  }
+  startSessionWatcher();
 }
 
 function recoverExistingSession() {
@@ -236,7 +266,10 @@ async function bootLogin() {
   }
 
   const configResponse = await fetch(`/api/auth/config?next=${encodeURIComponent(nextPath())}`);
-  const config = await configResponse.json();
+  const config = await configResponse.json().catch(() => ({}));
+  if (!configResponse.ok) {
+    throw new Error(config.error || `${configResponse.status} ${configResponse.statusText}`);
+  }
   if (redirectingAfterSession) return;
   if (!config.configured || !config.client_id) {
     renderUnavailableGoogleButton();
@@ -283,8 +316,8 @@ bootLogin().catch(error => {
   console.error(error);
 });
 
-window.addEventListener("focus", () => scheduleSessionCheck(0));
-window.addEventListener("pageshow", () => scheduleSessionCheck(0));
+window.addEventListener("focus", requestSingleSessionCheck);
+window.addEventListener("pageshow", requestSingleSessionCheck);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) scheduleSessionCheck(0);
+  if (!document.hidden) requestSingleSessionCheck();
 });

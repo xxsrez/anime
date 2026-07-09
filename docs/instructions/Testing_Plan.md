@@ -53,11 +53,18 @@ Before any production release, run the verification set from
 `Operations_Runbook.md`:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
-.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
-node --check static/app.js
-node --check static/login.js
-node --check static/admin.js
+ruff check .
+pip-audit -r requirements.txt
+.venv/bin/python -m compileall -q server.py content_updates.py scrape_animego.py \
+  scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py \
+  update_backup.py scripts test_app.py test_db_migrate.py test_pipeline_hardening.py
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+find static -name '*.js' -print0 | xargs -0 -n1 node --check
+node --test static/frontend_runtime.test.js
+npx --yes --package typescript@5.9.3 tsc railway-functions/daily-sync.ts \
+  --noEmit --target ES2022 --module ES2022 --lib ES2022,DOM --strict
+sh -n scripts/*.sh
+.venv/bin/python scripts/check_repo_hygiene.py
 .venv/bin/python scripts/smoke_dev_app.py
 ```
 
@@ -66,6 +73,10 @@ For database/catalog changes, also run:
 ```bash
 .venv/bin/python scripts/check_data_health.py
 ```
+
+The unit/integration suite builds temporary SQLite fixtures and must pass from a
+clean checkout without `db/animego.sqlite`. The mutable dev database is a
+separate operational target, not a hidden test dependency.
 
 ## Browser Matrix
 

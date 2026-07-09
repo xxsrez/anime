@@ -9,9 +9,11 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlparse, urlunparse, parse_qsl, urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from bs4 import BeautifulSoup
+from scripts.http_safety import open_validated_url
+from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 
 
 BASE_URL = "https://animego.me"
@@ -65,8 +67,9 @@ def fetch_text(url, ajax=False, referer=None, delay=0.0):
         headers["X-Requested-With"] = "XMLHttpRequest"
     if referer:
         headers["Referer"] = referer
-    req = Request(absolute_url(url), headers=headers)
-    with urlopen(req, timeout=30) as response:
+    target = absolute_url(url)
+    req = Request(target, headers=headers)
+    with open_validated_url(req, timeout=30, allowed_hosts=("animego.me",)) as response:
         return response.read().decode("utf-8", "replace")
 
 
@@ -180,19 +183,38 @@ def normalize_embed_url(url):
     return html.unescape(url).replace("&amp;", "&")
 
 
+def credential_free_netloc(parsed):
+    if parsed.username is not None or parsed.password is not None or not parsed.hostname:
+        return None
+    try:
+        port = parsed.port
+    except ValueError:
+        return None
+    hostname = parsed.hostname
+    host = f"[{hostname}]" if ":" in hostname else hostname
+    return f"{host}:{port}" if port is not None else host
+
+
 def redact_embed_url(url):
     url = normalize_embed_url(url)
     if not url:
         return None
     parsed = urlparse("https:" + url if url.startswith("//") else url)
-    host = parsed.netloc
+    host = credential_free_netloc(parsed)
+    if not host:
+        return None
     path = parsed.path
     if "aniboom.one" in host:
         path = re.sub(r"(/embed/)[^/?#]+", r"\1<redacted>", path)
         query = urlencode([(k, v if k in {"episode", "translation"} else "<redacted>") for k, v in parse_qsl(parsed.query)])
-    elif "kodikplayer.com" in host:
-        path = re.sub(r"(/seria/\d+/)[^/?#]+", r"\1<redacted>", path)
-        query = parsed.query
+    elif "kodikplayer.com" in host.lower():
+        path = re.sub(
+            r"(/(?:seria|serial|season|video)(?:/\d+)?/)[^/?#]+",
+            r"\1<redacted>",
+            path,
+            flags=re.IGNORECASE,
+        )
+        query = urlencode([(key, "<redacted>") for key, _ in parse_qsl(parsed.query)])
     else:
         path = re.sub(r"/[A-Za-z0-9_-]{8,}", "/<redacted>", path)
         query = "<redacted>" if parsed.query else ""
@@ -205,7 +227,7 @@ def embed_host(url):
     if not url:
         return None
     parsed = urlparse("https:" + url if url.startswith("//") else url)
-    return parsed.netloc or None
+    return credential_free_netloc(parsed)
 
 
 def parse_player_content(content):
@@ -392,6 +414,10 @@ def init_db(db_path):
             video_source_count integer not null,
             include_embed_urls integer not null
         );
+
+        create index if not exists idx_video_sources_provider_playable
+            on video_sources(provider_id)
+            where embed_url is not null;
         """
     )
     ensure_columns(
@@ -420,17 +446,12 @@ def ensure_columns(con, table, columns):
             con.execute(f"alter table {table} add column {column} {definition}")
 
 
-def upsert_anime(con, item, detail, scraped_at):
+def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
     fields = detail["fields"]
-    con.execute(
-        """
-        insert into anime (
-            id, slug, title, subtitle, url, cover_url, source, source_id, listing_score,
-            aggregate_score, aggregate_count, date_published, kind, year, status,
-            episodes_text, release_text, rating, age, duration, studio, season,
-            description, fields_json, schema_json, scraped_at
-        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        on conflict(id) do update set
+    fields_json = json.dumps(fields, ensure_ascii=False, sort_keys=True)
+    schema_json = json.dumps(detail.get("schema_data") or {}, ensure_ascii=False, sort_keys=True)
+    if authoritative_metadata:
+        conflict_updates = """
             slug=excluded.slug,
             title=excluded.title,
             subtitle=excluded.subtitle,
@@ -456,6 +477,50 @@ def upsert_anime(con, item, detail, scraped_at):
             fields_json=excluded.fields_json,
             schema_json=excluded.schema_json,
             scraped_at=excluded.scraped_at
+        """
+    else:
+        conflict_updates = """
+            slug=excluded.slug,
+            title=coalesce(nullif(excluded.title, ''), anime.title),
+            subtitle=coalesce(excluded.subtitle, anime.subtitle),
+            url=excluded.url,
+            cover_url=coalesce(excluded.cover_url, anime.cover_url),
+            source=coalesce(excluded.source, anime.source),
+            source_id=coalesce(excluded.source_id, anime.source_id),
+            listing_score=coalesce(excluded.listing_score, anime.listing_score),
+            aggregate_score=coalesce(excluded.aggregate_score, anime.aggregate_score),
+            aggregate_count=coalesce(excluded.aggregate_count, anime.aggregate_count),
+            date_published=coalesce(excluded.date_published, anime.date_published),
+            kind=coalesce(excluded.kind, anime.kind),
+            year=coalesce(excluded.year, anime.year),
+            status=coalesce(excluded.status, anime.status),
+            episodes_text=coalesce(excluded.episodes_text, anime.episodes_text),
+            release_text=coalesce(excluded.release_text, anime.release_text),
+            rating=coalesce(excluded.rating, anime.rating),
+            age=coalesce(excluded.age, anime.age),
+            duration=coalesce(excluded.duration, anime.duration),
+            studio=coalesce(excluded.studio, anime.studio),
+            season=coalesce(excluded.season, anime.season),
+            description=coalesce(excluded.description, anime.description),
+            fields_json=case
+                when excluded.fields_json is null or excluded.fields_json = '{}' then anime.fields_json
+                else excluded.fields_json
+            end,
+            schema_json=case
+                when excluded.schema_json is null or excluded.schema_json = '{}' then anime.schema_json
+                else excluded.schema_json
+            end,
+            scraped_at=excluded.scraped_at
+        """
+    con.execute(
+        f"""
+        insert into anime (
+            id, slug, title, subtitle, url, cover_url, source, source_id, listing_score,
+            aggregate_score, aggregate_count, date_published, kind, year, status,
+            episodes_text, release_text, rating, age, duration, studio, season,
+            description, fields_json, schema_json, scraped_at
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        on conflict(id) do update set {conflict_updates}
         """,
         (
             item["id"],
@@ -481,23 +546,28 @@ def upsert_anime(con, item, detail, scraped_at):
             fields.get("Студия"),
             fields.get("Сезон"),
             detail["description"] or item.get("listing_description"),
-            json.dumps(fields, ensure_ascii=False, sort_keys=True),
-            json.dumps(detail.get("schema_data") or {}, ensure_ascii=False, sort_keys=True),
+            fields_json,
+            schema_json,
             scraped_at,
         ),
     )
-    con.execute("delete from anime_fields where anime_id=?", (item["id"],))
-    for label, value in sorted(fields.items()):
-        con.execute(
-            "insert or replace into anime_fields(anime_id, label, value) values (?, ?, ?)",
-            (item["id"], label, value),
-        )
-    con.execute("delete from anime_genres where anime_id=?", (item["id"],))
-    for genre in sorted(set(detail["genres"] or item.get("genres", []))):
-        con.execute("insert or ignore into anime_genres(anime_id, genre) values (?, ?)", (item["id"], genre))
-    con.execute("delete from anime_dubbings where anime_id=?", (item["id"],))
-    for dubbing in sorted(set(detail["dubbings"])):
-        con.execute("insert or ignore into anime_dubbings(anime_id, dubbing) values (?, ?)", (item["id"], dubbing))
+    if authoritative_metadata or fields:
+        con.execute("delete from anime_fields where anime_id=?", (item["id"],))
+        for label, value in sorted(fields.items()):
+            con.execute(
+                "insert or replace into anime_fields(anime_id, label, value) values (?, ?, ?)",
+                (item["id"], label, value),
+            )
+    genres = sorted(set(detail["genres"] or item.get("genres", [])))
+    if authoritative_metadata or genres:
+        con.execute("delete from anime_genres where anime_id=?", (item["id"],))
+        for genre in genres:
+            con.execute("insert or ignore into anime_genres(anime_id, genre) values (?, ?)", (item["id"], genre))
+    dubbings = sorted(set(detail["dubbings"]))
+    if authoritative_metadata or dubbings:
+        con.execute("delete from anime_dubbings where anime_id=?", (item["id"],))
+        for dubbing in dubbings:
+            con.execute("insert or ignore into anime_dubbings(anime_id, dubbing) values (?, ?)", (item["id"], dubbing))
 
 
 def upsert_episode(con, anime_id, episode, has_video, unavailable_reason, scraped_at):
@@ -534,6 +604,11 @@ def upsert_episode(con, anime_id, episode, has_video, unavailable_reason, scrape
 
 
 def upsert_provider(con, anime_id, episode_id, provider, include_embed_urls, scraped_at):
+    raw_embed_url = normalize_embed_url(provider.get("embed_url"))
+    if raw_embed_url:
+        parsed_embed_url = urlparse("https:" + raw_embed_url if raw_embed_url.startswith("//") else raw_embed_url)
+        if parsed_embed_url.username is not None or parsed_embed_url.password is not None:
+            raise ValueError("player URL credentials are not allowed")
     con.execute(
         "insert or ignore into translations(id, title) values (?, ?)",
         (provider["translation_id"], provider["translation_title"] or str(provider["translation_id"])),
@@ -567,7 +642,7 @@ def upsert_provider(con, anime_id, episode_id, provider, include_embed_urls, scr
     )
 
 
-def scrape(args):
+def _scrape(args):
     con = init_db(args.db)
     scraped_at = now_iso()
     listing_items = []
@@ -581,7 +656,9 @@ def scrape(args):
         try:
             page_html = fetch_text(page_url, delay=args.delay)
         except HTTPError as exc:
-            if args.all_pages and exc.code == 404:
+            code = exc.code
+            exc.close()
+            if args.all_pages and code == 404:
                 print(f"page {page}: 404, stopping")
                 break
             raise
@@ -607,7 +684,7 @@ def scrape(args):
     for index, item in enumerate(listing_items, start=1):
         print(f"[{index}/{len(listing_items)}] {item['title']}")
         detail = parse_detail(fetch_text(item["url"], delay=args.delay))
-        upsert_anime(con, item, detail, scraped_at)
+        upsert_anime(con, item, detail, scraped_at, authoritative_metadata=True)
 
         if not detail["player_url"]:
             con.commit()
@@ -665,7 +742,18 @@ def scrape(args):
     print(f"saved {len(listing_items)} anime, {episode_count} fetched episodes, {source_count} provider rows to {args.db}")
 
 
-def main():
+def scrape(args):
+    with DatabaseOperationLock(
+        args.db,
+        path=getattr(args, "lock_file", None) or default_lock_path(args.db),
+        wait=getattr(args, "wait_lock", False),
+        timeout=getattr(args, "lock_timeout", 30.0),
+        operation="AnimeGO scrape",
+    ):
+        return _scrape(args)
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Scrape a small AnimeGO metadata sample into SQLite.")
     parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--start-url", default=START_URL)
@@ -677,9 +765,13 @@ def main():
     parser.add_argument("--delay", type=float, default=0.5)
     parser.add_argument("--include-embed-urls", action="store_true")
     parser.add_argument("--skip-player", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument("--lock-file")
+    parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
+    args = parser.parse_args(argv)
     scrape(args)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -27,6 +27,16 @@ def integrity_check(path):
         raise AssertionError(f"{path}: integrity_check returned {result!r}")
 
 
+def foreign_key_check(path):
+    con = sqlite3.connect(path)
+    try:
+        errors = con.execute("pragma foreign_key_check").fetchmany(6)
+    finally:
+        con.close()
+    if errors:
+        raise AssertionError(f"{path}: foreign_key_check failed: {errors[:5]}")
+
+
 def scalar(path, sql):
     con = sqlite3.connect(path)
     try:
@@ -42,7 +52,10 @@ def verify_checksums(path):
         if not line.strip():
             continue
         expected, rel = line.split(None, 1)
-        item = ROOT / rel.strip()
+        rel_path = Path(rel.strip())
+        if rel_path.is_absolute() or ".." in rel_path.parts:
+            raise AssertionError(f"unsafe checksum target: {rel}")
+        item = path.parent / rel_path
         if not item.exists():
             raise AssertionError(f"checksum target missing: {rel}")
         actual = sha256_file(item)
@@ -60,22 +73,24 @@ def check(args):
         if not path.exists():
             raise AssertionError(f"missing database: {path}")
         integrity_check(path)
+        foreign_key_check(path)
 
-    non_playable = scalar(
-        db_path,
-        """
-        select count(*)
-        from anime a
-        where not exists (
-            select 1
-            from video_sources vs
-            where vs.anime_id = a.id
-              and vs.embed_url is not null
+    for path in (db_path, backup_db):
+        non_playable = scalar(
+            path,
+            """
+            select count(*)
+            from anime a
+            where not exists (
+                select 1
+                from video_sources vs
+                where vs.anime_id = a.id
+                  and vs.embed_url is not null
+            )
+            """,
         )
-        """,
-    )
-    if non_playable:
-        raise AssertionError(f"non-playable source rows: {non_playable}")
+        if non_playable:
+            raise AssertionError(f"{path}: non-playable source rows: {non_playable}")
 
     verify_checksums(checksum_path)
 
@@ -97,7 +112,7 @@ def main():
         check(args)
     except AssertionError as exc:
         print(str(exc), file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 if __name__ == "__main__":

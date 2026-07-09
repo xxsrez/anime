@@ -69,21 +69,27 @@ railway logs --latest --lines 100
 ```
 
 Code release command, only after the user explicitly asks to release and after
-   the `Operations_Runbook.md` release checklist passes:
+the `Operations_Runbook.md` release checklist passes:
 
 ```bash
 railway up --service web --environment production --detach --message "production release"
 ```
 
-Database release command, only when the production database should change:
+Routine data release: upload a reviewed private migration folder, then apply it
+next to the production database. Use exact paths from the release runbook:
 
 ```bash
-railway volume files --volume web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
+railway volume files -v web-volume upload \
+  data/private-migrations/<patch> /private-migrations/<patch> --overwrite --json
+railway ssh --service web --environment production \
+  'python3 scripts/db_migrate.py apply --db /data/animego.sqlite \
+   --root migrations --root /data/private-migrations \
+   --no-backup --wait-lock --lock-timeout 1800'
 ```
 
-The SQLite catalog and local backup snapshots are not part of git or
-`railway up`. Treat production database refreshes as a separate explicit
-operation from code release.
+Uploading `db/animego.sqlite` is an emergency full-restore operation, never the
+routine data path. Production cron can make its catalog newer than dev, and its
+user state must be preserved.
 
 ## Normal Workflow
 
@@ -92,9 +98,8 @@ operation from code release.
 3. Commit the intended code and docs only; keep database snapshots under ignored
    `db/`.
 4. Wait for an explicit user release command.
-5. Upload `db/animego.sqlite` to the Railway volume if the database should
-   change.
-6. Deploy the intended code to Railway.
+5. If data should change, upload and apply only the reviewed private patch.
+6. Deploy the intended code to Railway and apply tracked migrations.
 7. Smoke-check production after release, then stop making changes there.
 
 Never use Railway production as scratch space. If a change needs investigation,

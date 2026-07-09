@@ -10,6 +10,9 @@ can change outside git.
 | --- | --- |
 | `README.md` | Public project entrypoint and short scraper/app notes. |
 | `requirements.txt` | Python runtime dependencies. |
+| `requirements-dev.txt` | Pinned test, browser, lint, and security-audit tooling. |
+| `pyproject.toml` | Ruff configuration and Python target. |
+| `.python-version` | CI/local Python version contract. |
 | `railway.json` | Railway build/deploy configuration. |
 | `.env.example` | Local environment variable template. |
 | `.gitignore` | Keeps local databases, logs, caches, env files, and venvs out of git. |
@@ -26,6 +29,8 @@ can change outside git.
 | `prune_non_playable.py` | Removes source rows that still have no playable embed URL. |
 | `update_backup.py` | Updates the ignored local recovery snapshot. |
 | `test_app.py` | Regression tests for server, scraper, sync, auth, catalog, and recommendations behavior. |
+| `test_db_migrate.py` | Migration planning, drift, preflight, atomicity, and streaming-diff tests. |
+| `test_pipeline_hardening.py` | Locking, URL safety, backup, cron, and recovery regressions. |
 
 ## Frontend
 
@@ -33,6 +38,8 @@ can change outside git.
 | --- | --- |
 | `static/index.html` | Authenticated app shell. |
 | `static/app.js` | Catalog UI state, filtering, sorting, detail view, player controls, user state, recommendations. |
+| `static/frontend_runtime.js` | Independently testable URL, date, watch-evidence, and keyed-queue primitives. |
+| `static/frontend_runtime.test.js` | Node regression tests for those browser-independent primitives. |
 | `static/app.css` | Compact dark UI styling. |
 | `static/login.html` | Google login page. |
 | `static/login.js` | Google Identity Services login flow and session handoff. |
@@ -48,7 +55,22 @@ can change outside git.
 | `scripts/check_repo_hygiene.py` | Fails when local mutable files, logs, caches, or large artifacts are tracked or present in git history. |
 | `scripts/check_data_health.py` | Validates local SQLite integrity, backup checksums, and the watchable-catalog invariant. |
 | `scripts/smoke_dev_app.py` | Starts a temporary local server and checks login guards, catalog, and recommendations. |
+| `scripts/operation_lock.py` | Canonical bounded cross-process lock shared by DB writers and snapshots. |
+| `scripts/atomic_publish.py` | Atomic staged-directory publication with rollback. |
+| `scripts/http_safety.py` | HTTPS/host/redirect/address validation for scraper and cron HTTP clients. |
+| `scripts/db_migrate.py` | Ordered, preflighted, batch-atomic SQLite migration runner. |
+| `scripts/db_data_diff.py` | Streaming catalog-data migration generator. |
+| `scripts/missing_db_bootstrap.py` | Railway 503 bootstrap that hands off after a stable valid DB appears. |
 | `scripts/railway_start.sh` | Railway start command wrapper for `server.py`. |
+
+## Automation And Migrations
+
+| Path | Purpose |
+| --- | --- |
+| `.github/workflows/ci.yml` | Clean-checkout lint, audit, compile, Python/Node/TypeScript tests, and hygiene gate. |
+| `.github/dependabot.yml` | Weekly Python and GitHub Actions dependency updates. |
+| `migrations/` | License-clean schema, index, cache-revision, and integrity-repair migrations. |
+| `railway-functions/daily-sync.ts` | Fail-closed Railway cron client for the protected web sync endpoint. |
 
 ## Documentation
 

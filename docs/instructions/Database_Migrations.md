@@ -114,17 +114,18 @@ railway ssh --service web --environment production '
   python3 scripts/db_migrate.py apply \
     --db "${ANIMEGO_DB:-/data/animego.sqlite}" \
     --root migrations \
-    --root /data/private-migrations \
     --no-backup \
-    --wait-lock
+    --wait-lock \
+    --lock-timeout 1800
 '
 ```
 
-The runner uses a file lock next to the database, applies each SQL file in one
-transaction, and then runs `pragma integrity_check` plus
-`pragma foreign_key_check`. It can create a pre-migration SQLite backup, but the
-Railway production runbook intentionally disables that with `--no-backup`; keep
-backup files only in ignored local storage.
+Add `--root /data/private-migrations` only for a deliberate private data patch.
+The runner uses a canonical file lock next to the database, preflights the
+complete pending batch on a disposable snapshot, then applies the complete
+batch atomically on the live database. Before commit it runs
+`pragma integrity_check` and `pragma foreign_key_check`. Production deliberately
+uses `--no-backup`; recovery artifacts remain local-only.
 
 ## Safety Rules
 
@@ -137,7 +138,8 @@ backup files only in ignored local storage.
 - Do not reuse the same relative `folder/file` path in different migration
   roots.
 - Do not include transaction control in migration files. The runner owns
-  transaction boundaries so each file is atomic with its history row.
+  transaction boundaries so the entire pending batch and all history rows are
+  atomic.
 - Historical files may be absent from a partial deployment bundle; the runner
   warns about history rows that are not present under the current migration
   root but does not fail on them.

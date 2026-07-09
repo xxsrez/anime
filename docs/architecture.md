@@ -20,6 +20,10 @@
 - `sync_videos.py` is the periodic video-first updater for hourly/daily/full
   runs. It skips metadata-only rows by default and only rewrites known video
   sources when `--refresh-known` is passed.
+- `scripts/db_migrate.py` preflights and atomically applies ordered tracked and
+  private migrations behind the shared database-operation lock.
+- `update_backup.py` publishes a verified SQLite snapshot and complete
+  title/episode/watch-event state export through an atomic directory swap.
 - `static/index.html` defines the local app shell.
 - `static/app.js` owns client state, rendering, filtering, sorting, player
   source selection, recommendations, player controls, and user-state PATCH
@@ -76,6 +80,9 @@ account can pass the normal login gate.
 
 Sessions use an opaque `HttpOnly` cookie and are stored as SHA-256 hashes in
 SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
+Google callback state is HMAC-signed. Set a durable, random, at-least-32-byte
+`ANIME_GOOGLE_AUTH_STATE_SECRET` in production so callbacks survive restarts
+and work across replicas; the local fallback is intentionally process-scoped.
 
 Production runs on Railway at `https://anime-srez.up.railway.app`.
 Do not use it for development, scraping, indexing, or performance work. See
@@ -125,6 +132,19 @@ tokens, cookies, and third-party player/embed URLs before writing the log.
 - `scripts/smoke_dev_app.py` starts the HTTP app on a temporary copy of the
   local database and checks login, auth guards, catalog, and recommendations.
 
+`GET /api/health` verifies the essential schema, a bounded SQLite quick check,
+and foreign-key integrity. Successful results are cached for 60 seconds by
+default; failures for only 2 seconds so recovery is observed quickly.
+
+## Catalog Cache
+
+Catalog tables have revision triggers backed by `catalog_cache_revision`.
+Writers mark the revision dirty, including same-size in-place updates. Request
+connections read the token without opening another SQLite connection; one
+thread rebuilds a snapshot while peers wait, and a writer racing the snapshot
+forces a bounded retry. User/session writes do not invalidate immutable catalog
+data.
+
 ## API
 
 `GET /api/health`
@@ -134,6 +154,11 @@ Returns a simple health payload.
 `GET /api/auth/config`
 
 Returns the public Google client ID configuration for the login page.
+
+`GET /api/app-config`
+
+Requires authentication. Returns the server-owned player-host allowlist so the
+frontend URL validator and response CSP cannot silently diverge.
 
 `GET /api/me`
 
@@ -367,11 +392,11 @@ current state.
 Use this command set after behavior changes:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py
-.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
-node --check static/app.js
-node --check static/login.js
-node --check static/admin.js
+ruff check .
+pip-audit -r requirements.txt
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+find static -name '*.js' -print0 | xargs -0 -n1 node --check
+node --test static/frontend_runtime.test.js
 ```
 
 For UI changes, also do a browser smoke test against dev:

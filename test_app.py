@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 from urllib.parse import parse_qs, urlencode, urlparse
@@ -25,6 +26,170 @@ from scripts import enrich_title_aliases
 
 
 class LocalAppTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._original_default_db = server.DEFAULT_DB
+        cls._catalog_tmpdir = tempfile.TemporaryDirectory()
+        fixture_path = Path(cls._catalog_tmpdir.name) / "catalog-fixture.sqlite"
+        cls.build_catalog_fixture(fixture_path)
+        server.DEFAULT_DB = fixture_path
+        server.invalidate_catalog_cache(fixture_path)
+
+    @classmethod
+    def tearDownClass(cls):
+        server.invalidate_catalog_cache(server.DEFAULT_DB)
+        server.reset_database_initialization(server.DEFAULT_DB)
+        server.DEFAULT_DB = cls._original_default_db
+        cls._catalog_tmpdir.cleanup()
+        super().tearDownClass()
+
+    @classmethod
+    def build_catalog_fixture(cls, db_path):
+        con = scrape_animego.init_db(db_path)
+        scraped_at = "2026-07-01T00:00:00+00:00"
+
+        def add_title(
+            anime_id,
+            title,
+            *,
+            subtitle=None,
+            source="animego",
+            source_id=None,
+            year="2026",
+            episode_count=1,
+            aggregate_score=7.2,
+            aggregate_count=120,
+            genre="Фэнтези",
+        ):
+            con.execute(
+                """
+                insert into anime(
+                    id, slug, title, subtitle, url, kind, year, status,
+                    episodes_text, scraped_at, aggregate_score, aggregate_count,
+                    date_published, source, source_id
+                ) values (?, ?, ?, ?, ?, 'TV', ?, 'Завершён', ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    anime_id,
+                    f"fixture-{anime_id}",
+                    title,
+                    subtitle,
+                    f"https://example.test/anime/{anime_id}",
+                    year,
+                    str(episode_count),
+                    scraped_at,
+                    aggregate_score,
+                    aggregate_count,
+                    f"{year}-01-01" if year else None,
+                    source,
+                    source_id or str(anime_id),
+                ),
+            )
+            con.execute("insert into anime_genres(anime_id, genre) values (?, ?)", (anime_id, genre))
+            for label, value in (
+                ("Тип", "TV"),
+                ("Статус", "Завершён"),
+                ("Источник", source),
+            ):
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (?, ?, ?)",
+                    (anime_id, label, value),
+                )
+            for number in range(1, episode_count + 1):
+                episode_id = anime_id * 100 + number
+                con.execute(
+                    """
+                    insert into episodes(id, anime_id, number, has_video, scraped_at)
+                    values (?, ?, ?, 1, ?)
+                    """,
+                    (episode_id, anime_id, str(number), scraped_at),
+                )
+                con.execute(
+                    """
+                    insert into video_sources(
+                        anime_id, episode_id, provider_id, provider_title,
+                        translation_id, translation_title, embed_host,
+                        embed_url, embed_url_redacted, scraped_at
+                    ) values (?, ?, ?, 'Kodik', 1, 'Dream Cast', 'kodikplayer.com', ?, ?, ?)
+                    """,
+                    (
+                        anime_id,
+                        episode_id,
+                        f"kodik-{anime_id}-{number}",
+                        f"https://kodikplayer.com/serial/{anime_id}/fixture/720p?season=1&episode={number}",
+                        f"https://kodikplayer.com/serial/{anime_id}/<redacted>/720p?season=1&episode={number}",
+                        scraped_at,
+                    ),
+                )
+
+        special = (
+            (101, "Легенда о Хэй", "Luo Xiaohei Zhan Ji"),
+            (102, "Ванпанчмен", "One Punch Man"),
+            (103, "Реинкарнация сильнейшего оммёдзи", "Saikyou Onmyouji no Isekai Tenseiki"),
+            (10001570, "Как поживаете?", "Kimitachi wa Dou Ikiru ka"),
+        )
+        for anime_id, title, subtitle in special:
+            add_title(anime_id, title, subtitle=subtitle)
+        con.execute(
+            "insert into anime_fields(anime_id, label, value) values (10001570, 'Режиссер', 'Хаяо Миядзаки')"
+        )
+
+        add_title(10005287, "WIXOSS Diva(A)Live", subtitle="WIXOSS", aggregate_score=10.0, aggregate_count=2)
+        con.execute(
+            "insert into anime_fields(anime_id, label, value) values (10005287, 'Shikimori', '5.6')"
+        )
+        add_title(2430, "Провожающая в последний путь Фрирен", subtitle="Sousou no Frieren", episode_count=28)
+        add_title(2911, "Фрирен: продолжение", subtitle="Sousou no Frieren 2", episode_count=10, year="2025")
+
+        for index in range(10):
+            title = f"Canonical Pair {index}"
+            subtitle = f"Canonical Pair Romaji {index}"
+            add_title(5000 + index, title, subtitle=subtitle, year="2025")
+            add_title(
+                10005000 + index,
+                title,
+                subtitle=subtitle,
+                source="yummyanime",
+                year="2025",
+            )
+
+        add_title(2463, "Лунное путешествие приведёт к новому миру 2", subtitle="Tsuki ga Michibiku Isekai Douchuu 2", year="2025")
+        add_title(
+            10001210,
+            "Цукимити 2",
+            subtitle="Tsuki ga Michibiku Isekai Douchuu 2",
+            source="yummyanime",
+            year="2025",
+        )
+
+        for index in range(24):
+            add_title(
+                6000 + index,
+                f"Fixture Catalog Title {index}",
+                subtitle=f"Fixture Title Romaji {index}",
+                year="2025" if index % 2 else "2026",
+                genre="Приключения" if index % 3 else "Комедия",
+            )
+
+        for anime_id, title, episode_count in (
+            (10009001, "Реинкарнация безработного 3 сезон", 2),
+            (10009002, "Yummy Fixture One", 1),
+            (10009003, "Yummy Fixture Two", 1),
+            (10009004, "Yummy Fixture Three", 1),
+        ):
+            add_title(
+                anime_id,
+                title,
+                subtitle=f"Yummy Fixture {anime_id}",
+                source="yummyanime",
+                episode_count=episode_count,
+            )
+
+        con.commit()
+        con.close()
+        server.prepare_database(db_path)
+
     def create_google_user(self, db_path, sub, email):
         con = server.connect(db_path)
         try:
@@ -628,6 +793,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(payload["summary"]["event_counts"]["new_provider"], 0)
             self.assertEqual({item["title"] for item in payload["items"]}, {"Fresh Title", "Fresh Voice"})
             self.assertNotIn("Старый плеер", {event.get("description") for event in payload["events"]})
+            self.assertEqual(payload["pagination"], {"limit": 20, "returned": 3, "has_more": False})
+
+            limited = server.get_content_updates(db_path, days=7, limit=2)
+            self.assertEqual(limited["pagination"], {"limit": 2, "returned": 2, "has_more": True})
 
             user_id = self.create_google_user(db_path, "google-user-updates", "updates@example.com")
             token = self.create_session(db_path, user_id)
@@ -672,6 +841,45 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     self.assertTrue(payload["ok"])
                     self.assertEqual(payload["duration_ms"], 12)
                     sync_mock.assert_called_once()
+
+                partial_event = {
+                    "event": "content_sync",
+                    "status": "partial",
+                    "mode": "daily",
+                    "trigger": "railway-cron",
+                    "duration_ms": 12,
+                    "stats": {"animego": {"failed": 1}},
+                    "timestamp": server.now_iso(),
+                }
+                with patch.object(
+                    server,
+                    "run_content_sync",
+                    side_effect=server.ContentSyncPartialError(partial_event),
+                ):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/daily-sync?mode=daily",
+                        headers={"Authorization": "Bearer secret"},
+                    )
+                self.assertEqual(status, 502)
+                self.assertFalse(json.loads(body)["ok"])
+                self.assertEqual(json.loads(body)["status"], "partial")
+
+                with patch.object(
+                    server,
+                    "run_content_sync",
+                    side_effect=server.ContentSyncBusyError("content sync is already running"),
+                ):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/daily-sync?mode=daily",
+                        headers={"Authorization": "Bearer secret"},
+                    )
+                self.assertEqual(status, 423)
+                self.assertEqual(json.loads(body)["status"], "busy")
+                self.assertFalse(json.loads(body)["ok"])
 
     def test_animego_listing_http_500_is_counted_without_aborting_daily_sync(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1004,10 +1212,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             with self.subTest(year=year):
                 self.assertGreaterEqual(
                     sum(1 for item in items if item.get("year") == year or str(item.get("date_published") or "").startswith(year)),
-                    100,
+                    10,
                 )
         scored = [item for item in items if item.get("aggregate_score")]
-        self.assertGreaterEqual(len(scored), 200)
+        self.assertGreaterEqual(len(scored), 20)
         detail = server.get_anime_detail(scored[0]["id"])
         labels = {field["label"] for field in detail["fields"]}
         self.assertIn("Тип", labels)
@@ -1074,6 +1282,106 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 self.assertTrue(updated["is_favorite"])
                 self.assertEqual(updated["progress_episode_number"], 1)
                 self.assertEqual(build_cache.call_count, 1)
+
+    def test_catalog_cache_detects_same_shape_external_update(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(
+                db_path,
+                anime_id=140,
+                title="Old Title",
+            )
+            self.assertEqual(server.get_anime_detail(anime_id, db_path)["title"], "Old Title")
+
+            raw = sqlite3.connect(db_path)
+            try:
+                # Same byte length and unchanged timestamps defeated the old
+                # aggregate pseudo-signature.
+                raw.execute("update anime set title = 'New Title' where id = ?", (anime_id,))
+                raw.commit()
+            finally:
+                raw.close()
+
+            self.assertEqual(server.get_anime_detail(anime_id, db_path)["title"], "New Title")
+
+    def test_catalog_cache_token_reuses_request_connection(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=143)
+            server.get_catalog_cache(db_path)
+            con = server.connect(db_path)
+            try:
+                with patch.object(
+                    server.sqlite3,
+                    "connect",
+                    side_effect=AssertionError("unexpected cache-token connection"),
+                ):
+                    cache = server.get_catalog_cache(db_path, connection=con)
+            finally:
+                con.close()
+            self.assertEqual(len(cache["items"]), 1)
+
+    def test_catalog_revision_migration_covers_runtime_trigger_contract(self):
+        migration = (
+            server.ROOT
+            / "migrations"
+            / "2026-07-09_zzz-catalog-cache-revision"
+            / "00_create_catalog_cache_revision.sql"
+        ).read_text(encoding="utf-8").lower()
+
+        for table in server.CATALOG_REVISION_TABLES:
+            for operation in ("insert", "update", "delete"):
+                trigger_name = server.catalog_revision_trigger_name(table, operation)
+                self.assertIn(f"create trigger if not exists {trigger_name}", migration)
+
+    def test_catalog_rebuild_does_not_hold_global_cache_lock(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=141)
+            server.invalidate_catalog_cache(db_path)
+            started = threading.Event()
+            release = threading.Event()
+            errors = []
+            original_build = server.build_catalog_cache
+
+            def delayed_build(path):
+                started.set()
+                if not release.wait(timeout=5):
+                    raise TimeoutError("catalog build test timed out")
+                return original_build(path)
+
+            def load_catalog():
+                try:
+                    server.get_anime_list(db_path)
+                except Exception as exc:  # pragma: no cover - asserted below
+                    errors.append(exc)
+
+            with patch.object(server, "build_catalog_cache", side_effect=delayed_build):
+                thread = threading.Thread(target=load_catalog)
+                thread.start()
+                self.assertTrue(started.wait(timeout=5))
+                acquired = server.CATALOG_CACHE_LOCK.acquire(timeout=0.25)
+                if acquired:
+                    server.CATALOG_CACHE_LOCK.release()
+                release.set()
+                thread.join(timeout=5)
+
+            self.assertTrue(acquired)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(errors, [])
+
+    def test_watch_progress_event_does_not_clear_explicit_watched_state(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=142)
+            user_id = self.create_google_user(db_path, "watch-preserve", "watch@example.com")
+            server.update_user_state(anime_id, {"watched": True}, db_path, user_id)
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            result = server.record_watch_event(self.watch_payload(detail), db_path, user_id)
+
+            self.assertTrue(result["state"]["watched"])
+            self.assertTrue(server.get_anime_detail(anime_id, db_path, user_id)["watched"])
 
     def test_user_state_update_requires_real_user(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1382,6 +1690,40 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             )
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
+
+    def test_session_updates_last_seen_and_honors_current_allowlist(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path)
+            user_id = self.create_google_user(db_path, "session-user", "session@example.com")
+            token = self.create_session(db_path, user_id)
+            token_hash = server.session_token_hash(token)
+            con = server.connect(db_path)
+            con.execute(
+                "update sessions set last_seen_at = '2000-01-01T00:00:00+00:00' where token_hash = ?",
+                (token_hash,),
+            )
+            con.commit()
+            con.close()
+
+            self.assertEqual(server.get_session_user(token, db_path)["email"], "session@example.com")
+            con = server.connect(db_path)
+            refreshed = con.execute(
+                "select last_seen_at from sessions where token_hash = ?",
+                (token_hash,),
+            ).fetchone()[0]
+            con.close()
+            self.assertGreater(refreshed, "2000-01-01T00:00:00+00:00")
+
+            with patch.dict(os.environ, {"ANIME_AUTH_ALLOWED_EMAILS": "other@example.com"}):
+                self.assertIsNone(server.get_session_user(token, db_path))
+            con = server.connect(db_path)
+            revoked_at = con.execute(
+                "select revoked_at from sessions where token_hash = ?",
+                (token_hash,),
+            ).fetchone()[0]
+            con.close()
+            self.assertIsNotNone(revoked_at)
 
     def test_catalog_api_defers_search_fields_to_dedicated_endpoint(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1751,9 +2093,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
             }
+            user_id = self.create_google_user(db_path, "handoff-redirect", "one@example.com")
+            provisional_token = self.create_session(db_path, user_id)
             auth = {
-                "user": {"id": 10, "email": "one@example.com", "name": "One", "picture_url": None},
-                "token": "session-token",
+                "user": {"id": user_id, "email": "one@example.com", "name": "One", "picture_url": None},
+                "token": provisional_token,
                 "expires_at": "2030-01-01T00:00:00+00:00",
             }
 
@@ -1779,7 +2123,17 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             )
 
             self.assertEqual(status, 200)
-            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            cookie_token = headers["Set-Cookie"].split("=", 1)[1].split(";", 1)[0]
+            self.assertNotEqual(cookie_token, provisional_token)
+            self.assertEqual(server.get_session_user(cookie_token, db_path)["id"], user_id)
+            self.assertIsNone(server.get_session_user(provisional_token, db_path))
+            csp = headers["Content-Security-Policy"]
+            script_directive = next(
+                directive for directive in csp.split("; ") if directive.startswith("script-src ")
+            )
+            self.assertNotIn("'unsafe-inline'", script_directive)
+            nonce = script_directive.split("'nonce-", 1)[1].split("'", 1)[0]
+            self.assertIn(f'nonce="{nonce}"'.encode(), response_body)
             self.assertIn(b"waitForSession", response_body)
             self.assertIn(b'fetch("/api/me"', response_body)
             self.assertIn(b'credentials: "same-origin"', response_body)
@@ -1804,9 +2158,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             headers = {
                 "Content-Type": "application/json",
             }
+            user_id = self.create_google_user(db_path, "handoff-json", "one@example.com")
+            provisional_token = self.create_session(db_path, user_id)
             auth = {
-                "user": {"id": 10, "email": "one@example.com", "name": "One", "picture_url": None},
-                "token": "session-token",
+                "user": {"id": user_id, "email": "one@example.com", "name": "One", "picture_url": None},
+                "token": provisional_token,
                 "expires_at": "2030-01-01T00:00:00+00:00",
             }
 
@@ -1833,7 +2189,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             )
 
             self.assertEqual(status, 200)
-            self.assertIn(f"{server.SESSION_COOKIE_NAME}=session-token", headers["Set-Cookie"])
+            cookie_token = headers["Set-Cookie"].split("=", 1)[1].split(";", 1)[0]
+            self.assertNotEqual(cookie_token, provisional_token)
+            self.assertEqual(server.get_session_user(cookie_token, db_path)["id"], user_id)
+            self.assertIsNone(server.get_session_user(provisional_token, db_path))
             self.assertIn(b"waitForSession", response_body)
             self.assertIn(b"/wanted", response_body)
             self.assertIn(b"auth_complete", response_body)
@@ -1856,11 +2215,58 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertTrue(payload["state"])
             self.assertEqual(server.verify_google_auth_state(payload["state"]), "/wanted?tab=favorites")
 
+    def test_google_auth_state_secret_is_stable_across_process_fallbacks(self):
+        configured_secret = "shared-replica-secret-material-1234567890"
+        with patch.dict(
+            os.environ,
+            {server.GOOGLE_AUTH_STATE_SECRET_ENV: configured_secret},
+        ):
+            state = server.sign_google_auth_state("/wanted")
+            with patch.object(server, "GOOGLE_AUTH_STATE_FALLBACK_SECRET", b"other-process" * 3):
+                self.assertEqual(server.verify_google_auth_state(state), "/wanted")
+
+    def test_google_auth_state_rejects_weak_configured_secret(self):
+        with patch.dict(
+            os.environ,
+            {server.GOOGLE_AUTH_STATE_SECRET_ENV: "too-short"},
+        ):
+            with self.assertRaisesRegex(server.AuthConfigError, "at least 32 bytes"):
+                server.sign_google_auth_state("/wanted")
+
+    def test_auth_config_reports_weak_state_secret_as_deployment_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            with (
+                patch.dict(
+                    os.environ,
+                    {server.GOOGLE_AUTH_STATE_SECRET_ENV: "too-short"},
+                ),
+                patch.object(
+                    server,
+                    "google_client_id",
+                    return_value="client.apps.googleusercontent.com",
+                ),
+            ):
+                status, _, body = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/auth/config",
+                )
+
+        self.assertEqual(status, 503)
+        payload = json.loads(body)
+        self.assertFalse(payload["configured"])
+        self.assertEqual(payload["state"], "")
+        self.assertIn(server.GOOGLE_AUTH_STATE_SECRET_ENV, payload["error"])
+
     def test_safe_next_path_rejects_external_and_relative_targets(self):
         self.assertEqual(server.safe_next_path("/wanted?tab=favorites#details"), "/wanted?tab=favorites#details")
         self.assertEqual(server.safe_next_path("relative/path"), "/")
         self.assertEqual(server.safe_next_path("//evil.example/path"), "/")
         self.assertEqual(server.safe_next_path("https://evil.example/path"), "/")
+        self.assertEqual(server.safe_next_path("/%5cevil.example/path"), "/")
+        self.assertNotIn("</script>", server.inline_script_json("/</script><script>boom</script>"))
 
     def test_google_auth_complete_rejects_invalid_handoff_code(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1876,6 +2282,52 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(status, 302)
             self.assertEqual(urlparse(headers["Location"]).path, "/login")
             self.assertIn("auth_error", parse_qs(urlparse(headers["Location"]).query))
+
+    def test_login_handoff_stores_no_recoverable_session_token(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            user_id = self.create_google_user(db_path, "secure-handoff", "secure@example.com")
+            provisional_token = self.create_session(db_path, user_id)
+
+            code = server.create_login_handoff(provisional_token, "/wanted", db_path)
+
+            raw = sqlite3.connect(db_path)
+            try:
+                columns = {row[1] for row in raw.execute("pragma table_info(login_handoffs)")}
+                handoff = raw.execute("select * from login_handoffs").fetchone()
+                provisional_count = raw.execute(
+                    "select count(*) from sessions where token_hash = ?",
+                    (server.session_token_hash(provisional_token),),
+                ).fetchone()[0]
+            finally:
+                raw.close()
+            self.assertNotIn("session_token", columns)
+            self.assertIsNotNone(handoff)
+            self.assertEqual(provisional_count, 0)
+            for candidate in (Path(db_path), Path(f"{db_path}-wal")):
+                if candidate.exists():
+                    self.assertNotIn(provisional_token.encode(), candidate.read_bytes())
+
+            token, next_path = server.consume_login_handoff(code, db_path)
+            self.assertNotEqual(token, provisional_token)
+            self.assertEqual(next_path, "/wanted")
+            self.assertEqual(server.get_session_user(token, db_path)["id"], user_id)
+
+    def test_invalid_login_handoff_does_not_wait_for_sqlite_writer_lock(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            server.prepare_database(db_path)
+            blocker = sqlite3.connect(db_path)
+            try:
+                blocker.execute("begin immediate")
+                started = time.perf_counter()
+                with self.assertRaises(server.AuthError):
+                    server.consume_login_handoff("definitely-missing", db_path)
+                elapsed = time.perf_counter() - started
+            finally:
+                blocker.rollback()
+                blocker.close()
+            self.assertLess(elapsed, 0.5)
 
     def test_google_redirect_post_redirects_invalid_state_to_login(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2191,6 +2643,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         boot = js[js.index("async function boot()"):js.index("boot().catch")]
         self.assertIn("Promise.all", boot)
         self.assertIn('api("/api/me")', boot)
+        self.assertIn('api("/api/app-config")', boot)
         self.assertIn('api("/api/anime")', boot)
         self.assertIn('markPerformanceCheckpoint("recommendations_deferred")', boot)
         self.assertNotIn("await loadRecommendations", boot)
@@ -2206,7 +2659,93 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(status, 200)
             self.assertIn(b"accounts.google.com/gsi/client", body)
             self.assertEqual(headers["Cross-Origin-Opener-Policy"], "same-origin-allow-popups")
-            self.assertEqual(headers["Referrer-Policy"], "no-referrer-when-downgrade")
+            self.assertEqual(headers["Referrer-Policy"], "strict-origin-when-cross-origin")
+
+    def test_security_headers_allow_exact_player_hosts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            server.prepare_database(db_path)
+            status, headers, _ = self.request_test_server(db_path, "GET", "/api/health")
+
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(headers["X-Frame-Options"], "DENY")
+        csp = headers["Content-Security-Policy"]
+        script_directive = next(
+            directive for directive in csp.split("; ") if directive.startswith("script-src ")
+        )
+        self.assertNotIn("'unsafe-inline'", script_directive)
+        for host in server.PLAYER_HOSTS:
+            self.assertIn(f"https://{host}", csp)
+            self.assertIn(f"https://*.{host}", csp)
+
+    def test_player_host_allowlist_matches_frontend_and_catalog(self):
+        app_js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        self.assertIn('api("/api/app-config")', app_js)
+        self.assertIn("appConfig.player_hosts", app_js)
+        self.assertNotIn("const PLAYER_HOSTS", app_js)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "app-config", "config@example.com")
+            token = self.create_session(db_path, user_id)
+            status, _, body = self.request_test_server(
+                db_path,
+                "GET",
+                "/api/app-config",
+                headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+            )
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)["player_hosts"], list(server.PLAYER_HOSTS))
+
+        con = server.connect()
+        try:
+            catalog_hosts = {
+                str(row[0]).strip().lower().split(":", 1)[0]
+                for row in con.execute(
+                    "select distinct embed_host from video_sources where embed_host is not null"
+                )
+                if str(row[0]).strip()
+            }
+        finally:
+            con.close()
+        for host in catalog_hosts:
+            self.assertTrue(
+                any(host == allowed or host.endswith(f".{allowed}") for allowed in server.PLAYER_HOSTS),
+                host,
+            )
+
+    def test_static_path_cannot_escape_static_directory_by_prefix_collision(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "static"
+            root.mkdir()
+            (Path(tmpdir) / "static-secret.txt").write_text("secret", encoding="utf-8")
+            with patch.object(server, "STATIC_DIR", root):
+                status, _, body = self.request_test_server(
+                    str(Path(tmpdir) / "unused.sqlite"),
+                    "GET",
+                    "/static/../static-secret.txt",
+                )
+        self.assertEqual(status, 404)
+        self.assertNotIn(b"secret", body)
+
+    def test_broken_pipe_is_not_reported_as_unhandled_500(self):
+        handler = object.__new__(server.AnimeHandler)
+        handler.client_address = ("127.0.0.1", 12345)
+        handler.command = "GET"
+        handler.path = "/api/anime"
+
+        def disconnect():
+            raise BrokenPipeError("client disconnected")
+
+        with (
+            patch.object(handler, "send_unexpected_error") as unexpected,
+            patch.object(handler, "log_request_performance") as performance,
+        ):
+            handler.handle_request(disconnect)
+        unexpected.assert_not_called()
+        self.assertIsInstance(performance.call_args.args[1], BrokenPipeError)
 
     def test_view_mode_tabs_use_compact_accessible_labels(self):
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -2497,6 +3036,388 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertEqual(same_detail["id"], item["id"])
         self.assertEqual(same_detail["source"], "animego")
 
+    def test_canonical_merge_rejects_conflicting_subtitles_and_transitive_bridge(self):
+        def item(anime_id, source, source_id, title, subtitle, year="2026"):
+            return {
+                "id": anime_id,
+                "source": source,
+                "source_id": source_id,
+                "title": title,
+                "subtitle": subtitle,
+                "year": year,
+                "source_count": 1,
+                "available_episode_count": 1,
+                "episode_count": 1,
+                "genres": [],
+                "search_fields": [],
+            }
+
+        conflicting = server.canonicalize_items(
+            [
+                item(1, "animego", "1", "Shared Long Title", "Original Alpha"),
+                item(10000001, "yummyanime", "1", "Shared Long Title", "Original Beta"),
+            ]
+        )
+        self.assertEqual(len(conflicting), 2)
+
+        bridged = server.canonicalize_items(
+            [
+                item(2, "animego", "2", "Shared Bridge Title", "Shared Original"),
+                item(10000002, "yummyanime", "2", "Localized Bridge Title", "Shared Original"),
+                item(20000002, "yummyanime", "yummyani:2", "Shared Bridge Title", None),
+            ]
+        )
+        self.assertEqual(sorted(group["source_variant_count"] for group in bridged), [1, 2])
+        self.assertEqual(
+            next(group for group in bridged if group["source_variant_count"] == 2)["source_member_ids"],
+            [2, 10000002],
+        )
+
+    def test_canonical_union_builds_component_metadata_once_per_item(self):
+        items = []
+        for index in range(300):
+            title = f"Canonical performance pair {index}"
+            subtitle = f"Canonical performance original {index}"
+            for anime_id, source in ((index + 1, "animego"), (10_000_001 + index, "yummyanime")):
+                items.append(
+                    {
+                        "id": anime_id,
+                        "source": source,
+                        "source_id": str(index + 1),
+                        "title": title,
+                        "subtitle": subtitle,
+                        "year": "2026",
+                        "source_count": 1,
+                        "available_episode_count": 1,
+                        "episode_count": 1,
+                        "genres": [],
+                        "search_fields": [],
+                    }
+                )
+
+        with patch.object(
+            server,
+            "canonical_component_metadata",
+            wraps=server.canonical_component_metadata,
+        ) as metadata:
+            groups = server.canonicalize_items(items)
+
+        self.assertEqual(len(groups), 300)
+        self.assertTrue(all(group["source_variant_count"] == 2 for group in groups))
+        self.assertEqual(metadata.call_count, len(items))
+
+    def test_state_patch_is_strict_and_preserves_concurrent_independent_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=301)
+            user_id = self.create_google_user(db_path, "concurrent-user", "concurrent@example.com")
+
+            for invalid in (
+                {"is_favorite": "false"},
+                {"watched": 1},
+                {"progress_episode_number": -1},
+                {"unknown": True},
+                {},
+            ):
+                with self.subTest(invalid=invalid):
+                    with self.assertRaises(ValueError):
+                        server.update_user_state(anime_id, invalid, db_path, user_id)
+
+            barrier = threading.Barrier(3)
+            errors = []
+
+            def update(patch):
+                try:
+                    barrier.wait()
+                    server.update_user_state(anime_id, patch, db_path, user_id)
+                except Exception as exc:  # pragma: no cover - asserted below
+                    errors.append(exc)
+
+            threads = [
+                threading.Thread(target=update, args=({"is_favorite": True},)),
+                threading.Thread(target=update, args=({"watched": True},)),
+            ]
+            for thread in threads:
+                thread.start()
+            barrier.wait()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertEqual(errors, [])
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertTrue(detail["is_favorite"])
+            self.assertTrue(detail["watched"])
+
+    def test_watch_event_rejects_mismatched_episode_source_and_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=302, episode_count=2)
+            user_id = self.create_google_user(db_path, "watch-validation", "watch@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            source_mismatch = self.watch_payload(detail, episode_index=0)
+            source_mismatch["video_source_id"] = detail["sources_by_episode"][detail["episodes"][1]["id"]][0]["id"]
+            with self.assertRaisesRegex(ValueError, "invalid for this episode"):
+                server.record_watch_event(source_mismatch, db_path, user_id)
+
+            progress_mismatch = self.watch_payload(detail, episode_index=0)
+            progress_mismatch["progress_episode_number"] = 2
+            with self.assertRaisesRegex(ValueError, "does not match episode_id"):
+                server.record_watch_event(progress_mismatch, db_path, user_id)
+
+    def test_connect_enforces_foreign_keys_and_purges_watch_orphans_on_startup(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=303)
+            server.prepare_database(db_path)
+            raw = sqlite3.connect(db_path)
+            raw.execute("pragma foreign_keys=off")
+            timestamp = server.now_iso()
+            raw.execute(
+                """
+                insert into user_watch_events(
+                    user_id, anime_id, client_session_id, event_type, event_at,
+                    confidence, metadata_json, created_at
+                ) values (999999, ?, 'orphan', 'player_loaded', ?, 0.1, '{}', ?)
+                """,
+                (anime_id, timestamp, timestamp),
+            )
+            raw.commit()
+            raw.close()
+
+            server.reset_database_initialization(db_path)
+            con = server.connect(db_path)
+            try:
+                self.assertEqual(con.execute("pragma foreign_keys").fetchone()[0], 1)
+                self.assertEqual(con.execute("select count(*) from user_watch_events").fetchone()[0], 0)
+                self.assertEqual(con.execute("pragma foreign_key_check").fetchall(), [])
+            finally:
+                con.close()
+
+    def test_startup_nulls_optional_orphan_refs_without_losing_watch_history(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=306)
+            user_id = self.create_google_user(db_path, "optional-orphans", "orphan@example.com")
+            con = server.connect(db_path)
+            try:
+                episode_id = con.execute(
+                    "select id from episodes where anime_id = ? limit 1", (anime_id,)
+                ).fetchone()[0]
+            finally:
+                con.close()
+
+            timestamp = server.now_iso()
+            raw = sqlite3.connect(db_path)
+            raw.execute("pragma foreign_keys=off")
+            raw.execute(
+                """
+                insert into user_watch_events(
+                    user_id, anime_id, episode_id, video_source_id, source_anime_id,
+                    client_session_id, event_type, event_at, confidence,
+                    metadata_json, created_at
+                ) values (?, ?, 999991, 999992, 999993, 'orphan-refs',
+                          'player_loaded', ?, 0.1, '{}', ?)
+                """,
+                (user_id, anime_id, timestamp, timestamp),
+            )
+            raw.execute(
+                """
+                insert into user_episode_state(
+                    user_id, anime_id, episode_id, video_source_id, source_anime_id,
+                    first_seen_at, last_seen_at, last_event_type, last_confidence,
+                    updated_at
+                ) values (?, ?, ?, 999992, 999993, ?, ?, 'player_loaded', 0.1, ?)
+                """,
+                (user_id, anime_id, episode_id, timestamp, timestamp, timestamp),
+            )
+            raw.commit()
+            raw.close()
+
+            server.reset_database_initialization(db_path)
+            con = server.connect(db_path)
+            try:
+                event = con.execute(
+                    "select episode_id, video_source_id, source_anime_id from user_watch_events "
+                    "where client_session_id = 'orphan-refs'"
+                ).fetchone()
+                state = con.execute(
+                    "select video_source_id, source_anime_id from user_episode_state "
+                    "where user_id = ? and anime_id = ? and episode_id = ?",
+                    (user_id, anime_id, episode_id),
+                ).fetchone()
+                self.assertIsNotNone(event)
+                self.assertEqual(tuple(event), (None, None, None))
+                self.assertIsNotNone(state)
+                self.assertEqual(tuple(state), (None, None))
+                self.assertEqual(con.execute("pragma foreign_key_check").fetchall(), [])
+            finally:
+                con.close()
+
+    def test_connect_fast_path_initializes_once_and_detects_in_place_ddl(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            server.reset_database_initialization(db_path)
+            with patch.object(
+                server,
+                "initialize_database",
+                wraps=server.initialize_database,
+            ) as initialize:
+                first = server.connect(db_path)
+                first.close()
+                second = server.connect(db_path)
+                second.close()
+                self.assertEqual(initialize.call_count, 1)
+
+                raw = sqlite3.connect(db_path)
+                raw.execute("drop table login_handoffs")
+                raw.commit()
+                raw.close()
+
+                third = server.connect(db_path)
+                try:
+                    self.assertIsNotNone(
+                        third.execute(
+                            "select 1 from sqlite_master where type = 'table' "
+                            "and name = 'login_handoffs'"
+                        ).fetchone()
+                    )
+                finally:
+                    third.close()
+                self.assertEqual(initialize.call_count, 2)
+
+    def test_connect_detects_atomic_database_replacement(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "animego.sqlite"
+            replacement = Path(tmpdir) / "replacement.sqlite"
+            server.prepare_database(db_path)
+            old_identity = db_path.stat().st_ino
+            scrape_animego.init_db(replacement).close()
+            os.replace(replacement, db_path)
+            self.assertNotEqual(db_path.stat().st_ino, old_identity)
+
+            con = server.connect(db_path)
+            try:
+                self.assertIsNotNone(
+                    con.execute(
+                        "select 1 from sqlite_master where type = 'table' and name = 'sessions'"
+                    ).fetchone()
+                )
+                self.assertEqual(con.execute("pragma foreign_keys").fetchone()[0], 1)
+            finally:
+                con.close()
+
+    def test_catalog_cache_observes_external_catalog_writes_without_manual_invalidation(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=304, title="Before Migration")
+            self.assertEqual(len(server.get_anime_list(db_path)), 1)
+
+            con = sqlite3.connect(db_path)
+            timestamp = server.now_iso()
+            con.execute(
+                """
+                insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                values (305, 'after-migration', 'After Migration', 'https://example.test/305', 'animego', '305', ?)
+                """,
+                (timestamp,),
+            )
+            con.execute(
+                "insert into episodes(id, anime_id, number, has_video, scraped_at) values (305001, 305, '1', 1, ?)",
+                (timestamp,),
+            )
+            con.execute(
+                """
+                insert into video_sources(anime_id, episode_id, provider_id, embed_url, scraped_at)
+                values (305, 305001, 'fixture', 'https://example.test/embed/305', ?)
+                """,
+                (timestamp,),
+            )
+            con.commit()
+            con.close()
+
+            self.assertEqual({item["title"] for item in server.get_anime_list(db_path)}, {"Before Migration", "After Migration"})
+
+    def test_readiness_rejects_missing_and_corrupt_databases(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            missing = Path(tmpdir) / "missing.sqlite"
+            self.assertFalse(server.database_is_ready(missing))
+
+            corrupt = Path(tmpdir) / "corrupt.sqlite"
+            corrupt.write_bytes(b"not a sqlite database")
+            self.assertFalse(server.database_is_ready(corrupt))
+            status, _, body = self.request_test_server(str(corrupt), "GET", "/api/health")
+            self.assertEqual(status, 503)
+            self.assertFalse(json.loads(body)["ok"])
+
+    def test_readiness_checks_foreign_keys_and_caches_expensive_success(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            healthy = Path(tmpdir) / "healthy.sqlite"
+            server.prepare_database(healthy)
+            server.reset_database_initialization(healthy)
+            with patch.object(
+                server,
+                "check_database_readiness",
+                wraps=server.check_database_readiness,
+            ) as check:
+                self.assertTrue(server.database_is_ready(healthy))
+                self.assertTrue(server.database_is_ready(healthy))
+                self.assertEqual(check.call_count, 1)
+
+            broken = Path(tmpdir) / "broken.sqlite"
+            shutil.copy(healthy, broken)
+            raw = sqlite3.connect(broken)
+            raw.execute("pragma foreign_keys=off")
+            raw.execute(
+                """
+                insert into sessions(token_hash, user_id, created_at, expires_at)
+                values ('orphan-session', 999999, ?, ?)
+                """,
+                (server.now_iso(), "2099-01-01T00:00:00+00:00"),
+            )
+            raw.commit()
+            raw.close()
+            self.assertFalse(server.database_is_ready(broken))
+
+    def test_readiness_cache_detects_atomic_database_replacement(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "animego.sqlite"
+            replacement = Path(tmpdir) / "replacement.sqlite"
+            server.prepare_database(db_path)
+
+            self.assertTrue(server.database_is_ready(db_path))
+            original_identity = server.readiness_file_identity(db_path)
+            replacement.write_bytes(b"not a sqlite database")
+            os.replace(replacement, db_path)
+
+            self.assertNotEqual(server.readiness_file_identity(db_path), original_identity)
+            self.assertFalse(server.database_is_ready(db_path))
+
+    def test_readiness_cache_is_bounded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with server.READINESS_CACHE_LOCK:
+                server.READINESS_CACHE.clear()
+            for index in range(server.READINESS_CACHE_MAX_ENTRIES + 5):
+                self.assertFalse(
+                    server.database_is_ready(Path(tmpdir) / f"missing-{index}.sqlite")
+                )
+            with server.READINESS_CACHE_LOCK:
+                self.assertLessEqual(
+                    len(server.READINESS_CACHE),
+                    server.READINESS_CACHE_MAX_ENTRIES,
+                )
+
+    def test_accept_encoding_respects_explicit_zero_quality(self):
+        self.assertFalse(server.accepts_content_encoding("gzip;q=0, br", "gzip"))
+        self.assertFalse(server.accepts_content_encoding("*;q=1, gzip;q=0", "gzip"))
+        self.assertTrue(server.accepts_content_encoding("br, gzip;q=0.5", "gzip"))
+
+    def test_search_query_work_is_bounded(self):
+        query = " ".join(f"token{index}" for index in range(1000))
+        parsed = server.search_query_info(query)
+        self.assertLessEqual(len(parsed["tokens"]), server.MAX_SEARCH_QUERY_TOKENS)
+        self.assertLessEqual(len(parsed["text"]), server.MAX_SEARCH_QUERY_CHARS)
+
     def test_yummyani_namespace_allows_modern_and_legacy_title_merge(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -2510,7 +3431,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 ):
                     year = None if anime_id >= 20000000 else "2026"
                     title = "Namespace Merge сезон" if anime_id == 10003001 else "Namespace Merge"
-                    subtitle = "Namespace Merge English" if anime_id >= 20000000 else "Namespace Merge Romaji"
+                    subtitle = "Namespace Merge Romaji"
                     con.execute(
                         """
                         insert into anime(id, slug, title, subtitle, url, source, source_id, year, scraped_at)

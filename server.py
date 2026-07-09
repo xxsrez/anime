@@ -19,6 +19,7 @@ import sys
 import threading
 import time
 import unicodedata
+from collections import OrderedDict
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from functools import lru_cache
@@ -37,6 +38,8 @@ MAX_RECOMMENDATION_LIMIT = 50
 DEFAULT_CONTENT_UPDATE_DAYS = 7
 DEFAULT_CONTENT_UPDATE_LIMIT = 160
 MAX_CONTENT_UPDATE_LIMIT = 500
+MAX_SEARCH_QUERY_CHARS = 240
+MAX_SEARCH_QUERY_TOKENS = 12
 MAX_JSON_BODY_BYTES = 64 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
@@ -49,13 +52,51 @@ SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
 SESSION_COOKIE_NAME = "anime_session"
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
+SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS = 5 * 60
 GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
-GOOGLE_AUTH_STATE_SECRET = secrets.token_bytes(32)
+GOOGLE_AUTH_STATE_FALLBACK_SECRET = secrets.token_bytes(32)
+GOOGLE_AUTH_STATE_SECRET_ENV = "ANIME_GOOGLE_AUTH_STATE_SECRET"
 GOOGLE_AUTH_STATE_ERROR = "Не удалось подтвердить ответ Google. Попробуйте войти еще раз."
 LOGIN_HANDOFF_TTL_SECONDS = 60
-LOGIN_HANDOFFS = {}
-LOGIN_HANDOFFS_LOCK = threading.RLock()
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+PLAYER_HOSTS = (
+    "kodikplayer.com",
+    "aniboom.one",
+    "animego.me",
+    "sibnet.ru",
+    "anivod.com",
+    "yummyani.me",
+    "aksor.tv",
+    "vk.com",
+)
+PLAYER_FRAME_SOURCES = tuple(
+    source
+    for host in PLAYER_HOSTS
+    for source in (f"https://{host}", f"https://*.{host}")
+)
+
+
+def content_security_policy(script_nonce=None):
+    script_sources = ["'self'", "https://accounts.google.com"]
+    if script_nonce:
+        script_sources.append(f"'nonce-{script_nonce}'")
+    return "; ".join(
+        (
+            "default-src 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "frame-ancestors 'none'",
+            f"script-src {' '.join(script_sources)}",
+            "style-src 'self' 'unsafe-inline' https://accounts.google.com",
+            "img-src 'self' data: https:",
+            "connect-src 'self' https://accounts.google.com",
+            f"frame-src 'self' https://accounts.google.com {' '.join(PLAYER_FRAME_SOURCES)}",
+            "form-action 'self' https://accounts.google.com",
+        )
+    )
+
+
+CONTENT_SECURITY_POLICY = content_security_policy()
 EXTERNAL_RATING_SOURCES = {
     "tal": ("TAL", 0),
     "myanimelist": ("MAL", 1),
@@ -64,6 +105,17 @@ EXTERNAL_RATING_SOURCES = {
     "shikimori": ("Shikimori", 3),
     "imdb": ("IMDB", 4),
 }
+EXTERNAL_RATING_LABEL_SQL = ", ".join(f"'{key}'" for key in EXTERNAL_RATING_SOURCES)
+EXTERNAL_RATING_FIELD_PREDICATE_SQL = (
+    "value is not null and "
+    f"lower(trim(label)) in ({EXTERNAL_RATING_LABEL_SQL})"
+)
+EXTERNAL_RATING_INDEX_NAME = "idx_anime_fields_external_rating"
+EXTERNAL_RATING_INDEX_SQL = f"""
+    create index {EXTERNAL_RATING_INDEX_NAME}
+    on anime_fields(lower(trim(label)), anime_id, label, value)
+    where {EXTERNAL_RATING_FIELD_PREDICATE_SQL}
+"""
 SOURCE_PRIORITY = {
     "animego": 0,
     "yummyanime": 1,
@@ -108,6 +160,24 @@ WATCHED_RECOMMENDATION_SEED_WEIGHT = 3.0
 MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT = 1.0
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
+CATALOG_CACHE_BUILDS = {}
+DATABASE_INIT_LOCK = threading.RLock()
+INITIALIZED_DATABASES = {}
+READINESS_CACHE = OrderedDict()
+READINESS_CACHE_LOCK = threading.Lock()
+DEFAULT_READINESS_CACHE_TTL_SECONDS = 60.0
+DEFAULT_READINESS_FAILURE_CACHE_TTL_SECONDS = 2.0
+READINESS_CACHE_MAX_ENTRIES = 32
+CATALOG_REVISION_TABLES = (
+    "anime",
+    "episodes",
+    "video_sources",
+    "anime_fields",
+    "anime_genres",
+    "anime_dubbings",
+    "anime_title_aliases",
+    "content_update_events",
+)
 SEARCH_FOLDS = (
     (re.compile("тсу"), "цу"),
     (re.compile("дж([аеёиоуыэюя])"), r"дз\1"),
@@ -381,6 +451,21 @@ class AuthConfigError(Exception):
     pass
 
 
+class ContentSyncPartialError(RuntimeError):
+    def __init__(self, event):
+        self.event = event
+        failed = sum(
+            int(source_stats.get("failed") or 0)
+            for source_stats in (event.get("stats") or {}).values()
+            if isinstance(source_stats, dict)
+        )
+        super().__init__(f"content sync completed with {failed} failed operation(s)")
+
+
+class ContentSyncBusyError(RuntimeError):
+    pass
+
+
 def env_list(name):
     return [
         item.strip().lower()
@@ -449,6 +534,42 @@ def ensure_auth_schema(con):
         )
         changed = True
 
+    handoff_exists = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'login_handoffs'"
+    ).fetchone()
+    if handoff_exists:
+        handoff_columns = {
+            row[1] for row in con.execute("pragma table_info(login_handoffs)").fetchall()
+        }
+        expected_handoff_columns = {
+            "code_hash",
+            "user_id",
+            "next_path",
+            "created_at",
+            "expires_at",
+        }
+        if handoff_columns != expected_handoff_columns:
+            # Handoffs are deliberately short-lived. Dropping an old-format
+            # table is safer than retaining a recoverable long-lived token.
+            con.execute("drop table login_handoffs")
+            handoff_exists = None
+            changed = True
+
+    if not handoff_exists:
+        con.execute(
+            """
+            create table login_handoffs (
+                code_hash text primary key,
+                user_id integer not null,
+                next_path text not null,
+                created_at text not null,
+                expires_at text not null,
+                foreign key (user_id) references users(id) on delete cascade
+            )
+            """
+        )
+        changed = True
+
     changed |= ensure_index(
         con,
         "idx_sessions_user_id",
@@ -458,6 +579,11 @@ def ensure_auth_schema(con):
         con,
         "idx_sessions_expires_at",
         "create index idx_sessions_expires_at on sessions(expires_at)",
+    )
+    changed |= ensure_index(
+        con,
+        "idx_login_handoffs_expires_at",
+        "create index idx_login_handoffs_expires_at on login_handoffs(expires_at)",
     )
 
     return changed
@@ -631,57 +757,92 @@ def purge_orphaned_user_data(con):
         return False
 
     before = con.total_changes
-    if con.execute("select 1 from sqlite_master where type = 'table' and name = 'sessions'").fetchone():
-        orphaned_sessions = con.execute(
+    table_names = {
+        row[0]
+        for row in con.execute("select name from sqlite_master where type = 'table'").fetchall()
+    }
+
+    if "sessions" in table_names:
+        con.execute(
             """
-            select 1
-            from sessions
-            where not exists (
-                select 1
-                from users u
-                where u.id = sessions.user_id
-            )
-            limit 1
+            delete from sessions
+            where not exists (select 1 from users where users.id = sessions.user_id)
             """
-        ).fetchone()
-        if orphaned_sessions:
+        )
+
+    if "user_title_state" in table_names:
+        state_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
+        if "user_id" in state_columns:
             con.execute(
                 """
-                delete from sessions
-                where not exists (
-                    select 1
-                    from users u
-                    where u.id = sessions.user_id
-                )
+                delete from user_title_state
+                where not exists (select 1 from users where users.id = user_title_state.user_id)
+                   or not exists (select 1 from anime where anime.id = user_title_state.anime_id)
                 """
             )
 
-    if con.execute("select 1 from sqlite_master where type = 'table' and name = 'user_title_state'").fetchone():
-        state_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
-        if "user_id" in state_columns:
-            orphaned_state = con.execute(
-                """
-                select 1
-                from user_title_state
-                where not exists (
-                    select 1
-                    from users u
-                    where u.id = user_title_state.user_id
-                )
-                limit 1
-                """
-            ).fetchone()
-            if orphaned_state:
-                con.execute(
-                    """
-                    delete from user_title_state
-                    where not exists (
-                        select 1
-                        from users u
-                        where u.id = user_title_state.user_id
-                    )
-                    """
-                )
+    if "user_watch_events" in table_names:
+        con.execute(
+            """
+            delete from user_watch_events
+            where not exists (select 1 from users where users.id = user_watch_events.user_id)
+               or not exists (select 1 from anime where anime.id = user_watch_events.anime_id)
+            """
+        )
+        con.execute(
+            """
+            update user_watch_events
+            set episode_id = null
+            where episode_id is not null
+              and not exists (select 1 from episodes where episodes.id = user_watch_events.episode_id)
+            """
+        )
+        con.execute(
+            """
+            update user_watch_events
+            set video_source_id = null
+            where video_source_id is not null
+              and not exists (
+                  select 1 from video_sources where video_sources.id = user_watch_events.video_source_id
+              )
+            """
+        )
+        con.execute(
+            """
+            update user_watch_events
+            set source_anime_id = null
+            where source_anime_id is not null
+              and not exists (select 1 from anime where anime.id = user_watch_events.source_anime_id)
+            """
+        )
+
+    if "user_episode_state" in table_names:
+        con.execute(
+            """
+            delete from user_episode_state
+            where not exists (select 1 from users where users.id = user_episode_state.user_id)
+               or not exists (select 1 from anime where anime.id = user_episode_state.anime_id)
+               or not exists (select 1 from episodes where episodes.id = user_episode_state.episode_id)
+            """
+        )
+        con.execute(
+            """
+            update user_episode_state
+            set video_source_id = null
+            where video_source_id is not null
+              and not exists (
+                  select 1 from video_sources where video_sources.id = user_episode_state.video_source_id
+              )
+            """
+        )
+        con.execute(
+            """
+            update user_episode_state
+            set source_anime_id = null
+            where source_anime_id is not null
+              and not exists (select 1 from anime where anime.id = user_episode_state.source_anime_id)
+            """
+        )
     return con.total_changes != before
 
 
@@ -826,6 +987,78 @@ def ensure_runtime_indexes(con):
         "idx_video_sources_episode_embed",
         "create index idx_video_sources_episode_embed on video_sources(episode_id, embed_url)",
     )
+    changed |= ensure_index(
+        con,
+        EXTERNAL_RATING_INDEX_NAME,
+        EXTERNAL_RATING_INDEX_SQL,
+    )
+    return changed
+
+
+def catalog_revision_trigger_name(table, operation):
+    return f"catalog_revision_{table}_{operation}"
+
+
+def ensure_catalog_revision_schema(con):
+    """Install a cheap, durable catalog-dirty marker.
+
+    The first catalog row changed after a cache snapshot flips the marker and
+    increments its generation. Further rows in the same scrape only execute a
+    primary-key lookup, avoiding a revision-row write for every scraped row.
+    User/session tables have no triggers, so their writes never invalidate the
+    immutable catalog cache and cannot race with an acknowledgement step.
+    """
+    changed = False
+    if not con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'catalog_cache_revision'"
+    ).fetchone():
+        con.execute(
+            """
+            create table catalog_cache_revision (
+                singleton integer primary key check (singleton = 1),
+                generation integer not null default 0,
+                dirty integer not null default 1 check (dirty in (0, 1))
+            )
+            """
+        )
+        changed = True
+    before = con.total_changes
+    con.execute(
+        """
+        insert or ignore into catalog_cache_revision(singleton, generation, dirty)
+        values (1, 0, 1)
+        """
+    )
+    changed |= con.total_changes != before
+
+    existing_tables = {
+        row[0]
+        for row in con.execute("select name from sqlite_master where type = 'table'").fetchall()
+    }
+    existing_triggers = {
+        row[0]
+        for row in con.execute("select name from sqlite_master where type = 'trigger'").fetchall()
+    }
+    for table in CATALOG_REVISION_TABLES:
+        if table not in existing_tables:
+            continue
+        for operation in ("insert", "update", "delete"):
+            trigger_name = catalog_revision_trigger_name(table, operation)
+            if trigger_name in existing_triggers:
+                continue
+            con.execute(
+                f"""
+                create trigger {trigger_name}
+                after {operation} on {table}
+                begin
+                    update catalog_cache_revision
+                    set generation = generation + 1,
+                        dirty = 1
+                    where singleton = 1 and dirty = 0;
+                end
+                """
+            )
+            changed = True
     return changed
 
 
@@ -882,33 +1115,201 @@ def ensure_base_database(path):
         con.close()
 
 
-def connect(db_path=None):
-    path = resolve_db_path(db_path)
+def database_file_identity(path, con):
+    stat = Path(path).stat()
+    schema_version = int(con.execute("pragma schema_version").fetchone()[0])
+    return stat.st_dev, stat.st_ino, schema_version
+
+
+def configure_connection(con):
+    con.row_factory = sqlite3.Row
+    con.execute("pragma busy_timeout=30000")
+    con.execute("pragma foreign_keys=on")
+    if con.execute("pragma foreign_keys").fetchone()[0] != 1:
+        con.close()
+        raise RuntimeError("SQLite foreign key enforcement could not be enabled")
+    return con
+
+
+def open_configured_connection(path):
+    con = sqlite3.connect(path)
+    try:
+        return configure_connection(con)
+    except Exception:
+        con.close()
+        raise
+
+
+def initialize_database(path):
     ensure_base_database(path)
     con = sqlite3.connect(path)
-    con.execute("pragma busy_timeout=30000")
-    con.row_factory = sqlite3.Row
-    changed = ensure_catalog_schema(con)
-    changed |= ensure_auth_schema(con)
-    changed |= ensure_user_state_schema(con)
-    changed |= ensure_watch_tracking_schema(con)
-    changed |= purge_orphaned_user_data(con)
-    changed |= ensure_runtime_indexes(con)
-    if changed:
-        con.commit()
-    return con
+    configure_connection(con)
+    try:
+        changed = ensure_catalog_schema(con)
+        changed |= ensure_auth_schema(con)
+        changed |= ensure_user_state_schema(con)
+        changed |= ensure_watch_tracking_schema(con)
+        changed |= purge_orphaned_user_data(con)
+        changed |= ensure_runtime_indexes(con)
+        changed |= ensure_catalog_revision_schema(con)
+        if changed:
+            con.commit()
+        else:
+            con.rollback()
+    finally:
+        con.close()
+
+
+def connect(db_path=None):
+    path = resolve_db_path(db_path)
+    key = str(path.resolve())
+    if path.is_file():
+        con = open_configured_connection(path)
+        try:
+            identity = database_file_identity(path, con)
+        except Exception:
+            con.close()
+            raise
+        if INITIALIZED_DATABASES.get(key) == identity:
+            return con
+        con.close()
+
+    with DATABASE_INIT_LOCK:
+        if path.is_file():
+            con = open_configured_connection(path)
+            try:
+                identity = database_file_identity(path, con)
+            except Exception:
+                con.close()
+                raise
+            if INITIALIZED_DATABASES.get(key) == identity:
+                return con
+            con.close()
+
+        initialize_database(path)
+        con = open_configured_connection(path)
+        try:
+            INITIALIZED_DATABASES[key] = database_file_identity(path, con)
+            return con
+        except Exception:
+            con.close()
+            raise
+
+
+def reset_database_initialization(db_path=None):
+    path = resolve_db_path(db_path)
+    with DATABASE_INIT_LOCK:
+        INITIALIZED_DATABASES.pop(str(path.resolve()), None)
+    with READINESS_CACHE_LOCK:
+        READINESS_CACHE.pop(str(path.resolve()), None)
 
 
 def prepare_database(db_path=None):
     path = resolve_db_path(db_path)
     ensure_base_database(path)
-    maybe_apply_database_migrations(path)
+    if maybe_apply_database_migrations(path):
+        reset_database_initialization(path)
+        invalidate_catalog_cache(path)
     con = connect(path)
     try:
         con.commit()
     finally:
         con.close()
     return path
+
+
+def check_database_readiness(path):
+    try:
+        con = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=2)
+        try:
+            con.execute("pragma query_only=on")
+            quick_check = con.execute("pragma quick_check(1)").fetchone()
+            if not quick_check or quick_check[0] != "ok":
+                return False
+            if con.execute("pragma foreign_key_check").fetchone() is not None:
+                return False
+            required_columns = {
+                "anime": {"id", "slug", "title", "source", "source_id"},
+                "episodes": {"id", "anime_id", "number", "has_video"},
+                "video_sources": {"id", "anime_id", "episode_id", "embed_url"},
+                "users": {"id", "google_sub"},
+                "sessions": {"token_hash", "user_id", "expires_at", "revoked_at"},
+                "login_handoffs": {"code_hash", "user_id", "expires_at"},
+                "user_title_state": {"user_id", "anime_id", "watched"},
+                "user_watch_events": {"id", "user_id", "anime_id", "event_type"},
+                "user_episode_state": {"user_id", "anime_id", "episode_id"},
+                "anime_title_aliases": {"anime_id", "normalized_alias"},
+                "content_update_events": {"id", "anime_id", "occurred_at"},
+                "catalog_cache_revision": {"singleton", "generation", "dirty"},
+            }
+            existing = {
+                row[0]
+                for row in con.execute(
+                    "select name from sqlite_master where type = 'table'"
+                ).fetchall()
+            }
+            if not required_columns.keys() <= existing:
+                return False
+            for table, required in required_columns.items():
+                columns = {row[1] for row in con.execute(f"pragma table_info({table})")}
+                if not required <= columns:
+                    return False
+                con.execute(f"select 1 from {table} limit 1").fetchone()
+            return True
+        finally:
+            con.close()
+    except (OSError, sqlite3.Error):
+        return False
+
+
+def bounded_env_seconds(name, default, minimum=0.25, maximum=300.0):
+    try:
+        value = float(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        value = float(default)
+    if not math.isfinite(value):
+        value = float(default)
+    return max(minimum, min(maximum, value))
+
+
+def readiness_cache_ttl(ready):
+    if ready:
+        return bounded_env_seconds(
+            "ANIME_READINESS_CACHE_TTL_SECONDS",
+            DEFAULT_READINESS_CACHE_TTL_SECONDS,
+        )
+    return bounded_env_seconds(
+        "ANIME_READINESS_FAILURE_CACHE_TTL_SECONDS",
+        DEFAULT_READINESS_FAILURE_CACHE_TTL_SECONDS,
+    )
+
+
+def readiness_file_identity(path):
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return stat.st_dev, stat.st_ino
+
+
+def database_is_ready(db_path=None):
+    path = resolve_db_path(db_path).resolve()
+    key = str(path)
+    now = time.monotonic()
+    identity = readiness_file_identity(path)
+    with READINESS_CACHE_LOCK:
+        cached = READINESS_CACHE.get(key)
+        if cached and cached[0] > now and cached[2] == identity:
+            READINESS_CACHE.move_to_end(key)
+            return cached[1]
+
+    ready = identity is not None and path.is_file() and check_database_readiness(path)
+    with READINESS_CACHE_LOCK:
+        READINESS_CACHE[key] = (now + readiness_cache_ttl(ready), ready, identity)
+        READINESS_CACHE.move_to_end(key)
+        while len(READINESS_CACHE) > READINESS_CACHE_MAX_ENTRIES:
+            READINESS_CACHE.popitem(last=False)
+    return ready
 
 
 def rows_to_dicts(rows):
@@ -1023,10 +1424,12 @@ def unique_search_tokens(tokens):
 
 
 def search_query_info(value):
-    text = normalize_search_text(value)
+    raw = str(value or "")[:MAX_SEARCH_QUERY_CHARS]
+    text = normalize_search_text(raw)
+    tokens = unique_search_tokens(token for token in text.split() if token)[:MAX_SEARCH_QUERY_TOKENS]
     return {
-        "text": text,
-        "tokens": unique_search_tokens(token for token in text.split() if token),
+        "text": " ".join(tokens),
+        "tokens": tokens,
     }
 
 
@@ -1480,10 +1883,10 @@ def unique_values(items, getter):
 
 def load_external_ratings(con):
     rows = con.execute(
-        """
+        f"""
         select anime_id, label, value
         from anime_fields
-        where value is not null
+        where {EXTERNAL_RATING_FIELD_PREDICATE_SQL}
         """
     ).fetchall()
     ratings = {}
@@ -1580,7 +1983,8 @@ def can_auto_merge_by_title(bucket):
     title_key = normalize_match_title(bucket[0].get("title"))
     subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
     short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
-    return source_namespaces_are_unique(bucket) and short_title_has_matching_subtitle
+    subtitles_do_not_conflict = len(subtitle_keys) <= 1
+    return source_namespaces_are_unique(bucket) and short_title_has_matching_subtitle and subtitles_do_not_conflict
 
 
 def can_auto_merge_by_subtitle(bucket):
@@ -1607,6 +2011,34 @@ def source_namespaces_are_unique(bucket):
     return len(source_counts) > 1 and all(count == 1 for count in source_counts.values())
 
 
+def canonical_component_metadata(items):
+    return {
+        "size": len(items),
+        "namespaces": {source_namespace(item) for item in items},
+        "years": {year_number(item) for item in items if year_number(item) is not None},
+        "titles": {normalize_match_title(item.get("title")) for item in items},
+        "subtitles": {normalize_match_title(item.get("subtitle")) for item in items},
+    }
+
+
+def canonical_component_metadata_is_coherent(metadata):
+    if metadata["size"] < 2:
+        return False
+    if len(metadata["namespaces"]) != metadata["size"] or len(metadata["namespaces"]) < 2:
+        return False
+    if len(metadata["years"]) > 1:
+        return False
+    titles = metadata["titles"]
+    subtitles = metadata["subtitles"]
+    shares_title = len(titles) == 1 and "" not in titles
+    shares_subtitle = len(subtitles) == 1 and "" not in subtitles
+    return shares_title or shares_subtitle
+
+
+def canonical_component_is_coherent(bucket):
+    return canonical_component_metadata_is_coherent(canonical_component_metadata(bucket))
+
+
 def merge_by_match_key(items, key_getter, can_merge):
     buckets = {}
     passthrough = []
@@ -1627,7 +2059,7 @@ def merge_by_match_key(items, key_getter, can_merge):
     return merged, remaining
 
 
-def union_merge_indices(items, key_getter, can_merge, parent):
+def union_merge_indices(items, key_getter, can_merge, parent, components):
     buckets = {}
     for index, item in enumerate(items):
         key = key_getter(item)
@@ -1643,8 +2075,21 @@ def union_merge_indices(items, key_getter, can_merge, parent):
     def union(left, right):
         left_root = find(left)
         right_root = find(right)
-        if left_root != right_root:
+        if left_root == right_root:
+            return
+        left_component = components[left_root]
+        right_component = components[right_root]
+        candidate = {
+            "size": left_component["size"] + right_component["size"],
+            "namespaces": left_component["namespaces"] | right_component["namespaces"],
+            "years": left_component["years"] | right_component["years"],
+            "titles": left_component["titles"] | right_component["titles"],
+            "subtitles": left_component["subtitles"] | right_component["subtitles"],
+        }
+        if canonical_component_metadata_is_coherent(candidate):
             parent[right_root] = left_root
+            components[left_root] = candidate
+            components[right_root] = None
 
     for indices in buckets.values():
         bucket = [items[index] for index in indices]
@@ -1656,14 +2101,15 @@ def union_merge_indices(items, key_getter, can_merge, parent):
 
 def canonicalize_items(items):
     parent = list(range(len(items)))
+    components = [canonical_component_metadata([item]) for item in items]
     merge_rules = (
-        (canonical_title_match_key, can_auto_merge_by_title),
         (canonical_subtitle_match_key, can_auto_merge_by_subtitle),
+        (canonical_title_match_key, can_auto_merge_by_title),
         (canonical_title_subtitle_match_key, can_auto_merge_by_title_subtitle),
         (canonical_missing_year_title_match_key, can_auto_merge_by_missing_year_title),
     )
     for key_getter, can_merge in merge_rules:
-        union_merge_indices(items, key_getter, can_merge, parent)
+        union_merge_indices(items, key_getter, can_merge, parent, components)
 
     def find(index):
         while parent[index] != index:
@@ -1869,7 +2315,7 @@ def load_content_update_rows(con, days, limit):
         order by occurred_at desc, id desc
         limit ?
         """,
-        (*params, limit),
+        (*params, limit + 1),
     ).fetchall()
     return [update_event_payload(row) for row in rows]
 
@@ -1938,14 +2384,16 @@ def get_content_updates(db_path=None, days=DEFAULT_CONTENT_UPDATE_DAYS, limit=DE
     days = normalize_content_update_days(days)
     limit = normalize_content_update_limit(limit)
     path = resolve_db_path(db_path)
-    cache = get_catalog_cache(path, user_id)
     con = connect(path)
     try:
+        cache = get_catalog_cache(path, user_id, connection=con)
         raw_events = load_content_update_rows(con, days, limit)
         latest_run = latest_content_update_run(con)
     finally:
         con.close()
 
+    has_more = len(raw_events) > limit
+    raw_events = raw_events[:limit]
     events = []
     events_by_item_id = {}
     item_by_id = {item["id"]: item for item in cache.get("items") or []}
@@ -1975,6 +2423,11 @@ def get_content_updates(db_path=None, days=DEFAULT_CONTENT_UPDATE_DAYS, limit=DE
         "items": items,
         "events": events,
         "latest_run": latest_run,
+        "pagination": {
+            "limit": limit,
+            "returned": len(events),
+            "has_more": has_more,
+        },
     }
 
 
@@ -2510,9 +2963,18 @@ def build_translation_rankings(con):
 
 
 def get_anime_list(db_path=None, q=None, user_id=None, include_search_fields=False):
-    cache = get_catalog_cache(db_path, user_id)
+    path = resolve_db_path(db_path)
+    con = connect(path)
+    try:
+        cache = get_catalog_cache(path, user_id, connection=con)
+        user_state_by_source_id = load_user_state_by_source_id(
+            path,
+            user_id,
+            connection=con,
+        )
+    finally:
+        con.close()
     items = cache["items"]
-    user_state_by_source_id = load_user_state_by_source_id(db_path, user_id)
     if not q:
         return clone_catalog_items(
             items,
@@ -2540,13 +3002,16 @@ def sql_placeholders(values):
     return ",".join("?" for _ in values)
 
 
-def load_user_state_by_source_id(db_path=None, user_id=None):
+def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
     if user_id is None:
         return None
-    path = resolve_db_path(db_path)
-    con = sqlite3.connect(path)
-    con.execute("pragma busy_timeout=30000")
-    con.row_factory = sqlite3.Row
+    owns_connection = connection is None
+    con = connection
+    if con is None:
+        path = resolve_db_path(db_path)
+        con = sqlite3.connect(path)
+        con.execute("pragma busy_timeout=30000")
+        con.row_factory = sqlite3.Row
     try:
         rows = con.execute(
             """
@@ -2599,7 +3064,8 @@ def load_user_state_by_source_id(db_path=None, user_id=None):
     except sqlite3.OperationalError:
         return {}
     finally:
-        con.close()
+        if owns_connection:
+            con.close()
     return {row["anime_id"]: dict(row) for row in rows}
 
 
@@ -2757,10 +3223,72 @@ def get_anime_search_fields(db_path=None, user_id=None):
     ]
 
 
-def build_catalog_cache(db_path=None):
-    path = resolve_db_path(db_path)
+def catalog_revision_token(path, connection=None):
+    """Return (schema version, catalog generation, dirty) without app init."""
+    owns_connection = connection is None
+    con = connection
+    try:
+        if con is None:
+            con = sqlite3.connect(path, timeout=2)
+            con.execute("pragma query_only=on")
+        schema_version = con.execute("pragma schema_version").fetchone()[0]
+        row = con.execute(
+            "select generation, dirty from catalog_cache_revision where singleton = 1"
+        ).fetchone()
+        if not row:
+            return None
+        return schema_version, int(row[0]), int(row[1])
+    except (OSError, sqlite3.Error):
+        return None
+    finally:
+        if owns_connection and con is not None:
+            con.close()
+
+
+def mark_catalog_dirty(path):
+    if not Path(path).is_file():
+        return
+    try:
+        con = sqlite3.connect(path, timeout=2)
+        try:
+            con.execute("pragma busy_timeout=2000")
+            con.execute(
+                """
+                update catalog_cache_revision
+                set generation = generation + 1,
+                    dirty = 1
+                where singleton = 1 and dirty = 0
+                """
+            )
+            con.commit()
+        finally:
+            con.close()
+    except sqlite3.Error:
+        # A not-yet-initialized/replaced database will install the marker when
+        # the next cache build opens it.
+        return
+
+
+def prepare_catalog_cache_snapshot(path):
     con = connect(path)
     try:
+        con.execute("begin immediate")
+        ensure_catalog_revision_schema(con)
+        con.execute(
+            "update catalog_cache_revision set dirty = 0 where singleton = 1"
+        )
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
+def build_catalog_cache_snapshot(path):
+    con = connect(path)
+    try:
+        con.execute("begin")
         items = canonicalize_items(get_source_anime_items(con, include_search_fields=False))
         attach_recent_updates(con, items)
         translation_rankings = build_translation_rankings(con)
@@ -2783,24 +3311,76 @@ def build_catalog_cache(db_path=None):
     }
 
 
-def get_catalog_cache(db_path=None, user_id=None):
+def build_catalog_cache(db_path=None):
+    path = resolve_db_path(db_path)
+    built = None
+    # A writer racing a snapshot flips dirty back to one. Retry a bounded
+    # number of times so ordinary cron commits are included immediately while
+    # sustained writes cannot starve requests forever.
+    for _ in range(3):
+        prepare_catalog_cache_snapshot(path)
+        built = build_catalog_cache_snapshot(path)
+        token = catalog_revision_token(path)
+        built["revision_token"] = token
+        if token and token[2] == 0:
+            break
+    return built
+
+
+def catalog_cache_is_current(path, cached, connection=None):
+    current = catalog_revision_token(path, connection=connection)
+    cached_token = cached.get("revision_token")
+    return bool(
+        current
+        and cached_token
+        and current[2] == 0
+        and cached_token[2] == 0
+        and current[:2] == cached_token[:2]
+    )
+
+
+def get_catalog_cache(db_path=None, user_id=None, connection=None):
     path = resolve_db_path(db_path)
     key = str(path.resolve())
-    with CATALOG_CACHE_LOCK:
-        cached = CATALOG_CACHE.get(key)
-        if cached:
+    while True:
+        with CATALOG_CACHE_LOCK:
+            cached = CATALOG_CACHE.get(key)
+        if cached and catalog_cache_is_current(path, cached, connection=connection):
             return cached
-        # The catalog cache intentionally ignores mutable user tables. Progress,
-        # watch events, and favorites are overlaid per request; catalog-changing
-        # sync/import paths must call invalidate_catalog_cache explicitly.
-        cached = build_catalog_cache(path)
-        CATALOG_CACHE[key] = cached
-        return cached
+
+        with CATALOG_CACHE_LOCK:
+            # Another thread may have replaced the entry while revision I/O
+            # happened outside the global lock.
+            current = CATALOG_CACHE.get(key)
+            if current is not cached:
+                continue
+            build_event = CATALOG_CACHE_BUILDS.get(key)
+            if build_event is None:
+                build_event = threading.Event()
+                CATALOG_CACHE_BUILDS[key] = build_event
+                is_builder = True
+            else:
+                is_builder = False
+
+        if not is_builder:
+            build_event.wait()
+            continue
+
+        try:
+            built = build_catalog_cache(path)
+            with CATALOG_CACHE_LOCK:
+                CATALOG_CACHE[key] = built
+            return built
+        finally:
+            with CATALOG_CACHE_LOCK:
+                CATALOG_CACHE_BUILDS.pop(key, None)
+                build_event.set()
 
 
 def invalidate_catalog_cache(db_path=None):
     path = resolve_db_path(db_path)
     prefix = str(path.resolve())
+    mark_catalog_dirty(path)
     with CATALOG_CACHE_LOCK:
         for key in list(CATALOG_CACHE):
             if key == prefix or (isinstance(key, tuple) and key[0] == prefix):
@@ -2830,7 +3410,7 @@ def prewarm_catalog_cache(db_path=None):
 
 def canonical_group_for_anime_id(con, anime_id, user_id=None):
     db_path = con.execute("pragma database_list").fetchone()["file"]
-    return get_catalog_cache(db_path, user_id)["id_map"].get(int(anime_id))
+    return get_catalog_cache(db_path, user_id, connection=con)["id_map"].get(int(anime_id))
 
 
 def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
@@ -2840,7 +3420,7 @@ def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
     if value.isdigit():
         return canonical_group_for_anime_id(con, int(value), user_id)
     db_path = con.execute("pragma database_list").fetchone()["file"]
-    return get_catalog_cache(db_path, user_id)["slug_map"].get(value)
+    return get_catalog_cache(db_path, user_id, connection=con)["slug_map"].get(value)
 
 
 def row_value(row, key, default=None):
@@ -2946,7 +3526,7 @@ def build_source_ranking_context(by_episode, translation_rankings):
     episode_counts_by_key = {}
     providers_by_key = {}
 
-    for episode_id, sources in by_episode.items():
+    for _episode_id, sources in by_episode.items():
         episode_translation_keys = set()
         for source in sources:
             key = translation_key(source.get("translation_title"))
@@ -3180,90 +3760,119 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     return detail
 
 
+def validate_user_state_patch(patch):
+    if not isinstance(patch, dict):
+        raise ValueError("state patch must be an object")
+    allowed = {"is_favorite", "watched", "progress_episode_number"}
+    unknown = sorted(set(patch) - allowed)
+    if unknown:
+        raise ValueError(f"unsupported state field: {unknown[0]}")
+    if not patch:
+        raise ValueError("state patch must contain at least one field")
+
+    validated = {}
+    for field in ("is_favorite", "watched"):
+        if field in patch:
+            if type(patch[field]) is not bool:
+                raise ValueError(f"{field} must be a boolean")
+            validated[field] = patch[field]
+    if "progress_episode_number" in patch:
+        value = patch["progress_episode_number"]
+        if value is not None and (type(value) is not int or value < 0):
+            raise ValueError("progress_episode_number must be a non-negative integer or null")
+        validated["progress_episode_number"] = value
+    return validated
+
+
 def update_user_state(anime_ref, patch, db_path=None, user_id=None):
+    patch = validate_user_state_patch(patch)
     con = connect(db_path)
     try:
         user_id = require_user_id(con, user_id)
         group = canonical_group_for_anime_ref(con, anime_ref, user_id)
         if not group:
-            con.close()
             return None
-    except Exception:
-        con.close()
-        raise
 
-    target_id = group["id"]
-    member_ids = [variant["id"] for variant in group.get("source_variants") or []]
-    current = get_group_state(con, member_ids, user_id)
-    next_state = dict(current)
+        target_id = group["id"]
+        member_ids = [variant["id"] for variant in group.get("source_variants") or []] or [target_id]
+        con.execute("begin immediate")
+        current = get_group_state(con, member_ids, user_id)
+        timestamp = now_iso()
 
-    progress_was_patched = "progress_episode_number" in patch
-    manual_last_watch = None
-
-    if "is_favorite" in patch:
-        next_state["is_favorite"] = bool(patch["is_favorite"])
-    if "watched" in patch:
-        next_state["watched"] = bool(patch["watched"])
-    if "progress_episode_number" in patch:
-        raw_value = patch["progress_episode_number"]
-        if raw_value in (None, ""):
-            next_state["progress_episode_number"] = None
-        else:
-            try:
-                next_state["progress_episode_number"] = max(0, int(raw_value))
-            except (TypeError, ValueError):
-                con.close()
-                raise ValueError("progress_episode_number must be a non-negative integer")
-
-    next_state["updated_at"] = now_iso()
-    con.execute(
-        """
-        insert into user_title_state (
-            user_id,
-            anime_id,
-            is_favorite,
-            progress_episode_number,
-            watched,
-            updated_at
-        )
-        values (?, ?, ?, ?, ?, ?)
-        on conflict(user_id, anime_id) do update set
-            is_favorite = excluded.is_favorite,
-            progress_episode_number = excluded.progress_episode_number,
-            watched = excluded.watched,
-            updated_at = excluded.updated_at
-        """,
-        (
-            user_id,
-            target_id,
-            1 if next_state["is_favorite"] else 0,
-            next_state["progress_episode_number"],
-            1 if next_state["watched"] else 0,
-            next_state["updated_at"],
-        ),
-    )
-    duplicate_state_ids = [item for item in member_ids if item != target_id]
-    if duplicate_state_ids:
+        # Consolidation is serialized by BEGIN IMMEDIATE. Later PATCHes update
+        # only the fields they own, so independent concurrent changes survive.
         con.execute(
-            f"""
-            delete from user_title_state
-            where user_id = ?
-              and anime_id in ({sql_placeholders(duplicate_state_ids)})
+            """
+            insert into user_title_state (
+                user_id, anime_id, is_favorite, progress_episode_number, watched, updated_at
+            ) values (?, ?, ?, ?, ?, ?)
+            on conflict(user_id, anime_id) do update set
+                is_favorite = excluded.is_favorite,
+                progress_episode_number = excluded.progress_episode_number,
+                watched = excluded.watched,
+                updated_at = excluded.updated_at
             """,
-            (user_id, *duplicate_state_ids),
+            (
+                user_id,
+                target_id,
+                1 if current["is_favorite"] else 0,
+                current["progress_episode_number"],
+                1 if current["watched"] else 0,
+                timestamp,
+            ),
         )
-    if progress_was_patched:
-        manual_last_watch = sync_manual_progress_to_episode_state(
-            con,
-            group,
-            user_id,
-            next_state["progress_episode_number"],
-            next_state["updated_at"],
+
+        assignments = []
+        values = []
+        if "is_favorite" in patch:
+            assignments.append("is_favorite = ?")
+            values.append(1 if patch["is_favorite"] else 0)
+        if "progress_episode_number" in patch:
+            assignments.append("progress_episode_number = ?")
+            values.append(patch["progress_episode_number"])
+        if "watched" in patch:
+            assignments.append("watched = ?")
+            values.append(1 if patch["watched"] else 0)
+        assignments.append("updated_at = ?")
+        values.extend((timestamp, user_id, target_id))
+        con.execute(
+            f"update user_title_state set {', '.join(assignments)} where user_id = ? and anime_id = ?",
+            values,
         )
-        next_state["last_watch"] = manual_last_watch
-    con.commit()
-    con.close()
-    return next_state
+
+        duplicate_state_ids = [item for item in member_ids if item != target_id]
+        if duplicate_state_ids:
+            con.execute(
+                f"""
+                delete from user_title_state
+                where user_id = ? and anime_id in ({sql_placeholders(duplicate_state_ids)})
+                """,
+                (user_id, *duplicate_state_ids),
+            )
+
+        manual_last_watch = None
+        if "progress_episode_number" in patch:
+            manual_last_watch = sync_manual_progress_to_episode_state(
+                con,
+                group,
+                user_id,
+                patch["progress_episode_number"],
+                timestamp,
+            )
+        row = con.execute(
+            "select * from user_title_state where user_id = ? and anime_id = ?",
+            (user_id, target_id),
+        ).fetchone()
+        next_state = normalize_state(row)
+        if "progress_episode_number" in patch:
+            next_state["last_watch"] = manual_last_watch
+        con.commit()
+        return next_state
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
 
 
 def bounded_text(value, limit=200):
@@ -3294,6 +3903,35 @@ def bool_payload_value(value):
     if value is None:
         return None
     return 1 if bool(value) else 0
+
+
+def optional_json_integer(payload, field, *, minimum=None, maximum=None):
+    if field not in payload or payload[field] is None:
+        return None
+    value = payload[field]
+    if type(value) is not int:
+        raise ValueError(f"{field} must be an integer")
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{field} must be at least {minimum}")
+    if maximum is not None and value > maximum:
+        return maximum
+    return value
+
+
+def optional_json_boolean(payload, field):
+    if field not in payload or payload[field] is None:
+        return None
+    if type(payload[field]) is not bool:
+        raise ValueError(f"{field} must be a boolean")
+    return 1 if payload[field] else 0
+
+
+def require_payload_match(payload, field, expected):
+    value = payload.get(field)
+    if value in (None, ""):
+        return
+    if expected in (None, "") or str(value).strip() != str(expected).strip():
+        raise ValueError(f"{field} does not match video_source_id")
 
 
 def sanitize_watch_metadata(payload):
@@ -3330,7 +3968,7 @@ def episode_progress_number(value):
 
 
 def load_event_episode(con, member_ids, payload):
-    episode_id = int_from_value(payload.get("episode_id"))
+    episode_id = optional_json_integer(payload, "episode_id", minimum=1)
     if episode_id is not None:
         row = con.execute(
             f"""
@@ -3345,7 +3983,9 @@ def load_event_episode(con, member_ids, payload):
             return row
         raise ValueError("episode_id is invalid for this title")
 
-    progress_number = int_from_value(payload.get("progress_episode_number") or payload.get("episode_number"))
+    progress_number = optional_json_integer(payload, "progress_episode_number", minimum=0)
+    if progress_number is None:
+        progress_number = episode_progress_number(payload.get("episode_number"))
     if progress_number is None:
         raise ValueError("episode_id or episode_number is required")
     row = con.execute(
@@ -3364,21 +4004,31 @@ def load_event_episode(con, member_ids, payload):
     return row
 
 
-def load_event_video_source(con, member_ids, video_source_id):
-    source_id = int_from_value(video_source_id)
+def load_event_video_source(con, member_ids, payload, episode):
+    source_id = optional_json_integer(payload, "video_source_id", minimum=1)
     if source_id is None:
         return None
     row = con.execute(
         f"""
-        select *
-        from video_sources
-        where id = ?
-          and anime_id in ({sql_placeholders(member_ids)})
+        select
+            vs.*,
+            a.source,
+            a.source_id as catalog_source_id,
+            e.number as source_episode_number
+        from video_sources vs
+        join anime a on a.id = vs.anime_id
+        join episodes e on e.id = vs.episode_id
+        where vs.id = ?
+          and vs.anime_id in ({sql_placeholders(member_ids)})
         """,
         (source_id, *member_ids),
     ).fetchone()
     if not row:
         raise ValueError("video_source_id is invalid for this title")
+    selected_number = episode_progress_number(episode["number"])
+    source_number = episode_progress_number(row["source_episode_number"])
+    if selected_number is not None and source_number != selected_number:
+        raise ValueError("video_source_id is invalid for this episode")
     return row
 
 
@@ -3470,7 +4120,7 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
     next_state = {
         "is_favorite": current["is_favorite"],
         "progress_episode_number": max(0, int(progress_episode_number)),
-        "watched": False,
+        "watched": current["watched"],
         "updated_at": timestamp,
     }
     con.execute(
@@ -3485,9 +4135,8 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
         )
         values (?, ?, ?, ?, ?, ?)
         on conflict(user_id, anime_id) do update set
-            is_favorite = excluded.is_favorite,
             progress_episode_number = excluded.progress_episode_number,
-            watched = excluded.watched,
+            watched = max(user_title_state.watched, excluded.watched),
             updated_at = excluded.updated_at
         """,
         (
@@ -3784,15 +4433,19 @@ def record_watch_event(payload, db_path=None, user_id=None):
         anime_id = group["id"]
         member_ids = [variant["id"] for variant in group.get("source_variants") or []]
         episode = load_event_episode(con, member_ids, payload)
-        video_source = load_event_video_source(con, member_ids, payload.get("video_source_id"))
+        video_source = load_event_video_source(con, member_ids, payload, episode)
         timestamp = now_iso()
-        engaged_seconds = nonnegative_int(
-            payload.get("engaged_seconds"),
-            default=0,
+        engaged_seconds = optional_json_integer(
+            payload,
+            "engaged_seconds",
+            minimum=0,
             maximum=MAX_WATCH_EVENT_ENGAGED_SECONDS,
         )
-        page_visible = bool_payload_value(payload.get("page_visible"))
-        player_focused = bool_payload_value(payload.get("player_focused"))
+        engaged_seconds = engaged_seconds or 0
+        page_visible = optional_json_boolean(payload, "page_visible")
+        player_focused = optional_json_boolean(payload, "player_focused")
+        if event_type == "heartbeat" and not (page_visible == 1 and player_focused == 1):
+            engaged_seconds = 0
         confidence = watch_event_confidence(
             event_type,
             engaged_seconds,
@@ -3800,32 +4453,53 @@ def record_watch_event(payload, db_path=None, user_id=None):
             player_focused=bool(player_focused) if player_focused is not None else None,
         )
 
-        episode_number = bounded_text(payload.get("episode_number") or episode["number"], 40)
-        progress_episode_number = int_from_value(payload.get("progress_episode_number"))
+        actual_progress_number = episode_progress_number(episode["number"])
+        supplied_episode_number = payload.get("episode_number")
+        if supplied_episode_number not in (None, ""):
+            supplied_progress_number = episode_progress_number(supplied_episode_number)
+            if actual_progress_number is not None and supplied_progress_number != actual_progress_number:
+                raise ValueError("episode_number does not match episode_id")
+        episode_number = bounded_text(episode["number"], 40)
+        progress_episode_number = optional_json_integer(
+            payload,
+            "progress_episode_number",
+            minimum=0,
+        )
         if progress_episode_number is None:
-            progress_episode_number = episode_progress_number(episode_number)
+            progress_episode_number = actual_progress_number
+        elif actual_progress_number is not None and progress_episode_number != actual_progress_number:
+            raise ValueError("progress_episode_number does not match episode_id")
 
-        source_anime_id = int_from_value(payload.get("source_anime_id"))
+        source_anime_id = optional_json_integer(payload, "source_anime_id", minimum=1)
         if video_source:
+            require_payload_match(payload, "source_anime_id", video_source["anime_id"])
+            require_payload_match(payload, "source", video_source["source"])
+            require_payload_match(payload, "translation_id", video_source["translation_id"])
+            require_payload_match(payload, "translation_title", video_source["translation_title"])
+            require_payload_match(payload, "provider_id", video_source["provider_id"])
+            require_payload_match(payload, "provider_title", video_source["provider_title"])
+            require_payload_match(payload, "embed_host", video_source["embed_host"])
             source_anime_id = video_source["anime_id"]
-        source = bounded_text(payload.get("source") or (video_source["source"] if video_source and "source" in video_source.keys() else None), 40)
+        elif source_anime_id is not None and source_anime_id not in member_ids:
+            raise ValueError("source_anime_id is invalid for this title")
+        source = bounded_text(video_source["source"] if video_source else payload.get("source"), 40)
         translation_id = bounded_text(
-            payload.get("translation_id") or (video_source["translation_id"] if video_source else None),
+            video_source["translation_id"] if video_source else payload.get("translation_id"),
             80,
         )
         translation_title = bounded_text(
-            payload.get("translation_title") or (video_source["translation_title"] if video_source else None),
+            video_source["translation_title"] if video_source else payload.get("translation_title"),
             200,
         )
         provider_id = bounded_text(
-            payload.get("provider_id") or (video_source["provider_id"] if video_source else None),
+            video_source["provider_id"] if video_source else payload.get("provider_id"),
             80,
         )
         provider_title = bounded_text(
-            payload.get("provider_title") or (video_source["provider_title"] if video_source else None),
+            video_source["provider_title"] if video_source else payload.get("provider_title"),
             200,
         )
-        embed_host = bounded_text(payload.get("embed_host") or (video_source["embed_host"] if video_source else None), 200)
+        embed_host = bounded_text(video_source["embed_host"] if video_source else payload.get("embed_host"), 200)
 
         cur = con.execute(
             """
@@ -3859,7 +4533,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 user_id,
                 anime_id,
                 episode["id"],
-                int_from_value(payload.get("video_source_id")),
+                video_source["id"] if video_source else None,
                 client_session_id,
                 event_type,
                 timestamp,
@@ -3894,7 +4568,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
             started=started,
             episode_number=episode_number,
             progress_episode_number=progress_episode_number,
-            video_source_id=int_from_value(payload.get("video_source_id")),
+            video_source_id=video_source["id"] if video_source else None,
             source=source,
             source_anime_id=source_anime_id,
             translation_id=translation_id,
@@ -4225,6 +4899,19 @@ def create_session(con, user_id):
     return token, expires_at
 
 
+def session_user_is_allowed(row):
+    email = str(row["email"] or "").strip().lower()
+    allowed_emails = env_list("ANIME_AUTH_ALLOWED_EMAILS")
+    if allowed_emails and email not in allowed_emails:
+        return False
+    allowed_domains = env_list("ANIME_AUTH_ALLOWED_DOMAINS")
+    if allowed_domains:
+        domain = email.rsplit("@", 1)[-1] if "@" in email else ""
+        if domain not in allowed_domains:
+            return False
+    return True
+
+
 def authenticate_google_credential(credential, db_path=None):
     profile = verify_google_credential(credential)
     con = connect(db_path)
@@ -4246,17 +4933,42 @@ def get_session_user(token, db_path=None):
         return None
     con = connect(db_path)
     try:
+        token_hash = session_token_hash(token)
+        now = now_iso()
         row = con.execute(
             """
-            select u.*
+            select u.*, s.last_seen_at as session_last_seen_at
             from sessions s
             join users u on u.id = s.user_id
             where s.token_hash = ?
               and s.revoked_at is null
               and s.expires_at > ?
             """,
-            (session_token_hash(token), now_iso()),
+            (token_hash, now),
         ).fetchone()
+        if row:
+            if not session_user_is_allowed(row):
+                con.execute(
+                    "update sessions set revoked_at = ? where token_hash = ? and revoked_at is null",
+                    (now, token_hash),
+                )
+                con.commit()
+                return None
+            cutoff = (
+                dt.datetime.now(dt.timezone.utc)
+                - dt.timedelta(seconds=SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS)
+            ).isoformat(timespec="seconds")
+            if not row["session_last_seen_at"] or row["session_last_seen_at"] < cutoff:
+                con.execute(
+                    """
+                    update sessions
+                    set last_seen_at = ?
+                    where token_hash = ?
+                      and (last_seen_at is null or last_seen_at < ?)
+                    """,
+                    (now, token_hash, cutoff),
+                )
+                con.commit()
         return public_user(row)
     finally:
         con.close()
@@ -4440,13 +5152,16 @@ def run_content_sync(db_path, mode="daily", trigger="internal-api"):
             "yummyanime",
             "--source",
             "animego",
-            "--wait-lock",
             "--trigger",
             trigger,
         ]
     )
     try:
         stats = sync_videos.run_sync(args)
+    except sync_videos.SyncFailedError as exc:
+        stats = exc.stats
+    except sync_videos.OperationLockError as exc:
+        raise ContentSyncBusyError("content sync is already running") from exc
     except Exception as exc:
         duration_ms = max(0, int((time.perf_counter() - started) * 1000))
         event = {
@@ -4460,16 +5175,25 @@ def run_content_sync(db_path, mode="daily", trigger="internal-api"):
         server_logger().exception(json.dumps(event, ensure_ascii=False, sort_keys=True))
         raise
     duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+    failed = any(
+        int(source_stats.get("failed") or 0) > 0
+        for source_stats in stats.values()
+        if isinstance(source_stats, dict)
+    )
     event = {
         "event": "content_sync",
+        "status": "partial" if failed else "success",
         "mode": mode,
         "trigger": trigger,
         "duration_ms": duration_ms,
         "stats": stats,
         "timestamp": now_iso(),
     }
-    server_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
     invalidate_catalog_cache(db_path)
+    if failed:
+        server_logger().warning(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        raise ContentSyncPartialError(event)
+    server_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
     return event
 
 
@@ -4563,15 +5287,42 @@ def start_daily_sync_scheduler(db_path):
 
 
 def safe_next_path(value):
-    parsed = urlparse(value or "/")
+    raw_value = str(value or "/")
+    parsed = urlparse(raw_value)
     if parsed.scheme or parsed.netloc:
         return "/"
     path = parsed.path or "/"
-    if not path.startswith("/"):
+    decoded_path = unquote(path)
+    if (
+        not path.startswith("/")
+        or "\\" in decoded_path
+        or any(ord(character) < 32 for character in decoded_path)
+    ):
         return "/"
     query = f"?{parsed.query}" if parsed.query else ""
     fragment = f"#{parsed.fragment}" if parsed.fragment else ""
     return f"{path}{query}{fragment}"
+
+
+def inline_script_json(value):
+    return (
+        json.dumps(value, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+def google_auth_state_secret():
+    configured = os.environ.get(GOOGLE_AUTH_STATE_SECRET_ENV, "")
+    if not configured:
+        return GOOGLE_AUTH_STATE_FALLBACK_SECRET
+    secret_bytes = configured.encode("utf-8")
+    if len(secret_bytes) < 32:
+        raise AuthConfigError(f"{GOOGLE_AUTH_STATE_SECRET_ENV} must be at least 32 bytes")
+    return hashlib.sha256(b"anime-google-auth-state\0" + secret_bytes).digest()
 
 
 def base64url_encode(data):
@@ -4590,7 +5341,7 @@ def sign_google_auth_state(next_path):
         "nonce": secrets.token_urlsafe(16),
     }
     payload_bytes = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    signature = hmac.new(GOOGLE_AUTH_STATE_SECRET, payload_bytes, hashlib.sha256).digest()
+    signature = hmac.new(google_auth_state_secret(), payload_bytes, hashlib.sha256).digest()
     return f"{base64url_encode(payload_bytes)}.{base64url_encode(signature)}"
 
 
@@ -4600,9 +5351,9 @@ def verify_google_auth_state(value):
         payload_bytes = base64url_decode(payload_part)
         signature = base64url_decode(signature_part)
     except (ValueError, TypeError, binascii.Error):
-        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR) from None
 
-    expected = hmac.new(GOOGLE_AUTH_STATE_SECRET, payload_bytes, hashlib.sha256).digest()
+    expected = hmac.new(google_auth_state_secret(), payload_bytes, hashlib.sha256).digest()
     if not hmac.compare_digest(signature, expected):
         raise AuthError(GOOGLE_AUTH_STATE_ERROR)
 
@@ -4610,7 +5361,7 @@ def verify_google_auth_state(value):
         payload = json.loads(payload_bytes.decode("utf-8"))
         issued_at = int(payload.get("iat") or 0)
     except (TypeError, ValueError, json.JSONDecodeError):
-        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR) from None
 
     now = int(time.time())
     if issued_at < now - GOOGLE_AUTH_STATE_TTL_SECONDS or issued_at > now + 60:
@@ -4618,31 +5369,128 @@ def verify_google_auth_state(value):
     return safe_next_path(payload.get("next") or "/")
 
 
-def create_login_handoff(session_token, next_path):
+def create_login_handoff(session_token, next_path, db_path=None):
     code = secrets.token_urlsafe(32)
-    now = time.time()
-    with LOGIN_HANDOFFS_LOCK:
-        expired_codes = [
-            item_code
-            for item_code, item in LOGIN_HANDOFFS.items()
-            if item["expires_at"] <= now
-        ]
-        for item_code in expired_codes:
-            LOGIN_HANDOFFS.pop(item_code, None)
-        LOGIN_HANDOFFS[code] = {
-            "expires_at": now + LOGIN_HANDOFF_TTL_SECONDS,
-            "next_path": safe_next_path(next_path),
-            "session_token": session_token,
-        }
+    created_at = now_iso()
+    expires_at = (
+        dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=LOGIN_HANDOFF_TTL_SECONDS)
+    ).isoformat(timespec="seconds")
+    con = connect(db_path)
+    try:
+        con.execute("begin immediate")
+        session = con.execute(
+            """
+            select user_id
+            from sessions
+            where token_hash = ?
+              and revoked_at is null
+              and expires_at > ?
+            """,
+            (session_token_hash(session_token), created_at),
+        ).fetchone()
+        if not session:
+            raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
+        con.execute("delete from login_handoffs where expires_at <= ?", (created_at,))
+        con.execute(
+            """
+            insert into login_handoffs(code_hash, user_id, next_path, created_at, expires_at)
+            values (?, ?, ?, ?, ?)
+            """,
+            (
+                session_token_hash(code),
+                session["user_id"],
+                safe_next_path(next_path),
+                created_at,
+                expires_at,
+            ),
+        )
+        # The provisional session never leaves this process and is invalidated
+        # as soon as the one-time handoff exists. The browser gets a fresh
+        # session only after atomically consuming the handoff.
+        con.execute(
+            "delete from sessions where token_hash = ?",
+            (session_token_hash(session_token),),
+        )
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
     return code
 
 
-def consume_login_handoff(code):
-    with LOGIN_HANDOFFS_LOCK:
-        item = LOGIN_HANDOFFS.pop(code or "", None)
-    if not item or item["expires_at"] <= time.time():
+def consume_login_handoff(code, db_path=None):
+    if not code:
         raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
-    return item["session_token"], item["next_path"]
+    code_hash = session_token_hash(code)
+    timestamp = now_iso()
+    con = connect(db_path)
+    try:
+        # Missing/expired random codes stay a read-only path. In particular,
+        # scanner traffic cannot acquire SQLite's global writer reservation.
+        row = con.execute(
+            """
+            select user_id, next_path, expires_at
+            from login_handoffs
+            where code_hash = ?
+            """,
+            (code_hash,),
+        ).fetchone()
+        if not row or row["expires_at"] <= timestamp:
+            raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
+
+        con.execute("begin immediate")
+        row = con.execute(
+            """
+            select h.user_id, h.next_path, h.expires_at
+            from login_handoffs h
+            join users u on u.id = h.user_id
+            where h.code_hash = ? and h.expires_at > ?
+            """,
+            (code_hash, timestamp),
+        ).fetchone()
+        if not row:
+            con.rollback()
+            raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
+        con.execute(
+            "delete from login_handoffs where code_hash = ?",
+            (code_hash,),
+        )
+        token, _ = create_session(con, row["user_id"])
+        con.commit()
+    except AuthError:
+        if con.in_transaction:
+            con.rollback()
+        raise
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+    return token, row["next_path"]
+
+
+def accepts_content_encoding(header, encoding):
+    qualities = {}
+    for part in str(header or "").split(","):
+        tokens = [token.strip() for token in part.split(";") if token.strip()]
+        if not tokens:
+            continue
+        name = tokens[0].lower()
+        quality = 1.0
+        for parameter in tokens[1:]:
+            key, separator, value = parameter.partition("=")
+            if separator and key.strip().lower() == "q":
+                try:
+                    quality = max(0.0, min(1.0, float(value.strip())))
+                except ValueError:
+                    quality = 0.0
+        qualities[name] = quality
+    key = encoding.lower()
+    if key in qualities:
+        return qualities[key] > 0
+    return qualities.get("*", 0.0) > 0
 
 
 class AnimeHandler(BaseHTTPRequestHandler):
@@ -4668,6 +5516,14 @@ class AnimeHandler(BaseHTTPRequestHandler):
         caught = None
         try:
             callback()
+        except (BrokenPipeError, ConnectionResetError) as exc:
+            caught = exc
+            server_logger().debug(
+                "client disconnected while writing response remote=%s method=%s path=%s",
+                self.client_address[0] if self.client_address else "-",
+                getattr(self, "command", "-"),
+                urlparse(getattr(self, "path", "") or "").path or "-",
+            )
         except Exception as exc:
             caught = exc
             self.send_unexpected_error(exc)
@@ -4711,10 +5567,16 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 parsed.path or "-",
             )
 
+    def send_security_headers(self, script_nonce=None):
+        self.send_header("Content-Security-Policy", content_security_policy(script_nonce))
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+
     def send_json(self, payload, status=200, headers=None):
         body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         encoding_headers = []
-        if len(body) > 1024 and "gzip" in self.headers.get("Accept-Encoding", "").lower():
+        if len(body) > 1024 and accepts_content_encoding(self.headers.get("Accept-Encoding"), "gzip"):
             compressed = gzip.compress(body, compresslevel=5)
             if len(compressed) < len(body):
                 body = compressed
@@ -4723,6 +5585,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self.send_security_headers()
         for name, value in encoding_headers:
             self.send_header(name, value)
         for name, value in (headers or []):
@@ -4731,12 +5594,13 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_html(self, html_body, status=200, headers=None):
+    def send_html(self, html_body, status=200, headers=None, script_nonce=None):
         body = html_body.encode("utf-8")
         self._last_response_bytes = len(body)
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self.send_security_headers(script_nonce)
         for name, value in (headers or []):
             self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
@@ -4748,6 +5612,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
+        self.send_security_headers()
         for name, value in (headers or []):
             self.send_header(name, value)
         self.end_headers()
@@ -4891,8 +5756,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         safe_path = path.lstrip("/") or "index.html"
         if safe_path == "":
             safe_path = "index.html"
-        target = (STATIC_DIR / safe_path).resolve()
-        if not str(target).startswith(str(STATIC_DIR.resolve())) or not target.is_file():
+        static_root = STATIC_DIR.resolve()
+        target = (static_root / safe_path).resolve()
+        if not target.is_relative_to(static_root) or not target.is_file():
             self.send_json({"error": "not found"}, 404)
             return
         content = target.read_bytes()
@@ -4903,9 +5769,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Cache-Control", "no-store")
+        self.send_security_headers()
         if safe_path == "login.html":
             self.send_header("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
-            self.send_header("Referrer-Policy", "no-referrer-when-downgrade")
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -5010,10 +5876,11 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def send_login_complete_page(self, token, next_path):
         next_path = safe_next_path(next_path)
-        next_js = json.dumps(next_path, ensure_ascii=False)
+        script_nonce = secrets.token_urlsafe(18)
+        next_js = inline_script_json(next_path)
         next_href = html.escape(next_path, quote=True)
         recovery_path = f"/login?{urlencode({'next': next_path, 'auth_complete': '1'})}"
-        recovery_js = json.dumps(recovery_path, ensure_ascii=False)
+        recovery_js = inline_script_json(recovery_path)
         self.send_html(
             f"""<!doctype html>
 <html lang=\"ru\">
@@ -5025,7 +5892,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 <body>
   <p id=\"login-complete-state\">Вход выполнен. Открываю приложение...</p>
   <p><a href=\"{next_href}\">Открыть приложение</a></p>
-  <script>
+  <script nonce="{script_nonce}">
     const nextPath = {next_js};
     const state = document.getElementById("login-complete-state");
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -5056,6 +5923,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 </html>
 """,
             headers=[("Set-Cookie", self.session_cookie_header(token))],
+            script_nonce=script_nonce,
         )
 
     def do_GET(self):
@@ -5077,17 +5945,33 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/health":
-            self.send_json({"ok": True})
+            if database_is_ready(self.server.db_path):
+                self.send_json({"ok": True})
+            else:
+                self.send_json({"ok": False, "error": "database unavailable"}, 503)
             return
 
         if path == "/api/auth/config":
             client_id = google_client_id()
             next_path = safe_next_path(parse_qs(parsed.query).get("next", ["/"])[0])
+            try:
+                state = sign_google_auth_state(next_path) if client_id else ""
+            except AuthConfigError as exc:
+                self.send_json(
+                    {
+                        "configured": False,
+                        "client_id": client_id,
+                        "state": "",
+                        "error": f"deployment configuration error: {exc}",
+                    },
+                    503,
+                )
+                return
             self.send_json(
                 {
                     "configured": bool(client_id),
                     "client_id": client_id,
-                    "state": sign_google_auth_state(next_path) if client_id else "",
+                    "state": state,
                 }
             )
             return
@@ -5103,7 +5987,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
         if path == "/api/auth/complete":
             try:
                 token, next_path = consume_login_handoff(
-                    parse_qs(parsed.query).get("code", [""])[0]
+                    parse_qs(parsed.query).get("code", [""])[0],
+                    self.server.db_path,
                 )
             except AuthError as exc:
                 self.redirect_to_login_auth_error(str(exc) or "Не удалось войти через Google")
@@ -5131,6 +6016,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
         user = self.current_user()
         if path.startswith("/api/") and not user:
             self.send_json({"error": "authentication required"}, 401)
+            return
+
+        if path == "/api/app-config":
+            self.send_json({"player_hosts": list(PLAYER_HOSTS)})
             return
 
         if path == "/api/admin/users":
@@ -5196,6 +6085,12 @@ class AnimeHandler(BaseHTTPRequestHandler):
             mode = parse_qs(parsed.query).get("mode", [os.environ.get("ANIME_SYNC_MODE", "daily")])[0]
             try:
                 result = run_content_sync(self.server.db_path, mode=mode, trigger="railway-cron")
+            except ContentSyncBusyError as exc:
+                self.send_json({"ok": False, "status": "busy", "error": str(exc)}, 423)
+                return
+            except ContentSyncPartialError as exc:
+                self.send_json({"ok": False, **exc.event}, 502)
+                return
             except ValueError as exc:
                 self.send_json({"error": str(exc)}, 400)
                 return
@@ -5273,7 +6168,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     next_path,
                 )
                 return
-            code = create_login_handoff(auth["token"], next_path)
+            code = create_login_handoff(auth["token"], next_path, self.server.db_path)
             complete_url = f"/api/auth/complete?code={quote(code, safe='')}"
             if is_redirect_flow:
                 self.send_redirect(complete_url)

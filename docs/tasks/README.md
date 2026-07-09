@@ -20,3 +20,8 @@ tasks/{task-name}/
 ```
 
 `changelog.md` should be append-only with the newest entry at the top.
+
+## Current Tasks
+
+- [`project-hardening/`](project-hardening/) - repository-wide reliability,
+  concurrency, recovery, security, performance, and reproducibility pass.

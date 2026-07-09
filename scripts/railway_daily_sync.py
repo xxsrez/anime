@@ -4,6 +4,12 @@ import os
 from pathlib import Path
 import time
 from urllib import error, request
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+try:
+    from scripts.http_safety import open_validated_url, validate_http_url
+except ModuleNotFoundError:  # Direct execution: python3 scripts/railway_daily_sync.py
+    from http_safety import open_validated_url, validate_http_url
 
 
 DEFAULT_TIMEOUT_SECONDS = 60 * 30
@@ -31,22 +37,56 @@ def log_event(event):
 def sync_url():
     explicit = os.environ.get("ANIME_SYNC_URL", "").strip()
     if explicit:
-        return explicit
+        return validate_http_url(explicit, allow_local_http=True)
     base = os.environ.get("ANIME_PUBLIC_URL", "").strip().rstrip("/")
     if base:
-        return f"{base}/api/internal/daily-sync"
+        return validate_http_url(f"{base}/api/internal/daily-sync", allow_local_http=True)
     raise RuntimeError("ANIME_SYNC_URL or ANIME_PUBLIC_URL must be configured")
+
+
+def contains_failure(value, depth=0):
+    if depth > 12:
+        return True
+    if isinstance(value, dict):
+        if value.get("status") in {"partial", "failed"} or value.get("error"):
+            return True
+        if "failed" in value:
+            try:
+                if int(value["failed"] or 0) > 0:
+                    return True
+            except (TypeError, ValueError):
+                return True
+        return any(contains_failure(child, depth + 1) for child in value.values())
+    if isinstance(value, list):
+        return any(contains_failure(child, depth + 1) for child in value)
+    return False
+
+
+def sync_succeeded(payload):
+    return (
+        isinstance(payload, dict)
+        and payload.get("ok") is True
+        and not contains_failure(payload)
+    )
+
+
+def target_url(url, mode):
+    parsed = urlsplit(url)
+    query = [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True) if key != "mode"]
+    query.append(("mode", mode))
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
 
 
 def main():
     url = sync_url()
     mode = os.environ.get("ANIME_SYNC_MODE", "daily").strip() or "daily"
+    if mode not in {"hourly", "daily", "full"}:
+        raise RuntimeError(f"unsupported ANIME_SYNC_MODE: {mode}")
     token = os.environ.get("ANIME_SYNC_TOKEN", "").strip()
     if not token:
         raise RuntimeError("ANIME_SYNC_TOKEN must be configured")
 
-    separator = "&" if "?" in url else "?"
-    target = f"{url}{separator}mode={mode}"
+    target = target_url(url, mode)
     timeout = int(os.environ.get("ANIME_SYNC_TIMEOUT_SECONDS", DEFAULT_TIMEOUT_SECONDS))
     body = b"{}"
     req = request.Request(
@@ -63,7 +103,12 @@ def main():
     started = time.perf_counter()
     log_event({"event": "daily_sync_start", "mode": mode, "url": url})
     try:
-        with request.urlopen(req, timeout=timeout) as response:
+        with open_validated_url(
+            req,
+            timeout=timeout,
+            allowed_hosts=(urlsplit(target).hostname,),
+            allow_local_http=True,
+        ) as response:
             raw = response.read().decode("utf-8", "replace")
             duration_ms = max(0, int((time.perf_counter() - started) * 1000))
             try:
@@ -79,11 +124,14 @@ def main():
                     "response": payload,
                 }
             )
-            if response.status >= 400 or not payload.get("ok"):
+            if response.status >= 400 or not sync_succeeded(payload):
                 return 1
             return 0
     except error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", "replace")
+        try:
+            raw = exc.read().decode("utf-8", "replace")
+        finally:
+            exc.close()
         duration_ms = max(0, int((time.perf_counter() - started) * 1000))
         log_event(
             {

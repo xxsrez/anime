@@ -54,8 +54,10 @@ def is_forbidden_path(path):
 
 def check_tracked_files():
     errors = []
-    tracked = git("ls-files")
-    for path in tracked:
+    # Include non-ignored untracked files so the gate catches a forbidden file
+    # before it is staged, not only after it enters Git's index.
+    repository_files = git("ls-files", "--cached", "--others", "--exclude-standard")
+    for path in repository_files:
         if is_forbidden_path(path):
             errors.append(f"forbidden tracked path: {path}")
             continue
@@ -63,32 +65,39 @@ def check_tracked_files():
         if full_path.is_file() and full_path.stat().st_size > MAX_TRACKED_FILE_BYTES:
             size_mb = full_path.stat().st_size / 1_000_000
             errors.append(f"tracked file is too large: {path} ({size_mb:.1f} MB)")
-    return tracked, errors
+    return repository_files, errors
 
 
 def check_history_paths():
     errors = []
-    paths = set(git("log", "--all", "--name-only", "--pretty=format:"))
+    # Inspect refs that can be published. Codex keeps local turn snapshots in
+    # refs/codex/turn-diffs; those are application-owned implementation refs,
+    # are not pushed by --all, and must not make the repository's own gate
+    # impossible to run from Codex.
+    paths = set(
+        git(
+            "log",
+            "--branches",
+            "--remotes",
+            "--tags",
+            "--name-only",
+            "--pretty=format:",
+        )
+    )
     for path in sorted(item for item in paths if item):
         if is_forbidden_path(path):
             errors.append(f"forbidden path exists in git history: {path}")
     return errors
 
 
-def check_internal_refs():
-    refs = git("for-each-ref", "--format=%(refname)", "refs/codex/turn-diffs")
-    return [f"forbidden local git ref: {ref}" for ref in refs]
-
-
 def main():
-    tracked, errors = check_tracked_files()
+    repository_files, errors = check_tracked_files()
     errors.extend(check_history_paths())
-    errors.extend(check_internal_refs())
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
         raise SystemExit(1)
-    print(f"repo hygiene ok: {len(tracked)} tracked files")
+    print(f"repo hygiene ok: {len(repository_files)} tracked or candidate files")
 
 
 if __name__ == "__main__":

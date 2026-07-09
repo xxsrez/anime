@@ -7,17 +7,17 @@ making small catalog/player changes in production.
 
 Do not upload the whole SQLite database for normal catalog updates.
 
-The local dev database and the Railway production database should normally move
-in lockstep by applying the same ordered private SQL data patches locally and
-then on production through `scripts/db_migrate.py`. Treat those patches as the
-routine source of synchronization. Do not download or upload the whole
-production SQLite file during normal releases unless there is concrete evidence
-that local and production databases diverged or an explicit spot audit is
-requested.
+Production advances independently through its content-sync cron, while dev has
+no equivalent scheduler. Private SQL patches are targeted, idempotent release
+artifacts; validate them locally first, but do not assume equal starting rows or
+equal final counts. Do not download or upload the whole production SQLite file
+during normal releases. Different freshness is expected and is not by itself
+evidence of corruption.
 
-The Railway production database at `/data/animego.sqlite` is still the source
-of truth for production user state. Direct in-place sync remains a fallback for
-emergency or exploratory production operations, not the default release path.
+The Railway database at `/data/animego.sqlite` is the source of truth for both
+production user state and the cron-updated production catalog. The protected
+web sync endpoint is the normal cron writer; broad exploratory scraping remains
+dev-only.
 
 Full database upload/download is reserved for disaster recovery or a deliberate
 full restore.
@@ -28,7 +28,8 @@ The database is already large enough that blob upload/download is slow. More
 importantly, replacing `/data/animego.sqlite` from a local copy can overwrite
 fresh production `user_title_state` rows. The safe path is:
 
-1. Start from the local dev database unless there is evidence of drift.
+1. Start from the local dev database for generation, without assuming it is as
+   fresh as production.
 2. Generate a migration from a scratch sync using `sync_videos.py --emit-migration`.
 3. Apply the generated private patch locally and verify dev.
 4. Review the generated SQL locally, but keep catalog/player data outside git.
@@ -37,7 +38,7 @@ fresh production `user_title_state` rows. The safe path is:
 6. Copy private data patches to `/data/private-migrations` on the Railway
    volume outside GitHub.
 7. Apply both migration roots next to `/data/animego.sqlite` through
-   `scripts/db_migrate.py`.
+   `scripts/db_migrate.py`; its shared lock serializes the release with cron.
 8. Verify SQLite integrity and playable-catalog invariants.
 
 ## Script Inventory
@@ -170,7 +171,8 @@ railway ssh --service web --environment production '
     --root migrations \
     --root /data/private-migrations \
     --no-backup \
-    --wait-lock
+    --wait-lock \
+    --lock-timeout 1800
 '
 ```
 
@@ -180,11 +182,10 @@ railway ssh --service web --environment production '
 
 ## Backup Policy
 
-Do not keep SQLite backup files on Railway. Production migration commands pass
-`--no-backup`, and the Railway volume should only contain the live database,
-logs, and private migration artifacts needed for replay. Keep recovery snapshots
-locally under ignored paths such as `db/backups/` or another explicit local
-restore folder.
+Do not leave migration backup files on Railway. Production commands use
+`--no-backup`; the runner still preflights on a disposable copy and applies the
+pending batch atomically. Durable recovery artifacts belong only in ignored
+local storage such as `db/backups/`, following an explicit backup operation.
 
 ## Verification Gate
 
@@ -230,9 +231,10 @@ Use this decision table:
 
 ## Cache Behavior
 
-`server.py` caches catalog data by database file signature: mtime plus size.
-In-place production mutations change that signature, so a data-only incremental
-update does not require a server restart for catalog visibility.
+`server.py` caches catalog data behind a durable revision row maintained by
+SQLite triggers. In-place cron or migration writes mark it dirty, so a data-only
+incremental update becomes visible without a server restart and same-size row
+updates are not missed.
 
 Restart/redeploy is still required after Python route/server code changes.
 
@@ -250,8 +252,9 @@ For future AI agents:
    title/episode updates.
 5. Do not commit generated catalog/player SQL. It may contain scraped
    copyright-sensitive source data.
-6. Apply each private patch locally before production so local and production
-   catalog/player state stay synchronized without full DB transfers.
+6. Apply each private patch locally first to validate it. Production can still
+   contain newer cron data; patches must be idempotent and must not assume equal
+   row counts.
 7. Preserve production `user_title_state`; never replace prod DB with an older
    local DB just because local tests passed.
 8. Report whether code was deployed, data was mutated, both, or neither.

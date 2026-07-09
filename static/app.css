@@ -264,6 +264,40 @@ select {
   box-shadow: 0 0 0 3px rgba(244, 184, 96, 0.2);
 }
 
+.description-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.app-status {
+  position: fixed;
+  z-index: 1000;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  width: min(440px, calc(100vw - 36px));
+  border: 1px solid rgba(244, 184, 96, 0.52);
+  border-radius: 8px;
+  background: rgba(23, 26, 30, 0.97);
+  color: var(--text);
+  padding: 11px 13px;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.42);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app-status[hidden] {
+  display: none;
+}
+
+.app-status[data-tone="warn"] {
+  color: #ffe1a8;
+}
+
+.app-status[data-tone="ok"] {
+  border-color: rgba(116, 198, 157, 0.5);
+  color: #c9f1dd;
+}
+
 .catalog-tools {
   display: grid;
   gap: 8px;
@@ -1087,6 +1121,18 @@ button.recent-update-row:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.description-toggle {
+  display: none;
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--accent-2);
+  padding: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1575,6 +1621,16 @@ button.recent-update-row:focus-visible {
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 4;
+  }
+
+  .description.expanded {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: initial;
+  }
+
+  .description-toggle:not([hidden]) {
+    display: inline-block;
   }
 
   .field-grid {

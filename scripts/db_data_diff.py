@@ -92,15 +92,6 @@ def row_key(row, key_columns):
     return tuple(row[column] for column in key_columns)
 
 
-def load_table(con, spec):
-    columns = table_columns(con, spec.name)
-    order_by = ", ".join(quote_identifier(column) for column in spec.key_columns)
-    rows = con.execute(
-        f"select * from {quote_identifier(spec.name)} order by {order_by}"
-    ).fetchall()
-    return columns, {row_key(row, spec.key_columns): dict(row) for row in rows}
-
-
 def comparable_row(row, columns, spec):
     omitted = set(spec.omit_columns)
     return tuple((column, row[column]) for column in columns if column not in omitted)
@@ -108,7 +99,7 @@ def comparable_row(row, columns, spec):
 
 def where_key_clause(spec, key):
     parts = []
-    for column, value in zip(spec.key_columns, key):
+    for column, value in zip(spec.key_columns, key, strict=True):
         quoted = quote_identifier(column)
         if value is None:
             parts.append(f"{quoted} is null")
@@ -144,23 +135,61 @@ def upsert_statement(spec, columns, row):
     )
 
 
-def changed_rows(before_rows, after_rows, columns, spec):
-    for key, after_row in after_rows.items():
-        before_row = before_rows.get(key)
-        if before_row is None:
-            yield key, after_row
-            continue
-        if comparable_row(before_row, columns, spec) != comparable_row(after_row, columns, spec):
-            yield key, after_row
+def iter_table_rows(con, spec):
+    order_by = ", ".join(quote_identifier(column) for column in spec.key_columns)
+    yield from con.execute(
+        f"select * from {quote_identifier(spec.name)} order by {order_by}"
+    )
 
 
-def generate_data_migration_statements(before_db, after_db, tables=None):
+def sortable_key(row, spec):
+    return tuple((value is not None, value) for value in row_key(row, spec.key_columns))
+
+
+def next_or_none(iterator):
+    return next(iterator, None)
+
+
+def deleted_row_keys(before, after, spec):
+    before_rows = iter(iter_table_rows(before, spec))
+    after_rows = iter(iter_table_rows(after, spec))
+    before_row = next_or_none(before_rows)
+    after_row = next_or_none(after_rows)
+    while before_row is not None:
+        if after_row is None or sortable_key(before_row, spec) < sortable_key(after_row, spec):
+            yield row_key(before_row, spec.key_columns)
+            before_row = next_or_none(before_rows)
+        elif sortable_key(before_row, spec) == sortable_key(after_row, spec):
+            before_row = next_or_none(before_rows)
+            after_row = next_or_none(after_rows)
+        else:
+            after_row = next_or_none(after_rows)
+
+
+def inserted_or_changed_rows(before, after, columns, spec):
+    before_rows = iter(iter_table_rows(before, spec))
+    after_rows = iter(iter_table_rows(after, spec))
+    before_row = next_or_none(before_rows)
+    after_row = next_or_none(after_rows)
+    while after_row is not None:
+        if before_row is None or sortable_key(after_row, spec) < sortable_key(before_row, spec):
+            yield after_row
+            after_row = next_or_none(after_rows)
+        elif sortable_key(after_row, spec) == sortable_key(before_row, spec):
+            if comparable_row(before_row, columns, spec) != comparable_row(after_row, columns, spec):
+                yield after_row
+            before_row = next_or_none(before_rows)
+            after_row = next_or_none(after_rows)
+        else:
+            before_row = next_or_none(before_rows)
+
+
+def iter_data_migration_statements(before_db, after_db, tables=None):
     tables = tables or CATALOG_TABLES
     before = sqlite3.connect(before_db)
     after = sqlite3.connect(after_db)
     before.row_factory = sqlite3.Row
     after.row_factory = sqlite3.Row
-    statements = []
     try:
         loaded = {}
         for table in tables:
@@ -171,35 +200,41 @@ def generate_data_migration_statements(before_db, after_db, tables=None):
                 continue
             if not after_has_table:
                 raise ValueError(f"missing table: {table}")
-            after_columns, after_rows = load_table(after, spec)
+            after_columns = table_columns(after, table)
             if before_has_table:
-                before_columns, before_rows = load_table(before, spec)
+                before_columns = table_columns(before, table)
             else:
-                before_columns, before_rows = after_columns, {}
+                before_columns = after_columns
             if before_columns != after_columns:
                 raise ValueError(f"schema mismatch for {table}")
-            loaded[table] = (spec, before_columns, before_rows, after_rows)
+            loaded[table] = (spec, before_columns, before_has_table)
 
         for table in DELETE_TABLES:
             if table not in loaded:
                 continue
-            spec, _, before_rows, after_rows = loaded[table]
-            for key in sorted(set(before_rows) - set(after_rows)):
-                statements.append(delete_statement(spec, key))
+            spec, _, before_has_table = loaded[table]
+            if before_has_table:
+                for key in deleted_row_keys(before, after, spec):
+                    yield delete_statement(spec, key)
 
         for table in UPSERT_TABLES:
             if table not in loaded:
                 continue
-            spec, columns, before_rows, after_rows = loaded[table]
-            for _, row in changed_rows(before_rows, after_rows, columns, spec):
-                statements.append(upsert_statement(spec, columns, row))
+            spec, columns, before_has_table = loaded[table]
+            if before_has_table:
+                rows = inserted_or_changed_rows(before, after, columns, spec)
+            else:
+                rows = iter_table_rows(after, spec)
+            for row in rows:
+                yield upsert_statement(spec, columns, row)
     finally:
         before.close()
         after.close()
 
-    return statements
-
 
 def generate_data_migration_sql(before_db, after_db, tables=None):
-    statements = generate_data_migration_statements(before_db, after_db, tables=tables)
-    return "\n\n".join(statements) + ("\n" if statements else "")
+    statements = iter_data_migration_statements(before_db, after_db, tables=tables)
+    parts = []
+    for statement in statements:
+        parts.append(statement)
+    return "\n\n".join(parts) + ("\n" if parts else "")

@@ -14,17 +14,22 @@ const CONTENT_UPDATE_DEFAULT_DAYS = "7";
 const INITIAL_RENDER_LIMIT = 40;
 const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
-const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
+const PLAYER_IFRAME_ALLOW = "autoplay; fullscreen; picture-in-picture; encrypted-media; web-share; screen-wake-lock";
+const PLAYER_IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups";
+let playerHosts = [];
 const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
+const WATCH_EVIDENCE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+const SEARCH_INPUT_DEBOUNCE_MS = 140;
 const reportClientError = window.reportClientError || (() => {});
-const reportActionError = window.reportActionError || (() => error => console.error(error));
+const clientActionError = window.reportActionError || (() => error => console.error(error));
 const PERFORMANCE_ENDPOINT = "/api/performance";
 const MAX_PERFORMANCE_API_REQUESTS = 40;
 const MAX_PERFORMANCE_RESOURCES = 24;
 const catalogSearch = window.AnimeSearch;
+const frontendRuntime = window.AnimeFrontendRuntime;
 const CONTENT_UPDATE_TYPES = [
   { id: "all", label: "Все" },
   { id: "new_title", label: "Тайтлы" },
@@ -39,8 +44,8 @@ const CONTENT_UPDATE_PERIODS = [
   { id: "all", label: "Лента" },
 ];
 
-if (!catalogSearch) {
-  throw new Error("AnimeSearch is not loaded");
+if (!catalogSearch || !frontendRuntime) {
+  throw new Error("Frontend dependencies are not loaded");
 }
 
 function performanceNow() {
@@ -67,6 +72,7 @@ const state = {
   recommendationsLoading: null,
   recommendationsError: null,
   recommendationsRequestId: 0,
+  recommendationsDirtyConfirmed: false,
   contentUpdates: null,
   contentUpdatesLoaded: false,
   contentUpdatesLoading: null,
@@ -78,6 +84,7 @@ const state = {
   searchFieldsLoaded: false,
   searchFieldsLoading: null,
   searchFieldsError: null,
+  searchFieldsById: null,
   filtered: [],
   selectedAnimeId: null,
   detail: null,
@@ -92,8 +99,13 @@ const state = {
   sortDir: DEFAULT_SORT_DIR,
   renderLimit: INITIAL_RENDER_LIMIT,
   filterControls: {},
-  savingState: false,
-  pendingStateSave: null,
+  userStateRevision: 0,
+  userStateFieldRevisions: new Map(),
+  detailRequestId: 0,
+  detailRequestController: null,
+  descriptionExpanded: false,
+  descriptionCanExpand: false,
+  descriptionMeasureId: 0,
   urlSyncSuspended: false,
   watchSession: null,
   watchHeartbeatTimer: null,
@@ -131,6 +143,7 @@ const el = {
   recentUpdates: document.getElementById("recent-updates"),
   genres: document.getElementById("genres"),
   description: document.getElementById("description"),
+  descriptionToggle: document.getElementById("description-toggle"),
   fields: document.getElementById("fields"),
   episodes: document.getElementById("episodes"),
   contentSource: document.getElementById("content-source"),
@@ -144,11 +157,41 @@ const el = {
   empty: document.getElementById("empty-player"),
   host: document.getElementById("host"),
   episodeState: document.getElementById("episode-state"),
+  appStatus: document.getElementById("app-status"),
 };
 
 let listImageObserver = null;
 let titleTooltip = null;
 let titleTooltipTarget = null;
+let appStatusTimer = 0;
+let searchInputTimer = 0;
+
+function isAbortError(error) {
+  return error?.name === "AbortError";
+}
+
+function showAppStatus(message, tone = "warn", timeoutMs = 6000) {
+  if (!el.appStatus) return;
+  if (appStatusTimer) window.clearTimeout(appStatusTimer);
+  el.appStatus.textContent = message || "";
+  el.appStatus.dataset.tone = tone;
+  el.appStatus.hidden = !message;
+  appStatusTimer = message && timeoutMs > 0
+    ? window.setTimeout(() => {
+      el.appStatus.hidden = true;
+      appStatusTimer = 0;
+    }, timeoutMs)
+    : 0;
+}
+
+const reportActionError = (action, context = {}) => {
+  const report = clientActionError(action, context);
+  return error => {
+    if (isAbortError(error)) return;
+    report(error);
+    showAppStatus(error?.message || "Не удалось выполнить действие");
+  };
+};
 
 function sameOriginPath(value) {
   try {
@@ -287,8 +330,13 @@ async function api(path, options = {}) {
       window.location.replace(`/login?next=${encodeURIComponent(next)}`);
       throw new Error("authentication required");
     }
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    return await response.json();
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(payload?.error || `${response.status} ${response.statusText}`);
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
   } finally {
     recordApiPerformance(path, {
       method: options.method || "GET",
@@ -366,7 +414,6 @@ function setItemSearchFields(item, searchFields) {
   if (!item) return;
   item.search_fields = Array.isArray(searchFields) ? searchFields : [];
   clearSearchIndex(item);
-  catalogSearch.ensureSearchIndex(item);
 }
 
 function isMobileLayout() {
@@ -821,7 +868,7 @@ function updateTimeLabel(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const now = new Date();
-  const diffDays = Math.floor((now.setHours(0, 0, 0, 0) - date.setHours(0, 0, 0, 0)) / 86400000);
+  const diffDays = frontendRuntime.localCalendarDayDifference(now, date);
   if (diffDays <= 0) return "сегодня";
   if (diffDays === 1) return "вчера";
   return `${diffDays} дн. назад`;
@@ -868,6 +915,12 @@ function invalidateRecommendations() {
   state.recommendationProfile = null;
   state.recommendationsError = null;
   state.recommendationsRequestId += 1;
+}
+
+function supersedeRecommendationsRequest() {
+  state.recommendationsRequestId += 1;
+  state.recommendationsLoading = null;
+  state.recommendationsError = null;
 }
 
 function baseItemsForView() {
@@ -1189,6 +1242,9 @@ function resetCatalogTools() {
 }
 
 function renderList() {
+  const focusedId = el.list.contains(document.activeElement)
+    ? document.activeElement?.dataset?.id || null
+    : null;
   hideTitleTooltip();
   resetListImageObserver();
   const total = isRecommendationView()
@@ -1224,16 +1280,19 @@ function renderList() {
     return;
   }
 
-  const selectedIndex = state.filtered.findIndex(item => item.id === state.selectedAnimeId);
-  const renderLimit = selectedIndex >= state.renderLimit ? selectedIndex + 1 : state.renderLimit;
-  const visibleItems = state.filtered.slice(0, renderLimit);
+  const selectedIndex = state.filtered.findIndex(item => String(item.id) === String(state.selectedAnimeId));
+  const visibleItems = state.filtered.slice(0, state.renderLimit);
+  if (selectedIndex >= state.renderLimit) {
+    visibleItems.unshift(state.filtered[selectedIndex]);
+  }
 
   for (const item of visibleItems) {
     const button = document.createElement("button");
     button.className = "anime-item";
     button.type = "button";
     button.dataset.id = item.id;
-    if (item.id === state.selectedAnimeId) button.classList.add("active");
+    if (String(item.id) === String(state.selectedAnimeId)) button.classList.add("active");
+    if (String(item.id) === String(state.selectedAnimeId)) button.setAttribute("aria-current", "true");
     if (item.is_favorite) button.classList.add("favorite");
     if (item.watched) button.classList.add("watched");
     if (item.recommendation_score != null) button.classList.add("recommended");
@@ -1290,7 +1349,8 @@ function renderList() {
       if (isUpdatesView()) {
         openUpdatedTitle(item).catch(reportActionError("open updated title"));
       } else {
-        selectAnime(titleRefForItem(item), { scrollDetail: true });
+        selectAnime(titleRefForItem(item), { scrollDetail: true, history: "push" })
+          .catch(reportActionError("select anime"));
       }
     });
     el.list.append(button);
@@ -1307,6 +1367,10 @@ function renderList() {
       renderList();
     });
     el.list.append(more);
+  }
+
+  if (focusedId) {
+    el.list.querySelector(`.anime-item[data-id="${CSS.escape(focusedId)}"]`)?.focus({ preventScroll: true });
   }
 }
 
@@ -1587,10 +1651,44 @@ function renderContentUpdatesView() {
   const type = document.createElement("span");
   type.textContent = contentUpdateTypeLabel(state.contentUpdateType);
   summary.append(count, titles, type);
+  if ((state.contentUpdates?.events || []).length >= CONTENT_UPDATE_LIMIT) {
+    const limited = document.createElement("span");
+    limited.textContent = `Показаны последние ${CONTENT_UPDATE_LIMIT}`;
+    limited.title = "Лента ограничена последними событиями";
+    summary.append(limited);
+  }
   el.updatesView.append(summary);
 
   renderContentUpdateStats(el.updatesView, events);
   renderContentUpdateRows(el.updatesView, events);
+}
+
+function descriptionIsClampedLayout() {
+  return Boolean(window.matchMedia?.("(max-width: 640px)").matches);
+}
+
+function updateDescriptionToggle() {
+  el.descriptionToggle.hidden = !descriptionIsClampedLayout() || !state.descriptionCanExpand;
+  el.descriptionToggle.textContent = state.descriptionExpanded ? "Свернуть" : "Показать полностью";
+  el.descriptionToggle.setAttribute("aria-expanded", state.descriptionExpanded ? "true" : "false");
+}
+
+function renderDescription(detail) {
+  const description = detail?.description || "";
+  const measureId = state.descriptionMeasureId + 1;
+  state.descriptionMeasureId = measureId;
+  el.description.textContent = description;
+  el.description.classList.toggle("expanded", state.descriptionExpanded);
+  updateDescriptionToggle();
+  if (!descriptionIsClampedLayout() || state.descriptionExpanded || !description) return;
+
+  // Line-clamp exposes the full content through scrollHeight, so measure the
+  // rendered box instead of guessing from character count.
+  window.requestAnimationFrame(() => {
+    if (measureId !== state.descriptionMeasureId || state.detail !== detail) return;
+    state.descriptionCanExpand = el.description.scrollHeight > el.description.clientHeight + 1;
+    updateDescriptionToggle();
+  });
 }
 
 function renderDetail() {
@@ -1610,7 +1708,7 @@ function renderDetail() {
   el.meta.textContent = [detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
-  el.description.textContent = detail.description || "";
+  renderDescription(detail);
   renderWatchState(detail);
   renderRecommendationContext(detail);
   renderRecentUpdates(detail);
@@ -1905,11 +2003,27 @@ function renderSources() {
 }
 
 function setPlayer(source, episode) {
+  const playerUrl = frontendRuntime.safeHttpsUrl(source?.embed_url, playerHosts);
+  let playerHost = "";
+  try {
+    playerHost = playerUrl ? new URL(playerUrl).hostname : "";
+  } catch (error) {
+    playerHost = "";
+  }
+  if (!playerUrl || (source.embed_host && !frontendRuntime.hostnameMatches(playerHost, source.embed_host))) {
+    clearPlayer("Небезопасный или неизвестный адрес плеера");
+    reportClientError(new Error("Rejected player URL"), {
+      action: "validate player URL",
+      embedHost: source?.embed_host || "",
+      playerHost,
+    });
+    return;
+  }
   ensureWatchSession(source, episode);
   el.wrap.classList.remove("empty");
   configurePlayerIframe(el.player);
-  if (el.player.getAttribute("src") !== source.embed_url) {
-    el.player.src = source.embed_url;
+  if (el.player.getAttribute("src") !== playerUrl) {
+    el.player.src = playerUrl;
   }
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
@@ -1927,11 +2041,12 @@ function clearPlayer(message) {
 
 function configurePlayerIframe(iframe = el.player) {
   iframe.setAttribute("allow", PLAYER_IFRAME_ALLOW);
+  iframe.setAttribute("sandbox", PLAYER_IFRAME_SANDBOX);
   iframe.setAttribute("allowfullscreen", "");
   iframe.setAttribute("webkitallowfullscreen", "");
   iframe.setAttribute("mozallowfullscreen", "");
   iframe.allowFullscreen = true;
-  iframe.referrerPolicy = iframe.referrerPolicy || "origin";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
   return iframe;
 }
 
@@ -1946,6 +2061,18 @@ function watchContextKey(source, episode) {
     episode?.id,
     source?.id,
   ].map(value => value == null ? "" : String(value)).join(":");
+}
+
+function playerHasPlaybackEvidence(session = state.watchSession) {
+  if (!session) return false;
+  const fullscreen = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
+  return frontendRuntime.hasPlaybackEvidence({
+    pageHidden: document.hidden,
+    playerFocused: document.hasFocus() && document.activeElement === el.player,
+    fullscreen,
+    evidenceExpiresAt: session.evidenceExpiresAt,
+    now: performanceNow(),
+  });
 }
 
 function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
@@ -1966,18 +2093,34 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     embed_host: session.embedHost,
     engaged_seconds: Math.max(0, Math.min(WATCH_MAX_DELTA_SECONDS, Math.round(engagedSeconds || 0))),
     page_visible: !document.hidden,
-    player_focused: document.activeElement === el.player,
+    player_focused: playerHasPlaybackEvidence(session),
   };
 }
 
-function applyWatchState(nextState, animeId = state.selectedAnimeId) {
+function animeStateRevision(animeId) {
+  return state.userStateFieldRevisions.get(String(animeId))?.animeRevision || 0;
+}
+
+function applyWatchState(nextState, animeId = state.selectedAnimeId, requestRevision = animeStateRevision(animeId)) {
   if (!nextState || !animeId) return;
-  const watched = Boolean(nextState.watched);
-  const progress = nextState.progress_episode_number == null ? null : nextState.progress_episode_number;
+  if (requestRevision !== animeStateRevision(animeId)) return;
+  const watchState = {};
+  if (Object.prototype.hasOwnProperty.call(nextState, "watched")) {
+    watchState.watched = Boolean(nextState.watched);
+  }
+  if (Object.prototype.hasOwnProperty.call(nextState, "progress_episode_number")) {
+    watchState.progress_episode_number = nextState.progress_episode_number == null
+      ? null
+      : nextState.progress_episode_number;
+  }
+  if (!Object.keys(watchState).length) return;
+  updateConfirmedUserState(animeId, watchState);
+  const watched = Boolean(watchState.watched);
+  const progress = watchState.progress_episode_number == null ? null : watchState.progress_episode_number;
   const applyToItem = item => {
     if (!item) return false;
     const changed = item.progress_episode_number !== progress || Boolean(item.watched) !== watched;
-    Object.assign(item, nextState);
+    Object.assign(item, watchState);
     return changed;
   };
 
@@ -2013,9 +2156,10 @@ function postWatchPayload(payload, { beacon = false } = {}) {
 function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session = state.watchSession } = {}) {
   if (!session) return Promise.resolve(null);
   const payload = watchPayloadForSession(session, eventType, engagedSeconds);
+  const requestRevision = animeStateRevision(session.animeId);
   return postWatchPayload(payload, { beacon })
     .then(result => {
-      if (result?.state) applyWatchState(result.state, session.animeId);
+      if (result?.state) applyWatchState(result.state, session.animeId, requestRevision);
       return result;
     })
     .catch(error => {
@@ -2027,9 +2171,13 @@ function consumeWatchEngagedSeconds({ stop = false } = {}) {
   const session = state.watchSession;
   if (!session?.engaged || !session.activeSince) return 0;
   const now = performanceNow();
-  const seconds = Math.max(0, Math.round((now - session.activeSince) / 1000));
+  const seconds = frontendRuntime.boundedElapsedSeconds(
+    session.activeSince,
+    now,
+    WATCH_MAX_DELTA_SECONDS,
+  );
   session.activeSince = stop || document.hidden ? null : now;
-  return Math.min(WATCH_MAX_DELTA_SECONDS, seconds);
+  return seconds;
 }
 
 function startWatchHeartbeat() {
@@ -2037,6 +2185,12 @@ function startWatchHeartbeat() {
   state.watchHeartbeatTimer = window.setInterval(() => {
     const session = state.watchSession;
     if (!session?.engaged || document.hidden) return;
+    if (!playerHasPlaybackEvidence(session)) {
+      session.engaged = false;
+      session.activeSince = null;
+      stopWatchHeartbeat();
+      return;
+    }
     const seconds = consumeWatchEngagedSeconds();
     if (seconds > 0) {
       sendWatchEvent("heartbeat", { engagedSeconds: seconds }).catch(() => {});
@@ -2053,13 +2207,18 @@ function stopWatchHeartbeat() {
 function markWatchEngaged(eventType) {
   const session = state.watchSession;
   if (!session) return;
-  if (!session.engaged) {
-    session.engaged = true;
-    session.activeSince = performanceNow();
-  } else if (!session.activeSince) {
-    session.activeSince = performanceNow();
+  const playbackEvidence = ["player_engaged", "fullscreen_enter", "pip_open"].includes(eventType);
+  if (playbackEvidence) {
+    const now = performanceNow();
+    session.evidenceExpiresAt = now + WATCH_EVIDENCE_MAX_AGE_MS;
+    if (!session.engaged) {
+      session.engaged = true;
+      session.activeSince = now;
+    } else if (!session.activeSince) {
+      session.activeSince = now;
+    }
+    startWatchHeartbeat();
   }
-  startWatchHeartbeat();
   sendWatchEvent(eventType).catch(() => {});
 }
 
@@ -2070,7 +2229,9 @@ function flushWatchSession(eventType = "session_end", { beacon = false } = {}) {
   if (session.engaged || eventType !== "session_end") {
     sendWatchEvent(eventType, { engagedSeconds: seconds, beacon, session }).catch(() => {});
   }
-  if (eventType === "session_end") stopWatchHeartbeat();
+  session.engaged = false;
+  session.evidenceExpiresAt = 0;
+  stopWatchHeartbeat();
 }
 
 function ensureWatchSession(source, episode) {
@@ -2096,6 +2257,7 @@ function ensureWatchSession(source, episode) {
     embedHost: source.embed_host,
     engaged: false,
     activeSince: null,
+    evidenceExpiresAt: 0,
   };
   state.watchSession = session;
   return session;
@@ -2124,8 +2286,8 @@ function handlePlayerEngaged() {
 function handleVisibilityChange() {
   if (document.hidden) {
     flushWatchSession("page_hidden", { beacon: true });
-  } else if (state.watchSession?.engaged && !state.watchSession.activeSince) {
-    state.watchSession.activeSince = performanceNow();
+  } else if (document.activeElement === el.player) {
+    handlePlayerEngaged();
   }
 }
 
@@ -2186,124 +2348,212 @@ function isFullscreenHotkey(event) {
   return event.code === "KeyF" || String(event.key || "").toLowerCase() === "f";
 }
 
-function clonePlayerForPipWindow(pipWindow) {
-  const doc = pipWindow.document;
-  doc.body.style.margin = "0";
-  doc.body.style.background = "#050607";
-  const iframe = doc.createElement("iframe");
-  configurePlayerIframe(iframe);
-  iframe.src = el.player.src;
-  iframe.title = el.player.title || "Аниме плеер";
-  Object.assign(iframe.style, {
-    border: "0",
-    width: "100vw",
-    height: "100vh",
-    background: "#050607",
-  });
-  doc.body.append(iframe);
-}
-
 async function openPictureInPicture() {
   if (!el.player.getAttribute("src")) {
     setPlayerActionState("Нет активного видео", "warn");
     return;
   }
 
-  if ("documentPictureInPicture" in window) {
-    try {
-      const pipWindow = await window.documentPictureInPicture.requestWindow({
-        width: 560,
-        height: 315,
-      });
-      clonePlayerForPipWindow(pipWindow);
-      setPlayerActionState("PiP открыт", "ok");
-      markWatchEngaged("pip_open");
-      return;
-    } catch (error) {
-      if (error.name !== "NotAllowedError") {
-        reportClientError(error, { action: "picture in picture" });
-        setPlayerActionState("PiP доступен в самом плеере", "warn");
-        return;
-      }
-    }
-  }
-
+  // Cloning a cross-origin iframe into Document PiP starts a second player and
+  // can double audio and watch tracking. Providers that support PiP expose it
+  // inside their own controls, which is the only safe boundary available here.
   setPlayerActionState("PiP доступен в самом плеере", "warn");
 }
 
 async function selectAnime(id, options = {}) {
-  state.detail = await api(`/api/anime/${encodeURIComponent(id)}`);
-  state.selectedAnimeId = state.detail.id;
-  applyDetailLinkState(options.linkState || {});
+  const requestId = state.detailRequestId + 1;
+  state.detailRequestId = requestId;
+  state.detailRequestController?.abort();
+  const controller = new AbortController();
+  state.detailRequestController = controller;
+  el.titleDetailView.setAttribute("aria-busy", "true");
+  try {
+    const detail = await api(`/api/anime/${encodeURIComponent(id)}`, { signal: controller.signal });
+    if (requestId !== state.detailRequestId) throw new DOMException("Stale detail request", "AbortError");
+    state.detail = detail;
+    state.selectedAnimeId = detail.id;
+    state.descriptionExpanded = false;
+    state.descriptionCanExpand = false;
+    if (!userStateSaveQueue.pending(String(detail.id))) {
+      updateConfirmedUserState(detail.id, {
+        is_favorite: Boolean(detail.is_favorite),
+        watched: Boolean(detail.watched),
+        progress_episode_number: detail.progress_episode_number ?? null,
+      });
+    }
+    applyDetailLinkState(options.linkState || {});
 
-  const previousUrlSync = state.urlSyncSuspended;
-  state.urlSyncSuspended = previousUrlSync || options.updateUrl === false;
-  renderList();
-  renderDetail();
-  state.urlSyncSuspended = previousUrlSync;
-  if (options.updateUrl !== false) syncUrlFromDetail();
-  if (options.scrollDetail) scrollDetailIntoViewForMobile();
+    const previousUrlSync = state.urlSyncSuspended;
+    state.urlSyncSuspended = true;
+    renderList();
+    renderDetail();
+    state.urlSyncSuspended = previousUrlSync;
+    if (options.updateUrl !== false) syncUrlFromDetail({ replace: options.history !== "push" });
+    if (options.scrollDetail) scrollDetailIntoViewForMobile();
+    return true;
+  } finally {
+    if (requestId === state.detailRequestId) {
+      state.detailRequestController = null;
+      el.titleDetailView.removeAttribute("aria-busy");
+    }
+  }
 }
 
-async function selectEpisode(id) {
+async function selectEpisode(id, { history = "push" } = {}) {
   state.selectedEpisodeId = id;
   state.selectedTranslation = null;
   state.selectedSourceId = null;
   const episode = activeEpisode();
   const number = numberFrom(episode?.number);
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
+  renderDetail();
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: history !== "push" });
   if (number != null) {
-    renderDetail();
     markWatchEngaged("episode_selected");
     await saveUserState({ progress_episode_number: number, watched: false });
     return;
   }
-  renderDetail();
 }
 
-async function saveUserState(patch, animeId = state.selectedAnimeId) {
-  if (!animeId) return;
-  if (state.savingState) {
-    if (state.pendingStateSave?.animeId === animeId) {
-      Object.assign(state.pendingStateSave.patch, patch);
-    } else {
-      state.pendingStateSave = { animeId, patch: { ...patch } };
-    }
-    return;
-  }
+function userStateTargets(animeId) {
+  const key = String(animeId);
+  return [
+    state.anime.find(entry => String(entry.id) === key),
+    state.recommendations.find(entry => String(entry.id) === key),
+    state.detail && String(state.detail.id) === key ? state.detail : null,
+  ].filter(Boolean);
+}
 
-  state.savingState = true;
+function applyLocalUserStatePatch(animeId, patch) {
+  for (const target of userStateTargets(animeId)) Object.assign(target, patch);
+}
+
+function userStateSnapshot(animeId, patch) {
+  const target = userStateTargets(animeId)[0] || {};
+  return Object.fromEntries(Object.keys(patch).map(key => [key, target[key]]));
+}
+
+function updateConfirmedUserState(animeId, patch) {
+  const key = String(animeId);
+  const record = state.userStateFieldRevisions.get(key) || { animeRevision: 0, fields: {}, confirmed: {} };
+  record.confirmed ||= {};
+  Object.assign(record.confirmed, patch);
+  state.userStateFieldRevisions.set(key, record);
+}
+
+function registerUserStateMutation(animeId, patch, before) {
+  const key = String(animeId);
+  const revision = state.userStateRevision + 1;
+  state.userStateRevision = revision;
+  const record = state.userStateFieldRevisions.get(key) || { animeRevision: 0, fields: {}, confirmed: {} };
+  record.confirmed ||= {};
+  record.animeRevision = revision;
+  for (const field of Object.keys(patch)) {
+    if (!Object.prototype.hasOwnProperty.call(record.confirmed, field)) record.confirmed[field] = before[field];
+    record.fields[field] = revision;
+  }
+  state.userStateFieldRevisions.set(key, record);
+  return revision;
+}
+
+function mutationStillCurrent(animeId, field, revision) {
+  return state.userStateFieldRevisions.get(String(animeId))?.fields?.[field] === revision;
+}
+
+function userStatePatchChangesLocalState(animeId, patch, { includeObjects = true } = {}) {
+  const targets = userStateTargets(animeId);
+  return Object.entries(patch).some(([field, value]) => {
+    if (!includeObjects && value && typeof value === "object") return false;
+    return targets.some(target => !Object.is(target[field], value));
+  });
+}
+
+function rerenderAfterUserState(animeId, { list = true, detail = true } = {}) {
+  if (list) applyFilter();
+  if (detail && String(state.detail?.id) === String(animeId)) renderDetail();
+}
+
+const userStateSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKey, mutation) => {
+  const { patch, before, revision } = mutation;
   try {
-    const payload = await api(`/api/anime/${animeId}/state`, {
+    const payload = await api(`/api/anime/${encodeURIComponent(animeKey)}/state`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-    const nextState = payload.state || {};
-    const pendingForSameAnime = state.pendingStateSave?.animeId === animeId
-      ? state.pendingStateSave.patch
-      : null;
-    const visibleState = pendingForSameAnime
-      ? { ...nextState, ...pendingForSameAnime }
-      : nextState;
-    const item = state.anime.find(entry => entry.id === animeId);
-    if (item) Object.assign(item, visibleState);
-    const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in patch);
-    if (affectsRecommendations) {
+    const confirmedRecord = state.userStateFieldRevisions.get(String(animeKey));
+    const confirmed = {};
+    for (const field of Object.keys(patch)) {
+      if (Object.prototype.hasOwnProperty.call(payload.state || {}, field)) {
+        if (confirmedRecord) confirmedRecord.confirmed[field] = payload.state[field];
+        if (mutationStillCurrent(animeKey, field, revision)) confirmed[field] = payload.state[field];
+      }
+    }
+    if (
+      "progress_episode_number" in patch
+      && mutationStillCurrent(animeKey, "progress_episode_number", revision)
+      && Object.prototype.hasOwnProperty.call(payload.state || {}, "last_watch")
+    ) {
+      confirmed.last_watch = payload.state.last_watch;
+    }
+    const listChanged = userStatePatchChangesLocalState(animeKey, confirmed, { includeObjects: false });
+    const detailChanged = userStatePatchChangesLocalState(animeKey, confirmed);
+    applyLocalUserStatePatch(animeKey, confirmed);
+    if (["is_favorite", "watched", "progress_episode_number"].some(field => field in patch)) {
+      state.recommendationsDirtyConfirmed = true;
+    }
+    rerenderAfterUserState(animeKey, { list: listChanged, detail: detailChanged });
+    return payload;
+  } catch (error) {
+    const rollback = {};
+    const confirmedRecord = state.userStateFieldRevisions.get(String(animeKey));
+    for (const field of Object.keys(patch)) {
+      if (mutationStillCurrent(animeKey, field, revision)) {
+        rollback[field] = Object.prototype.hasOwnProperty.call(confirmedRecord?.confirmed || {}, field)
+          ? confirmedRecord.confirmed[field]
+          : before[field];
+      }
+    }
+    applyLocalUserStatePatch(animeKey, rollback);
+    rerenderAfterUserState(animeKey);
+    const failure = new Error(`Не удалось сохранить изменения: ${error?.message || "ошибка сети"}`);
+    failure.cause = error;
+    throw failure;
+  }
+});
+
+async function saveUserState(patch, animeId = state.selectedAnimeId) {
+  if (!animeId || !patch || !Object.keys(patch).length) return null;
+  const normalizedPatch = { ...patch };
+  const before = userStateSnapshot(animeId, normalizedPatch);
+  const revision = registerUserStateMutation(animeId, normalizedPatch, before);
+  applyLocalUserStatePatch(animeId, normalizedPatch);
+  const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in normalizedPatch);
+  if (affectsRecommendations) {
+    supersedeRecommendationsRequest();
+  }
+  applyFilter();
+  if (String(state.detail?.id) === String(animeId)) renderDetail();
+  const animeKey = String(animeId);
+  try {
+    return await userStateSaveQueue.enqueue(animeKey, { patch: normalizedPatch, before, revision });
+  } finally {
+    if (userStateSaveQueue.pending() === 0 && state.recommendationsDirtyConfirmed) {
+      state.recommendationsDirtyConfirmed = false;
       invalidateRecommendations();
       if (isRecommendationView()) {
         loadRecommendationsForView({ force: true, selectFirst: false });
       }
+    } else if (
+      userStateSaveQueue.pending() === 0
+      && isRecommendationView()
+      && !state.recommendationsLoaded
+      && !state.recommendationsLoading
+    ) {
+      loadRecommendationsForView({ force: true, selectFirst: false });
     }
-    const recommended = state.recommendations.find(entry => entry.id === animeId);
-    if (recommended) Object.assign(recommended, visibleState);
-    if (state.detail?.id === animeId) Object.assign(state.detail, visibleState);
-    applyFilter();
-    if (state.detail?.id === animeId) renderDetail();
-  } finally {
-    state.savingState = false;
-    const pending = state.pendingStateSave;
-    state.pendingStateSave = null;
-    if (pending) await saveUserState(pending.patch, pending.animeId);
   }
 }
 
@@ -2358,17 +2608,23 @@ async function loadSearchFields() {
   const fieldsById = new Map(
     (payload.items || []).map(item => [String(item.id), item.search_fields || []])
   );
-  const applyFields = item => setItemSearchFields(item, fieldsById.get(String(item.id)) || []);
-
-  for (const item of state.anime) applyFields(item);
-  for (const item of state.recommendations) applyFields(item);
+  state.searchFieldsById = fieldsById;
+  applyLoadedSearchFields(state.anime);
+  applyLoadedSearchFields(state.recommendations);
 
   state.searchFieldsLoaded = true;
   state.searchFieldsError = null;
   markPerformanceCheckpoint("search_fields_loaded", { items: fieldsById.size });
 
   if (el.search.value.trim()) {
-    applyFilter({ selectFirst: true });
+    applyFilter({ selectFirst: false });
+  }
+}
+
+function applyLoadedSearchFields(items) {
+  if (!state.searchFieldsById) return;
+  for (const item of items || []) {
+    setItemSearchFields(item, state.searchFieldsById.get(String(item.id)) || []);
   }
 }
 
@@ -2396,10 +2652,11 @@ async function loadRecommendations(requestId) {
   const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
   if (requestId !== state.recommendationsRequestId) return state.recommendations;
   state.recommendationProfile = payload.profile || null;
-  state.recommendations = catalogSearch.prepareSearchIndexes((payload.items || []).map(item => {
+  state.recommendations = (payload.items || []).map(item => {
     const local = state.anime.find(entry => entry.id === item.id);
     return local ? { ...local, ...item } : item;
-  }));
+  });
+  applyLoadedSearchFields(state.recommendations);
   state.recommendationsLoaded = true;
   state.recommendationsError = null;
   return state.recommendations;
@@ -2532,21 +2789,31 @@ function detailContainsUpdateEvent(event) {
 
 async function openUpdatedTitle(item) {
   activateViewMode("all", { selectFirst: false });
-  await selectAnime(titleRefForItem(item), { scrollDetail: true });
+  await selectAnime(titleRefForItem(item), { scrollDetail: true, history: "push" });
 }
 
 async function openContentUpdateEvent(event) {
   activateViewMode("all", { selectFirst: false });
+  let openedTitle = false;
   if (!detailContainsUpdateEvent(event)) {
-    await selectAnime(event.anime_ref || event.anime_slug || event.anime_id, { scrollDetail: true });
+    await selectAnime(event.anime_ref || event.anime_slug || event.anime_id, {
+      scrollDetail: true,
+      history: "push",
+    });
+    openedTitle = true;
   }
   const episodeId = episodeIdForUpdateEvent(event);
-  if (episodeId) await selectEpisode(episodeId);
+  if (episodeId) await selectEpisode(episodeId, { history: openedTitle ? "replace" : "push" });
 }
 
 el.search.addEventListener("input", () => {
-  if (el.search.value.trim()) loadSearchFieldsInBackground();
-  applyFilter({ selectFirst: true });
+  if (searchInputTimer) window.clearTimeout(searchInputTimer);
+  const query = el.search.value.trim();
+  if (query.length >= 2) loadSearchFieldsInBackground();
+  searchInputTimer = window.setTimeout(() => {
+    searchInputTimer = 0;
+    applyFilter({ selectFirst: false });
+  }, SEARCH_INPUT_DEBOUNCE_MS);
 });
 el.sortBy.addEventListener("change", () => {
   state.sortBy = el.sortBy.value;
@@ -2570,6 +2837,10 @@ el.addFilter.addEventListener("change", () => {
   applyFilter({ selectFirst: true });
 });
 el.resetFilters.addEventListener("click", resetCatalogTools);
+el.descriptionToggle.addEventListener("click", () => {
+  state.descriptionExpanded = !state.descriptionExpanded;
+  renderDescription(state.detail);
+});
 for (const button of el.viewTabs) {
   button.addEventListener("click", () => {
     activateViewMode(button.dataset.view || "all");
@@ -2595,18 +2866,30 @@ el.contentSource.addEventListener("change", event => {
   state.selectedContentSource = event.target.value || null;
   state.selectedTranslation = null;
   state.selectedSourceId = null;
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
   renderSources();
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
 });
 el.translation.addEventListener("change", event => {
   state.selectedTranslation = event.target.value;
   state.selectedSourceId = null;
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
   renderSources();
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
 });
 el.provider.addEventListener("change", event => {
   state.selectedSourceId = event.target.value;
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
   renderSources();
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
 });
 el.fullscreenToggle.addEventListener("click", () => {
@@ -2631,11 +2914,37 @@ window.addEventListener("blur", () => {
     if (document.activeElement === el.player) handlePlayerEngaged();
   }, 0);
 });
-window.addEventListener("pagehide", () => {
-  clearWatchSession({ beacon: true });
+window.addEventListener("focus", () => {
+  if (document.activeElement === el.player) handlePlayerEngaged();
 });
-window.addEventListener("resize", hideTitleTooltip);
+window.addEventListener("pagehide", event => {
+  if (event.persisted) {
+    flushWatchSession("page_hidden", { beacon: true });
+  } else {
+    clearWatchSession({ beacon: true });
+  }
+});
+window.addEventListener("resize", () => {
+  hideTitleTooltip();
+  if (!state.detail) return;
+  if (!descriptionIsClampedLayout()) state.descriptionExpanded = false;
+  state.descriptionCanExpand = false;
+  renderDescription(state.detail);
+});
 el.list.addEventListener("scroll", hideTitleTooltip);
+el.list.addEventListener("keydown", event => {
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  const buttons = [...el.list.querySelectorAll(".anime-item")];
+  const current = buttons.indexOf(document.activeElement);
+  if (current < 0 || !buttons.length) return;
+  event.preventDefault();
+  const targetIndex = event.key === "Home"
+    ? 0
+    : event.key === "End"
+      ? buttons.length - 1
+      : Math.max(0, Math.min(buttons.length - 1, current + (event.key === "ArrowDown" ? 1 : -1)));
+  buttons[targetIndex].focus();
+});
 window.addEventListener("popstate", () => {
   const linkState = readLinkState();
   if (linkState.animeId) {
@@ -2650,6 +2959,7 @@ async function selectInitialAnime() {
       await selectAnime(linkState.animeId, { linkState, scrollDetail: true });
       return;
     } catch (error) {
+      if (isAbortError(error)) return;
       reportClientError(error, { action: "open shared anime link", animeId: linkState.animeId });
       console.warn("Failed to open shared anime link", error);
     }
@@ -2668,6 +2978,7 @@ async function selectInitialAnime() {
       });
       return;
     } catch (error) {
+      if (isAbortError(error)) return;
       reportClientError(error, { action: "open continue watching", animeId: target.anime_id });
       console.warn("Failed to open continue target", error);
     }
@@ -2684,31 +2995,40 @@ async function boot() {
     reportClientError(error, { action: "load continue watching" });
     return { item: null };
   });
-  const [me, payload, continuePayload] = await Promise.all([
+  const [me, appConfig, payload, continuePayload] = await Promise.all([
     api("/api/me"),
+    api("/api/app-config"),
     api("/api/anime"),
     continuePromise,
   ]);
   state.user = me.user;
+  playerHosts = Array.isArray(appConfig.player_hosts) ? appConfig.player_hosts : [];
   state.continueWatching = continuePayload.item || null;
   renderAccount();
   markPerformanceCheckpoint("me_loaded", { is_admin: Boolean(state.user?.is_admin) });
-  state.anime = catalogSearch.prepareSearchIndexes(payload.items || []);
+  state.anime = payload.items || [];
+  applyLoadedSearchFields(state.anime);
   markPerformanceCheckpoint("catalog_loaded", { items: state.anime.length });
   markPerformanceCheckpoint("recommendations_deferred");
   renderFilterControls();
   renderSortControls();
   applyFilter();
   markPerformanceCheckpoint("catalog_rendered", { filtered: state.filtered.length });
-  await selectInitialAnime();
+  try {
+    await selectInitialAnime();
+  } catch (error) {
+    if (!isAbortError(error)) throw error;
+  }
   markPerformanceCheckpoint("initial_detail_loaded", { selected_anime_id: state.selectedAnimeId });
   markPerformanceCheckpoint("boot_complete");
   reportHomePerformance("success");
 }
 
 boot().catch(error => {
+  if (isAbortError(error)) return;
   markPerformanceCheckpoint("boot_failed");
   reportClientError(error, { action: "boot app" });
+  showAppStatus(error?.message || "Не удалось загрузить приложение", "warn", 0);
   clearPlayer(error.message);
   console.error(error);
 });

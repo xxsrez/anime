@@ -3,6 +3,8 @@ import argparse
 import sqlite3
 from pathlib import Path
 
+from scripts.operation_lock import DatabaseOperationLock, default_lock_path
+
 
 DEFAULT_DB = Path(__file__).resolve().parent / "db" / "animego.sqlite"
 
@@ -64,12 +66,31 @@ def summary(con):
 
 
 def delete_rows(con):
-    for table in ("video_sources", "episodes", "anime_fields", "anime_genres", "anime_dubbings", "user_title_state"):
-        con.execute(f"delete from {table} where anime_id in (select id from temp.prune_anime_ids)")
+    tables = (
+        "user_episode_state",
+        "user_watch_events",
+        "content_update_events",
+        "video_sources",
+        "episodes",
+        "anime_title_aliases",
+        "anime_fields",
+        "anime_genres",
+        "anime_dubbings",
+        "user_title_state",
+    )
+    existing = {
+        row[0]
+        for row in con.execute("select name from sqlite_master where type = 'table'")
+    }
+    for table in tables:
+        if table in existing:
+            con.execute(
+                f"delete from {table} where anime_id in (select id from temp.prune_anime_ids)"  # noqa: S608 -- table is a fixed internal constant
+            )
     con.execute("delete from anime where id in (select id from temp.prune_anime_ids)")
 
 
-def prune(args):
+def _prune(args):
     con = connect(args.db)
     prepare_prune_ids(con, args.source)
     total = count_rows(con)
@@ -83,21 +104,38 @@ def prune(args):
     if not args.commit:
         print("dry run only; pass --commit to delete")
         con.close()
-        return
+        return total
 
     delete_rows(con)
     con.commit()
     con.close()
     print(f"deleted {total} non-playable anime rows")
+    return total
 
 
-def main():
+def prune(args):
+    lock_path = getattr(args, "lock_file", None) or default_lock_path(args.db)
+    with DatabaseOperationLock(
+        args.db,
+        path=lock_path,
+        wait=getattr(args, "wait_lock", False),
+        timeout=getattr(args, "lock_timeout", 30.0),
+        operation="prune non-playable titles",
+    ):
+        return _prune(args)
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Remove source rows that have no playable video source.")
     parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument("--source", choices=["animego", "yummyanime"])
     parser.add_argument("--commit", action="store_true")
-    prune(parser.parse_args())
+    parser.add_argument("--lock-file")
+    parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
+    prune(parser.parse_args(argv))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

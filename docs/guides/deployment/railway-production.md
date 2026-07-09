@@ -31,6 +31,7 @@ environment:
 ```text
 GOOGLE_CLIENT_ID
 ANIME_ADMIN_EMAIL
+ANIME_GOOGLE_AUTH_STATE_SECRET
 ANIME_SESSION_SECURE=1
 ANIMEGO_DB=/data/animego.sqlite
 ANIME_LOG_DIR=/data/logs
@@ -74,11 +75,11 @@ abbreviated Railway sequence is:
 1. Verify the intended local state on dev:
 
 ```bash
-.venv/bin/python -m py_compile server.py scrape_animego.py scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py update_backup.py test_app.py scripts/check_repo_hygiene.py scripts/check_data_health.py scripts/smoke_dev_app.py scripts/db_migrate.py scripts/db_data_diff.py test_db_migrate.py
-.venv/bin/python -m unittest -v test_app.py test_db_migrate.py
-node --check static/app.js
-node --check static/login.js
-node --check static/admin.js
+ruff check .
+pip-audit -r requirements.txt
+.venv/bin/python -m unittest discover -v -p 'test*.py'
+find static -name '*.js' -print0 | xargs -0 -n1 node --check
+node --test static/frontend_runtime.test.js
 .venv/bin/python scripts/smoke_dev_app.py
 ```
 
@@ -136,10 +137,11 @@ through `scripts/db_migrate.py`; see
 `../../instructions/Incremental_DB_Update.md`.
 
 Do not download or upload the whole production SQLite database for routine
-releases. Local and production catalog/player data should stay synchronized by
-applying the same private patches locally first and then on Railway. Full
-database transfers are for explicit spot audits, concrete drift evidence, or
-disaster recovery.
+releases. Production has its own content-sync cron and is expected to be ahead
+of dev; different counts are not drift by themselves. Full database transfers
+are for explicit spot audits, concrete invariant failures, or disaster
+recovery. Never replace production with the older dev database to make counts
+match.
 
 Full upload is emergency-only for deliberate full restores:
 
@@ -167,7 +169,8 @@ railway volume files -v web-volume upload \
   --json
 ```
 
-6. Apply pending migrations if production data should change:
+6. Apply tracked schema/control migrations on every release. Include the
+   private root only for a deliberate data patch:
 
 ```bash
 railway ssh --service web --environment production '
@@ -175,11 +178,15 @@ railway ssh --service web --environment production '
   python3 scripts/db_migrate.py apply \
     --db "$db" \
     --root migrations \
-    --root /data/private-migrations \
     --no-backup \
-    --wait-lock
+    --wait-lock \
+    --lock-timeout 1800
 '
 ```
+
+For a data release, add `--root /data/private-migrations`. The migration runner
+and production cron use the same lock; an overlapping cron invocation fails
+fast rather than writing concurrently.
 
 7. Watch deployment state and logs:
 

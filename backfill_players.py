@@ -9,6 +9,7 @@ import urllib.error
 
 import scrape_animego as animego
 import scrape_yummyanime as yummy
+from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 
 
 def connect(db_path):
@@ -117,10 +118,12 @@ def fetch_with_retries(fetcher, args, *fetch_args, **fetch_kwargs):
             return fetcher(*fetch_args, **fetch_kwargs)
         except urllib.error.HTTPError as exc:
             last_exc = exc
-            if exc.code not in {429, 500, 502, 503, 504} or attempt == attempts:
+            code = exc.code
+            exc.close()
+            if code not in {429, 500, 502, 503, 504} or attempt == attempts:
                 raise
             wait = args.retry_backoff * attempt
-            print(f"  retry {attempt}/{attempts} after HTTP {exc.code}, sleeping {wait:.1f}s")
+            print(f"  retry {attempt}/{attempts} after HTTP {code}, sleeping {wait:.1f}s")
             time.sleep(wait)
         except urllib.error.URLError as exc:
             last_exc = exc
@@ -134,7 +137,13 @@ def fetch_with_retries(fetcher, args, *fetch_args, **fetch_kwargs):
 
 def backfill_animego(con, row, args, scraped_at):
     detail = animego.parse_detail(fetch_with_retries(animego.fetch_text, args, row["url"], delay=args.delay))
-    animego.upsert_anime(con, item_from_row(row, detail), detail, scraped_at)
+    animego.upsert_anime(
+        con,
+        item_from_row(row, detail),
+        detail,
+        scraped_at,
+        authoritative_metadata=True,
+    )
     if not detail["player_url"]:
         return 0, 0, "no player url"
 
@@ -162,6 +171,12 @@ def backfill_animego(con, row, args, scraped_at):
             _, _, _, providers = animego.parse_player_content(video_content)
             unavailable_reason = animego.parse_unavailable_reason(data.get("content_online") or "")
             has_video = bool(data.get("numVideos", 0) or providers)
+        providers = [
+            provider
+            for provider in providers
+            if provider.get("embed_url") and provider.get("embed_url_redacted")
+        ]
+        has_video = bool(providers)
         animego.upsert_episode(con, row["id"], episode, has_video, unavailable_reason, scraped_at)
         episode_count += 1
         for provider in providers:
@@ -179,7 +194,12 @@ def backfill_yummyanime(con, row, args, scraped_at):
         skip_player=False,
         delay=args.delay,
     )
-    animego.upsert_anime(con, item, detail, scraped_at)
+    animego.upsert_anime(con, item, detail, scraped_at, authoritative_metadata=True)
+    providers = [
+        provider
+        for provider in providers
+        if provider.get("embed_url") and provider.get("embed_url_redacted")
+    ]
     if not providers:
         return 0, 0, "no providers"
 
@@ -206,7 +226,7 @@ def backfill_yummyanime(con, row, args, scraped_at):
     return episode_count, source_count, None
 
 
-def backfill(args):
+def _backfill(args):
     con = connect(args.db)
     rows = playable_missing_rows(con, args.source, args.limit, args.anime_id)
     scraped_at = animego.now_iso()
@@ -214,6 +234,7 @@ def backfill(args):
     episode_count = 0
     source_count = 0
     failed = 0
+    unresolved = 0
 
     for index, row in enumerate(rows, start=1):
         print(f"[{index}/{len(rows)}] {row['source']} {row['id']} {row['title']}")
@@ -223,10 +244,12 @@ def backfill(args):
             elif row["source"] == "yummyanime":
                 episodes, sources, reason = backfill_yummyanime(con, row, args, scraped_at)
             else:
-                reason = f"unsupported source: {row['source']}"
-                episodes = sources = 0
+                raise ValueError(f"unsupported source: {row['source']}")
             con.commit()
-            imported += 1
+            if reason:
+                unresolved += 1
+            else:
+                imported += 1
             episode_count += episodes
             source_count += sources
             suffix = f", {reason}" if reason else ""
@@ -256,10 +279,32 @@ def backfill(args):
     )
     con.commit()
     con.close()
-    print(f"backfilled {imported} titles, {episode_count} episodes, {source_count} provider rows, {failed} failed")
+    print(
+        f"backfilled {imported} titles, {episode_count} episodes, {source_count} provider rows, "
+        f"{unresolved} unresolved, {failed} failed"
+    )
+    return {
+        "imported": imported,
+        "episodes": episode_count,
+        "providers": source_count,
+        "unresolved": unresolved,
+        "failed": failed,
+    }
 
 
-def main():
+def backfill(args):
+    lock_path = getattr(args, "lock_file", None) or default_lock_path(args.db)
+    with DatabaseOperationLock(
+        args.db,
+        path=lock_path,
+        wait=getattr(args, "wait_lock", False),
+        timeout=getattr(args, "lock_timeout", 30.0),
+        operation="player backfill",
+    ):
+        return _backfill(args)
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Backfill playable episode/provider rows for metadata-only imported titles.")
     parser.add_argument("--db", default="db/animego.sqlite")
     parser.add_argument("--source", choices=["animego", "yummyanime"])
@@ -271,9 +316,13 @@ def main():
     parser.add_argument("--retry-backoff", type=float, default=8.0)
     parser.add_argument("--stop-on-error", action="store_true")
     parser.add_argument("--verbose", action="store_true")
-    args = parser.parse_args()
-    backfill(args)
+    parser.add_argument("--lock-file")
+    parser.add_argument("--wait-lock", action="store_true")
+    parser.add_argument("--lock-timeout", type=float, default=30.0)
+    args = parser.parse_args(argv)
+    result = backfill(args)
+    return 1 if result["failed"] or result["unresolved"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip check
+
+      - name: Lint and dependency audit
+        run: |
+          ruff check .
+          pip-audit -r requirements.txt
+
+      - name: Compile Python
+        run: |
+          python -m compileall -q \
+            server.py content_updates.py scrape_animego.py scrape_yummyanime.py \
+            sync_videos.py backfill_players.py prune_non_playable.py \
+            update_backup.py scripts test_app.py test_db_migrate.py
+
+      - name: Run unit and integration tests
+        run: python -m unittest discover -v -p 'test*.py'
+
+      - name: Check JavaScript syntax
+        run: |
+          find static -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --test static/frontend_runtime.test.js
+
+      - name: Type-check Railway function
+        run: >-
+          npx --yes --package typescript@5.9.3 tsc
+          railway-functions/daily-sync.ts --noEmit --target ES2022
+          --module ES2022 --lib ES2022,DOM --strict
+
+      - name: Check shell syntax and repository hygiene
+        run: |
+          sh -n scripts/*.sh
+          python scripts/check_repo_hygiene.py

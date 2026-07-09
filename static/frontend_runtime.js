@@ -1,0 +1,108 @@
+(function initAnimeFrontendRuntime(root) {
+  function normalizeHostname(value) {
+    return String(value || "").trim().toLocaleLowerCase("en-US").replace(/\.$/, "");
+  }
+
+  function hostnameMatches(hostname, allowedHostname) {
+    const host = normalizeHostname(hostname);
+    const allowed = normalizeHostname(allowedHostname);
+    return Boolean(host && allowed && (host === allowed || host.endsWith(`.${allowed}`)));
+  }
+
+  function safeHttpsUrl(value, allowedHostnames) {
+    try {
+      const raw = String(value || "").trim();
+      const url = new URL(raw.startsWith("//") ? `https:${raw}` : raw);
+      if (url.protocol !== "https:" || url.username || url.password) return null;
+      if (!(allowedHostnames || []).some(host => hostnameMatches(url.hostname, host))) return null;
+      return url.href;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function localCalendarDayNumber(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+  }
+
+  function localCalendarDayDifference(later, earlier) {
+    const laterDay = localCalendarDayNumber(later);
+    const earlierDay = localCalendarDayNumber(earlier);
+    if (laterDay == null || earlierDay == null) return null;
+    return laterDay - earlierDay;
+  }
+
+  function boundedElapsedSeconds(startedAt, endedAt, maximumSeconds) {
+    const start = Number(startedAt);
+    const end = Number(endedAt);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+    const seconds = Math.max(0, Math.round((end - start) / 1000));
+    return Number.isFinite(maximumSeconds) ? Math.min(maximumSeconds, seconds) : seconds;
+  }
+
+  function hasPlaybackEvidence({ pageHidden = false, playerFocused = false, fullscreen = false, evidenceExpiresAt = 0, now = Date.now() } = {}) {
+    if (pageHidden || Number(evidenceExpiresAt) <= Number(now)) return false;
+    return Boolean(playerFocused || fullscreen);
+  }
+
+  function createKeyedSerialQueue(worker) {
+    if (typeof worker !== "function") throw new TypeError("worker must be a function");
+    const queues = new Map();
+
+    async function drain(key, queue) {
+      if (queue.running) return;
+      queue.running = true;
+      try {
+        while (queue.items.length) {
+          const item = queue.items[0];
+          try {
+            item.resolve(await worker(key, item.value));
+          } catch (error) {
+            item.reject(error);
+          } finally {
+            queue.items.shift();
+          }
+        }
+      } finally {
+        queue.running = false;
+        if (!queue.items.length && queues.get(key) === queue) queues.delete(key);
+      }
+    }
+
+    function enqueue(key, value) {
+      return new Promise((resolve, reject) => {
+        let queue = queues.get(key);
+        if (!queue) {
+          queue = { items: [], running: false };
+          queues.set(key, queue);
+        }
+        queue.items.push({ value, resolve, reject });
+        drain(key, queue).catch(() => {});
+      });
+    }
+
+    function pending(key) {
+      if (arguments.length) return queues.get(key)?.items.length || 0;
+      let count = 0;
+      for (const queue of queues.values()) count += queue.items.length;
+      return count;
+    }
+
+    return { enqueue, pending };
+  }
+
+  const api = {
+    hostnameMatches,
+    safeHttpsUrl,
+    localCalendarDayNumber,
+    localCalendarDayDifference,
+    boundedElapsedSeconds,
+    hasPlaybackEvidence,
+    createKeyedSerialQueue,
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.AnimeFrontendRuntime = api;
+})(typeof globalThis !== "undefined" ? globalThis : window);
