@@ -1063,24 +1063,72 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(target["episode_number"], "1")
             self.assertEqual(target["reason"], "resume")
 
-    def test_detail_exposes_last_watch_episode_before_title_progress(self):
+    def test_detail_uses_last_watch_when_title_progress_is_stale(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             anime_id = self.seed_watchable_title(db_path, anime_id=14, episode_count=2)
             user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
             detail = server.get_anime_detail(anime_id, db_path, user_id)
             server.record_watch_event(self.watch_payload(detail, episode_index=1), db_path, user_id)
-            server.update_user_state(anime_id, {"progress_episode_number": 1}, db_path, user_id)
+            con = server.connect(db_path)
+            try:
+                con.execute(
+                    """
+                    update user_title_state
+                    set progress_episode_number = 1,
+                        updated_at = ?
+                    where user_id = ?
+                      and anime_id = ?
+                    """,
+                    (server.now_iso(), user_id, anime_id),
+                )
+                con.commit()
+            finally:
+                con.close()
 
             updated = server.get_anime_detail(anime_id, db_path, user_id)
 
-            self.assertEqual(updated["progress_episode_number"], 1)
+            self.assertEqual(updated["progress_episode_number"], 2)
             self.assertEqual(updated["last_watch"]["episode_number"], "2")
             self.assertEqual(updated["last_watch"]["progress_episode_number"], 2)
             self.assertEqual(
                 updated["last_watch"]["video_source_id"],
                 updated["sources_by_episode"][updated["last_watch"]["episode_id"]][0]["id"],
             )
+
+    def test_manual_progress_update_moves_last_watch_episode(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=15, episode_count=2)
+            user_id = self.create_google_user(db_path, "google-user-1", "one@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            server.record_watch_event(self.watch_payload(detail, episode_index=1), db_path, user_id)
+
+            saved = server.update_user_state(anime_id, {"progress_episode_number": 1}, db_path, user_id)
+
+            self.assertEqual(saved["progress_episode_number"], 1)
+            self.assertEqual(saved["last_watch"]["episode_number"], "1")
+            self.assertEqual(saved["last_watch"]["progress_episode_number"], 1)
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertEqual(updated["progress_episode_number"], 1)
+            self.assertEqual(updated["last_watch"]["episode_number"], "1")
+            con = server.connect(db_path)
+            try:
+                manual_row = con.execute(
+                    """
+                    select *
+                    from user_episode_state
+                    where user_id = ?
+                      and anime_id = ?
+                      and progress_episode_number = 1
+                    """,
+                    (user_id, anime_id),
+                ).fetchone()
+                self.assertIsNotNone(manual_row)
+                self.assertEqual(manual_row["last_event_type"], "manual_progress")
+                self.assertIsNotNone(manual_row["started_at"])
+            finally:
+                con.close()
 
     def test_continue_watching_opens_next_episode_after_likely_completion(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2077,7 +2125,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         self.assertIn("function episodeIdForProgress(progressEpisodeNumber)", js)
         self.assertIn("function episodeIdForLastWatch(lastWatch)", js)
+        self.assertIn("function effectiveProgressEpisodeNumber(detail)", js)
+        self.assertIn("function applyManualProgressSelection(progressEpisodeNumber)", js)
         self.assertIn("numberFrom(episode.number) === progress", js)
+        self.assertIn("effectiveProgressEpisodeNumber(detail)", js)
+        self.assertIn("applyManualProgressSelection(progress)", js)
 
         start = js.index("function applyDetailLinkState")
         end = js.index("function numericValue", start)

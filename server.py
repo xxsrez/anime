@@ -2925,7 +2925,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
             where user_id = ?
               and anime_id in ({member_sql})
               and started_at is not null
-            order by last_seen_at desc
+            order by last_seen_at desc, last_confidence desc, updated_at desc
             limit 1
             """,
             (user_id, *member_ids),
@@ -2996,6 +2996,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
         last_watch = detail_watch_target_from_episode_state(latest_watch_row, detail)
         if last_watch:
             detail["last_watch"] = last_watch
+            if last_watch.get("progress_episode_number") is not None:
+                detail["progress_episode_number"] = last_watch["progress_episode_number"]
     return detail
 
 
@@ -3015,6 +3017,9 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     current = get_group_state(con, member_ids, user_id)
     next_state = dict(current)
+
+    progress_was_patched = "progress_episode_number" in patch
+    manual_last_watch = None
 
     if "is_favorite" in patch:
         next_state["is_favorite"] = bool(patch["is_favorite"])
@@ -3068,6 +3073,15 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
             """,
             (user_id, *duplicate_state_ids),
         )
+    if progress_was_patched:
+        manual_last_watch = sync_manual_progress_to_episode_state(
+            con,
+            group,
+            user_id,
+            next_state["progress_episode_number"],
+            next_state["updated_at"],
+        )
+        next_state["last_watch"] = manual_last_watch
     con.commit()
     con.close()
     return next_state
@@ -3189,6 +3203,84 @@ def load_event_video_source(con, member_ids, video_source_id):
     return row
 
 
+def load_episode_for_progress(con, member_ids, progress_episode_number, target_id=None):
+    if progress_episode_number is None:
+        return None
+    target_id = target_id if target_id is not None else member_ids[0]
+    row = con.execute(
+        f"""
+        select
+            e.*,
+            a.source as anime_source,
+            count(vs.id) as source_count
+        from episodes e
+        join anime a on a.id = e.anime_id
+        left join video_sources vs on vs.episode_id = e.id and vs.embed_url is not null
+        where e.anime_id in ({sql_placeholders(member_ids)})
+          and cast(e.number as integer) = ?
+        group by e.id
+        order by
+            case when e.anime_id = ? then 0 else 1 end,
+            case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
+            case when count(vs.id) > 0 then 0 else 1 end,
+            e.id
+        limit 1
+        """,
+        (*member_ids, int(progress_episode_number), target_id),
+    ).fetchone()
+    return row
+
+
+def load_preferred_video_source_for_progress(con, member_ids, progress_episode_number):
+    row = con.execute(
+        f"""
+        select
+            vs.id,
+            vs.anime_id as source_anime_id,
+            vs.provider_id,
+            vs.provider_title,
+            vs.translation_id,
+            vs.translation_title,
+            vs.embed_host,
+            a.source,
+            a.source_id
+        from video_sources vs
+        join anime a on a.id = vs.anime_id
+        join episodes e on e.id = vs.episode_id
+        where e.anime_id in ({sql_placeholders(member_ids)})
+          and cast(e.number as integer) = ?
+          and vs.anime_id in ({sql_placeholders(member_ids)})
+          and vs.embed_url is not null
+        order by
+            case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
+            vs.translation_title,
+            case when lower(vs.provider_title) = 'kodik' then 0 else 1 end,
+            vs.provider_title,
+            vs.id
+        limit 1
+        """,
+        (*member_ids, int(progress_episode_number), *member_ids),
+    ).fetchone()
+    return row
+
+
+def watch_target_from_episode_source(episode, source, progress_episode_number, timestamp, engaged_seconds=0):
+    if not episode:
+        return None
+    source = dict(source) if source else {}
+    return {
+        "episode_id": episode["id"],
+        "episode_number": episode["number"],
+        "progress_episode_number": progress_episode_number,
+        "source": source.get("source"),
+        "translation_id": source.get("translation_id"),
+        "provider_id": source.get("provider_id"),
+        "video_source_id": source.get("id"),
+        "last_seen_at": timestamp,
+        "engaged_seconds": engaged_seconds,
+    }
+
+
 def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_number, timestamp):
     if progress_episode_number is None:
         return get_group_state(con, [variant["id"] for variant in group.get("source_variants") or []], user_id)
@@ -3239,6 +3331,74 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
             (user_id, *duplicate_state_ids),
         )
     return next_state
+
+
+def sync_manual_progress_to_episode_state(con, group, user_id, progress_episode_number, timestamp):
+    target_id = group["id"]
+    member_ids = [variant["id"] for variant in group.get("source_variants") or []]
+    if not member_ids:
+        member_ids = [target_id]
+
+    if progress_episode_number is None:
+        con.execute(
+            f"""
+            update user_episode_state
+            set started_at = null,
+                last_event_type = 'manual_clear',
+                last_confidence = 1.0,
+                updated_at = ?
+            where user_id = ?
+              and anime_id in ({sql_placeholders(member_ids)})
+            """,
+            (timestamp, user_id, *member_ids),
+        )
+        return None
+
+    episode = load_episode_for_progress(con, member_ids, progress_episode_number, target_id=target_id)
+    if not episode:
+        return None
+
+    source = load_preferred_video_source_for_progress(con, member_ids, progress_episode_number)
+    existing = con.execute(
+        """
+        select engaged_seconds
+        from user_episode_state
+        where user_id = ?
+          and anime_id = ?
+          and episode_id = ?
+        """,
+        (user_id, target_id, episode["id"]),
+    ).fetchone()
+    engaged_seconds = int(existing["engaged_seconds"] or 0) if existing else 0
+    upsert_episode_watch_state(
+        con,
+        user_id=user_id,
+        anime_id=target_id,
+        episode_id=episode["id"],
+        timestamp=timestamp,
+        event_type="manual_progress",
+        confidence=1.0,
+        engaged_seconds=0,
+        heartbeat_count=0,
+        started=True,
+        episode_number=episode["number"],
+        progress_episode_number=progress_episode_number,
+        video_source_id=source["id"] if source else None,
+        source=source["source"] if source else None,
+        source_anime_id=source["source_anime_id"] if source else None,
+        translation_id=source["translation_id"] if source else None,
+        translation_title=source["translation_title"] if source else None,
+        provider_id=source["provider_id"] if source else None,
+        provider_title=source["provider_title"] if source else None,
+        embed_host=source["embed_host"] if source else None,
+    )
+    return watch_target_from_episode_source(
+        episode,
+        source,
+        progress_episode_number,
+        timestamp,
+        engaged_seconds=engaged_seconds,
+    )
 
 
 def mark_previous_episode_completed(con, user_id, anime_id, progress_episode_number, timestamp):
@@ -3733,7 +3893,7 @@ def get_continue_watching(db_path=None, user_id=None):
             from user_episode_state
             where user_id = ?
               and started_at is not null
-            order by last_seen_at desc
+            order by last_seen_at desc, last_confidence desc, updated_at desc
             limit 20
             """,
             (user_id,),

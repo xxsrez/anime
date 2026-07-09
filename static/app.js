@@ -561,13 +561,18 @@ function numberFrom(value) {
 
 function progressText(item) {
   if (item.watched) return "просмотрено";
-  if (item.progress_episode_number != null) return `серия ${item.progress_episode_number}`;
+  const progress = effectiveProgressEpisodeNumber(item);
+  if (progress != null) return `серия ${progress}`;
   return "";
+}
+
+function effectiveProgressEpisodeNumber(detail) {
+  return detail?.last_watch?.progress_episode_number ?? detail?.progress_episode_number;
 }
 
 function progressSummary(detail) {
   if (!detail) return "Не начато";
-  const progress = detail.progress_episode_number;
+  const progress = effectiveProgressEpisodeNumber(detail);
   const total = numberFrom(detail.episodes_text);
   if (detail.watched) return "Просмотрено";
   if (progress != null && total) return `Серия ${progress} из ${total}`;
@@ -1254,7 +1259,8 @@ function renderWatchState(detail) {
   el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
-  el.progressEpisode.value = detail.progress_episode_number == null ? "" : detail.progress_episode_number;
+  const progress = effectiveProgressEpisodeNumber(detail);
+  el.progressEpisode.value = progress == null ? "" : progress;
   const total = numberFrom(detail.episodes_text);
   if (total) {
     el.progressEpisode.max = total;
@@ -1764,6 +1770,14 @@ function markWatchSessionManuallyCorrected(progressEpisodeNumber) {
   stopWatchHeartbeat();
 }
 
+function applyManualProgressSelection(progressEpisodeNumber) {
+  const episodeId = episodeIdForProgress(progressEpisodeNumber);
+  if (!episodeId) return;
+  state.selectedEpisodeId = episodeId;
+  state.selectedTranslation = null;
+  state.selectedSourceId = null;
+}
+
 function handleFullscreenStateChange() {
   const active = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
   updateFullscreenControl();
@@ -2112,6 +2126,7 @@ el.progressEpisode.addEventListener("change", () => {
   if (!state.detail) return;
   const progress = progressInputValue();
   markWatchSessionManuallyCorrected(progress);
+  applyManualProgressSelection(progress);
   saveUserState({
     progress_episode_number: progress,
     watched: false,
