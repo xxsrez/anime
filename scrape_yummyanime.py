@@ -78,6 +78,10 @@ def internal_modern_anime_id(source_id):
     return YUMMYANI_ID_OFFSET + int(source_id)
 
 
+def modern_source_id(source_id):
+    return f"yummyani:{int(source_id)}"
+
+
 def internal_episode_id(anime_id, number):
     return anime_id * 1000 + int(number)
 
@@ -443,7 +447,7 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
     item = {
         "id": anime_id,
         "source": "yummyanime",
-        "source_id": str(source_id),
+        "source_id": modern_source_id(source_id),
         "slug": anime.get("anime_url") or slug,
         "title": anime.get("title") or slug,
         "subtitle": first_latin_title(other_titles),

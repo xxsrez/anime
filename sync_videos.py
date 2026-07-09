@@ -491,7 +491,15 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
 
 
 def sync_yummy_feed(con, args, stats):
-    payload = fetch_json_url(YUMMY_FEED_URL, args)
+    try:
+        payload = fetch_json_url(YUMMY_FEED_URL, args)
+    except Exception as exc:
+        stats["feed_failed"] += 1
+        stats["failed"] += 1
+        print(f"yummyanime feed: ERROR after retries: {exc}")
+        if args.stop_on_error:
+            raise
+        return
     response = payload.get("response") or {}
     grouped = OrderedDict()
     for row in response.get("new_videos") or []:
@@ -541,7 +549,15 @@ def sync_yummy_ongoing(con, args, stats):
                 "sort_forward": "false",
             }
         )
-        payload = fetch_json_url(f"{yummy.YUMMYANI_API_BASE}/anime?{query}", args)
+        try:
+            payload = fetch_json_url(f"{yummy.YUMMYANI_API_BASE}/anime?{query}", args)
+        except Exception as exc:
+            stats["ongoing_failed"] += 1
+            stats["failed"] += 1
+            print(f"yummyanime ongoing offset {offset}: ERROR after retries: {exc}")
+            if args.stop_on_error:
+                raise
+            break
         rows = payload.get("response") or []
         if not rows:
             break
@@ -669,7 +685,7 @@ def animego_item_from_ref(anime_ref):
     }
 
 
-def collect_animego_listing(args):
+def collect_animego_listing(args, stats=None):
     years = selected_years(
         args.animego_season_years,
         args.animego_from_year,
@@ -694,7 +710,21 @@ def collect_animego_listing(args):
                 if exc.code == 404 and args.animego_discover_pages == 0:
                     print(f"animego listing {source_url} page {page}: 404, stopping")
                     break
-                raise
+                if stats is not None:
+                    stats["listing_failed"] += 1
+                    stats["failed"] += 1
+                print(f"animego listing {page_url}: ERROR after retries: {exc}")
+                if args.stop_on_error:
+                    raise
+                break
+            except urllib.error.URLError as exc:
+                if stats is not None:
+                    stats["listing_failed"] += 1
+                    stats["failed"] += 1
+                print(f"animego listing {page_url}: ERROR after retries: {exc}")
+                if args.stop_on_error:
+                    raise
+                break
             page_items = animego.parse_listing(page_html)
             new_items = [item for item in page_items if item["id"] not in seen]
             for item in new_items:
@@ -847,7 +877,7 @@ def sync_animego(con, args):
         args.animego_to_year,
     )
     if should_collect_listing:
-        for item in collect_animego_listing(args):
+        for item in collect_animego_listing(args, stats):
             candidates[item["id"]] = (item, "listing")
 
     if args.mode == "manual":
@@ -1104,12 +1134,21 @@ def run_sync(args):
 
             for source in args.sources:
                 print(f"== {source} {args.mode} sync ==")
-                if source == "yummyanime":
-                    stats = sync_yummyanime(con, args)
-                elif source == "animego":
-                    stats = sync_animego(con, args)
-                else:
-                    raise ValueError(f"unsupported source: {source}")
+                try:
+                    if source == "yummyanime":
+                        stats = sync_yummyanime(con, args)
+                    elif source == "animego":
+                        stats = sync_animego(con, args)
+                    else:
+                        raise ValueError(f"unsupported source: {source}")
+                except Exception as exc:
+                    if args.stop_on_error:
+                        raise
+                    stats = defaultdict(int)
+                    stats["failed"] += 1
+                    stats["source_failed"] += 1
+                    stats["error"] = str(exc)[:500]
+                    print(f"== {source} {args.mode} sync failed after retries, continuing: {exc}")
                 all_stats[source] = dict(stats)
                 if not args.dry_run:
                     write_sync_run(con, args.mode, source, started_at, stats)

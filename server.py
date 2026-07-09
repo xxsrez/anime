@@ -1275,6 +1275,15 @@ def source_priority(source):
     return SOURCE_PRIORITY.get(source or "", 99)
 
 
+def source_namespace(item):
+    source = item.get("source") or ""
+    if source == "yummyanime":
+        source_id = str(item.get("source_id") or "")
+        if source_id.startswith("yummyani:") or (numeric(item.get("id")) or 0) >= 20_000_000:
+            return "yummyani"
+    return source
+
+
 def canonical_title_match_key(item):
     if item.get("source") not in MERGEABLE_SOURCES:
         return None
@@ -1429,7 +1438,8 @@ def merge_canonical_items(items):
 def can_auto_merge_by_title(bucket):
     source_counts = {}
     for item in bucket:
-        source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
+        namespace = source_namespace(item)
+        source_counts[namespace] = source_counts.get(namespace, 0) + 1
     title_key = normalize_match_title(bucket[0].get("title"))
     subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
     short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
@@ -1439,7 +1449,8 @@ def can_auto_merge_by_title(bucket):
 def can_auto_merge_by_subtitle(bucket):
     source_counts = {}
     for item in bucket:
-        source_counts[item.get("source")] = source_counts.get(item.get("source"), 0) + 1
+        namespace = source_namespace(item)
+        source_counts[namespace] = source_counts.get(namespace, 0) + 1
     return len(source_counts) > 1 and all(count == 1 for count in source_counts.values())
 
 

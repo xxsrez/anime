@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+import urllib.error
 from urllib.parse import parse_qs, urlencode, urlparse
 from unittest.mock import patch
 
@@ -585,6 +586,39 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     self.assertEqual(payload["duration_ms"], 12)
                     sync_mock.assert_called_once()
 
+    def test_animego_listing_http_500_is_counted_without_aborting_daily_sync(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            scrape_animego.init_db(db_path).close()
+            args = sync_videos.parse_args(
+                [
+                    "--db",
+                    db_path,
+                    "--mode",
+                    "daily",
+                    "--source",
+                    "animego",
+                    "--animego-discover-pages",
+                    "1",
+                    "--animego-limit",
+                    "0",
+                    "--animego-missing-limit",
+                    "0",
+                    "--retry-attempts",
+                    "1",
+                ]
+            )
+            con = sync_videos.connect(db_path)
+            try:
+                error = urllib.error.HTTPError(args.animego_start_url, 500, "Internal Server Error", None, None)
+                with patch.object(scrape_animego, "fetch_text", side_effect=error):
+                    stats = sync_videos.sync_animego(con, args)
+            finally:
+                con.close()
+
+        self.assertEqual(stats["failed"], 1)
+        self.assertEqual(stats["listing_failed"], 1)
+
     def test_next_daily_sync_run_uses_configured_utc_time(self):
         before_cutoff = dt.datetime(2026, 7, 8, 1, 59, tzinfo=dt.timezone.utc)
         after_cutoff = dt.datetime(2026, 7, 8, 20, 0, tzinfo=dt.timezone.utc)
@@ -787,10 +821,34 @@ assert.deepStrictEqual(rankedIds("zz"), []);
     def test_yummy_modern_ids_do_not_collide_with_legacy_ids(self):
         self.assertEqual(scrape_yummyanime.internal_anime_id(4981), 10004981)
         self.assertEqual(scrape_yummyanime.internal_modern_anime_id(4981), 20004981)
+        self.assertEqual(scrape_yummyanime.modern_source_id(4981), "yummyani:4981")
         self.assertNotEqual(
             scrape_yummyanime.internal_anime_id(4981),
             scrape_yummyanime.internal_modern_anime_id(4981),
         )
+
+    def test_modern_yummyani_source_id_is_namespaced(self):
+        anime = {
+            "anime_id": 15,
+            "anime_url": "neobyatnyy-okean-3",
+            "title": "Необъятный океан 3",
+            "year": 2026,
+            "episodes": {"count": 1},
+            "type": {"name": "TV"},
+            "videos": [],
+        }
+        with patch.object(scrape_yummyanime, "fetch_modern_anime", return_value=(anime, "https://api.test/anime/15")):
+            item, detail, episodes, providers = scrape_yummyanime.parse_modern_detail(
+                "https://ru.yummyani.me/catalog/item/neobyatnyy-okean-3",
+                include_embed_urls=False,
+            )
+
+        self.assertEqual(item["id"], 20000015)
+        self.assertEqual(item["source"], "yummyanime")
+        self.assertEqual(item["source_id"], "yummyani:15")
+        self.assertEqual(detail["schema_data"]["source"], "yummyani")
+        self.assertEqual(len(episodes), 1)
+        self.assertEqual(providers, [])
 
     def test_source_sort_pins_dream_cast_above_popular_translations(self):
         sources = [
@@ -1938,6 +1996,68 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         same_detail = server.get_anime_detail(yummy_variant["id"])
         self.assertEqual(same_detail["id"], item["id"])
         self.assertEqual(same_detail["source"], "animego")
+
+    def test_yummyani_namespace_allows_modern_and_legacy_title_merge(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            scraped_at = server.now_iso()
+            con = scrape_animego.init_db(db_path)
+            try:
+                for anime_id, source, source_id in (
+                    (3001, "animego", "3001"),
+                    (10003001, "yummyanime", "3001"),
+                    (20003001, "yummyanime", "yummyani:3001"),
+                ):
+                    con.execute(
+                        """
+                        insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
+                        values (?, ?, 'Namespace Merge', ?, ?, ?, '2026', ?)
+                        """,
+                        (
+                            anime_id,
+                            f"namespace-merge-{anime_id}",
+                            f"https://example.test/{anime_id}",
+                            source,
+                            source_id,
+                            scraped_at,
+                        ),
+                    )
+                    con.execute(
+                        """
+                        insert into episodes(id, anime_id, number, has_video, scraped_at)
+                        values (?, ?, '1', 1, ?)
+                        """,
+                        (anime_id * 1000 + 1, anime_id, scraped_at),
+                    )
+                    con.execute(
+                        """
+                        insert into video_sources(
+                            anime_id, episode_id, provider_id, provider_title,
+                            translation_id, translation_title, embed_url, embed_url_redacted,
+                            embed_host, scraped_at
+                        )
+                        values (?, ?, ?, 'Kodik', ?, 'Dream Cast', ?, ?, 'kodikplayer.com', ?)
+                        """,
+                        (
+                            anime_id,
+                            anime_id * 1000 + 1,
+                            f"provider-{anime_id}",
+                            anime_id,
+                            f"https://kodikplayer.com/serial/{anime_id}/hash/720p?season=1&episode=1",
+                            f"https://kodikplayer.com/serial/{anime_id}/<redacted>/720p",
+                            scraped_at,
+                        ),
+                    )
+                con.commit()
+            finally:
+                con.close()
+            server.invalidate_catalog_cache(db_path)
+
+            matches = [item for item in server.get_anime_list(db_path) if item["title"] == "Namespace Merge"]
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0]["source"], "animego")
+            self.assertEqual(matches[0]["source_variant_count"], 3)
+            self.assertEqual(set(matches[0]["source_member_ids"]), {3001, 10003001, 20003001})
 
     def test_frieren_details_have_full_episode_video_coverage(self):
         expected = {
