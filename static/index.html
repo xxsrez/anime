@@ -62,6 +62,10 @@
           <span class="view-tab-icon" aria-hidden="true">▶</span>
           <span class="view-tab-label">Смотрю</span>
         </button>
+        <button id="view-updates" type="button" data-view="updates" aria-label="Новое в базе" aria-pressed="false" title="Новое в базе">
+          <span class="view-tab-icon" aria-hidden="true">＋</span>
+          <span class="view-tab-label">Новое</span>
+        </button>
         <button id="view-recommendations" type="button" data-view="recommendations" aria-label="Рекомендации" aria-pressed="false" title="Рекомендации">
           <span class="view-tab-icon" aria-hidden="true">✦</span>
           <span class="view-tab-label">Советы</span>
@@ -72,75 +76,79 @@
     </aside>
 
     <section class="detail">
-      <div class="detail-header">
-        <img id="poster" class="poster" alt="">
-        <div class="title-block">
-          <div id="meta-line" class="meta-line"></div>
-          <h2 id="title"></h2>
-          <p id="subtitle"></p>
-          <div class="watch-row">
-            <button id="favorite-toggle" class="watch-button" type="button" aria-pressed="false">☆ Избранное</button>
-            <label class="watched-control">
-              <input id="watched-toggle" type="checkbox">
-              <span>Просмотрен</span>
-            </label>
-            <button id="not-watching-button" class="watch-button clear-watch-button" type="button" title="Убрать из «Смотрю»" hidden>■ Не смотрю</button>
+      <section id="updates-view" class="updates-view" hidden></section>
+
+      <div id="title-detail-view">
+        <div class="detail-header">
+          <img id="poster" class="poster" alt="">
+          <div class="title-block">
+            <div id="meta-line" class="meta-line"></div>
+            <h2 id="title"></h2>
+            <p id="subtitle"></p>
+            <div class="watch-row">
+              <button id="favorite-toggle" class="watch-button" type="button" aria-pressed="false">☆ Избранное</button>
+              <label class="watched-control">
+                <input id="watched-toggle" type="checkbox">
+                <span>Просмотрен</span>
+              </label>
+              <button id="not-watching-button" class="watch-button clear-watch-button" type="button" title="Убрать из «Смотрю»" hidden>■ Не смотрю</button>
+            </div>
+            <div id="recommendation-context" class="recommendation-context" hidden></div>
+            <div id="recent-updates" class="recent-updates" hidden></div>
+            <div id="genres" class="chip-row"></div>
+            <p id="description" class="description"></p>
+            <div id="fields" class="field-grid"></div>
           </div>
-          <div id="recommendation-context" class="recommendation-context" hidden></div>
-          <div id="recent-updates" class="recent-updates" hidden></div>
-          <div id="genres" class="chip-row"></div>
-          <p id="description" class="description"></p>
-          <div id="fields" class="field-grid"></div>
         </div>
-      </div>
 
-      <div class="episode-picker" id="episodes"></div>
+        <div class="episode-picker" id="episodes"></div>
 
-      <div class="player-layout">
-        <section class="player-pane">
-          <div class="iframe-wrap" id="iframe-wrap">
-            <iframe
-              id="player"
-              title="Аниме плеер"
-              allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *"
-              allowfullscreen
-              webkitallowfullscreen
-              mozallowfullscreen
-              referrerpolicy="origin">
-            </iframe>
-            <div id="empty-player" class="empty-player"></div>
-          </div>
-        </section>
+        <div class="player-layout">
+          <section class="player-pane">
+            <div class="iframe-wrap" id="iframe-wrap">
+              <iframe
+                id="player"
+                title="Аниме плеер"
+                allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *"
+                allowfullscreen
+                webkitallowfullscreen
+                mozallowfullscreen
+                referrerpolicy="origin">
+              </iframe>
+              <div id="empty-player" class="empty-player"></div>
+            </div>
+          </section>
 
-        <aside class="source-panel">
-          <label>
-            <span>Источник</span>
-            <select id="content-source"></select>
-          </label>
-          <label>
-            <span>Озвучка</span>
-            <select id="translation"></select>
-          </label>
-          <label>
+          <aside class="source-panel">
+            <label>
+              <span>Источник</span>
+              <select id="content-source"></select>
+            </label>
+            <label>
+              <span>Озвучка</span>
+              <select id="translation"></select>
+            </label>
+            <label>
               <span>Плеер</span>
               <select id="provider"></select>
             </label>
-          <div class="player-actions">
-            <button id="fullscreen-toggle" class="icon-button player-action" type="button" aria-label="Во весь экран" title="Во весь экран">⛶</button>
-            <button id="pip-toggle" class="icon-button player-action" type="button" aria-label="Picture-in-Picture" title="Picture-in-Picture">▣</button>
-          </div>
-          <div id="player-action-state" class="player-action-state" aria-live="polite"></div>
-          <div class="source-meta">
-            <div>
-              <span>Хост</span>
-              <strong id="host">-</strong>
+            <div class="player-actions">
+              <button id="fullscreen-toggle" class="icon-button player-action" type="button" aria-label="Во весь экран" title="Во весь экран">⛶</button>
+              <button id="pip-toggle" class="icon-button player-action" type="button" aria-label="Picture-in-Picture" title="Picture-in-Picture">▣</button>
             </div>
-            <div>
-              <span>Эпизод</span>
-              <strong id="episode-state">-</strong>
+            <div id="player-action-state" class="player-action-state" aria-live="polite"></div>
+            <div class="source-meta">
+              <div>
+                <span>Хост</span>
+                <strong id="host">-</strong>
+              </div>
+              <div>
+                <span>Эпизод</span>
+                <strong id="episode-state">-</strong>
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
     </section>
   </main>

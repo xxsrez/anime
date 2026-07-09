@@ -555,6 +555,91 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(detail["recent_update_summary"]["label"], "Добавлено 1 серия")
             self.assertEqual(detail["recent_updates"][0]["episode_number"], "1")
 
+    def test_content_updates_api_summarizes_new_database_content(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            first_id = self.seed_watchable_title(db_path, anime_id=91, title="Fresh Title", episode_count=2)
+            second_id = self.seed_watchable_title(db_path, anime_id=92, title="Fresh Voice", episode_count=1)
+            old_at = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat(timespec="seconds")
+            con = server.connect(db_path)
+            try:
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_title",
+                    first_id,
+                    source="animego",
+                    source_id=str(first_id),
+                    title="Fresh Title",
+                    description="Новый тайтл",
+                )
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_episode",
+                    first_id,
+                    episode_id=first_id * 1000 + 2,
+                    source="animego",
+                    source_id=str(first_id),
+                    episode_number="2",
+                    title="Fresh Title",
+                    description="Добавлена серия 2",
+                )
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_translation",
+                    second_id,
+                    episode_id=second_id * 1000 + 1,
+                    source="animego",
+                    source_id=str(second_id),
+                    episode_number="1",
+                    translation_title="Dream Cast",
+                    title="Fresh Voice",
+                    description="Добавлена озвучка Dream Cast",
+                )
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_provider",
+                    second_id,
+                    episode_id=second_id * 1000 + 1,
+                    source="animego",
+                    source_id=str(second_id),
+                    episode_number="1",
+                    provider_title="Kodik",
+                    title="Fresh Voice",
+                    description="Старый плеер",
+                    occurred_at=old_at,
+                )
+                con.commit()
+            finally:
+                con.close()
+            server.invalidate_catalog_cache(db_path)
+
+            payload = server.get_content_updates(db_path, days=7, limit=20)
+
+            self.assertEqual(payload["period"]["days"], 7)
+            self.assertEqual(payload["summary"]["event_count"], 3)
+            self.assertEqual(payload["summary"]["updated_title_count"], 2)
+            self.assertEqual(payload["summary"]["event_counts"]["new_title"], 1)
+            self.assertEqual(payload["summary"]["event_counts"]["new_episode"], 1)
+            self.assertEqual(payload["summary"]["event_counts"]["new_translation"], 1)
+            self.assertEqual(payload["summary"]["event_counts"]["new_provider"], 0)
+            self.assertEqual({item["title"] for item in payload["items"]}, {"Fresh Title", "Fresh Voice"})
+            self.assertNotIn("Старый плеер", {event.get("description") for event in payload["events"]})
+
+            user_id = self.create_google_user(db_path, "google-user-updates", "updates@example.com")
+            token = self.create_session(db_path, user_id)
+            status, _, body = self.request_test_server(
+                db_path,
+                "GET",
+                "/api/content-updates?days=7&limit=20",
+                headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+            )
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body)["summary"]["event_count"], 3)
+
     def test_internal_daily_sync_requires_token_and_runs_wrapper(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"

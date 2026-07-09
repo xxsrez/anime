@@ -34,6 +34,9 @@ STATIC_DIR = ROOT / "static"
 DEFAULT_LOG_DIR = ROOT / "data" / "logs"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
+DEFAULT_CONTENT_UPDATE_DAYS = 7
+DEFAULT_CONTENT_UPDATE_LIMIT = 160
+MAX_CONTENT_UPDATE_LIMIT = 500
 MAX_JSON_BODY_BYTES = 64 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
@@ -1710,7 +1713,7 @@ def update_event_payload(row):
     return event
 
 
-def recent_update_summary(events):
+def recent_update_summary(events, days=content_updates.RECENT_UPDATE_DAYS):
     if not events:
         return None
     counts = {}
@@ -1742,7 +1745,7 @@ def recent_update_summary(events):
         "count": len(events),
         "event_counts": counts,
         "latest_at": events[0]["occurred_at"],
-        "days": content_updates.RECENT_UPDATE_DAYS,
+        "days": days,
     }
 
 
@@ -1797,6 +1800,182 @@ def attach_recent_updates(con, items):
         item["recent_updates"] = item_events[:12]
         item["recent_update_summary"] = recent_update_summary(item["recent_updates"])
     return items
+
+
+def normalize_content_update_limit(value):
+    try:
+        requested = int(value)
+    except (TypeError, ValueError):
+        requested = DEFAULT_CONTENT_UPDATE_LIMIT
+    return max(1, min(MAX_CONTENT_UPDATE_LIMIT, requested))
+
+
+def normalize_content_update_days(value):
+    if value is None:
+        return DEFAULT_CONTENT_UPDATE_DAYS
+    text = str(value).strip().lower()
+    if text in {"", "default"}:
+        return DEFAULT_CONTENT_UPDATE_DAYS
+    if text in {"all", "any", "0"}:
+        return None
+    try:
+        requested = int(text)
+    except ValueError:
+        return DEFAULT_CONTENT_UPDATE_DAYS
+    return max(1, min(365, requested))
+
+
+def content_update_period_payload(days):
+    if days is None:
+        return {"days": None, "label": "последние"}
+    return {"days": days, "label": f"за {days} дн."}
+
+
+def content_update_event_counts(events):
+    counts = {event_type: 0 for event_type in sorted(content_updates.EVENT_TYPES)}
+    for event in events:
+        event_type = event.get("event_type")
+        if event_type in counts:
+            counts[event_type] += 1
+    return counts
+
+
+def load_content_update_rows(con, days, limit):
+    params = []
+    where = ""
+    if days is not None:
+        where = "where occurred_at >= ?"
+        params.append(content_updates.recent_cutoff(days))
+    rows = con.execute(
+        f"""
+        select
+            id,
+            run_id,
+            event_type,
+            anime_id,
+            episode_id,
+            video_source_id,
+            source,
+            source_id,
+            episode_number,
+            translation_title,
+            provider_title,
+            title,
+            description,
+            occurred_at,
+            metadata_json
+        from content_update_events
+        {where}
+        order by occurred_at desc, id desc
+        limit ?
+        """,
+        (*params, limit),
+    ).fetchall()
+    return [update_event_payload(row) for row in rows]
+
+
+def latest_content_update_run(con):
+    row = con.execute(
+        """
+        select id, mode, trigger, sources_json, started_at, finished_at, duration_ms, status, stats_json, error
+        from content_update_runs
+        order by started_at desc, id desc
+        limit 1
+        """
+    ).fetchone()
+    if not row:
+        return None
+    payload = dict(row)
+    payload["sources"] = json.loads(payload.pop("sources_json") or "[]")
+    payload["stats"] = parse_json_object(payload.pop("stats_json", "{}"))
+    return payload
+
+
+def compact_content_update_item(item, events, days):
+    payload = {
+        key: item.get(key)
+        for key in (
+            "id",
+            "slug",
+            "title",
+            "subtitle",
+            "cover_url",
+            "kind",
+            "status",
+            "year",
+            "source",
+            "source_count",
+            "available_episode_count",
+        )
+        if keep_public_value(item.get(key))
+    }
+    sources = list(item.get("sources") or [])
+    if sources:
+        payload["sources"] = sources
+    payload["latest_update_at"] = events[0]["occurred_at"] if events else None
+    payload["recent_update_summary"] = recent_update_summary(events, days)
+    payload["events"] = [dict(event) for event in events[:12]]
+    return payload
+
+
+def content_update_event_with_catalog(event, group):
+    payload = dict(event)
+    payload["source_anime_id"] = event.get("anime_id")
+    if not group:
+        return payload
+    payload["anime_id"] = group["id"]
+    payload["anime_ref"] = group.get("slug") or group.get("internal_id") or group["id"]
+    payload["anime_slug"] = group.get("slug")
+    payload["anime_title"] = group.get("title")
+    payload["anime_subtitle"] = group.get("subtitle")
+    payload["cover_url"] = group.get("cover_url")
+    if not payload.get("title"):
+        payload["title"] = group.get("title")
+    return payload
+
+
+def get_content_updates(db_path=None, days=DEFAULT_CONTENT_UPDATE_DAYS, limit=DEFAULT_CONTENT_UPDATE_LIMIT, user_id=None):
+    days = normalize_content_update_days(days)
+    limit = normalize_content_update_limit(limit)
+    path = resolve_db_path(db_path)
+    cache = get_catalog_cache(path, user_id)
+    con = connect(path)
+    try:
+        raw_events = load_content_update_rows(con, days, limit)
+        latest_run = latest_content_update_run(con)
+    finally:
+        con.close()
+
+    events = []
+    events_by_item_id = {}
+    item_by_id = {item["id"]: item for item in cache.get("items") or []}
+    for raw_event in raw_events:
+        source_anime_id = raw_event.get("anime_id")
+        group = cache.get("id_map", {}).get(int(source_anime_id)) if source_anime_id is not None else None
+        event = content_update_event_with_catalog(raw_event, group)
+        events.append(event)
+        if group:
+            events_by_item_id.setdefault(group["id"], []).append(event)
+
+    items = []
+    for item_id, item_events in events_by_item_id.items():
+        item_events.sort(key=lambda event: (event["occurred_at"], event["id"]), reverse=True)
+        item = item_by_id.get(item_id)
+        if item:
+            items.append(compact_content_update_item(item, item_events, days))
+    items.sort(key=lambda item: (item.get("latest_update_at") or "", item.get("id") or 0), reverse=True)
+
+    return {
+        "period": content_update_period_payload(days),
+        "summary": {
+            "event_count": len(events),
+            "updated_title_count": len(items),
+            "event_counts": content_update_event_counts(events),
+        },
+        "items": items,
+        "events": events,
+        "latest_run": latest_run,
+    }
 
 
 def format_number(value):
@@ -4972,6 +5151,13 @@ class AnimeHandler(BaseHTTPRequestHandler):
         if path == "/api/recommendations":
             raw_limit = parse_qs(parsed.query).get("limit", [str(DEFAULT_RECOMMENDATION_LIMIT)])[0]
             self.send_json(get_recommendations(self.server.db_path, raw_limit, user["id"]))
+            return
+
+        if path == "/api/content-updates":
+            query = parse_qs(parsed.query)
+            raw_days = query.get("days", [str(DEFAULT_CONTENT_UPDATE_DAYS)])[0]
+            raw_limit = query.get("limit", [str(DEFAULT_CONTENT_UPDATE_LIMIT)])[0]
+            self.send_json(get_content_updates(self.server.db_path, raw_days, raw_limit, user["id"]))
             return
 
         if path == "/api/continue-watching":

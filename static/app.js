@@ -9,11 +9,14 @@ const DEFAULT_FILTERS = {
 const DEFAULT_SORT_BY = "rating_best";
 const DEFAULT_SORT_DIR = "desc";
 const RECOMMENDATION_LIMIT = 20;
+const CONTENT_UPDATE_LIMIT = 220;
+const CONTENT_UPDATE_DEFAULT_DAYS = "7";
 const INITIAL_RENDER_LIMIT = 40;
 const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; clipboard-write *; web-share *; screen-wake-lock *; accelerometer *; gyroscope *";
 const WATCH_ENDPOINT = "/api/watch-events";
+const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
 const reportClientError = window.reportClientError || (() => {});
@@ -22,6 +25,19 @@ const PERFORMANCE_ENDPOINT = "/api/performance";
 const MAX_PERFORMANCE_API_REQUESTS = 40;
 const MAX_PERFORMANCE_RESOURCES = 24;
 const catalogSearch = window.AnimeSearch;
+const CONTENT_UPDATE_TYPES = [
+  { id: "all", label: "Все" },
+  { id: "new_title", label: "Тайтлы" },
+  { id: "new_episode", label: "Серии" },
+  { id: "new_translation", label: "Озвучки" },
+  { id: "new_provider", label: "Плееры" },
+];
+const CONTENT_UPDATE_PERIODS = [
+  { id: "3", label: "3 дня" },
+  { id: "7", label: "7 дней" },
+  { id: "30", label: "30 дней" },
+  { id: "all", label: "Лента" },
+];
 
 if (!catalogSearch) {
   throw new Error("AnimeSearch is not loaded");
@@ -51,6 +67,13 @@ const state = {
   recommendationsLoading: null,
   recommendationsError: null,
   recommendationsRequestId: 0,
+  contentUpdates: null,
+  contentUpdatesLoaded: false,
+  contentUpdatesLoading: null,
+  contentUpdatesError: null,
+  contentUpdatesRequestId: 0,
+  contentUpdateDays: CONTENT_UPDATE_DEFAULT_DAYS,
+  contentUpdateType: "all",
   continueWatching: null,
   searchFieldsLoaded: false,
   searchFieldsLoading: null,
@@ -95,6 +118,8 @@ const el = {
   viewTabs: document.querySelectorAll(".view-tabs button"),
   recommendationMeta: document.getElementById("recommendation-meta"),
   list: document.getElementById("anime-list"),
+  updatesView: document.getElementById("updates-view"),
+  titleDetailView: document.getElementById("title-detail-view"),
   poster: document.getElementById("poster"),
   meta: document.getElementById("meta-line"),
   title: document.getElementById("title"),
@@ -634,6 +659,11 @@ function episodeIdForProgress(progressEpisodeNumber) {
   return matching ? matching.id : null;
 }
 
+function episodeIdForUpdateEvent(event) {
+  return matchingEpisodeId(event?.episode_id)
+    || episodeIdForProgress(event?.episode_number);
+}
+
 function episodeIdForLastWatch(lastWatch) {
   if (!lastWatch) return null;
   return matchingEpisodeId(lastWatch.episode_id)
@@ -704,7 +734,78 @@ function formatPercent(value) {
   return score == null ? "" : `${Math.round(score)}%`;
 }
 
+function russianPlural(count, one, few, many) {
+  const value = Math.abs(Number.parseInt(count, 10) || 0);
+  if (value % 10 === 1 && value % 100 !== 11) return one;
+  if (value % 10 >= 2 && value % 10 <= 4 && !(value % 100 >= 12 && value % 100 <= 14)) return few;
+  return many;
+}
+
+function contentUpdateTypeLabel(type) {
+  return CONTENT_UPDATE_TYPES.find(item => item.id === type)?.label || "Обновление";
+}
+
+function contentUpdateEvents() {
+  return state.contentUpdates?.events || [];
+}
+
+function contentUpdateMatchesType(event) {
+  return state.contentUpdateType === "all" || event?.event_type === state.contentUpdateType;
+}
+
+function filteredContentUpdateEvents() {
+  return contentUpdateEvents().filter(contentUpdateMatchesType);
+}
+
+function itemContentUpdateEvents(item) {
+  const id = String(item?.id ?? "");
+  if (!id || !state.contentUpdatesLoaded) return [];
+  return filteredContentUpdateEvents().filter(event => String(event.anime_id) === id);
+}
+
+function contentUpdateSummaryFromEvents(events, days = state.contentUpdates?.period?.days) {
+  if (!events.length) return null;
+  const counts = {};
+  for (const event of events) {
+    counts[event.event_type] = (counts[event.event_type] || 0) + 1;
+  }
+
+  let badge = "";
+  let label = "";
+  if (counts.new_title) {
+    badge = counts.new_title === 1 ? "новый" : `+${counts.new_title} тайтла`;
+    label = counts.new_title === 1 ? "Новый тайтл" : `Добавлено ${counts.new_title} тайтла`;
+  } else if (counts.new_episode) {
+    const count = counts.new_episode;
+    const word = russianPlural(count, "серия", "серии", "серий");
+    badge = `+${count} ${word}`;
+    label = `Добавлено ${count} ${word}`;
+  } else if (counts.new_translation) {
+    const count = counts.new_translation;
+    const word = russianPlural(count, "озвучка", "озвучки", "озвучек");
+    badge = `+${count} ${word}`;
+    label = `Добавлено ${count} ${word}`;
+  } else {
+    const count = counts.new_provider || events.length;
+    const word = russianPlural(count, "плеер", "плеера", "плееров");
+    badge = `+${count} ${word}`;
+    label = `Добавлено ${count} ${word}`;
+  }
+
+  return {
+    badge,
+    label,
+    count: events.length,
+    event_counts: counts,
+    latest_at: events[0]?.occurred_at,
+    days,
+  };
+}
+
 function recentUpdateSummary(item) {
+  if (isUpdatesView() && state.contentUpdatesLoaded) {
+    return contentUpdateSummaryFromEvents(itemContentUpdateEvents(item));
+  }
   return item?.recent_update_summary || null;
 }
 
@@ -752,6 +853,10 @@ function updateEventMeta(event) {
 
 function isRecommendationView() {
   return state.viewMode === "recommendations";
+}
+
+function isUpdatesView() {
+  return state.viewMode === "updates";
 }
 
 function recommendationFor(id) {
@@ -937,6 +1042,14 @@ function compareRecommendations(left, right) {
   return String(left.title || "").localeCompare(String(right.title || ""), "ru", { sensitivity: "base" });
 }
 
+function compareContentUpdates(left, right) {
+  const leftSummary = recentUpdateSummary(left);
+  const rightSummary = recentUpdateSummary(right);
+  const dateDiff = String(rightSummary?.latest_at || "").localeCompare(String(leftSummary?.latest_at || ""));
+  if (dateDiff !== 0) return dateDiff;
+  return String(left.title || "").localeCompare(String(right.title || ""), "ru", { sensitivity: "base" });
+}
+
 function filterOptionLabel(definition, value) {
   if (!value || value === "any") return "";
   const option = definition.options(state.anime).find(item => String(item.value) === String(value));
@@ -1078,10 +1191,16 @@ function resetCatalogTools() {
 function renderList() {
   hideTitleTooltip();
   resetListImageObserver();
-  const total = isRecommendationView() ? state.recommendations.length : state.anime.length;
+  const total = isRecommendationView()
+    ? state.recommendations.length
+    : isUpdatesView()
+      ? (state.contentUpdates?.summary?.updated_title_count ?? state.filtered.length)
+      : state.anime.length;
   el.count.textContent = isRecommendationView()
     ? `${state.filtered.length} из ${total} советов`
-    : `${state.filtered.length} из ${total} тайтлов`;
+    : isUpdatesView()
+      ? `${state.filtered.length} из ${total} обновл.`
+      : `${state.filtered.length} из ${total} тайтлов`;
   renderRecommendationMeta();
   el.list.replaceChildren();
 
@@ -1092,6 +1211,12 @@ function renderList() {
       empty.textContent = "Загружаю советы...";
     } else if (isRecommendationView() && state.recommendationsError) {
       empty.textContent = "Не удалось загрузить советы";
+    } else if (isUpdatesView() && state.contentUpdatesLoading) {
+      empty.textContent = "Загружаю новое...";
+    } else if (isUpdatesView() && state.contentUpdatesError) {
+      empty.textContent = "Не удалось загрузить новое";
+    } else if (isUpdatesView()) {
+      empty.textContent = "За выбранный период обновлений нет";
     } else {
       empty.textContent = isRecommendationView() ? "Пока нет рекомендаций" : "Ничего не найдено";
     }
@@ -1162,7 +1287,11 @@ function renderList() {
     button.addEventListener("blur", hideTitleTooltip);
     button.addEventListener("click", () => {
       hideTitleTooltip();
-      selectAnime(titleRefForItem(item), { scrollDetail: true });
+      if (isUpdatesView()) {
+        openUpdatedTitle(item).catch(reportActionError("open updated title"));
+      } else {
+        selectAnime(titleRefForItem(item), { scrollDetail: true });
+      }
     });
     el.list.append(button);
   }
@@ -1182,8 +1311,12 @@ function renderList() {
 }
 
 function renderRecommendationMeta() {
-  el.recommendationMeta.hidden = !isRecommendationView();
+  el.recommendationMeta.hidden = !isRecommendationView() && !isUpdatesView();
   el.recommendationMeta.replaceChildren();
+  if (isUpdatesView()) {
+    renderContentUpdateMeta();
+    return;
+  }
   if (!isRecommendationView()) return;
 
   if (state.recommendationsLoading || state.recommendationsError) {
@@ -1215,9 +1348,261 @@ function renderRecommendationMeta() {
   }
 }
 
+function renderContentUpdateMeta() {
+  if (state.contentUpdatesLoading || state.contentUpdatesError) {
+    const item = document.createElement("span");
+    item.textContent = state.contentUpdatesLoading ? "Загружаю новое" : "Новое недоступно";
+    el.recommendationMeta.append(item);
+    el.recommendationMeta.setAttribute("aria-label", item.textContent);
+    return;
+  }
+
+  const summary = state.contentUpdates?.summary || {};
+  const counts = summary.event_counts || {};
+  const period = state.contentUpdates?.period?.label || "";
+  const parts = [
+    `${summary.event_count || 0} событий`,
+    `${summary.updated_title_count || 0} тайтлов`,
+    `${counts.new_title || 0} новых`,
+    `${counts.new_episode || 0} серий`,
+    `${counts.new_translation || 0} озвучек`,
+  ];
+  if (period) parts.push(period);
+  el.recommendationMeta.setAttribute("aria-label", parts.join(" · "));
+
+  for (const part of parts) {
+    const item = document.createElement("span");
+    item.textContent = part;
+    el.recommendationMeta.append(item);
+  }
+}
+
+function contentUpdateCounts(events) {
+  const counts = {};
+  for (const option of CONTENT_UPDATE_TYPES) {
+    if (option.id !== "all") counts[option.id] = 0;
+  }
+  for (const event of events) {
+    if (event.event_type in counts) counts[event.event_type] += 1;
+  }
+  return counts;
+}
+
+function uniqueContentUpdateTitleCount(events) {
+  return new Set(events.map(event => event.anime_id).filter(value => value != null).map(String)).size;
+}
+
+function updateDateHeading(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Без даты";
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function updateClockLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function contentUpdateRunLabel(run) {
+  if (!run) return "";
+  const started = updateTimeLabel(run.started_at);
+  const mode = run.mode ? `${run.mode}` : "";
+  const status = run.status ? `${run.status}` : "";
+  return [status, mode, started].filter(Boolean).join(" · ");
+}
+
+function renderContentUpdateControls(parent) {
+  const typeRow = document.createElement("div");
+  typeRow.className = "updates-control-row";
+  for (const option of CONTENT_UPDATE_TYPES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "updates-segment";
+    button.classList.toggle("active", state.contentUpdateType === option.id);
+    button.setAttribute("aria-pressed", state.contentUpdateType === option.id ? "true" : "false");
+    button.textContent = option.label;
+    button.addEventListener("click", () => {
+      state.contentUpdateType = option.id;
+      renderContentUpdatesView();
+      applyFilter({ selectFirst: false });
+    });
+    typeRow.append(button);
+  }
+
+  const periodRow = document.createElement("div");
+  periodRow.className = "updates-control-row compact";
+  for (const option of CONTENT_UPDATE_PERIODS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "updates-segment";
+    button.classList.toggle("active", state.contentUpdateDays === option.id);
+    button.setAttribute("aria-pressed", state.contentUpdateDays === option.id ? "true" : "false");
+    button.textContent = option.label;
+    button.addEventListener("click", () => {
+      if (state.contentUpdateDays === option.id) return;
+      state.contentUpdateDays = option.id;
+      state.contentUpdatesLoaded = false;
+      state.contentUpdates = null;
+      loadContentUpdatesForView({ force: true });
+      applyFilter({ selectFirst: false });
+      renderContentUpdatesView();
+    });
+    periodRow.append(button);
+  }
+
+  parent.append(typeRow, periodRow);
+}
+
+function renderContentUpdateStats(parent, events) {
+  const counts = contentUpdateCounts(events);
+  const stats = [
+    ["Тайтлы", counts.new_title || 0],
+    ["Серии", counts.new_episode || 0],
+    ["Озвучки", counts.new_translation || 0],
+    ["Плееры", counts.new_provider || 0],
+  ];
+  const grid = document.createElement("div");
+  grid.className = "updates-stats";
+  for (const [label, value] of stats) {
+    const item = document.createElement("div");
+    item.className = "updates-stat";
+    const number = document.createElement("strong");
+    number.textContent = String(value);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    item.append(number, caption);
+    grid.append(item);
+  }
+  parent.append(grid);
+}
+
+function eventAnimeTitle(event) {
+  return event?.anime_title || event?.title || "Без названия";
+}
+
+function eventAnimeSubtitle(event) {
+  return event?.anime_subtitle || "";
+}
+
+function renderContentUpdateRows(parent, events) {
+  if (!events.length) {
+    const empty = document.createElement("div");
+    empty.className = "updates-empty";
+    empty.textContent = "За выбранный период обновлений нет";
+    parent.append(empty);
+    return;
+  }
+
+  let currentDay = "";
+  let group = null;
+  for (const event of events) {
+    const day = updateDateHeading(event.occurred_at);
+    if (day !== currentDay) {
+      currentDay = day;
+      group = document.createElement("section");
+      group.className = "updates-day";
+      const heading = document.createElement("h3");
+      heading.textContent = day;
+      group.append(heading);
+      parent.append(group);
+    }
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "content-update-row";
+    row.dataset.type = event.event_type || "";
+    row.addEventListener("click", () => {
+      openContentUpdateEvent(event).catch(reportActionError("open content update"));
+    });
+
+    const img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (event.cover_url) img.src = event.cover_url;
+
+    const body = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = eventAnimeTitle(event);
+    const update = document.createElement("span");
+    update.className = "content-update-title";
+    update.textContent = updateEventTitle(event);
+    const meta = document.createElement("span");
+    meta.className = "content-update-meta";
+    meta.textContent = [
+      eventAnimeSubtitle(event),
+      updateEventMeta(event),
+      updateClockLabel(event.occurred_at),
+    ].filter(Boolean).join(" · ");
+    body.append(title, update, meta);
+    row.append(img, body);
+    group.append(row);
+  }
+}
+
+function renderContentUpdatesView() {
+  el.titleDetailView.hidden = true;
+  el.updatesView.hidden = false;
+  if (el.player.getAttribute("src")) clearPlayer("");
+  el.updatesView.replaceChildren();
+
+  const header = document.createElement("div");
+  header.className = "updates-header";
+  const heading = document.createElement("h2");
+  heading.textContent = "Новое в базе";
+  const meta = document.createElement("span");
+  meta.textContent = [
+    state.contentUpdates?.period?.label,
+    contentUpdateRunLabel(state.contentUpdates?.latest_run),
+  ].filter(Boolean).join(" · ");
+  header.append(heading, meta);
+  el.updatesView.append(header);
+
+  renderContentUpdateControls(el.updatesView);
+
+  if (state.contentUpdatesLoading) {
+    const loading = document.createElement("div");
+    loading.className = "updates-empty";
+    loading.textContent = "Загружаю новое...";
+    el.updatesView.append(loading);
+    return;
+  }
+
+  if (state.contentUpdatesError) {
+    const error = document.createElement("div");
+    error.className = "updates-empty warn";
+    error.textContent = "Не удалось загрузить новое";
+    el.updatesView.append(error);
+    return;
+  }
+
+  const events = filteredContentUpdateEvents();
+  const summary = document.createElement("div");
+  summary.className = "updates-summary";
+  const count = document.createElement("strong");
+  count.textContent = `${events.length} событий`;
+  const titles = document.createElement("span");
+  titles.textContent = `${uniqueContentUpdateTitleCount(events)} тайтлов`;
+  const type = document.createElement("span");
+  type.textContent = contentUpdateTypeLabel(state.contentUpdateType);
+  summary.append(count, titles, type);
+  el.updatesView.append(summary);
+
+  renderContentUpdateStats(el.updatesView, events);
+  renderContentUpdateRows(el.updatesView, events);
+}
+
 function renderDetail() {
+  if (isUpdatesView()) {
+    renderContentUpdatesView();
+    return;
+  }
+
   const detail = state.detail;
   if (!detail) return;
+  el.updatesView.hidden = true;
+  el.titleDetailView.hidden = false;
 
   el.poster.src = detail.cover_url || "";
   el.poster.alt = detail.title || "";
@@ -1307,7 +1692,7 @@ function renderRecentUpdates(detail) {
     if (event.episode_id) {
       row.type = "button";
       row.addEventListener("click", () => {
-        selectEpisode(event.episode_id).catch(reportActionError("select recent update episode"));
+        openContentUpdateEvent(event).catch(reportActionError("select recent update episode"));
       });
     }
     const rowTitle = document.createElement("strong");
@@ -1926,7 +2311,11 @@ function applyFilter({ selectFirst = false } = {}) {
   const query = catalogSearch.searchQuery(el.search.value.trim());
   const baseItems = baseItemsForView();
   state.renderLimit = INITIAL_RENDER_LIMIT;
-  const fallbackCompare = isRecommendationView() ? compareRecommendations : compareAnime;
+  const fallbackCompare = isRecommendationView()
+    ? compareRecommendations
+    : isUpdatesView()
+      ? compareContentUpdates
+      : compareAnime;
 
   state.filtered = baseItems.map((item, index) => {
     const searchScore = query.tokens.length ? catalogSearch.scoreSearchItem(item, query) : 0;
@@ -1937,6 +2326,8 @@ function applyFilter({ selectFirst = false } = {}) {
     const viewMatch =
       state.viewMode === "recommendations"
         ? true
+        : state.viewMode === "updates"
+          ? hasRecentUpdates(item)
         : state.viewMode === "favorites"
         ? item.is_favorite
         : state.viewMode === "progress"
@@ -1957,7 +2348,7 @@ function applyFilter({ selectFirst = false } = {}) {
   renderActiveFilters();
   el.resetFilters.hidden = !hasActiveCatalogTools();
 
-  if (selectFirst && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
+  if (selectFirst && !isUpdatesView() && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
     selectAnime(titleRefForItem(state.filtered[0])).catch(reportActionError("select filtered anime"));
   }
 }
@@ -2056,6 +2447,103 @@ function loadRecommendationsForView({ force = false, selectFirst = true } = {}) 
     });
 }
 
+async function loadContentUpdates(requestId) {
+  const params = new URLSearchParams({
+    days: state.contentUpdateDays,
+    limit: String(CONTENT_UPDATE_LIMIT),
+  });
+  const payload = await api(`${CONTENT_UPDATE_ENDPOINT}?${params.toString()}`);
+  if (requestId !== state.contentUpdatesRequestId) return state.contentUpdates;
+  state.contentUpdates = payload;
+  state.contentUpdatesLoaded = true;
+  state.contentUpdatesError = null;
+  return state.contentUpdates;
+}
+
+function ensureContentUpdates({ force = false } = {}) {
+  if (!force && state.contentUpdatesLoaded) {
+    return Promise.resolve(state.contentUpdates);
+  }
+  if (!force && state.contentUpdatesLoading) return state.contentUpdatesLoading;
+
+  state.contentUpdatesError = null;
+  const requestId = state.contentUpdatesRequestId + 1;
+  state.contentUpdatesRequestId = requestId;
+  const request = loadContentUpdates(requestId)
+    .catch(error => {
+      if (requestId !== state.contentUpdatesRequestId) return state.contentUpdates;
+      state.contentUpdatesError = error;
+      throw error;
+    })
+    .finally(() => {
+      if (state.contentUpdatesLoading === request) {
+        state.contentUpdatesLoading = null;
+      }
+    });
+  state.contentUpdatesLoading = request;
+  return state.contentUpdatesLoading;
+}
+
+function loadContentUpdatesForView({ force = false } = {}) {
+  if (!isUpdatesView()) return;
+  if (!force && state.contentUpdatesLoaded) return;
+  const request = ensureContentUpdates({ force });
+  const requestId = state.contentUpdatesRequestId;
+  request
+    .then(() => {
+      if (requestId !== state.contentUpdatesRequestId) return;
+      if (isUpdatesView()) {
+        applyFilter({ selectFirst: false });
+        renderDetail();
+      }
+    })
+    .catch(error => {
+      if (requestId !== state.contentUpdatesRequestId) return;
+      reportActionError("load content updates")(error);
+      if (isUpdatesView()) {
+        applyFilter({ selectFirst: false });
+        renderDetail();
+      }
+    });
+}
+
+function renderViewTabs() {
+  for (const item of el.viewTabs) {
+    const active = item.dataset.view === state.viewMode;
+    item.classList.toggle("active", active);
+    item.setAttribute("aria-pressed", active ? "true" : "false");
+  }
+}
+
+function activateViewMode(mode, { selectFirst = true } = {}) {
+  state.viewMode = mode || "all";
+  renderViewTabs();
+  loadRecommendationsForView();
+  loadContentUpdatesForView();
+  applyFilter({ selectFirst: isUpdatesView() ? false : selectFirst });
+  renderDetail();
+}
+
+function detailContainsUpdateEvent(event) {
+  if (!state.detail || !event) return false;
+  const ids = [state.detail.id, ...(state.detail.source_member_ids || [])].map(value => String(value));
+  return ids.includes(String(event.anime_id)) || ids.includes(String(event.source_anime_id));
+}
+
+async function openUpdatedTitle(item) {
+  activateViewMode("all", { selectFirst: false });
+  await selectAnime(titleRefForItem(item), { scrollDetail: true });
+}
+
+async function openContentUpdateEvent(event) {
+  activateViewMode("all", { selectFirst: false });
+  if (!detailContainsUpdateEvent(event)) {
+    await selectAnime(event.anime_ref || event.anime_slug || event.anime_id, { scrollDetail: true });
+  }
+  const episodeId = episodeIdForUpdateEvent(event);
+  if (episodeId) await selectEpisode(episodeId);
+}
+
 el.search.addEventListener("input", () => {
   if (el.search.value.trim()) loadSearchFieldsInBackground();
   applyFilter({ selectFirst: true });
@@ -2084,14 +2572,7 @@ el.addFilter.addEventListener("change", () => {
 el.resetFilters.addEventListener("click", resetCatalogTools);
 for (const button of el.viewTabs) {
   button.addEventListener("click", () => {
-    state.viewMode = button.dataset.view || "all";
-    for (const item of el.viewTabs) {
-      const active = item === button;
-      item.classList.toggle("active", active);
-      item.setAttribute("aria-pressed", active ? "true" : "false");
-    }
-    loadRecommendationsForView();
-    applyFilter({ selectFirst: true });
+    activateViewMode(button.dataset.view || "all");
   });
 }
 el.favoriteToggle.addEventListener("click", () => {
