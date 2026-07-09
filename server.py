@@ -1457,8 +1457,9 @@ def can_auto_merge_by_subtitle(bucket):
 
 
 def can_auto_merge_by_title_subtitle(bucket):
-    years = {year_number(item) for item in bucket if year_number(item) is not None}
-    return source_namespaces_are_unique(bucket) and len(years) <= 1
+    years = [year_number(item) for item in bucket]
+    known_years = {year for year in years if year is not None}
+    return source_namespaces_are_unique(bucket) and any(year is None for year in years) and len(known_years) <= 1
 
 
 def source_namespaces_are_unique(bucket):
