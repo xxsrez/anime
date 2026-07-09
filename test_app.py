@@ -2008,10 +2008,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     (10003001, "yummyanime", "3001"),
                     (20003001, "yummyanime", "yummyani:3001"),
                 ):
+                    year = None if anime_id >= 20000000 else "2026"
                     con.execute(
                         """
-                        insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
-                        values (?, ?, 'Namespace Merge', ?, ?, ?, '2026', ?)
+                        insert into anime(id, slug, title, subtitle, url, source, source_id, year, scraped_at)
+                        values (?, ?, 'Namespace Merge', 'Namespace Merge EN', ?, ?, ?, ?, ?)
                         """,
                         (
                             anime_id,
@@ -2019,6 +2020,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                             f"https://example.test/{anime_id}",
                             source,
                             source_id,
+                            year,
                             scraped_at,
                         ),
                     )

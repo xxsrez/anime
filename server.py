@@ -1304,6 +1304,16 @@ def canonical_subtitle_match_key(item):
     return (year, subtitle_key)
 
 
+def canonical_title_subtitle_match_key(item):
+    if item.get("source") not in MERGEABLE_SOURCES:
+        return None
+    title_key = normalize_match_title(item.get("title"))
+    subtitle_key = normalize_match_title(item.get("subtitle"))
+    if not title_key or len(title_key) < 8 or not subtitle_key or len(subtitle_key) < 8:
+        return None
+    return (title_key, subtitle_key)
+
+
 def variant_from_item(item):
     return {
         "id": item["id"],
@@ -1436,17 +1446,22 @@ def merge_canonical_items(items):
 
 
 def can_auto_merge_by_title(bucket):
-    source_counts = {}
-    for item in bucket:
-        namespace = source_namespace(item)
-        source_counts[namespace] = source_counts.get(namespace, 0) + 1
     title_key = normalize_match_title(bucket[0].get("title"))
     subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
     short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
-    return len(source_counts) > 1 and all(count == 1 for count in source_counts.values()) and short_title_has_matching_subtitle
+    return source_namespaces_are_unique(bucket) and short_title_has_matching_subtitle
 
 
 def can_auto_merge_by_subtitle(bucket):
+    return source_namespaces_are_unique(bucket)
+
+
+def can_auto_merge_by_title_subtitle(bucket):
+    years = {year_number(item) for item in bucket if year_number(item) is not None}
+    return source_namespaces_are_unique(bucket) and len(years) <= 1
+
+
+def source_namespaces_are_unique(bucket):
     source_counts = {}
     for item in bucket:
         namespace = source_namespace(item)
@@ -1475,8 +1490,14 @@ def merge_by_match_key(items, key_getter, can_merge):
 
 
 def canonicalize_items(items):
-    groups, remaining = merge_by_match_key(items, canonical_title_match_key, can_auto_merge_by_title)
+    title_subtitle_groups, remaining = merge_by_match_key(
+        items,
+        canonical_title_subtitle_match_key,
+        can_auto_merge_by_title_subtitle,
+    )
+    groups, remaining = merge_by_match_key(remaining, canonical_title_match_key, can_auto_merge_by_title)
     subtitle_groups, remaining = merge_by_match_key(remaining, canonical_subtitle_match_key, can_auto_merge_by_subtitle)
+    groups.extend(title_subtitle_groups)
     groups.extend(subtitle_groups)
     groups.extend(merge_canonical_items([item]) for item in remaining)
 
