@@ -1314,6 +1314,15 @@ def canonical_title_subtitle_match_key(item):
     return (title_key, subtitle_key)
 
 
+def canonical_missing_year_title_match_key(item):
+    if item.get("source") not in MERGEABLE_SOURCES:
+        return None
+    title_key = normalize_match_title(item.get("title"))
+    if not title_key or len(title_key) < 8:
+        return None
+    return title_key
+
+
 def variant_from_item(item):
     return {
         "id": item["id"],
@@ -1462,6 +1471,12 @@ def can_auto_merge_by_title_subtitle(bucket):
     return source_namespaces_are_unique(bucket) and any(year is None for year in years) and len(known_years) <= 1
 
 
+def can_auto_merge_by_missing_year_title(bucket):
+    years = [year_number(item) for item in bucket]
+    known_years = {year for year in years if year is not None}
+    return source_namespaces_are_unique(bucket) and any(year is None for year in years) and len(known_years) <= 1
+
+
 def source_namespaces_are_unique(bucket):
     source_counts = {}
     for item in bucket:
@@ -1490,17 +1505,54 @@ def merge_by_match_key(items, key_getter, can_merge):
     return merged, remaining
 
 
+def union_merge_indices(items, key_getter, can_merge, parent):
+    buckets = {}
+    for index, item in enumerate(items):
+        key = key_getter(item)
+        if key is not None:
+            buckets.setdefault(key, []).append(index)
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left, right):
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    for indices in buckets.values():
+        bucket = [items[index] for index in indices]
+        if can_merge(bucket):
+            first = indices[0]
+            for index in indices[1:]:
+                union(first, index)
+
+
 def canonicalize_items(items):
-    title_subtitle_groups, remaining = merge_by_match_key(
-        items,
-        canonical_title_subtitle_match_key,
-        can_auto_merge_by_title_subtitle,
+    parent = list(range(len(items)))
+    merge_rules = (
+        (canonical_title_match_key, can_auto_merge_by_title),
+        (canonical_subtitle_match_key, can_auto_merge_by_subtitle),
+        (canonical_title_subtitle_match_key, can_auto_merge_by_title_subtitle),
+        (canonical_missing_year_title_match_key, can_auto_merge_by_missing_year_title),
     )
-    groups, remaining = merge_by_match_key(remaining, canonical_title_match_key, can_auto_merge_by_title)
-    subtitle_groups, remaining = merge_by_match_key(remaining, canonical_subtitle_match_key, can_auto_merge_by_subtitle)
-    groups.extend(title_subtitle_groups)
-    groups.extend(subtitle_groups)
-    groups.extend(merge_canonical_items([item]) for item in remaining)
+    for key_getter, can_merge in merge_rules:
+        union_merge_indices(items, key_getter, can_merge, parent)
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    buckets = {}
+    for index, item in enumerate(items):
+        buckets.setdefault(find(index), []).append(item)
+    groups = [merge_canonical_items(bucket) for bucket in buckets.values()]
 
     for group in groups:
         slug = canonical_slug_for_item(group)

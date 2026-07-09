@@ -2009,14 +2009,18 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     (20003001, "yummyanime", "yummyani:3001"),
                 ):
                     year = None if anime_id >= 20000000 else "2026"
+                    title = "Namespace Merge сезон" if anime_id == 10003001 else "Namespace Merge"
+                    subtitle = "Namespace Merge English" if anime_id >= 20000000 else "Namespace Merge Romaji"
                     con.execute(
                         """
                         insert into anime(id, slug, title, subtitle, url, source, source_id, year, scraped_at)
-                        values (?, ?, 'Namespace Merge', 'Namespace Merge EN', ?, ?, ?, ?, ?)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             anime_id,
                             f"namespace-merge-{anime_id}",
+                            title,
+                            subtitle,
                             f"https://example.test/{anime_id}",
                             source,
                             source_id,
