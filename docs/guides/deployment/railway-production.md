@@ -232,6 +232,12 @@ ANIME_SYNC_TOKEN=<same secret as web>
 ANIME_SYNC_MODE=daily
 ```
 
+The web service normally syncs both upstreams. If production egress is
+temporarily blocked by one provider, set an explicit degraded source list on
+the web service (for example `ANIME_CONTENT_SYNC_SOURCES=yummyanime`) and remove
+it once direct requests recover. `content_update_runs.sources_json` remains the
+source of truth for what each run actually checked.
+
 If Railway Function/Cron service deployment is unavailable, enable the web
 service scheduler instead:
 

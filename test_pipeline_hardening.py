@@ -44,6 +44,497 @@ class PipelineHardeningTest(unittest.TestCase):
 
         response.close.assert_called_once_with()
 
+    def test_unicode_translation_and_animego_ongoing_status_are_matched_in_python(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = scrape_animego.init_db(db_path)
+            con.row_factory = sqlite3.Row
+            try:
+                now = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, status, scraped_at)
+                    values (3429, 'heavy-knight-3429', 'Heavy Knight', 'https://animego.me/anime/heavy-knight-3429',
+                            'animego', '3429', 'Онгоинг', ?)
+                    """,
+                    (now,),
+                )
+                con.execute(
+                    "insert into episodes(id, anime_id, number, has_video, scraped_at) values (43033, 3429, '1', 1, ?)",
+                    (now,),
+                )
+                con.execute(
+                    """
+                    insert into video_sources(
+                        anime_id, episode_id, provider_id, translation_id,
+                        translation_title, embed_url, embed_url_redacted, scraped_at
+                    ) values (3429, 43033, 'provider', 1, 'Озвучка Dream Cast',
+                              'https://example.test/embed', 'https://example.test/embed', ?)
+                    """,
+                    (now,),
+                )
+                con.commit()
+
+                self.assertTrue(sync_videos.translation_known_for_episode(con, 43033, "озвучка dream cast"))
+                self.assertEqual([row["id"] for row in sync_videos.animego_ongoing_rows(con)], [3429])
+            finally:
+                con.close()
+
+    def test_animego_listing_failure_opens_source_circuit_after_first_title_failure(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = scrape_animego.init_db(db_path)
+            con.row_factory = sqlite3.Row
+            now = server.now_iso()
+            try:
+                for anime_id in (4001, 4002):
+                    con.execute(
+                        """
+                        insert into anime(id, slug, title, url, source, source_id, status, scraped_at)
+                        values (?, ?, ?, ?, 'animego', ?, 'Онгоинг', ?)
+                        """,
+                        (
+                            anime_id,
+                            f"ongoing-{anime_id}",
+                            f"Ongoing {anime_id}",
+                            f"https://animego.me/anime/ongoing-{anime_id}",
+                            str(anime_id),
+                            now,
+                        ),
+                    )
+                con.commit()
+                args = sync_videos.parse_args(
+                    [
+                        "--db", str(db_path), "--mode", "daily", "--source", "animego",
+                        "--animego-discover-pages", "1", "--animego-limit", "0",
+                        "--animego-missing-limit", "0", "--retry-attempts", "1", "--delay", "0",
+                    ]
+                )
+                error = urllib.error.HTTPError(args.animego_start_url, 500, "Internal Server Error", {}, None)
+                with patch.object(scrape_animego, "fetch_text", side_effect=error):
+                    stats = sync_videos.sync_animego(con, args)
+            finally:
+                con.close()
+
+        self.assertEqual(stats["listing_failed"], 1)
+        self.assertEqual(stats["titles_checked"], 1)
+        self.assertEqual(stats["source_unavailable"], 1)
+        self.assertEqual(stats["circuit_breaker_skipped"], 1)
+
+    def test_animego_source_circuit_ignores_nonretryable_http_errors(self):
+        retryable = urllib.error.HTTPError("https://animego.me", 500, "failure", {}, None)
+        removed = urllib.error.HTTPError("https://animego.me", 404, "missing", {}, None)
+        try:
+            self.assertTrue(sync_videos.animego_source_unavailable_error(retryable))
+            self.assertFalse(sync_videos.animego_source_unavailable_error(removed))
+            self.assertTrue(
+                sync_videos.animego_source_unavailable_error(
+                    urllib.error.URLError("connection reset")
+                )
+            )
+        finally:
+            retryable.close()
+            removed.close()
+
+    def test_content_sync_sources_can_explicitly_degrade_to_yummyanime(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            server.prepare_database(db_path)
+            with patch.dict(
+                os.environ,
+                {"ANIME_CONTENT_SYNC_SOURCES": "yummyanime"},
+                clear=False,
+            ), patch.object(
+                sync_videos,
+                "run_sync",
+                return_value={"yummyanime": {"failed": 0}},
+            ) as run_sync:
+                event = server.run_content_sync(db_path, mode="daily", trigger="test")
+
+            self.assertEqual(run_sync.call_args.args[0].sources, ["yummyanime"])
+            self.assertEqual(event["status"], "success")
+
+        with patch.dict(
+            os.environ,
+            {"ANIME_CONTENT_SYNC_SOURCES": "yummyanime,unknown"},
+            clear=False,
+        ):
+            with self.assertRaisesRegex(ValueError, "unsupported content sync source"):
+                server.configured_content_sync_sources()
+
+    def test_cross_episode_provider_urls_are_quarantined_without_hiding_other_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            con = sync_videos.connect(Path(tmpdir) / "anime.sqlite")
+            try:
+                duplicate = "https://example.test/stale-player"
+                writes = [
+                    (
+                        {"id": 101, "number": "1"},
+                        [
+                            {"embed_url": duplicate, "provider_id": "stale-1"},
+                            {"embed_url": "https://example.test/episode-1", "provider_id": "good-1"},
+                        ],
+                        None,
+                        {},
+                    ),
+                    (
+                        {"id": 102, "number": "2"},
+                        [
+                            {"embed_url": duplicate, "provider_id": "stale-2"},
+                            {"embed_url": "https://example.test/episode-2", "provider_id": "good-2"},
+                        ],
+                        None,
+                        {},
+                    ),
+                ]
+
+                filtered, removed = sync_videos.quarantine_cross_episode_provider_urls(con, 1, writes)
+            finally:
+                con.close()
+
+        self.assertEqual(removed, 2)
+        self.assertEqual(
+            [[provider["provider_id"] for provider in write[1]] for write in filtered],
+            [["good-1"], ["good-2"]],
+        )
+
+    def test_yummyani_provider_repair_preserves_old_ids_and_watch_references(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            server.prepare_database(db_path)
+            con = server.connect(db_path)
+            try:
+                old_at = "2026-07-09T02:00:00+00:00"
+                new_at = "2026-07-10T02:00:00+00:00"
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
+                    values (20000001, 'modern-title', 'Modern Title', 'https://example.test/title',
+                            'yummyanime', 'yummyani:1', '2026', ?)
+                    """,
+                    (old_at,),
+                )
+                con.execute(
+                    "insert into episodes(id, anime_id, number, has_video, scraped_at) values (20000001001, 20000001, '1', 1, ?)",
+                    (old_at,),
+                )
+                raw_url = "//kodikplayer.com/season/1/token/720p?episode=1"
+                con.execute(
+                    """
+                    insert into video_sources(
+                        id, anime_id, episode_id, provider_id, provider_title,
+                        translation_id, translation_title, embed_host, embed_url,
+                        embed_url_redacted, scraped_at
+                    ) values (207303, 20000001, 20000001001, 'yummyani-kodik-10', 'Kodik',
+                              9000001, 'Озвучка Dream Cast', 'kodikplayer.com', ?, ?, ?)
+                    """,
+                    (raw_url, raw_url, old_at),
+                )
+                strict_redacted = "//kodikplayer.com/season/1/<redacted>/720p?episode=%3Credacted%3E"
+                con.execute(
+                    """
+                    insert into video_sources(
+                        id, anime_id, episode_id, provider_id, provider_title,
+                        translation_id, translation_title, embed_host, embed_url,
+                        embed_url_redacted, scraped_at
+                    ) values (236228, 20000001, 20000001001, 'yummyani-kodik-10', 'Kodik',
+                              9000001, 'Озвучка Dream Cast', 'kodikplayer.com', ?, ?, ?)
+                    """,
+                    (raw_url, strict_redacted, new_at),
+                )
+                user = server.upsert_google_user(
+                    con,
+                    {
+                        "sub": "provider-repair",
+                        "email": "provider-repair@example.test",
+                        "email_verified": True,
+                        "name": "Repair",
+                        "picture": None,
+                    },
+                )
+                con.execute(
+                    """
+                    insert into user_watch_events(
+                        user_id, anime_id, episode_id, video_source_id, client_session_id,
+                        event_type, event_at, engaged_seconds, confidence, metadata_json, created_at
+                    ) values (?, 20000001, 20000001001, 236228, 'session', 'player_loaded', ?, 0, 0, '{}', ?)
+                    """,
+                    (user["id"], new_at, new_at),
+                )
+                con.execute(
+                    """
+                    insert into user_episode_state(
+                        user_id, anime_id, episode_id, video_source_id, first_seen_at, last_seen_at,
+                        engaged_seconds, heartbeat_count, last_event_type, last_confidence, updated_at
+                    ) values (?, 20000001, 20000001001, 236228, ?, ?, 0, 0, 'player_loaded', 0, ?)
+                    """,
+                    (user["id"], new_at, new_at, new_at),
+                )
+                run_id = con.execute(
+                    """
+                    insert into content_update_runs(mode, trigger, sources_json, started_at, status)
+                    values ('daily', 'test', '[\"yummyanime\"]', ?, 'running')
+                    """,
+                    (new_at,),
+                ).lastrowid
+                con.execute(
+                    """
+                    insert into content_update_events(
+                        run_id, event_type, anime_id, episode_id, translation_title,
+                        occurred_at, dedupe_key, metadata_json
+                    ) values (?, 'new_translation', 20000001, 20000001001,
+                              'Озвучка Dream Cast', ?, 'false-translation', '{}')
+                    """,
+                    (run_id, new_at),
+                )
+                con.commit()
+
+                migration = (
+                    Path(__file__).parent
+                    / "migrations/2026-07-10_yummyani-provider-identity/00_repair_yummyani_provider_identity.sql"
+                ).read_text(encoding="utf-8")
+                con.executescript(migration)
+
+                rows = con.execute(
+                    "select id, embed_url_redacted, scraped_at from video_sources where anime_id=20000001"
+                ).fetchall()
+                self.assertEqual([(row["id"], row["embed_url_redacted"], row["scraped_at"]) for row in rows], [(207303, strict_redacted, new_at)])
+                self.assertEqual(con.execute("select video_source_id from user_watch_events").fetchone()[0], 207303)
+                self.assertEqual(con.execute("select video_source_id from user_episode_state").fetchone()[0], 207303)
+                self.assertEqual(con.execute("select count(*) from content_update_events").fetchone()[0], 0)
+
+                scrape_animego.upsert_provider(
+                    con,
+                    20000001,
+                    20000001001,
+                    {
+                        "provider_id": "yummyani-kodik-10",
+                        "provider_title": "Kodik",
+                        "translation_id": 9000001,
+                        "translation_title": "Озвучка Dream Cast",
+                        "embed_host": "kodikplayer.com",
+                        "embed_url": raw_url,
+                        "embed_url_redacted": "//kodikplayer.com/season/1/<redacted>/720p",
+                    },
+                    True,
+                    "2026-07-11T02:00:00+00:00",
+                )
+                self.assertEqual(con.execute("select count(*) from video_sources where anime_id=20000001").fetchone()[0], 1)
+                self.assertEqual(con.execute("select id from video_sources where anime_id=20000001").fetchone()[0], 207303)
+            finally:
+                con.close()
+
+    def test_yummyani_provider_url_rotation_is_refreshed_without_new_event(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            con = sync_videos.connect(Path(tmpdir) / "anime.sqlite")
+            try:
+                now = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (20000001, 'modern', 'Modern', 'https://example.test/title',
+                            'yummyanime', 'yummyani:1', ?)
+                    """,
+                    (now,),
+                )
+                con.execute(
+                    "insert into episodes(id, anime_id, number, has_video, scraped_at) values (20000001001, 20000001, '1', 1, ?)",
+                    (now,),
+                )
+                old_provider = {
+                    "provider_id": "yummyani-kodik-10",
+                    "provider_title": "Kodik",
+                    "translation_id": 7,
+                    "translation_title": "Dream Cast",
+                    "embed_host": "kodikplayer.com",
+                    "embed_url": "https://kodikplayer.com/old",
+                    "embed_url_redacted": "https://kodikplayer.com/<old>",
+                }
+                scrape_animego.upsert_provider(
+                    con,
+                    20000001,
+                    20000001001,
+                    old_provider,
+                    True,
+                    now,
+                )
+                con.execute(
+                    """
+                    create unique index idx_video_sources_yummyani_identity
+                    on video_sources(episode_id, provider_id, coalesce(translation_id, 0))
+                    where provider_id like 'yummyani-%'
+                    """
+                )
+                con.commit()
+                rotated = {
+                    **old_provider,
+                    "embed_url": "https://kodikplayer.com/new",
+                    "embed_url_redacted": "https://kodikplayer.com/<new>",
+                }
+
+                self.assertTrue(
+                    sync_videos.modern_yummy_provider_identity_known(con, 20000001001, rotated)
+                )
+                self.assertFalse(sync_videos.provider_known(con, 20000001001, rotated))
+
+                args = SimpleNamespace(dry_run=False, content_update_run_id=None)
+                event_count = sync_videos.record_update_events(
+                    con,
+                    args,
+                    {"id": 20000001, "source": "yummyanime", "source_id": "yummyani:1"},
+                    [
+                        (
+                            {"id": 20000001001, "number": "1"},
+                            [rotated],
+                            {
+                                "episode_had_playable": True,
+                                "known_translations": {"dream cast": True},
+                                "known_provider_identities": {
+                                    sync_videos.modern_yummy_provider_identity(rotated)
+                                },
+                            },
+                        )
+                    ],
+                    new_title=False,
+                    reason="ongoing",
+                )
+                scrape_animego.upsert_provider(
+                    con,
+                    20000001,
+                    20000001001,
+                    rotated,
+                    True,
+                    server.now_iso(),
+                )
+
+                self.assertEqual(event_count, 0)
+                self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 1)
+                self.assertEqual(
+                    con.execute("select embed_url from video_sources").fetchone()[0],
+                    rotated["embed_url"],
+                )
+            finally:
+                con.close()
+
+    def test_cross_episode_migration_keeps_mutually_ambiguous_only_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            server.prepare_database(db_path)
+            con = server.connect(db_path)
+            try:
+                now = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (1, 'ambiguous', 'Ambiguous', 'https://example.test/title', 'animego', '1', ?)
+                    """,
+                    (now,),
+                )
+                for episode_id, number in ((101, "1"), (102, "2")):
+                    con.execute(
+                        "insert into episodes(id, anime_id, number, has_video, scraped_at) values (?, 1, ?, 1, ?)",
+                        (episode_id, number, now),
+                    )
+                    for provider_id, embed_url in ((f"a-{number}", "https://example.test/a"), (f"b-{number}", "https://example.test/b")):
+                        con.execute(
+                            """
+                            insert into video_sources(
+                                anime_id, episode_id, provider_id, embed_url, embed_url_redacted, scraped_at
+                            ) values (1, ?, ?, ?, ?, ?)
+                            """,
+                            (episode_id, provider_id, embed_url, embed_url, now),
+                        )
+                con.commit()
+
+                migration = (
+                    Path(__file__).parent
+                    / "migrations/2026-07-10_yummyani-provider-identity/01_quarantine_cross_episode_embeds.sql"
+                ).read_text(encoding="utf-8")
+                con.executescript(migration)
+
+                self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 4)
+                self.assertEqual(
+                    con.execute("select count(distinct episode_id) from video_sources").fetchone()[0],
+                    2,
+                )
+            finally:
+                con.close()
+
+    def test_cross_episode_migration_remaps_references_to_safe_provider(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            server.prepare_database(db_path)
+            con = server.connect(db_path)
+            try:
+                now = server.now_iso()
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (2, 'safe', 'Safe', 'https://example.test/safe', 'animego', '2', ?)
+                    """,
+                    (now,),
+                )
+                source_ids = {}
+                for episode_id, number in ((201, "1"), (202, "2")):
+                    con.execute(
+                        "insert into episodes(id, anime_id, number, has_video, scraped_at) values (?, 2, ?, 1, ?)",
+                        (episode_id, number, now),
+                    )
+                    shared_id = con.execute(
+                        """
+                        insert into video_sources(
+                            anime_id, episode_id, provider_id, embed_url, embed_url_redacted, scraped_at
+                        ) values (2, ?, ?, 'https://example.test/shared',
+                                  'https://example.test/shared', ?)
+                        """,
+                        (episode_id, f"shared-{number}", now),
+                    ).lastrowid
+                    safe_url = f"https://example.test/safe-{number}"
+                    safe_id = con.execute(
+                        """
+                        insert into video_sources(
+                            anime_id, episode_id, provider_id, embed_url, embed_url_redacted, scraped_at
+                        ) values (2, ?, ?, ?, ?, ?)
+                        """,
+                        (episode_id, f"safe-{number}", safe_url, safe_url, now),
+                    ).lastrowid
+                    source_ids[number] = (shared_id, safe_id)
+                user = server.upsert_google_user(
+                    con,
+                    {
+                        "sub": "cross-episode-remap",
+                        "email": "cross-episode@example.test",
+                        "email_verified": True,
+                        "name": "Cross episode",
+                        "picture": None,
+                    },
+                )
+                con.execute(
+                    """
+                    insert into user_episode_state(
+                        user_id, anime_id, episode_id, video_source_id, first_seen_at,
+                        last_seen_at, engaged_seconds, heartbeat_count, last_event_type,
+                        last_confidence, updated_at
+                    ) values (?, 2, 201, ?, ?, ?, 0, 0, 'player_loaded', 0, ?)
+                    """,
+                    (user["id"], source_ids["1"][0], now, now, now),
+                )
+                con.commit()
+
+                migration = (
+                    Path(__file__).parent
+                    / "migrations/2026-07-10_yummyani-provider-identity/01_quarantine_cross_episode_embeds.sql"
+                ).read_text(encoding="utf-8")
+                con.executescript(migration)
+
+                self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 2)
+                self.assertEqual(
+                    con.execute("select video_source_id from user_episode_state").fetchone()[0],
+                    source_ids["1"][1],
+                )
+            finally:
+                con.close()
+
     def test_repo_hygiene_checks_publishable_history_not_codex_internal_refs(self):
         with patch.object(check_repo_hygiene, "git", return_value=[]) as git_mock:
             self.assertEqual(check_repo_hygiene.check_history_paths(), [])

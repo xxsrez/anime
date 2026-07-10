@@ -856,6 +856,7 @@ function filteredContentUpdateEvents() {
 }
 
 function itemContentUpdateEvents(item) {
+  if (Array.isArray(item?.events)) return item.events.filter(contentUpdateMatchesType);
   const id = String(item?.id ?? "");
   if (!id || !state.contentUpdatesLoaded) return [];
   return filteredContentUpdateEvents().filter(event => String(event.anime_id) === id);
@@ -865,7 +866,8 @@ function contentUpdateSummaryFromEvents(events, days = state.contentUpdates?.per
   if (!events.length) return null;
   const counts = {};
   for (const event of events) {
-    counts[event.event_type] = (counts[event.event_type] || 0) + 1;
+    const eventType = event.display_event_type || event.event_type;
+    counts[eventType] = (counts[eventType] || 0) + 1;
   }
 
   let badge = "";
@@ -901,10 +903,11 @@ function contentUpdateSummaryFromEvents(events, days = state.contentUpdates?.per
 }
 
 function recentUpdateSummary(item) {
+  if (item?.recent_update_summary) return item.recent_update_summary;
   if (isUpdatesView() && state.contentUpdatesLoaded) {
     return contentUpdateSummaryFromEvents(itemContentUpdateEvents(item));
   }
-  return item?.recent_update_summary || null;
+  return null;
 }
 
 function hasRecentUpdates(item) {
@@ -926,14 +929,15 @@ function updateTimeLabel(value) {
 }
 
 function updateEventTitle(event) {
-  if (event.event_type === "new_title") return "Новый тайтл";
-  if (event.event_type === "new_episode") {
+  const eventType = event.display_event_type || event.event_type;
+  if (eventType === "new_title") return "Новый тайтл";
+  if (eventType === "new_episode") {
     return event.episode_number ? `Добавлена ${event.episode_number} серия` : "Добавлена серия";
   }
-  if (event.event_type === "new_translation") {
+  if (eventType === "new_translation") {
     return `Новая озвучка${event.translation_title ? `: ${event.translation_title}` : ""}`;
   }
-  if (event.event_type === "new_provider") {
+  if (eventType === "new_provider") {
     return `Новый плеер${event.provider_title ? `: ${event.provider_title}` : ""}`;
   }
   return event.description || "Обновление";
@@ -993,7 +997,27 @@ function supersedeRecommendationsRequest() {
   state.recommendationsError = null;
 }
 
+function contentUpdateItemsForView() {
+  const catalogById = new Map(state.anime.map(item => [String(item.id), item]));
+  return (state.contentUpdates?.items || []).map(update => {
+    const current = catalogById.get(String(update.id)) || {};
+    const item = {
+      ...current,
+      ...update,
+      events: [...(update.events || [])],
+      report: update.report ? { ...update.report } : null,
+    };
+    for (const field of USER_STATE_RESPONSE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(current, field)) item[field] = current[field];
+    }
+    item.is_priority = Boolean(item.is_favorite)
+      || ["watching", "paused"].includes(effectiveWatchStatus(item));
+    return item;
+  });
+}
+
 function baseItemsForView() {
+  if (isUpdatesView()) return state.contentUpdatesLoaded ? contentUpdateItemsForView() : [];
   if (!isRecommendationView()) return state.anime;
   return state.recommendationsLoaded || (state.recommendationsLoading && state.recommendations.length)
     ? state.recommendations
@@ -1259,6 +1283,9 @@ function compareRecommendations(left, right) {
 }
 
 function compareContentUpdates(left, right) {
+  const leftPriority = Boolean(left.is_favorite) || ["watching", "paused"].includes(effectiveWatchStatus(left));
+  const rightPriority = Boolean(right.is_favorite) || ["watching", "paused"].includes(effectiveWatchStatus(right));
+  if (leftPriority !== rightPriority) return leftPriority ? -1 : 1;
   const leftSummary = recentUpdateSummary(left);
   const rightSummary = recentUpdateSummary(right);
   const dateDiff = String(rightSummary?.latest_at || "").localeCompare(String(leftSummary?.latest_at || ""));
@@ -1687,7 +1714,6 @@ function renderContentUpdateControls(parent) {
       resetContentUpdatesForQuery();
       loadContentUpdatesForView({ force: true });
       applyFilter({ selectFirst: false });
-      renderContentUpdatesView();
     });
     typeRow.append(button);
   }
@@ -1707,7 +1733,6 @@ function renderContentUpdateControls(parent) {
       resetContentUpdatesForQuery();
       loadContentUpdatesForView({ force: true });
       applyFilter({ selectFirst: false });
-      renderContentUpdatesView();
     });
     periodRow.append(button);
   }
@@ -1747,7 +1772,7 @@ function renderContentUpdatePagination(parent) {
   if (state.contentUpdatesPageError) {
     const error = document.createElement("span");
     error.className = "updates-empty warn";
-    error.textContent = "Не удалось догрузить события";
+    error.textContent = "Не удалось догрузить тайтлы";
     row.append(error);
   }
 
@@ -1765,16 +1790,87 @@ function renderContentUpdatePagination(parent) {
   parent.append(row);
 }
 
-function eventAnimeTitle(event) {
-  return event?.anime_title || event?.title || "Без названия";
+function compactEpisodeNumbers(values, maxParts = 18) {
+  const numbers = [...new Set((values || []).map(value => String(value).trim()).filter(Boolean))];
+  const parts = [];
+  let start = null;
+  let end = null;
+  let rangeCount = 0;
+  const flush = () => {
+    if (start == null) return;
+    parts.push({ label: start === end ? String(start) : `${start}–${end}`, count: rangeCount });
+    start = null;
+    end = null;
+    rangeCount = 0;
+  };
+  for (const value of numbers) {
+    const parsed = /^\d+$/.test(value) ? Number.parseInt(value, 10) : null;
+    if (parsed == null) {
+      flush();
+      parts.push({ label: value, count: 1 });
+    } else if (start == null) {
+      start = parsed;
+      end = parsed;
+      rangeCount = 1;
+    } else if (parsed === end + 1) {
+      end = parsed;
+      rangeCount += 1;
+    } else {
+      flush();
+      start = parsed;
+      end = parsed;
+      rangeCount = 1;
+    }
+  }
+  flush();
+
+  const visible = parts.slice(0, maxParts);
+  const shownCount = visible.reduce((total, part) => total + part.count, 0);
+  const labels = visible.map(part => part.label);
+  if (shownCount < numbers.length) labels.push(`ещё ${numbers.length - shownCount}`);
+  return labels.join(", ");
 }
 
-function eventAnimeSubtitle(event) {
-  return event?.anime_subtitle || "";
+function contentUpdateEntryText(entry) {
+  const episodes = entry?.episode_numbers || [];
+  const label = [entry?.title || "Без названия", entry?.translation_title].filter(Boolean).join(" — ");
+  if (!episodes.length) return label;
+  const count = entry?.episode_count || episodes.length;
+  const word = russianPlural(count, "серия", "серии", "серий");
+  return `${label} (${word} ${compactEpisodeNumbers(episodes)})`;
 }
 
-function renderContentUpdateRows(parent, events) {
-  if (!events.length) {
+function contentUpdateReportLines(item) {
+  const report = item?.report || {};
+  const lines = [];
+  const newTitle = report.new_title || {};
+  if (newTitle.count) {
+    const details = [];
+    if (newTitle.episode_count) details.push(`${newTitle.episode_count} сер.`);
+    if (newTitle.provider_count) {
+      details.push(`${newTitle.provider_count} ${russianPlural(newTitle.provider_count, "плеер", "плеера", "плееров")}`);
+    }
+    if (newTitle.translations?.length) details.push(newTitle.translations.join(", "));
+    lines.push(`Новый тайтл${details.length ? `: ${details.join(" · ")}` : ""}`);
+  }
+  if (report.episode_numbers?.length) {
+    const providers = report.new_episode_provider_count
+      ? ` · ${report.new_episode_provider_count} ${russianPlural(report.new_episode_provider_count, "плеер", "плеера", "плееров")}`
+      : "";
+    lines.push(`Новые серии: ${compactEpisodeNumbers(report.episode_numbers)}${providers}`);
+  }
+  if (report.translations?.length) {
+    lines.push(`Новые озвучки: ${report.translations.map(contentUpdateEntryText).join("; ")}`);
+  }
+  if (report.providers?.length) {
+    lines.push(`Новые плееры: ${report.providers.map(contentUpdateEntryText).join("; ")}`);
+  }
+  if (!lines.length && item?.events?.length) lines.push(updateEventTitle(item.events[0]));
+  return lines;
+}
+
+function renderContentUpdateRows(parent, items) {
+  if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "updates-empty";
     empty.textContent = "За выбранный период обновлений нет";
@@ -1784,46 +1880,74 @@ function renderContentUpdateRows(parent, events) {
 
   let currentDay = "";
   let group = null;
-  for (const event of events) {
-    const day = updateDateHeading(event.occurred_at);
-    if (day !== currentDay) {
-      currentDay = day;
-      group = document.createElement("section");
-      group.className = "updates-day";
-      const heading = document.createElement("h3");
-      heading.textContent = day;
-      group.append(heading);
-      parent.append(group);
+  let priorityGroup = null;
+  let regularGroup = null;
+  const orderedItems = [
+    ...items.filter(item => item.is_priority),
+    ...items.filter(item => !item.is_priority),
+  ];
+  for (const item of orderedItems) {
+    if (item.is_priority) {
+      if (!priorityGroup) {
+        priorityGroup = document.createElement("section");
+        priorityGroup.className = "updates-day updates-priority";
+        const heading = document.createElement("h3");
+        heading.textContent = "Избранное и смотрю";
+        priorityGroup.append(heading);
+        parent.append(priorityGroup);
+      }
+      group = priorityGroup;
+    } else {
+      const day = updateDateHeading(item.latest_update_at);
+      if (day !== currentDay) {
+        currentDay = day;
+        regularGroup = document.createElement("section");
+        regularGroup.className = "updates-day";
+        const heading = document.createElement("h3");
+        heading.textContent = day;
+        regularGroup.append(heading);
+        parent.append(regularGroup);
+      }
+      group = regularGroup;
     }
 
     const row = document.createElement("button");
     row.type = "button";
     row.className = "content-update-row";
-    row.dataset.type = event.event_type || "";
+    row.dataset.priority = item.is_priority ? "true" : "false";
     row.addEventListener("click", () => {
-      openContentUpdateEvent(event).catch(reportActionError("open content update"));
+      const latestEvent = item.events?.[0];
+      const request = latestEvent ? openContentUpdateEvent(latestEvent) : openUpdatedTitle(item);
+      request.catch(reportActionError("open content update"));
     });
 
     const img = document.createElement("img");
     img.alt = "";
     img.loading = "lazy";
     img.decoding = "async";
-    if (event.cover_url) img.src = event.cover_url;
+    if (item.cover_url) img.src = item.cover_url;
 
     const body = document.createElement("div");
     const title = document.createElement("strong");
-    title.textContent = eventAnimeTitle(event);
-    const update = document.createElement("span");
-    update.className = "content-update-title";
-    update.textContent = updateEventTitle(event);
+    title.textContent = item.title || "Без названия";
+    const details = document.createElement("div");
+    details.className = "content-update-details";
+    for (const text of contentUpdateReportLines(item)) {
+      const update = document.createElement("span");
+      update.className = "content-update-title";
+      update.textContent = text;
+      details.append(update);
+    }
     const meta = document.createElement("span");
     meta.className = "content-update-meta";
     meta.textContent = [
-      eventAnimeSubtitle(event),
-      updateEventMeta(event),
-      updateClockLabel(event.occurred_at),
+      item.subtitle,
+      item.is_favorite ? "в избранном" : "",
+      ["watching", "paused"].includes(effectiveWatchStatus(item)) ? "смотрю" : "",
+      `${item.report?.event_count || item.events?.length || 0} событий`,
+      updateClockLabel(item.latest_update_at),
     ].filter(Boolean).join(" · ");
-    body.append(title, update, meta);
+    body.append(title, details, meta);
     row.append(img, body);
     group.append(row);
   }
@@ -1865,7 +1989,7 @@ function renderContentUpdatesView() {
     return;
   }
 
-  const events = filteredContentUpdateEvents();
+  const items = state.filtered;
   const totals = state.contentUpdates?.summary || {};
   const summary = document.createElement("div");
   summary.className = "updates-summary";
@@ -1876,15 +2000,15 @@ function renderContentUpdatesView() {
   const type = document.createElement("span");
   type.textContent = contentUpdateTypeLabel(state.contentUpdateType);
   summary.append(count, titles, type);
-  if (events.length < (totals.event_count || 0)) {
+  if (items.length < (totals.updated_title_count || 0)) {
     const loaded = document.createElement("span");
-    loaded.textContent = `Загружено ${events.length}`;
+    loaded.textContent = `Загружено ${items.length}`;
     summary.append(loaded);
   }
   el.updatesView.append(summary);
 
   renderContentUpdateStats(el.updatesView, totals);
-  renderContentUpdateRows(el.updatesView, events);
+  renderContentUpdateRows(el.updatesView, items);
   renderContentUpdatePagination(el.updatesView);
 }
 
@@ -2706,6 +2830,7 @@ function userStateTargets(animeId) {
   return [
     state.anime.find(entry => String(entry.id) === key),
     state.recommendations.find(entry => String(entry.id) === key),
+    ...(state.contentUpdates?.items || []).filter(entry => String(entry.id) === key),
     state.detail && String(state.detail.id) === key ? state.detail : null,
   ].filter(Boolean);
 }
@@ -2878,6 +3003,10 @@ function applyFilter({ selectFirst = false } = {}) {
     ));
     return queryMatch && viewMatch && filterMatch;
   }).sort((left, right) => {
+    if (isUpdatesView()) {
+      const result = compareContentUpdates(left.item, right.item);
+      return result || left.index - right.index;
+    }
     if (query.tokens.length && left.searchScore !== right.searchScore) {
       return right.searchScore - left.searchScore;
     }
@@ -2887,6 +3016,7 @@ function applyFilter({ selectFirst = false } = {}) {
   renderList();
   renderActiveFilters();
   el.resetFilters.hidden = !hasActiveCatalogTools();
+  if (isUpdatesView()) renderContentUpdatesView();
 
   if (selectFirst && !isUpdatesView() && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
     selectAnime(titleRefForItem(state.filtered[0])).catch(reportActionError("select filtered anime"));

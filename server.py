@@ -49,6 +49,7 @@ MAX_WATCH_METADATA_BYTES = 4096
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNC_MODES = {"hourly", "daily", "full"}
+CONTENT_SYNC_SOURCES = ("yummyanime", "animego")
 TRUTHY_VALUES = {"1", "true", "yes", "on"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
@@ -1892,6 +1893,29 @@ def source_namespace(item):
     return source
 
 
+def canonical_alias_names(item):
+    primary_names = {
+        normalize_match_title(item.get("title")),
+        normalize_match_title(item.get("subtitle")),
+    }
+    return {
+        name
+        for value in item.get("_canonical_aliases") or []
+        if (name := normalize_match_title(value))
+        and len(name) >= 8
+        and name not in primary_names
+    }
+
+
+def canonical_names(item):
+    names = canonical_alias_names(item)
+    for value in (item.get("title"), item.get("subtitle")):
+        name = normalize_match_title(value)
+        if name and len(name) >= 8:
+            names.add(name)
+    return names
+
+
 def canonical_title_match_key(item):
     if item.get("source") not in MERGEABLE_SOURCES:
         return None
@@ -1940,6 +1964,7 @@ def variant_from_item(item):
         "subtitle": item.get("subtitle"),
         "url": item.get("url"),
         "year": item.get("year"),
+        "scraped_at": item.get("scraped_at"),
         "source_count": item.get("source_count") or 0,
         "available_episode_count": item.get("available_episode_count") or 0,
     }
@@ -2050,6 +2075,7 @@ def merge_canonical_items(items):
         if merged.get(field) in (None, ""):
             merged[field] = next((item.get(field) for item in sorted_items if item.get(field) not in (None, "")), merged.get(field))
 
+    merged.pop("_canonical_aliases", None)
     return aggregate_item_state(merged, sorted_items)
 
 
@@ -2092,6 +2118,7 @@ def canonical_component_metadata(items):
         "years": {year_number(item) for item in items if year_number(item) is not None},
         "titles": {normalize_match_title(item.get("title")) for item in items},
         "subtitles": {normalize_match_title(item.get("subtitle")) for item in items},
+        "shared_names": set.intersection(*(canonical_names(item) for item in items)),
     }
 
 
@@ -2106,7 +2133,7 @@ def canonical_component_metadata_is_coherent(metadata):
     subtitles = metadata["subtitles"]
     shares_title = len(titles) == 1 and "" not in titles
     shares_subtitle = len(subtitles) == 1 and "" not in subtitles
-    return shares_title or shares_subtitle
+    return shares_title or shares_subtitle or bool(metadata.get("shared_names"))
 
 
 def canonical_component_is_coherent(bucket):
@@ -2133,6 +2160,34 @@ def merge_by_match_key(items, key_getter, can_merge):
     return merged, remaining
 
 
+def canonical_component_root(parent, index):
+    while parent[index] != index:
+        parent[index] = parent[parent[index]]
+        index = parent[index]
+    return index
+
+
+def union_canonical_components(parent, components, left, right):
+    left_root = canonical_component_root(parent, left)
+    right_root = canonical_component_root(parent, right)
+    if left_root == right_root:
+        return
+    left_component = components[left_root]
+    right_component = components[right_root]
+    candidate = {
+        "size": left_component["size"] + right_component["size"],
+        "namespaces": left_component["namespaces"] | right_component["namespaces"],
+        "years": left_component["years"] | right_component["years"],
+        "titles": left_component["titles"] | right_component["titles"],
+        "subtitles": left_component["subtitles"] | right_component["subtitles"],
+        "shared_names": left_component["shared_names"] & right_component["shared_names"],
+    }
+    if canonical_component_metadata_is_coherent(candidate):
+        parent[right_root] = left_root
+        components[left_root] = candidate
+        components[right_root] = None
+
+
 def union_merge_indices(items, key_getter, can_merge, parent, components):
     buckets = {}
     for index, item in enumerate(items):
@@ -2140,37 +2195,37 @@ def union_merge_indices(items, key_getter, can_merge, parent, components):
         if key is not None:
             buckets.setdefault(key, []).append(index)
 
-    def find(index):
-        while parent[index] != index:
-            parent[index] = parent[parent[index]]
-            index = parent[index]
-        return index
-
-    def union(left, right):
-        left_root = find(left)
-        right_root = find(right)
-        if left_root == right_root:
-            return
-        left_component = components[left_root]
-        right_component = components[right_root]
-        candidate = {
-            "size": left_component["size"] + right_component["size"],
-            "namespaces": left_component["namespaces"] | right_component["namespaces"],
-            "years": left_component["years"] | right_component["years"],
-            "titles": left_component["titles"] | right_component["titles"],
-            "subtitles": left_component["subtitles"] | right_component["subtitles"],
-        }
-        if canonical_component_metadata_is_coherent(candidate):
-            parent[right_root] = left_root
-            components[left_root] = candidate
-            components[right_root] = None
-
     for indices in buckets.values():
         bucket = [items[index] for index in indices]
         if can_merge(bucket):
             first = indices[0]
             for index in indices[1:]:
-                union(first, index)
+                union_canonical_components(parent, components, first, index)
+
+
+def union_merge_alias_indices(items, parent, components):
+    buckets = {}
+    alias_evidence = {}
+    for index, item in enumerate(items):
+        year = year_number(item)
+        if item.get("source") not in MERGEABLE_SOURCES or year is None:
+            continue
+        aliases = canonical_alias_names(item)
+        for name in canonical_names(item):
+            key = (year, name)
+            buckets.setdefault(key, []).append(index)
+            if name in aliases:
+                alias_evidence.setdefault(key, set()).add(index)
+
+    for key, indices in buckets.items():
+        if len(indices) < 2 or not alias_evidence.get(key):
+            continue
+        bucket = [items[index] for index in indices]
+        if not source_namespaces_are_unique(bucket):
+            continue
+        first = indices[0]
+        for index in indices[1:]:
+            union_canonical_components(parent, components, first, index)
 
 
 def canonicalize_items(items):
@@ -2184,12 +2239,10 @@ def canonicalize_items(items):
     )
     for key_getter, can_merge in merge_rules:
         union_merge_indices(items, key_getter, can_merge, parent, components)
+    union_merge_alias_indices(items, parent, components)
 
     def find(index):
-        while parent[index] != index:
-            parent[index] = parent[parent[index]]
-            index = parent[index]
-        return index
+        return canonical_component_root(parent, index)
 
     buckets = {}
     for index, item in enumerate(items):
@@ -2238,7 +2291,8 @@ def recent_update_summary(events, days=content_updates.RECENT_UPDATE_DAYS):
         return None
     counts = {}
     for event in events:
-        counts[event["event_type"]] = counts.get(event["event_type"], 0) + 1
+        event_type = event.get("display_event_type") or event["event_type"]
+        counts[event_type] = counts.get(event_type, 0) + 1
 
     if counts.get("new_title"):
         badge = "новый"
@@ -2411,6 +2465,56 @@ def load_content_update_rows(con, days, limit, event_type="all", offset=0):
     return [update_event_payload(row) for row in rows]
 
 
+def load_content_update_source_summaries(con, days, event_type="all"):
+    where, params = content_update_where(days, event_type)
+    return con.execute(
+        f"""
+        select
+            anime_id,
+            max(occurred_at) as latest_at,
+            max(id) as latest_event_id,
+            count(*) as event_count
+        from content_update_events
+        {where}
+        group by anime_id
+        """,
+        params,
+    ).fetchall()
+
+
+def load_content_update_rows_for_anime_ids(con, days, event_type, anime_ids):
+    anime_ids = sorted({int(value) for value in anime_ids if value is not None})
+    if not anime_ids:
+        return []
+    where, params = content_update_where(days, event_type)
+    prefix = f"{where} and" if where else "where"
+    rows = con.execute(
+        f"""
+        select
+            id,
+            run_id,
+            event_type,
+            anime_id,
+            episode_id,
+            video_source_id,
+            source,
+            source_id,
+            episode_number,
+            translation_title,
+            provider_title,
+            title,
+            description,
+            occurred_at,
+            metadata_json
+        from content_update_events
+        {prefix} anime_id in ({sql_placeholders(anime_ids)})
+        order by occurred_at desc, id desc
+        """,
+        (*params, *anime_ids),
+    ).fetchall()
+    return [update_event_payload(row) for row in rows]
+
+
 def content_update_total_summary(con, cache, days, event_type):
     where, params = content_update_where(days, event_type)
     count_rows = con.execute(
@@ -2460,6 +2564,103 @@ def latest_content_update_run(con):
     return payload
 
 
+def content_update_value_sort_key(value):
+    number = numeric(value)
+    return (0, number) if number is not None else (1, str(value or ""))
+
+
+def content_update_report(events):
+    counts = {event_type: 0 for event_type in sorted(content_updates.EVENT_TYPES)}
+    episode_numbers = set()
+    translations = {}
+    providers = {}
+    new_episode_provider_count = 0
+    new_title_episode_count = 0
+    new_title_provider_count = 0
+    new_title_translations = set()
+
+    for event in events:
+        event_type = event.get("display_event_type") or event.get("event_type")
+        counts[event_type] = counts.get(event_type, 0) + 1
+        episode_number = str(event.get("episode_number") or "").strip()
+        if event_type == "new_episode":
+            if episode_number:
+                episode_numbers.add(episode_number)
+            new_episode_provider_count += int(numeric((event.get("metadata") or {}).get("provider_count")) or 0)
+        elif event_type == "new_translation":
+            title = str(event.get("translation_title") or "Без названия").strip()
+            key = normalize_key(title)
+            entry = translations.setdefault(key, {"title": title, "episode_numbers": set(), "event_count": 0})
+            entry["event_count"] += 1
+            if episode_number:
+                entry["episode_numbers"].add(episode_number)
+        elif event_type == "new_provider":
+            title = str(event.get("provider_title") or "Без названия").strip()
+            translation_title = str(event.get("translation_title") or "").strip()
+            key = (normalize_key(title), normalize_key(translation_title))
+            entry = providers.setdefault(
+                key,
+                {
+                    "title": title,
+                    "translation_title": translation_title or None,
+                    "episode_numbers": set(),
+                    "event_count": 0,
+                },
+            )
+            entry["event_count"] += 1
+            if episode_number:
+                entry["episode_numbers"].add(episode_number)
+        elif event_type == "new_title":
+            metadata = event.get("metadata") or {}
+            new_title_episode_count = max(new_title_episode_count, int(numeric(metadata.get("episode_count")) or 0))
+            new_title_provider_count = max(new_title_provider_count, int(numeric(metadata.get("provider_count")) or 0))
+            new_title_translations.update(
+                str(value).strip()
+                for value in metadata.get("translations") or []
+                if str(value).strip()
+            )
+
+    def entries_payload(entries):
+        result = []
+        for entry in sorted(
+            entries.values(),
+            key=lambda value: (
+                normalize_key(value["title"]),
+                normalize_key(value.get("translation_title")),
+            ),
+        ):
+            numbers = sorted(entry["episode_numbers"], key=content_update_value_sort_key)
+            payload = {
+                "title": entry["title"],
+                "episode_numbers": numbers,
+                "episode_count": len(numbers),
+                "event_count": entry["event_count"],
+            }
+            if entry.get("translation_title"):
+                payload["translation_title"] = entry["translation_title"]
+            result.append(payload)
+        return result
+
+    return {
+        "event_count": len(events),
+        "event_counts": counts,
+        "new_title": {
+            "count": counts.get("new_title", 0),
+            "episode_count": new_title_episode_count,
+            "provider_count": new_title_provider_count,
+            "translations": sorted(new_title_translations, key=normalize_key),
+        },
+        "episode_numbers": sorted(episode_numbers, key=content_update_value_sort_key),
+        "new_episode_provider_count": new_episode_provider_count,
+        "translations": entries_payload(translations),
+        "providers": entries_payload(providers),
+    }
+
+
+def content_update_item_is_priority(item):
+    return bool(item.get("is_favorite")) or item.get("watch_status") in {"watching", "paused"}
+
+
 def compact_content_update_item(item, events, days):
     payload = {
         key: item.get(key)
@@ -2475,15 +2676,31 @@ def compact_content_update_item(item, events, days):
             "source",
             "source_count",
             "available_episode_count",
+            "is_favorite",
+            "watched",
+            "progress_episode_number",
+            "watch_status",
         )
         if keep_public_value(item.get(key))
     }
+    payload.update(
+        {
+            "is_favorite": bool(item.get("is_favorite")),
+            "watched": bool(item.get("watched")),
+            "progress_episode_number": item.get("progress_episode_number"),
+            "watch_status": item.get("watch_status"),
+            "is_priority": content_update_item_is_priority(item),
+        }
+    )
     sources = list(item.get("sources") or [])
     if sources:
         payload["sources"] = sources
     payload["latest_update_at"] = events[0]["occurred_at"] if events else None
     payload["recent_update_summary"] = recent_update_summary(events, days)
-    payload["events"] = [dict(event) for event in events[:12]]
+    payload["report"] = content_update_report(events)
+    # Reports contain the complete aggregation. Keep just the newest event for
+    # navigation/backward compatibility instead of duplicating large feeds.
+    payload["events"] = [dict(event) for event in events[:1]]
     return payload
 
 
@@ -2519,44 +2736,98 @@ def get_content_updates(
     path = resolve_db_path(db_path)
     con = connect(path)
     try:
-        cache = get_catalog_cache(path, user_id, connection=con)
-        raw_events = load_content_update_rows(con, days, limit, event_type, offset)
+        cache = get_catalog_cache(path, connection=con)
+        user_state_by_source_id = load_user_state_by_source_id(
+            path,
+            user_id,
+            connection=con,
+        )
+        source_summaries = load_content_update_source_summaries(con, days, event_type)
         summary = content_update_total_summary(con, cache, days, event_type)
         latest_run = latest_content_update_run(con)
+        grouped = {}
+        for row in source_summaries:
+            group = cache.get("id_map", {}).get(int(row["anime_id"]))
+            if not group:
+                continue
+            current = grouped.setdefault(
+                group["id"],
+                {
+                    "group": group,
+                    "latest_at": row["latest_at"],
+                    "latest_event_id": int(row["latest_event_id"] or 0),
+                    "event_count": 0,
+                },
+            )
+            current["event_count"] += int(row["event_count"] or 0)
+            if (row["latest_at"], int(row["latest_event_id"] or 0)) > (
+                current["latest_at"],
+                current["latest_event_id"],
+            ):
+                current["latest_at"] = row["latest_at"]
+                current["latest_event_id"] = int(row["latest_event_id"] or 0)
+
+        for entry in grouped.values():
+            entry["item"] = clone_catalog_item(
+                entry["group"],
+                user_state_by_source_id=user_state_by_source_id,
+            )
+            entry["is_priority"] = content_update_item_is_priority(entry["item"])
+        ordered_groups = sorted(
+            grouped.values(),
+            key=lambda entry: (
+                entry["is_priority"],
+                entry["latest_at"] or "",
+                entry["latest_event_id"],
+                entry["group"]["id"],
+            ),
+            reverse=True,
+        )
+        page_groups = ordered_groups[offset : offset + limit]
+        source_anime_ids = {
+            source_id
+            for entry in page_groups
+            for source_id in entry["group"].get("source_member_ids") or [entry["group"]["id"]]
+        }
+        raw_events = load_content_update_rows_for_anime_ids(
+            con,
+            days,
+            event_type,
+            source_anime_ids,
+        )
     finally:
         con.close()
 
-    has_more = len(raw_events) > limit
-    raw_events = raw_events[:limit]
     events = []
     events_by_item_id = {}
-    item_by_id = {item["id"]: item for item in cache.get("items") or []}
     for raw_event in raw_events:
-        source_anime_id = raw_event.get("anime_id")
-        group = cache.get("id_map", {}).get(int(source_anime_id)) if source_anime_id is not None else None
+        group = cache.get("id_map", {}).get(int(raw_event["anime_id"]))
         event = content_update_event_with_catalog(raw_event, group)
         events.append(event)
         if group:
             events_by_item_id.setdefault(group["id"], []).append(event)
 
     items = []
-    for item_id, item_events in events_by_item_id.items():
+    for entry in page_groups:
+        item_events = events_by_item_id.get(entry["group"]["id"], [])
         item_events.sort(key=lambda event: (event["occurred_at"], event["id"]), reverse=True)
-        item = item_by_id.get(item_id)
-        if item:
-            items.append(compact_content_update_item(item, item_events, days))
-    items.sort(key=lambda item: (item.get("latest_update_at") or "", item.get("id") or 0), reverse=True)
+        items.append(compact_content_update_item(entry["item"], item_events, days))
+
+    has_more = offset + len(items) < len(ordered_groups)
+    preview_events = [event for item in items for event in item["events"]]
+    preview_events.sort(key=lambda event: (event["occurred_at"], event["id"]), reverse=True)
 
     pagination = {
         "limit": limit,
-        "returned": len(events),
+        "returned": len(items),
+        "returned_events": sum(item["report"]["event_count"] for item in items),
         "has_more": has_more,
     }
     if include_offset_pagination:
         pagination.update(
             {
                 "offset": offset,
-                "next_offset": offset + len(events) if has_more else None,
+                "next_offset": offset + len(items) if has_more else None,
             }
         )
 
@@ -2565,7 +2836,7 @@ def get_content_updates(
         "event_type": event_type,
         "summary": summary,
         "items": items,
-        "events": events,
+        "events": preview_events,
         "latest_run": latest_run,
         "pagination": pagination,
     }
@@ -2928,6 +3199,35 @@ def load_metadata_search_fields(con):
     }
 
 
+def load_canonical_match_aliases(con):
+    aliases = {}
+    for row in con.execute(
+        """
+        select anime_id, alias
+        from anime_title_aliases
+        where alias is not null and trim(alias) <> ''
+        """
+    ).fetchall():
+        aliases.setdefault(row["anime_id"], []).append(row["alias"])
+    for row in con.execute(
+        """
+        select anime_id, value
+        from anime_fields
+        where label = 'Другие названия'
+          and value is not null
+          and trim(value) <> ''
+        """
+    ).fetchall():
+        # YummyAni serializes exact alternative titles with semicolons. Commas
+        # are valid title punctuation and must not create partial merge keys.
+        aliases.setdefault(row["anime_id"], []).extend(
+            value.strip()
+            for value in str(row["value"]).split(";")
+            if value.strip()
+        )
+    return aliases
+
+
 def load_catalog_search_fields(con):
     title_alias_search_fields = load_title_alias_search_fields(con)
     metadata_search_fields = load_metadata_search_fields(con)
@@ -2985,6 +3285,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             a.year,
             a.status,
             a.episodes_text,
+            a.scraped_at,
             coalesce(us.is_favorite, 0) as is_favorite,
             us.progress_episode_number,
             coalesce(us.watched, 0) as watched,
@@ -3012,11 +3313,13 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
     items = rows_to_dicts(rows)
     apply_external_ratings(items, load_external_ratings(con))
     search_fields_by_anime_id = load_catalog_search_fields(con) if include_search_fields else {}
+    canonical_aliases_by_anime_id = load_canonical_match_aliases(con)
     for item in items:
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
         item["available_episode_count"] = item["available_episode_count"] or 0
         item["search_fields"] = [dict(field) for field in search_fields_by_anime_id.get(item["id"], [])]
+        item["_canonical_aliases"] = list(canonical_aliases_by_anime_id.get(item["id"], []))
     return items
 
 
@@ -3424,6 +3727,7 @@ def build_catalog_cache_snapshot(path):
         slug_map[item["internal_id"]] = item
         for variant in item.get("source_variants") or []:
             id_map[int(variant["id"])] = item
+            slug_map[canonical_slug_for_item(variant)] = item
 
     return {
         "items": items,
@@ -5461,6 +5765,23 @@ def configured_sync_token():
     return os.environ.get("ANIME_SYNC_TOKEN", "").strip()
 
 
+def configured_content_sync_sources():
+    raw = os.environ.get("ANIME_CONTENT_SYNC_SOURCES", "").strip()
+    if not raw:
+        return list(CONTENT_SYNC_SOURCES)
+    requested = []
+    for value in raw.replace(",", " ").split():
+        source = value.strip().lower()
+        if source and source not in requested:
+            requested.append(source)
+    invalid = [source for source in requested if source not in CONTENT_SYNC_SOURCES]
+    if invalid:
+        raise ValueError(f"unsupported content sync source(s): {', '.join(invalid)}")
+    if not requested:
+        raise ValueError("ANIME_CONTENT_SYNC_SOURCES must enable at least one source")
+    return requested
+
+
 def run_content_sync(db_path, mode="daily", trigger="internal-api"):
     if mode not in SYNC_MODES:
         raise ValueError(f"unsupported sync mode: {mode}")
@@ -5468,20 +5789,10 @@ def run_content_sync(db_path, mode="daily", trigger="internal-api"):
     import sync_videos
 
     started = time.perf_counter()
-    args = sync_videos.parse_args(
-        [
-            "--db",
-            str(db_path),
-            "--mode",
-            mode,
-            "--source",
-            "yummyanime",
-            "--source",
-            "animego",
-            "--trigger",
-            trigger,
-        ]
-    )
+    argv = ["--db", str(db_path), "--mode", mode, "--trigger", trigger]
+    for source in configured_content_sync_sources():
+        argv.extend(("--source", source))
+    args = sync_videos.parse_args(argv)
     try:
         stats = sync_videos.run_sync(args)
     except sync_videos.SyncFailedError as exc:

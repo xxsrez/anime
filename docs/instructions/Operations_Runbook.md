@@ -364,9 +364,21 @@ POST /api/internal/daily-sync?mode=daily
 Authorization: Bearer $ANIME_SYNC_TOKEN
 ```
 
-The endpoint runs `sync_videos.py` with both sources, writes
+The endpoint runs `sync_videos.py` with both sources by default, writes
 `content_update_runs` and `content_update_events`, invalidates the catalog
 cache, and logs a JSON `content_sync` entry to `server.log`.
+
+If one upstream is blocked from the production egress, restrict the web
+service explicitly instead of accepting a permanently partial cron. The run
+history records the enabled source list, so this degraded mode stays visible:
+
+```text
+ANIME_CONTENT_SYNC_SOURCES=yummyanime
+```
+
+Remove the override after direct AnimeGO requests from the web container are
+healthy again. Supported values are `yummyanime` and `animego`, separated by
+commas or spaces; at least one source is required.
 
 Create a separate Railway Cron service or Function that exits after calling the
 endpoint. The production Function entrypoint is

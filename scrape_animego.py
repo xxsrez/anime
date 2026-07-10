@@ -619,12 +619,13 @@ def upsert_provider(con, anime_id, episode_id, provider, include_embed_urls, scr
             anime_id, episode_id, provider_id, provider_title, translation_id,
             translation_title, embed_host, embed_url, embed_url_redacted, scraped_at
         ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        on conflict(episode_id, provider_id, translation_id, embed_url_redacted) do update set
+        on conflict do update set
             anime_id=excluded.anime_id,
             provider_title=coalesce(excluded.provider_title, video_sources.provider_title),
             translation_title=coalesce(excluded.translation_title, video_sources.translation_title),
             embed_host=coalesce(excluded.embed_host, video_sources.embed_host),
             embed_url=coalesce(excluded.embed_url, video_sources.embed_url),
+            embed_url_redacted=coalesce(excluded.embed_url_redacted, video_sources.embed_url_redacted),
             scraped_at=excluded.scraped_at
         """,
         (

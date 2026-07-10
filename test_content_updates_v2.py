@@ -20,18 +20,21 @@ class ContentUpdatesV2Test(unittest.TestCase):
         content_updates.ensure_schema(con)
         now = server.now_iso()
         try:
-            for anime_id, source, slug in (
-                (101, "animego", "shared-animego"),
-                (102, "yummyanime", "shared-yummy"),
+            for anime_id, source, slug, title in (
+                (101, "animego", "shared-animego", "Shared Update"),
+                (102, "yummyanime", "shared-yummy", "Shared Update"),
+                (103, "animego", "second-update", "Second Update"),
+                (104, "animego", "priority-update", "Priority Update"),
             ):
                 con.execute(
                     """
                     insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
-                    values (?, ?, 'Shared Update', ?, ?, ?, '2026', ?)
+                    values (?, ?, ?, ?, ?, ?, '2026', ?)
                     """,
                     (
                         anime_id,
                         slug,
+                        title,
                         f"https://example.test/{slug}",
                         source,
                         str(anime_id),
@@ -70,6 +73,20 @@ class ContentUpdatesV2Test(unittest.TestCase):
                     occurred_at=(recent - dt.timedelta(days=2, minutes=index)).isoformat(timespec="seconds"),
                     dedupe_key=f"test:rare:{index}",
                 )
+            for index, (anime_id, title) in enumerate(((103, "Second Update"), (104, "Priority Update")), start=20):
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_episode",
+                    anime_id,
+                    source="animego",
+                    source_id=str(anime_id),
+                    episode_number="1",
+                    title=title,
+                    description=f"{title} episode",
+                    occurred_at=(recent - dt.timedelta(minutes=index)).isoformat(timespec="seconds"),
+                    dedupe_key=f"test:title:{anime_id}",
+                )
             con.commit()
         finally:
             con.close()
@@ -81,7 +98,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
         server.reset_database_initialization(self.db_path)
         self.tmpdir.cleanup()
 
-    def test_filter_totals_and_offset_pages_are_independent(self):
+    def test_filter_totals_and_title_pages_are_independent(self):
         con = server.connect(self.db_path)
         try:
             query_plan = con.execute(
@@ -105,30 +122,32 @@ class ContentUpdatesV2Test(unittest.TestCase):
         first = server.get_content_updates(
             self.db_path,
             days=7,
-            limit=3,
+            limit=2,
             event_type="all",
             offset=0,
         )
-        self.assertEqual(first["summary"]["event_count"], 10)
-        self.assertEqual(first["summary"]["event_counts"]["new_episode"], 8)
+        self.assertEqual(first["summary"]["event_count"], 12)
+        self.assertEqual(first["summary"]["event_counts"]["new_episode"], 10)
         self.assertEqual(first["summary"]["event_counts"]["new_translation"], 2)
-        self.assertEqual(first["summary"]["updated_title_count"], 1)
-        self.assertEqual(first["pagination"]["returned"], 3)
+        self.assertEqual(first["summary"]["updated_title_count"], 3)
+        self.assertEqual(first["pagination"]["returned"], 2)
         self.assertTrue(first["pagination"]["has_more"])
-        self.assertEqual(first["pagination"]["next_offset"], 3)
+        self.assertEqual(first["pagination"]["next_offset"], 2)
+        shared = next(item for item in first["items"] if item["title"] == "Shared Update")
+        self.assertEqual(shared["report"]["event_count"], 10)
+        self.assertEqual(shared["report"]["episode_numbers"], [str(value) for value in range(1, 9)])
 
         second = server.get_content_updates(
             self.db_path,
             days=7,
-            limit=3,
+            limit=2,
             event_type="all",
             offset=first["pagination"]["next_offset"],
         )
         self.assertEqual(second["summary"], first["summary"])
-        self.assertFalse(
-            {event["id"] for event in first["events"]}
-            & {event["id"] for event in second["events"]}
-        )
+        self.assertEqual(second["pagination"]["returned"], 1)
+        self.assertFalse(second["pagination"]["has_more"])
+        self.assertFalse({item["id"] for item in first["items"]} & {item["id"] for item in second["items"]})
 
         rare = server.get_content_updates(
             self.db_path,
@@ -140,7 +159,88 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertEqual(rare["summary"]["event_count"], 2)
         self.assertEqual(rare["summary"]["event_counts"]["new_translation"], 2)
         self.assertEqual([event["event_type"] for event in rare["events"]], ["new_translation"])
-        self.assertEqual(rare["pagination"]["next_offset"], 1)
+        self.assertFalse(rare["pagination"]["has_more"])
+        self.assertEqual(rare["items"][0]["report"]["event_count"], 2)
+        self.assertEqual(len(rare["items"][0]["report"]["translations"]), 2)
+
+    def test_favorite_and_watching_titles_are_ranked_first_without_cache_leak(self):
+        con = server.connect(self.db_path)
+        try:
+            user = server.upsert_google_user(
+                con,
+                {
+                    "sub": "content-priority",
+                    "email": "priority@example.test",
+                    "email_verified": True,
+                    "name": "Priority",
+                    "picture": None,
+                },
+            )
+            con.commit()
+        finally:
+            con.close()
+        server.update_user_state(104, {"is_favorite": True}, self.db_path, user["id"])
+        server.update_user_state(103, {"watch_status": "watching"}, self.db_path, user["id"])
+
+        personalized = server.get_content_updates(self.db_path, days=7, limit=3, user_id=user["id"], offset=0)
+        anonymous = server.get_content_updates(self.db_path, days=7, limit=3, offset=0)
+
+        self.assertEqual([item["id"] for item in personalized["items"][:2]], [103, 104])
+        self.assertTrue(all(item["is_priority"] for item in personalized["items"][:2]))
+        self.assertEqual(anonymous["items"][0]["id"], 101)
+        self.assertFalse(any(item["is_priority"] for item in anonymous["items"]))
+
+    def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
+        now = server.now_iso()
+        events = [
+            {"event_type": "new_title", "occurred_at": now, "metadata": {"episode_count": 12}},
+            {
+                "event_type": "new_episode",
+                "occurred_at": now,
+                "episode_number": "13",
+                "metadata": {"provider_count": 3},
+            },
+            *[
+                {
+                    "event_type": "new_translation",
+                    "occurred_at": now,
+                    "episode_number": str(number),
+                    "translation_title": "Dream Cast",
+                    "metadata": {},
+                }
+                for number in range(1, 21)
+            ],
+            {
+                "event_type": "new_provider",
+                "occurred_at": now,
+                "episode_number": "13",
+                "provider_title": "Kodik",
+                "translation_title": "Dream Cast",
+                "metadata": {},
+            },
+            {
+                "event_type": "new_provider",
+                "occurred_at": now,
+                "episode_number": "13",
+                "provider_title": "Kodik",
+                "translation_title": "AniDub",
+                "metadata": {},
+            },
+        ]
+
+        report = server.content_update_report(events)
+
+        self.assertEqual(report["new_title"]["episode_count"], 12)
+        self.assertEqual(report["episode_numbers"], ["13"])
+        self.assertEqual(report["new_episode_provider_count"], 3)
+        self.assertEqual(len(report["translations"]), 1)
+        self.assertEqual(report["translations"][0]["episode_count"], 20)
+        self.assertEqual(report["translations"][0]["event_count"], 20)
+        self.assertEqual(len(report["providers"]), 2)
+        self.assertEqual(
+            {entry["translation_title"] for entry in report["providers"]},
+            {"Dream Cast", "AniDub"},
+        )
 
     def test_invalid_event_type_is_rejected_by_function_and_route(self):
         with self.assertRaisesRegex(ValueError, "invalid content update event_type"):

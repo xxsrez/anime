@@ -793,10 +793,16 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(payload["summary"]["event_counts"]["new_provider"], 0)
             self.assertEqual({item["title"] for item in payload["items"]}, {"Fresh Title", "Fresh Voice"})
             self.assertNotIn("Старый плеер", {event.get("description") for event in payload["events"]})
-            self.assertEqual(payload["pagination"], {"limit": 20, "returned": 3, "has_more": False})
+            self.assertEqual(
+                payload["pagination"],
+                {"limit": 20, "returned": 2, "returned_events": 3, "has_more": False},
+            )
 
             limited = server.get_content_updates(db_path, days=7, limit=2)
-            self.assertEqual(limited["pagination"], {"limit": 2, "returned": 2, "has_more": True})
+            self.assertEqual(
+                limited["pagination"],
+                {"limit": 2, "returned": 2, "returned_events": 3, "has_more": False},
+            )
 
             user_id = self.create_google_user(db_path, "google-user-updates", "updates@example.com")
             token = self.create_session(db_path, user_id)
@@ -2801,6 +2807,22 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("persist && number != null", select_episode)
         self.assertIn("persist: false", open_update)
 
+    def test_frontend_content_update_filters_refresh_report_in_priority_time_order(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        start = js.index("function applyFilter")
+        end = js.index("async function loadSearchFields", start)
+        apply_filter = js[start:end]
+
+        self.assertIn("if (isUpdatesView()) {", apply_filter)
+        self.assertIn("compareContentUpdates(left.item, right.item)", apply_filter)
+        self.assertLess(
+            apply_filter.index("compareContentUpdates(left.item, right.item)"),
+            apply_filter.index("left.searchScore !== right.searchScore"),
+        )
+        self.assertIn("if (isUpdatesView()) renderContentUpdatesView();", apply_filter)
+        self.assertIn("const orderedItems = [", js)
+        self.assertIn("...items.filter(item => item.is_priority)", js)
+
     def test_frontend_opens_saved_progress_episode_without_deep_link(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -3095,6 +3117,110 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             next(group for group in bridged if group["source_variant_count"] == 2)["source_member_ids"],
             [2, 10000002],
         )
+
+        shared_romaji = "Tsuihou sareta Tensei Juukishi wa Game Chishiki de Musou suru"
+        heavy_knight = [
+            item(3429, "animego", "3429", "Изгнанный тяжёлый рыцарь: знания игры", shared_romaji),
+            item(10008486, "yummyanime", "8486", "Изгнанный тяжёлый рыцарь", shared_romaji),
+            {
+                **item(
+                    20014472,
+                    "yummyanime",
+                    "yummyani:14472",
+                    "Изгнанный тяжёлый рыцарь: знания игры",
+                    "The Exiled Heavy Knight Knows How to Game the System",
+                ),
+                "_canonical_aliases": [shared_romaji],
+            },
+        ]
+        three_way = server.canonicalize_items(heavy_knight)
+        self.assertEqual(len(three_way), 1)
+        self.assertEqual(set(three_way[0]["source_member_ids"]), {3429, 10008486, 20014472})
+
+        different_year = [dict(value) for value in heavy_knight[:2]]
+        different_year[1]["year"] = "2025"
+        self.assertEqual(len(server.canonicalize_items(different_year)), 2)
+
+        same_namespace = [dict(value) for value in heavy_knight[:2]]
+        same_namespace[1]["source"] = "animego"
+        self.assertEqual(len(server.canonicalize_items(same_namespace)), 2)
+
+    def test_canonical_merge_uses_exact_semicolon_delimited_other_titles_and_variant_slugs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            con = scrape_animego.init_db(db_path)
+            con.row_factory = sqlite3.Row
+            try:
+                now = server.now_iso()
+                rows = (
+                    (
+                        3623,
+                        "animego",
+                        "3623",
+                        "Адский режим: Геймер, который любит спидран, становится бесподобным 2",
+                        "Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru 2nd Season",
+                    ),
+                    (
+                        20027421,
+                        "yummyanime",
+                        "yummyani:27421",
+                        "Адский уровень: Хардкорный геймер в другом мире 2",
+                        "Hell Mode: The Hardcore Gamer Dominates in Another World Season 2",
+                    ),
+                )
+                for anime_id, source, source_id, title, subtitle in rows:
+                    con.execute(
+                        """
+                        insert into anime(id, slug, title, subtitle, url, source, source_id, year, scraped_at)
+                        values (?, ?, ?, ?, ?, ?, ?, '2026', ?)
+                        """,
+                        (anime_id, f"source-{anime_id}", title, subtitle, f"https://example.test/{anime_id}", source, source_id, now),
+                    )
+                    episode_id = anime_id * 1000 + 1
+                    con.execute(
+                        "insert into episodes(id, anime_id, number, has_video, scraped_at) values (?, ?, '1', 1, ?)",
+                        (episode_id, anime_id, now),
+                    )
+                    con.execute(
+                        """
+                        insert into video_sources(
+                            anime_id, episode_id, provider_id, translation_id,
+                            embed_url, embed_url_redacted, scraped_at
+                        ) values (?, ?, ?, 1, ?, ?, ?)
+                        """,
+                        (
+                            anime_id,
+                            episode_id,
+                            f"provider-{anime_id}",
+                            f"https://example.test/embed/{anime_id}",
+                            f"https://example.test/embed/{anime_id}",
+                            now,
+                        ),
+                    )
+                exact_alias = rows[0][3]
+                con.execute(
+                    "insert into anime_fields(anime_id, label, value) values (?, 'Другие названия', ?)",
+                    (20027421, f"{exact_alias}; Другое название"),
+                )
+                con.commit()
+
+                aliases = server.load_canonical_match_aliases(con)[20027421]
+                self.assertIn(exact_alias, aliases)
+                self.assertNotIn("который любит спидран", aliases)
+            finally:
+                con.close()
+            server.reset_database_initialization(db_path)
+            server.invalidate_catalog_cache(db_path)
+
+            items = server.get_anime_list(db_path)
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]["id"], 3623)
+            self.assertEqual(set(items[0]["source_member_ids"]), {3623, 20027421})
+
+            old_yummy_slug = server.canonical_slug_for_item(
+                {"id": 20027421, "title": rows[1][3], "subtitle": rows[1][4]}
+            )
+            self.assertEqual(server.get_anime_detail(old_yummy_slug, db_path)["id"], 3623)
 
     def test_canonical_union_builds_component_metadata_once_per_item(self):
         items = []

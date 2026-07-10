@@ -1085,6 +1085,10 @@ button.recent-update-row:focus-visible {
   background: var(--panel);
 }
 
+.content-update-row[data-priority="true"] {
+  border-color: rgba(255, 104, 93, 0.42);
+}
+
 .content-update-row img {
   width: 44px;
   height: 62px;
@@ -1110,6 +1114,17 @@ button.recent-update-row:focus-visible {
   color: #ffd6d2;
   font-size: 13px;
   font-weight: 700;
+}
+
+.content-update-details {
+  display: grid;
+  gap: 3px;
+}
+
+.content-update-details .content-update-title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .content-update-meta {

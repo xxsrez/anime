@@ -81,18 +81,16 @@ def anime_row_exists(con, anime_id):
 
 def translation_known_for_episode(con, episode_id, translation_title):
     normalized = content_updates.normalize_key(translation_title)
-    row = con.execute(
+    rows = con.execute(
         """
-        select 1
+        select translation_title
         from video_sources
         where episode_id = ?
           and embed_url is not null
-          and lower(trim(coalesce(translation_title, ''))) = ?
-        limit 1
         """,
-        (episode_id, normalized),
-    ).fetchone()
-    return row is not None
+        (episode_id,),
+    ).fetchall()
+    return any(content_updates.normalize_key(row[0]) == normalized for row in rows)
 
 
 def record_update_events(con, args, item, writes, *, new_title, reason):
@@ -162,6 +160,11 @@ def record_update_events(con, args, item, writes, *, new_title, reason):
 
         seen_translation_events = set()
         for provider in providers:
+            identity = modern_yummy_provider_identity(provider)
+            if identity is not None and identity in before.get("known_provider_identities", set()):
+                # A stable upstream provider whose URL/metadata rotated was
+                # refreshed, not newly added content.
+                continue
             translation_title = provider.get("translation_title")
             translation_key = content_updates.normalize_key(translation_title)
             if not before.get("known_translations", {}).get(translation_key):
@@ -268,7 +271,57 @@ def provider_has_embed(provider):
     return bool(provider.get("embed_url") and provider.get("embed_url_redacted"))
 
 
+def modern_yummy_provider_identity(provider):
+    provider_id = provider.get("provider_id")
+    if not str(provider_id or "").startswith("yummyani-"):
+        return None
+    return (str(provider_id), int(provider.get("translation_id") or 0))
+
+
+def modern_yummy_provider_identity_known(con, episode_id, provider):
+    identity = modern_yummy_provider_identity(provider)
+    if identity is None:
+        return False
+    row = con.execute(
+        """
+        select 1
+        from video_sources
+        where episode_id = ?
+          and provider_id = ?
+          and coalesce(translation_id, 0) = ?
+          and embed_url is not null
+        limit 1
+        """,
+        (episode_id, *identity),
+    ).fetchone()
+    return row is not None
+
+
 def provider_known(con, episode_id, provider):
+    identity = modern_yummy_provider_identity(provider)
+    if identity is not None:
+        rows = con.execute(
+            """
+            select provider_title, translation_title, embed_host, embed_url, embed_url_redacted
+            from video_sources
+            where episode_id = ?
+              and provider_id = ?
+              and coalesce(translation_id, 0) = ?
+              and embed_url is not null
+            """,
+            (episode_id, *identity),
+        ).fetchall()
+        refreshed_fields = (
+            "provider_title",
+            "translation_title",
+            "embed_host",
+            "embed_url",
+            "embed_url_redacted",
+        )
+        return any(
+            all((row[field] or "") == (provider.get(field) or "") for field in refreshed_fields)
+            for row in rows
+        )
     row = con.execute(
         """
         select 1
@@ -329,6 +382,40 @@ def filter_episodes_with_providers(episodes, providers):
         return episodes
     numbers = {str(provider.get("episode_number")) for provider in playable}
     return [episode for episode in episodes if str(episode.get("number") or "") in numbers]
+
+
+def quarantine_cross_episode_provider_urls(con, anime_id, writes, *, keep_empty=False):
+    episodes_by_url = defaultdict(set)
+    for row in con.execute(
+        """
+        select episode_id, embed_url
+        from video_sources
+        where anime_id = ?
+          and embed_url is not null
+          and trim(embed_url) <> ''
+        """,
+        (anime_id,),
+    ).fetchall():
+        episodes_by_url[row["embed_url"]].add(int(row["episode_id"]))
+    for write in writes:
+        episode_id = int(write[0]["id"])
+        for provider in write[1]:
+            embed_url = provider.get("embed_url")
+            if embed_url:
+                episodes_by_url[embed_url].add(episode_id)
+
+    ambiguous_urls = {url for url, episode_ids in episodes_by_url.items() if len(episode_ids) > 1}
+    if not ambiguous_urls:
+        return writes, 0
+
+    filtered_writes = []
+    removed = 0
+    for write in writes:
+        providers = [provider for provider in write[1] if provider.get("embed_url") not in ambiguous_urls]
+        removed += len(write[1]) - len(providers)
+        if providers or keep_empty:
+            filtered_writes.append((write[0], providers, *write[2:]))
+    return filtered_writes, removed
 
 
 def write_sync_run(con, mode, source, started_at, stats):
@@ -454,6 +541,12 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
     writes = []
     for episode in selected:
         episode_providers = providers_for_episode(providers, episode)
+        known_provider_identities = {
+            identity
+            for provider in episode_providers
+            if (identity := modern_yummy_provider_identity(provider)) is not None
+            and modern_yummy_provider_identity_known(con, episode["id"], provider)
+        }
         if not args.refresh_known:
             episode_providers = [
                 provider
@@ -476,10 +569,23 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
                     {
                         "episode_had_playable": episode_has_playable(con, episode["id"]),
                         "known_translations": known_translations,
+                        "known_provider_identities": known_provider_identities,
                     },
                 )
             )
 
+    if not writes:
+        stats["known_skipped"] += 1
+        return
+
+    writes, duplicate_providers = quarantine_cross_episode_provider_urls(
+        con,
+        item["id"],
+        writes,
+        keep_empty=args.include_empty_episodes,
+    )
+    if duplicate_providers:
+        stats["cross_episode_provider_urls_skipped"] += duplicate_providers
     if not writes:
         stats["known_skipped"] += 1
         return
@@ -797,11 +903,16 @@ def animego_ongoing_rows(con):
         select *
         from anime
         where source = 'animego'
-          and lower(coalesce(status, '')) like '%онго%'
         order by cast(coalesce(year, '0') as integer) desc, id desc
         """
     ).fetchall()
-    return [dict(row) for row in rows]
+    return [dict(row) for row in rows if "онго" in str(row["status"] or "").casefold()]
+
+
+def animego_source_unavailable_error(error):
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in RETRYABLE_HTTP_CODES
+    return isinstance(error, urllib.error.URLError)
 
 
 def sync_animego_item(con, item, args, stats, reason):
@@ -887,6 +998,18 @@ def sync_animego_item(con, item, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
+    writes, duplicate_providers = quarantine_cross_episode_provider_urls(
+        con,
+        item["id"],
+        writes,
+        keep_empty=args.include_empty_episodes,
+    )
+    if duplicate_providers:
+        stats["cross_episode_provider_urls_skipped"] += duplicate_providers
+    if not writes:
+        stats["known_skipped"] += 1
+        return
+
     animego.upsert_anime(
         con,
         item,
@@ -939,6 +1062,7 @@ def sync_animego(con, args):
     if should_collect_listing:
         for item in collect_animego_listing(args, stats):
             candidates[item["id"]] = (item, "listing")
+    listing_unavailable = bool(stats.get("listing_failed"))
 
     if args.mode == "manual":
         items = list(candidates.values())
@@ -991,6 +1115,15 @@ def sync_animego(con, args):
                 traceback.print_exc()
             if args.stop_on_error:
                 raise
+            if listing_unavailable and animego_source_unavailable_error(exc):
+                skipped = len(items) - index
+                stats["source_unavailable"] += 1
+                stats["circuit_breaker_skipped"] += skipped
+                print(
+                    "animego source unavailable after listing and title failures; "
+                    f"circuit breaker skipped {skipped} remaining candidates"
+                )
+                break
     return stats
 
 
