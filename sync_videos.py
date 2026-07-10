@@ -1265,15 +1265,18 @@ def validate_animego_bundle(bundle, now=None):
     if mode not in {"hourly", "daily", "full"}:
         raise ValueError(f"unsupported AnimeGO bundle mode: {mode}")
     snapshots = bundle.get("snapshots")
+    unavailable = bundle.get("unavailable")
     errors = bundle.get("errors")
-    if not isinstance(snapshots, list) or not isinstance(errors, list):
-        raise ValueError("AnimeGO bundle snapshots and errors must be arrays")
+    if not isinstance(snapshots, list) or not isinstance(unavailable, list) or not isinstance(errors, list):
+        raise ValueError("AnimeGO bundle snapshots, unavailable titles, and errors must be arrays")
     if any(not isinstance(error, str) or not error or len(error) > 1000 for error in errors):
         raise ValueError("AnimeGO bundle contains an invalid collector error")
     if len(snapshots) > MAX_ANIMEGO_BUNDLE_TITLES:
         raise ValueError("AnimeGO bundle contains too many titles")
     if len(errors) > MAX_ANIMEGO_BUNDLE_TITLES:
         raise ValueError("AnimeGO bundle contains too many errors")
+    if len(unavailable) > MAX_ANIMEGO_BUNDLE_TITLES:
+        raise ValueError("AnimeGO bundle contains too many unavailable titles")
 
     collector = bundle.get("collector")
     if not isinstance(collector, dict):
@@ -1285,6 +1288,7 @@ def validate_animego_bundle(bundle, now=None):
         "listing_pages",
         "listing_failed",
         "snapshots",
+        "unavailable",
         "errors",
         "episodes",
         "providers",
@@ -1294,7 +1298,11 @@ def validate_animego_bundle(bundle, now=None):
         raise ValueError("AnimeGO bundle collector summary is invalid")
     if collector["duration_ms"] > int(MAX_ANIMEGO_COLLECTION_DURATION.total_seconds() * 1000):
         raise ValueError("AnimeGO bundle collector duration is invalid")
-    if collector["snapshots"] != len(snapshots) or collector["errors"] != len(errors):
+    if (
+        collector["snapshots"] != len(snapshots)
+        or collector["unavailable"] != len(unavailable)
+        or collector["errors"] != len(errors)
+    ):
         raise ValueError("AnimeGO bundle collector counts do not match payload")
     if collector["selected_candidates"] > collector["candidates"]:
         raise ValueError("AnimeGO bundle selected candidate count is invalid")
@@ -1500,6 +1508,18 @@ def validate_animego_bundle(bundle, now=None):
                 provider["embed_url"] = embed_url
                 provider["embed_url_redacted"] = computed_redacted
 
+    for unavailable_title in unavailable:
+        if not isinstance(unavailable_title, dict):
+            raise ValueError("AnimeGO unavailable title must be an object")
+        anime_id = unavailable_title.get("anime_id")
+        if type(anime_id) is not int or not 0 < anime_id < 10_000_000:
+            raise ValueError("AnimeGO unavailable title has an invalid id")
+        if unavailable_title.get("reason") != "upstream_not_found":
+            raise ValueError(f"AnimeGO unavailable title {anime_id} has an invalid reason")
+        if anime_id in seen_anime_ids:
+            raise ValueError(f"AnimeGO title {anime_id} is both available and unavailable")
+        seen_anime_ids.add(anime_id)
+
     if collector["episodes"] != episode_count or collector["providers"] != provider_count:
         raise ValueError("AnimeGO bundle collector media counts do not match payload")
     if bundle["complete"] and not errors:
@@ -1510,7 +1530,7 @@ def validate_animego_bundle(bundle, now=None):
         if (
             collector["candidates"] < 1
             or collector["selected_candidates"] != collector["candidates"]
-            or len(snapshots) != collector["selected_candidates"]
+            or len(snapshots) + len(unavailable) != collector["selected_candidates"]
         ):
             raise ValueError("AnimeGO complete bundle does not cover every candidate")
         if episode_count < 1 or provider_count < 1:
@@ -1562,6 +1582,7 @@ def apply_animego_bundle(db_path, bundle, trigger="trusted-animego-worker"):
     stats = defaultdict(int)
     for key, value in bundle["collector"].items():
         stats[f"collector_{key}"] = value
+    stats["upstream_not_found_skipped"] = len(bundle["unavailable"])
     stats["collection_started_at"] = bundle["collection_started_at"]
     stats["collected_at"] = bundle["collected_at"]
     collector_errors = bundle.get("errors") or []

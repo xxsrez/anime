@@ -38,6 +38,7 @@ class PipelineHardeningTest(unittest.TestCase):
             "collected_at": collected_at,
             "complete": complete,
             "errors": [],
+            "unavailable": [],
             "collector": {
                 "candidates": 1,
                 "selected_candidates": 1,
@@ -45,6 +46,7 @@ class PipelineHardeningTest(unittest.TestCase):
                 "listing_pages": 1,
                 "listing_failed": 0,
                 "snapshots": 1,
+                "unavailable": 0,
                 "errors": 0,
                 "episodes": 1,
                 "providers": 1,
@@ -300,7 +302,14 @@ class PipelineHardeningTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not cover every candidate"):
             sync_videos.validate_animego_bundle(bundle)
 
-        for required_field in ("mode", "complete", "collection_started_at", "collected_at", "collector"):
+        for required_field in (
+            "mode",
+            "complete",
+            "collection_started_at",
+            "collected_at",
+            "unavailable",
+            "collector",
+        ):
             missing = self.animego_bundle()
             missing.pop(required_field)
             with self.subTest(required_field=required_field):
@@ -550,6 +559,70 @@ class PipelineHardeningTest(unittest.TestCase):
         self.assertEqual(bundle["collector"]["candidates"], 2)
         self.assertEqual(bundle["collector"]["selected_candidates"], 1)
         sync_videos.validate_animego_bundle(bundle)
+
+    def test_trusted_worker_treats_removed_known_title_as_checked_unavailable(self):
+        fixture = self.animego_bundle()
+        listed_item = fixture["snapshots"][0]["item"]
+        removed_item = {
+            **listed_item,
+            "id": 3533,
+            "slug": "removed-title-3533",
+            "title": "Removed known title",
+            "url": "https://animego.me/anime/removed-title-3533",
+            "source_id": "3533",
+        }
+        manifest = {
+            "items": [
+                {
+                    "item": removed_item,
+                    "known_episode_ids": [],
+                    "playable_episode_ids": [],
+                }
+            ]
+        }
+        args = SimpleNamespace(
+            mode="daily",
+            discover_pages=3,
+            retry_attempts=1,
+            retry_backoff=0,
+            delay=0,
+            refresh_recent=3,
+            limit=0,
+            source_failure_threshold=2,
+            max_runtime_seconds=1800,
+        )
+
+        def listing(_sync_args, stats):
+            stats["listing_pages"] += 1
+            stats["listing_titles"] += 1
+            return [listed_item]
+
+        not_found = urllib.error.HTTPError(removed_item["url"], 404, "Not Found", {}, None)
+
+        def fetch(item, _sync_args, episode_selector=None):
+            if item["id"] == 3533:
+                raise not_found
+            return fixture["snapshots"][0]
+
+        try:
+            with patch.object(sync_videos, "collect_animego_listing", side_effect=listing), patch.object(
+                sync_videos,
+                "fetch_animego_snapshot",
+                side_effect=fetch,
+            ):
+                bundle = animego_push_worker.collect_bundle(manifest, args)
+        finally:
+            not_found.close()
+
+        self.assertTrue(bundle["complete"])
+        self.assertEqual(bundle["errors"], [])
+        self.assertEqual(bundle["unavailable"], [{"anime_id": 3533, "reason": "upstream_not_found"}])
+        sync_videos.validate_animego_bundle(bundle)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = sync_videos.apply_animego_bundle(Path(tmpdir) / "anime.sqlite", bundle)
+        self.assertEqual(result["animego"]["upstream_not_found_skipped"], 1)
+        self.assertEqual(result["animego"].get("failed", 0), 0)
 
     def test_content_sync_sources_can_explicitly_degrade_to_yummyanime(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -174,6 +174,7 @@ def collect_bundle(manifest, args):
         )
 
     known = {int(entry["item"]["id"]): entry for entry in manifest.get("items") or []}
+    listing_ids = {int(item["id"]) for item in listing}
     candidates = OrderedDict()
     for item in listing:
         candidates[int(item["id"])] = item
@@ -185,6 +186,7 @@ def collect_bundle(manifest, args):
     selected_candidates = len(candidates)
 
     snapshots = []
+    unavailable = []
     consecutive_source_failures = 0
     for index, (anime_id, item) in enumerate(candidates.items(), start=1):
         if time.monotonic() >= sync_args.deadline_monotonic:
@@ -222,6 +224,15 @@ def collect_bundle(manifest, args):
             snapshots.append(snapshot)
             consecutive_source_failures = 0
         except Exception as error:
+            if (
+                isinstance(error, urllib.error.HTTPError)
+                and error.code == 404
+                and entry is not None
+                and anime_id not in listing_ids
+            ):
+                unavailable.append({"anime_id": anime_id, "reason": "upstream_not_found"})
+                consecutive_source_failures = 0
+                continue
             errors.append(f"{anime_id}: {type(error).__name__}: {error}")
             if sync_videos.animego_source_unavailable_error(error):
                 consecutive_source_failures += 1
@@ -247,6 +258,7 @@ def collect_bundle(manifest, args):
         "collection_started_at": collection_started_at,
         "collected_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "snapshots": snapshots,
+        "unavailable": unavailable,
         "errors": errors,
         "complete": not bool(args.limit),
         "collector": {
@@ -256,6 +268,7 @@ def collect_bundle(manifest, args):
             "listing_pages": int(listing_stats.get("listing_pages") or 0),
             "listing_failed": int(listing_stats.get("listing_failed") or 0),
             "snapshots": len(snapshots),
+            "unavailable": len(unavailable),
             "errors": len(errors),
             "episodes": episodes,
             "providers": providers,
