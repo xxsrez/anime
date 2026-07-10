@@ -1646,8 +1646,13 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(server.seed_weight(items[favorite_id]), server.FAVORITE_RECOMMENDATION_SEED_WEIGHT)
             self.assertEqual(server.seed_weight(items[watched_id]), server.WATCHED_RECOMMENDATION_SEED_WEIGHT)
             self.assertEqual(server.seed_weight(items[favorite_id]), 3.0)
-            self.assertEqual(server.seed_weight(items[watched_id]), 3.0)
-            self.assertEqual(server.seed_weight(items[meaningful_id]), 1.0)
+            self.assertEqual(
+                server.seed_weight(items[watched_id]),
+                server.WATCHED_RECOMMENDATION_SEED_WEIGHT,
+            )
+            self.assertLess(server.seed_weight(items[watched_id]), server.seed_weight(items[favorite_id]))
+            self.assertGreater(server.seed_weight(items[meaningful_id]), 0.0)
+            self.assertLess(server.seed_weight(items[meaningful_id]), server.seed_weight(items[watched_id]))
             self.assertGreaterEqual(
                 server.seed_weight(items[favorite_id]) / server.seed_weight(items[meaningful_id]),
                 3.0,
@@ -2566,7 +2571,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             payload = server.get_recommendations(db_path, limit=999)
             recommendations = payload["items"]
             self.assertEqual(payload["limit"], server.MAX_RECOMMENDATION_LIMIT)
-            self.assertEqual(payload["profile"]["mode"], "popular")
+            self.assertEqual(payload["profile"]["mode"], "cold_start")
             self.assertGreater(len(recommendations), 0)
             self.assertLessEqual(len(recommendations), server.MAX_RECOMMENDATION_LIMIT)
             self.assertTrue(all(item["source_count"] > 0 for item in recommendations))
@@ -2754,6 +2759,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('class="view-tab-label">Избр.</span>', html)
         self.assertIn('aria-label="Избранное"', html)
         self.assertIn('class="view-tab-label">Смотрю</span>', html)
+        self.assertIn('class="view-tab-label">Брошено</span>', html)
         self.assertIn('aria-pressed="true"', html)
 
     def test_admin_page_has_dashboard_assets(self):
@@ -2782,6 +2788,19 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('sendWatchEvent("heartbeat"', js)
         self.assertNotIn("manuallyCorrected", js)
 
+    def test_content_update_navigation_does_not_start_watching(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        select_start = js.index("async function selectEpisode")
+        select_end = js.index("function persistCurrentEpisodeSelection", select_start)
+        select_episode = js[select_start:select_end]
+        update_start = js.index("async function openContentUpdateEvent")
+        update_end = js.index('el.search.addEventListener("input"', update_start)
+        open_update = js[update_start:update_end]
+
+        self.assertIn("persist = true", select_episode)
+        self.assertIn("persist && number != null", select_episode)
+        self.assertIn("persist: false", open_update)
+
     def test_frontend_opens_saved_progress_episode_without_deep_link(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -2795,11 +2814,13 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn('document.getElementById("progress-episode")', js)
         self.assertNotIn("el.progressEpisode", js)
         self.assertIn('id="not-watching-button"', html)
-        self.assertIn("Не смотрю", html)
+        self.assertIn("Убрать из «Смотрю»", html)
+        self.assertIn('id="watch-status"', html)
+        self.assertIn('id="not-interested-button"', html)
         self.assertIn('document.getElementById("not-watching-button")', js)
         self.assertIn("function discardWatchSession", js)
         self.assertIn("progress_episode_number: null", js)
-        self.assertIn("el.notWatchingButton.hidden = !hasProgress || Boolean(detail.watched)", js)
+        self.assertIn('!["watching", "paused"].includes(status)', js)
 
         start = js.index("function applyDetailLinkState")
         end = js.index("function numericValue", start)
@@ -2819,13 +2840,14 @@ assert.deepStrictEqual(rankedIds("zz"), []);
 
     def test_frontend_progress_view_excludes_watched_titles(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
-        start = js.index("function applyFilter")
-        end = js.index("async function loadSearchFields", start)
-        apply_filter = js[start:end]
+        start = js.index("function itemMatchesView")
+        end = js.index("function currentShelfTotal", start)
+        view_match = js[start:end]
 
-        self.assertIn('state.viewMode === "progress"', apply_filter)
-        self.assertIn("!item.watched && item.progress_episode_number != null", apply_filter)
-        self.assertNotIn("item.watched || item.progress_episode_number != null", apply_filter)
+        self.assertIn('mode === "progress"', view_match)
+        self.assertIn('status === "watching" || status === "paused"', view_match)
+        self.assertIn('mode === "completed"', view_match)
+        self.assertNotIn("item.watched || item.progress_episode_number != null", view_match)
 
     def test_frontend_hides_episode_count_meta_from_title_cards(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
@@ -2833,9 +2855,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         start = js.index("function progressText")
         end = js.index("function effectiveProgressEpisodeNumber", start)
         progress_text = js[start:end]
-        self.assertIn('if (item.watched) return "просмотрено";', progress_text)
+        self.assertIn("effectiveWatchStatus(item)", progress_text)
+        self.assertIn("watchStatusLabel(status)", progress_text)
         self.assertNotIn("effectiveProgressEpisodeNumber", progress_text)
-        self.assertNotIn("серия", progress_text)
+        self.assertIn("серия", progress_text)
 
         start = js.index("function renderList")
         end = js.index("function renderRecommendationMeta", start)

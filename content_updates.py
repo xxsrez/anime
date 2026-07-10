@@ -52,6 +52,8 @@ def ensure_schema(con):
             on content_update_events(anime_id, occurred_at desc);
         create index if not exists idx_content_update_events_occurred_at
             on content_update_events(occurred_at desc);
+        create index if not exists idx_content_update_events_type_at
+            on content_update_events(event_type, occurred_at desc, id desc);
         create index if not exists idx_content_update_events_run_id
             on content_update_events(run_id);
         create index if not exists idx_content_update_runs_started_at

@@ -28,6 +28,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
 import content_updates
+import recommendation_model
+import user_state_model
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
@@ -155,9 +157,11 @@ MEANINGFUL_WATCH_SECONDS = 5 * 60
 WATCH_LIKELY_COMPLETED_SECONDS = 18 * 60
 WATCH_NEXT_EPISODE_COMPLETION_SECONDS = 60
 MAX_WATCH_EVENT_ENGAGED_SECONDS = 5 * 60
-FAVORITE_RECOMMENDATION_SEED_WEIGHT = 3.0
-WATCHED_RECOMMENDATION_SEED_WEIGHT = 3.0
-MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT = 1.0
+FAVORITE_RECOMMENDATION_SEED_WEIGHT = recommendation_model.FAVORITE_SEED_WEIGHT
+WATCHED_RECOMMENDATION_SEED_WEIGHT = recommendation_model.WATCHED_SEED_WEIGHT
+MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT = recommendation_model.meaningful_watch_seed_weight(
+    MEANINGFUL_WATCH_SECONDS
+)
 CATALOG_CACHE = {}
 CATALOG_CACHE_LOCK = threading.RLock()
 CATALOG_CACHE_BUILDS = {}
@@ -598,7 +602,12 @@ def create_user_title_state_table(con):
             is_favorite integer not null default 0,
             progress_episode_number integer,
             watched integer not null default 0,
+            watch_status text,
+            not_interested integer not null default 0,
             updated_at text not null,
+            favorite_updated_at text,
+            watch_status_updated_at text,
+            not_interested_updated_at text,
             primary key (user_id, anime_id),
             foreign key (user_id) references users(id) on delete cascade,
             foreign key (anime_id) references anime(id) on delete cascade
@@ -622,25 +631,61 @@ def ensure_user_state_schema(con):
     ).fetchone()
     if not exists:
         create_user_title_state_table(con)
+        ensure_user_state_indexes(con)
         return True
 
     if not user_title_state_needs_rebuild(con):
-        return False
+        changed = ensure_columns(
+            con,
+            "user_title_state",
+            {
+                "watch_status": "text",
+                "not_interested": "integer not null default 0",
+                "favorite_updated_at": "text",
+                "watch_status_updated_at": "text",
+                "not_interested_updated_at": "text",
+            },
+        )
+        if changed:
+            con.execute(
+                """
+                update user_title_state
+                set watch_status = case
+                        when watched = 1 then 'completed'
+                        when progress_episode_number is not null then 'watching'
+                        else null
+                    end,
+                    favorite_updated_at = case when is_favorite = 1 then updated_at else null end,
+                    watch_status_updated_at = case
+                        when watched = 1 or progress_episode_number is not null then updated_at
+                        else null
+                    end
+                """
+            )
+        return ensure_user_state_indexes(con) or changed
 
     old_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
     con.execute("alter table user_title_state rename to user_title_state_old")
     create_user_title_state_table(con)
 
     if "user_id" in old_columns:
+        def existing_value(column, fallback):
+            return column if column in old_columns else fallback
+
         con.execute(
-            """
+            f"""
             insert or replace into user_title_state (
                 user_id,
                 anime_id,
                 is_favorite,
                 progress_episode_number,
                 watched,
-                updated_at
+                watch_status,
+                not_interested,
+                updated_at,
+                favorite_updated_at,
+                watch_status_updated_at,
+                not_interested_updated_at
             )
             select
                 user_id,
@@ -648,7 +693,12 @@ def ensure_user_state_schema(con):
                 coalesce(is_favorite, 0),
                 progress_episode_number,
                 coalesce(watched, 0),
-                coalesce(updated_at, ?)
+                {existing_value("watch_status", "case when watched = 1 then 'completed' when progress_episode_number is not null then 'watching' else null end")},
+                coalesce({existing_value("not_interested", "0")}, 0),
+                coalesce(updated_at, ?),
+                {existing_value("favorite_updated_at", "case when is_favorite = 1 then updated_at else null end")},
+                {existing_value("watch_status_updated_at", "case when watched = 1 or progress_episode_number is not null then updated_at else null end")},
+                {existing_value("not_interested_updated_at", "null")}
             from user_title_state_old
             where user_id is not null
               and anime_id is not null
@@ -661,7 +711,29 @@ def ensure_user_state_schema(con):
             (now_iso(),),
         )
     con.execute("drop table user_title_state_old")
+    ensure_user_state_indexes(con)
     return True
+
+
+def ensure_user_state_indexes(con):
+    changed = ensure_index(
+        con,
+        "idx_user_title_state_user_watch_status",
+        """
+        create index idx_user_title_state_user_watch_status
+        on user_title_state(user_id, watch_status, watch_status_updated_at desc)
+        """,
+    )
+    changed |= ensure_index(
+        con,
+        "idx_user_title_state_user_not_interested",
+        """
+        create index idx_user_title_state_user_not_interested
+        on user_title_state(user_id, not_interested)
+        where not_interested = 1
+        """,
+    )
+    return changed
 
 
 def ensure_watch_tracking_schema(con):
@@ -1074,6 +1146,11 @@ def catalog_prewarm_enabled():
     return os.environ.get("ANIME_PREWARM_CATALOG", "1").strip().lower() not in {"0", "false", "no", "off"}
 
 
+USER_LIBRARY_MIGRATION_PATH = (
+    "2026-07-09_zzzzz-user-library-state/00_add_user_library_state.sql"
+)
+
+
 def maybe_apply_database_migrations(path):
     if not truthy_env("ANIME_AUTO_MIGRATE"):
         return False
@@ -1095,7 +1172,9 @@ def maybe_apply_database_migrations(path):
     )
     for migration, duration_ms in result["applied"]:
         print(f"Applied database migration {migration.path} ({duration_ms} ms)")
-    return bool(result["applied"])
+    for migration in result.get("adopted", []):
+        print(f"Adopted runtime-satisfied database migration {migration.path}")
+    return bool(result["applied"] or result.get("adopted"))
 
 
 def ensure_base_database(path):
@@ -1207,6 +1286,16 @@ def reset_database_initialization(db_path=None):
 def prepare_database(db_path=None):
     path = resolve_db_path(db_path)
     ensure_base_database(path)
+    # Runtime compatibility schema comes first.  In particular, a fresh base
+    # catalog has no user_title_state table yet, while the tracked library-state
+    # migration is an ALTER migration.  initialize_database creates/upgrades
+    # the table and maybe_apply_database_migrations safely adopts that exact
+    # migration before applying the rest of the pending plan.
+    con = connect(path)
+    try:
+        con.commit()
+    finally:
+        con.close()
     if maybe_apply_database_migrations(path):
         reset_database_initialization(path)
         invalidate_catalog_cache(path)
@@ -1235,7 +1324,16 @@ def check_database_readiness(path):
                 "users": {"id", "google_sub"},
                 "sessions": {"token_hash", "user_id", "expires_at", "revoked_at"},
                 "login_handoffs": {"code_hash", "user_id", "expires_at"},
-                "user_title_state": {"user_id", "anime_id", "watched"},
+                "user_title_state": {
+                    "user_id",
+                    "anime_id",
+                    "watched",
+                    "watch_status",
+                    "not_interested",
+                    "favorite_updated_at",
+                    "watch_status_updated_at",
+                    "not_interested_updated_at",
+                },
                 "user_watch_events": {"id", "user_id", "anime_id", "event_type"},
                 "user_episode_state": {"user_id", "anime_id", "episode_id"},
                 "anime_title_aliases": {"anime_id", "normalized_alias"},
@@ -1317,26 +1415,18 @@ def rows_to_dicts(rows):
 
 
 def normalize_state(row=None):
-    if row is None:
-        return {
-            "is_favorite": False,
-            "progress_episode_number": None,
-            "watched": False,
-            "updated_at": None,
-        }
-    return {
-        "is_favorite": bool(row["is_favorite"]),
-        "progress_episode_number": row["progress_episode_number"],
-        "watched": bool(row["watched"]),
-        "updated_at": row["updated_at"],
-    }
+    return user_state_model.normalized_state(row)
 
 
 def apply_state_fields(item):
-    item["is_favorite"] = bool(item.get("is_favorite") or 0)
-    item["watched"] = bool(item.get("watched") or 0)
-    item["progress_episode_number"] = item.get("progress_episode_number")
-    item["state_updated_at"] = item.get("state_updated_at")
+    state = normalize_state(
+        {
+            **item,
+            "updated_at": item.get("state_updated_at"),
+        }
+    )
+    item.update({key: value for key, value in state.items() if key != "updated_at"})
+    item["state_updated_at"] = state["updated_at"]
     return item
 
 
@@ -1923,25 +2013,9 @@ def apply_external_ratings(items, ratings):
 
 
 def aggregate_item_state(item, variants):
-    item["is_favorite"] = any(bool(variant.get("is_favorite")) for variant in variants)
-    item["watched"] = any(bool(variant.get("watched")) for variant in variants)
-    progress_values = [
-        variant.get("progress_episode_number")
-        for variant in variants
-        if variant.get("progress_episode_number") is not None
-    ]
-    item["progress_episode_number"] = max(progress_values) if progress_values else None
-    item["state_updated_at"] = max(
-        (variant.get("state_updated_at") for variant in variants if variant.get("state_updated_at")),
-        default=None,
-    )
-    item["watch_engaged_seconds"] = sum(int(variant.get("watch_engaged_seconds") or 0) for variant in variants)
-    item["meaningful_watch_seconds"] = sum(int(variant.get("meaningful_watch_seconds") or 0) for variant in variants)
-    item["meaningful_watch_episode_count"] = sum(int(variant.get("meaningful_watch_episode_count") or 0) for variant in variants)
-    item["watch_last_seen_at"] = max(
-        (variant.get("watch_last_seen_at") for variant in variants if variant.get("watch_last_seen_at")),
-        default=None,
-    )
+    state = aggregate_state_rows(variants)
+    item.update({key: value for key, value in state.items() if key != "updated_at"})
+    item["state_updated_at"] = state["updated_at"]
     return item
 
 
@@ -2271,27 +2345,44 @@ def normalize_content_update_days(value):
     return max(1, min(365, requested))
 
 
+def normalize_content_update_offset(value):
+    try:
+        requested = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, requested)
+
+
+def normalize_content_update_type(value):
+    requested = str(value or "all").strip().lower()
+    if requested == "all":
+        return requested
+    if requested not in content_updates.EVENT_TYPES:
+        raise ValueError("invalid content update event_type")
+    return requested
+
+
 def content_update_period_payload(days):
     if days is None:
         return {"days": None, "label": "последние"}
     return {"days": days, "label": f"за {days} дн."}
 
 
-def content_update_event_counts(events):
-    counts = {event_type: 0 for event_type in sorted(content_updates.EVENT_TYPES)}
-    for event in events:
-        event_type = event.get("event_type")
-        if event_type in counts:
-            counts[event_type] += 1
-    return counts
-
-
-def load_content_update_rows(con, days, limit):
+def content_update_where(days, event_type):
+    clauses = []
     params = []
-    where = ""
     if days is not None:
-        where = "where occurred_at >= ?"
+        clauses.append("occurred_at >= ?")
         params.append(content_updates.recent_cutoff(days))
+    if event_type != "all":
+        clauses.append("event_type = ?")
+        params.append(event_type)
+    where = f"where {' and '.join(clauses)}" if clauses else ""
+    return where, params
+
+
+def load_content_update_rows(con, days, limit, event_type="all", offset=0):
+    where, params = content_update_where(days, event_type)
     rows = con.execute(
         f"""
         select
@@ -2313,11 +2404,43 @@ def load_content_update_rows(con, days, limit):
         from content_update_events
         {where}
         order by occurred_at desc, id desc
-        limit ?
+        limit ? offset ?
         """,
-        (*params, limit + 1),
+        (*params, limit + 1, offset),
     ).fetchall()
     return [update_event_payload(row) for row in rows]
+
+
+def content_update_total_summary(con, cache, days, event_type):
+    where, params = content_update_where(days, event_type)
+    count_rows = con.execute(
+        f"""
+        select event_type, count(*) as event_count
+        from content_update_events
+        {where}
+        group by event_type
+        """,
+        params,
+    ).fetchall()
+    counts = {event_type: 0 for event_type in sorted(content_updates.EVENT_TYPES)}
+    for row in count_rows:
+        counts[row["event_type"]] = int(row["event_count"] or 0)
+
+    anime_rows = con.execute(
+        f"select distinct anime_id from content_update_events {where}",
+        params,
+    ).fetchall()
+    canonical_ids = set()
+    id_map = cache.get("id_map", {})
+    for row in anime_rows:
+        source_anime_id = int(row["anime_id"])
+        group = id_map.get(source_anime_id)
+        canonical_ids.add(("canonical", group["id"]) if group else ("source", source_anime_id))
+    return {
+        "event_count": sum(counts.values()),
+        "updated_title_count": len(canonical_ids),
+        "event_counts": counts,
+    }
 
 
 def latest_content_update_run(con):
@@ -2380,14 +2503,25 @@ def content_update_event_with_catalog(event, group):
     return payload
 
 
-def get_content_updates(db_path=None, days=DEFAULT_CONTENT_UPDATE_DAYS, limit=DEFAULT_CONTENT_UPDATE_LIMIT, user_id=None):
+def get_content_updates(
+    db_path=None,
+    days=DEFAULT_CONTENT_UPDATE_DAYS,
+    limit=DEFAULT_CONTENT_UPDATE_LIMIT,
+    user_id=None,
+    event_type="all",
+    offset=None,
+):
     days = normalize_content_update_days(days)
     limit = normalize_content_update_limit(limit)
+    event_type = normalize_content_update_type(event_type)
+    include_offset_pagination = offset is not None
+    offset = normalize_content_update_offset(offset)
     path = resolve_db_path(db_path)
     con = connect(path)
     try:
         cache = get_catalog_cache(path, user_id, connection=con)
-        raw_events = load_content_update_rows(con, days, limit)
+        raw_events = load_content_update_rows(con, days, limit, event_type, offset)
+        summary = content_update_total_summary(con, cache, days, event_type)
         latest_run = latest_content_update_run(con)
     finally:
         con.close()
@@ -2413,21 +2547,27 @@ def get_content_updates(db_path=None, days=DEFAULT_CONTENT_UPDATE_DAYS, limit=DE
             items.append(compact_content_update_item(item, item_events, days))
     items.sort(key=lambda item: (item.get("latest_update_at") or "", item.get("id") or 0), reverse=True)
 
+    pagination = {
+        "limit": limit,
+        "returned": len(events),
+        "has_more": has_more,
+    }
+    if include_offset_pagination:
+        pagination.update(
+            {
+                "offset": offset,
+                "next_offset": offset + len(events) if has_more else None,
+            }
+        )
+
     return {
         "period": content_update_period_payload(days),
-        "summary": {
-            "event_count": len(events),
-            "updated_title_count": len(items),
-            "event_counts": content_update_event_counts(events),
-        },
+        "event_type": event_type,
+        "summary": summary,
         "items": items,
         "events": events,
         "latest_run": latest_run,
-        "pagination": {
-            "limit": limit,
-            "returned": len(events),
-            "has_more": has_more,
-        },
+        "pagination": pagination,
     }
 
 
@@ -2455,13 +2595,7 @@ def normalize_recommendation_limit(limit):
 
 
 def seed_weight(item):
-    if item.get("is_favorite"):
-        return FAVORITE_RECOMMENDATION_SEED_WEIGHT
-    if item.get("watched"):
-        return WATCHED_RECOMMENDATION_SEED_WEIGHT
-    if (numeric(item.get("meaningful_watch_seconds")) or 0) >= MEANINGFUL_WATCH_SECONDS:
-        return MEANINGFUL_WATCH_RECOMMENDATION_SEED_WEIGHT
-    return 0.0
+    return recommendation_model.seed_weight(item)
 
 
 def item_genre_keys(item):
@@ -2672,92 +2806,46 @@ def recommendation_reasons(item, matched_genres, based_on):
     return reasons[:4]
 
 
-def get_recommendations(db_path=None, limit=DEFAULT_RECOMMENDATION_LIMIT, user_id=None):
+def normalize_recommendation_filters(filters=None):
+    filters = filters or {}
+    normalized = {}
+    for key in ("genre", "year", "year_from", "year_to", "kind", "status", "source"):
+        value = filters.get(key)
+        if value not in (None, ""):
+            normalized[key] = value
+    video = str(filters.get("video") or "").strip().lower()
+    if video == "with":
+        normalized["video"] = True
+    elif video == "missing":
+        normalized["video"] = False
+    return normalized
+
+
+def get_recommendations(
+    db_path=None,
+    limit=DEFAULT_RECOMMENDATION_LIMIT,
+    user_id=None,
+    filters=None,
+):
+    """Return deterministic Recommendation v2 results for one user."""
+
     limit = normalize_recommendation_limit(limit or DEFAULT_RECOMMENDATION_LIMIT)
     items = get_anime_list(db_path, user_id=user_id)
-    profile = build_recommendation_profile(items)
-    has_profile = profile["seed_count"] > 0
-    candidate_items = [
-        item
-        for item in items
-        if not item.get("is_favorite")
-        and not item.get("watched")
-        and item.get("progress_episode_number") is None
-    ]
-    watchable_candidate_count = sum(1 for item in candidate_items if has_playable_source(item))
-    has_watchable_candidates = watchable_candidate_count > 0
-    recommendations = []
-
-    for item in candidate_items:
-        genre_score, matched_genres = genre_profile_score(item, profile)
-        seed_score, based_on = seed_similarity(item, profile)
-        taste_score = (0.7 * genre_score) + (0.3 * seed_score)
-        quality = quality_score(item)
-        popularity = popularity_score(item)
-        availability = availability_score(item)
-        recency = recency_score(item)
-        kind_score = kind_profile_score(item, profile)
-
-        if has_profile:
-            raw_score = (
-                (0.50 * taste_score)
-                + (0.20 * quality)
-                + (0.13 * availability)
-                + (0.08 * popularity)
-                + (0.05 * recency)
-                + (0.04 * kind_score)
-            )
-        else:
-            raw_score = (
-                (0.36 * quality)
-                + (0.30 * availability)
-                + (0.18 * popularity)
-                + (0.12 * recency)
-                + (0.04 * kind_score)
-            )
-
-        score = watchable_recommendation_score(raw_score, item, has_watchable_candidates)
-        item = public_item_copy(item)
-        item["recommendation_score"] = score
-        item["recommendation_confidence"] = recommendation_confidence(score)
-        item["recommendation_matched_genres"] = matched_genres[:6]
-        item["recommendation_based_on"] = based_on
-        item["recommendation_reasons"] = recommendation_reasons(item, matched_genres, based_on)
-        item["recommendation_components"] = {
-            "taste": round(taste_score, 3),
-            "quality": round(quality, 3),
-            "availability": round(availability, 3),
-            "popularity": round(popularity, 3),
-            "recency": round(recency, 3),
-            "watchable": 1.0 if has_playable_source(item) else 0.0,
-            "raw": round(clamp(raw_score), 3),
-        }
-        recommendations.append(item)
-
-    recommendations.sort(
-        key=lambda item: (
-            -item["recommendation_score"],
-            -(numeric(item.get("source_count")) or 0),
-            -(best_score(item) or 0),
-            item["title"],
-        )
+    normalized_filters = normalize_recommendation_filters(filters)
+    payload = recommendation_model.rank_recommendations(
+        items,
+        limit=limit,
+        filters=normalized_filters,
     )
-    recommendations = recommendations[:limit]
-    for index, item in enumerate(recommendations, start=1):
-        item["recommendation_rank"] = index
-
-    return {
-        "items": recommendations,
-        "limit": limit,
-        "profile": {
-            "favorite_count": profile["favorite_count"],
-            "seed_count": profile["seed_count"],
-            "candidate_count": len(candidate_items),
-            "watchable_candidate_count": watchable_candidate_count,
-            "top_genres": profile["top_genres"],
-            "mode": "personalized" if has_profile else "popular",
-        },
-    }
+    unknown_items = [item for item in items if not recommendation_model.is_known_item(item)]
+    filtered_unknown_items = recommendation_model.filter_catalog_items(
+        unknown_items,
+        filters=normalized_filters,
+    )
+    payload["profile"]["watchable_candidate_count"] = sum(
+        1 for item in filtered_unknown_items if recommendation_model.has_playable_source(item)
+    )
+    return payload
 
 
 def load_title_alias_search_fields(con):
@@ -2900,7 +2988,12 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             coalesce(us.is_favorite, 0) as is_favorite,
             us.progress_episode_number,
             coalesce(us.watched, 0) as watched,
+            us.watch_status,
+            coalesce(us.not_interested, 0) as not_interested,
             us.updated_at as state_updated_at,
+            us.favorite_updated_at,
+            us.watch_status_updated_at,
+            us.not_interested_updated_at,
             coalesce(ec.episode_count, 0) as episode_count,
             coalesce(aec.available_episode_count, 0) as available_episode_count,
             coalesce(sc.source_count, 0) as source_count,
@@ -3041,7 +3134,12 @@ def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
                 coalesce(us.is_favorite, 0) as is_favorite,
                 us.progress_episode_number,
                 coalesce(us.watched, 0) as watched,
+                us.watch_status,
+                coalesce(us.not_interested, 0) as not_interested,
                 us.updated_at,
+                us.favorite_updated_at,
+                us.watch_status_updated_at,
+                us.not_interested_updated_at,
                 coalesce(ws.watch_engaged_seconds, 0) as watch_engaged_seconds,
                 coalesce(ws.meaningful_watch_seconds, 0) as meaningful_watch_seconds,
                 coalesce(ws.meaningful_watch_episode_count, 0) as meaningful_watch_episode_count,
@@ -3123,6 +3221,13 @@ CATALOG_API_ITEM_FIELDS = (
     "is_favorite",
     "watched",
     "progress_episode_number",
+    "watch_status",
+    "not_interested",
+    "state_updated_at",
+    "favorite_updated_at",
+    "watch_status_updated_at",
+    "not_interested_updated_at",
+    "watch_last_seen_at",
     "listing_score",
     "aggregate_score",
     "aggregate_count",
@@ -3141,6 +3246,23 @@ def catalog_api_item(item):
         for key in CATALOG_API_ITEM_FIELDS
         if keep_public_value(item.get(key))
     }
+    # State fields are a stable API shape.  In particular, false/null values
+    # carry meaning for optimistic UI reconciliation and must not be removed by
+    # the generic compact-payload filter above.
+    payload.update(
+        {
+            "is_favorite": bool(item.get("is_favorite")),
+            "watched": bool(item.get("watched")),
+            "progress_episode_number": item.get("progress_episode_number"),
+            "watch_status": item.get("watch_status"),
+            "not_interested": bool(item.get("not_interested")),
+            "state_updated_at": item.get("state_updated_at"),
+            "favorite_updated_at": item.get("favorite_updated_at"),
+            "watch_status_updated_at": item.get("watch_status_updated_at"),
+            "not_interested_updated_at": item.get("not_interested_updated_at"),
+            "watch_last_seen_at": item.get("watch_last_seen_at"),
+        }
+    )
     genres = list(item.get("genres") or [])
     if genres:
         payload["genres"] = genres
@@ -3432,16 +3554,83 @@ def row_value(row, key, default=None):
 def aggregate_state_rows(rows):
     if not rows:
         return normalize_state(None)
-    progress_values = [
-        row_value(row, "progress_episode_number")
-        for row in rows
-        if row_value(row, "progress_episode_number") is not None
-    ]
+    normalized_rows = []
+    for index, row in enumerate(rows):
+        normalized = normalize_state(
+            {
+                "is_favorite": row_value(row, "is_favorite", False),
+                "progress_episode_number": row_value(row, "progress_episode_number"),
+                "watched": row_value(row, "watched", False),
+                "watch_status": row_value(row, "watch_status"),
+                "not_interested": row_value(row, "not_interested", False),
+                "updated_at": row_value(row, "updated_at", row_value(row, "state_updated_at")),
+                "favorite_updated_at": row_value(row, "favorite_updated_at"),
+                "watch_status_updated_at": row_value(row, "watch_status_updated_at"),
+                "not_interested_updated_at": row_value(row, "not_interested_updated_at"),
+            }
+        )
+        normalized["_index"] = index
+        normalized["_anime_id"] = row_value(row, "anime_id", row_value(row, "id", 0)) or 0
+        normalized_rows.append(normalized)
+
+    def latest_for(field):
+        candidates = [state for state in normalized_rows if state.get(field)]
+        if not candidates:
+            return None
+        return max(
+            candidates,
+            key=lambda state: (
+                state.get(field) or "",
+                state.get("updated_at") or "",
+                state.get("_anime_id") or 0,
+                state["_index"],
+            ),
+        )
+
+    favorite_row = latest_for("favorite_updated_at")
+    not_interested_row = latest_for("not_interested_updated_at")
+    watch_row = latest_for("watch_status_updated_at")
+
+    if watch_row is None:
+        progress_values = [
+            state["progress_episode_number"]
+            for state in normalized_rows
+            if state["progress_episode_number"] is not None
+        ]
+        watched = any(state["watched"] for state in normalized_rows)
+        progress = max(progress_values) if progress_values else None
+        watch_status = "completed" if watched else ("watching" if progress is not None else None)
+    else:
+        watched = watch_row["watched"]
+        progress = watch_row["progress_episode_number"]
+        watch_status = watch_row["watch_status"]
+
     state = {
-        "is_favorite": any(bool(row_value(row, "is_favorite")) for row in rows),
-        "progress_episode_number": max(progress_values) if progress_values else None,
-        "watched": any(bool(row_value(row, "watched")) for row in rows),
-        "updated_at": max((row_value(row, "updated_at") for row in rows if row_value(row, "updated_at")), default=None),
+        "is_favorite": favorite_row["is_favorite"] if favorite_row else any(
+            value["is_favorite"] for value in normalized_rows
+        ),
+        "progress_episode_number": progress,
+        "watched": watched,
+        "watch_status": watch_status,
+        "not_interested": not_interested_row["not_interested"] if not_interested_row else any(
+            value["not_interested"] for value in normalized_rows
+        ),
+        "updated_at": max(
+            (value["updated_at"] for value in normalized_rows if value["updated_at"]),
+            default=None,
+        ),
+        "favorite_updated_at": max(
+            (value["favorite_updated_at"] for value in normalized_rows if value["favorite_updated_at"]),
+            default=None,
+        ),
+        "watch_status_updated_at": max(
+            (value["watch_status_updated_at"] for value in normalized_rows if value["watch_status_updated_at"]),
+            default=None,
+        ),
+        "not_interested_updated_at": max(
+            (value["not_interested_updated_at"] for value in normalized_rows if value["not_interested_updated_at"]),
+            default=None,
+        ),
     }
     watch_engaged_seconds = sum(int(row_value(row, "watch_engaged_seconds", 0) or 0) for row in rows)
     meaningful_watch_seconds = sum(int(row_value(row, "meaningful_watch_seconds", 0) or 0) for row in rows)
@@ -3676,7 +3865,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     latest_watch_row = None
-    if user_id is not None:
+    if user_id is not None and state.get("watch_status") in {"watching", "paused"}:
         latest_watch_row = con.execute(
             f"""
             select *
@@ -3763,24 +3952,17 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
 def validate_user_state_patch(patch):
     if not isinstance(patch, dict):
         raise ValueError("state patch must be an object")
-    allowed = {"is_favorite", "watched", "progress_episode_number"}
-    unknown = sorted(set(patch) - allowed)
-    if unknown:
-        raise ValueError(f"unsupported state field: {unknown[0]}")
-    if not patch:
-        raise ValueError("state patch must contain at least one field")
-
-    validated = {}
-    for field in ("is_favorite", "watched"):
-        if field in patch:
-            if type(patch[field]) is not bool:
-                raise ValueError(f"{field} must be a boolean")
-            validated[field] = patch[field]
-    if "progress_episode_number" in patch:
-        value = patch["progress_episode_number"]
-        if value is not None and (type(value) is not int or value < 0):
-            raise ValueError("progress_episode_number must be a non-negative integer or null")
-        validated["progress_episode_number"] = value
+    state_patch = {key: value for key, value in patch.items() if key != "video_source_id"}
+    validated = user_state_model.validate_patch(state_patch)
+    if "video_source_id" in patch:
+        source_id = patch["video_source_id"]
+        if source_id is not None and (type(source_id) is not int or source_id < 1):
+            raise ValueError("video_source_id must be a positive integer or null")
+        if "progress_episode_number" not in validated:
+            raise ValueError("video_source_id requires progress_episode_number")
+        if source_id is not None and validated["progress_episode_number"] is None:
+            raise ValueError("video_source_id requires a non-null progress_episode_number")
+        validated["video_source_id"] = source_id
     return validated
 
 
@@ -3795,49 +3977,55 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
 
         target_id = group["id"]
         member_ids = [variant["id"] for variant in group.get("source_variants") or []] or [target_id]
+        translation_rankings = None
+        if "progress_episode_number" in patch:
+            db_file = con.execute("pragma database_list").fetchone()["file"]
+            translation_rankings = get_catalog_cache(
+                db_file,
+                user_id,
+                connection=con,
+            ).get("translation_rankings") or {}
         con.execute("begin immediate")
         current = get_group_state(con, member_ids, user_id)
         timestamp = now_iso()
+        state_patch = {key: value for key, value in patch.items() if key != "video_source_id"}
+        next_state = user_state_model.apply_patch(current, state_patch, timestamp)
 
-        # Consolidation is serialized by BEGIN IMMEDIATE. Later PATCHes update
-        # only the fields they own, so independent concurrent changes survive.
+        # Consolidation and the transition are serialized by BEGIN IMMEDIATE.
+        # The model applies the patch to the freshly-read aggregate, so
+        # independent concurrent field updates survive while derived legacy
+        # fields (watched/progress) remain consistent with watch_status.
         con.execute(
             """
             insert into user_title_state (
-                user_id, anime_id, is_favorite, progress_episode_number, watched, updated_at
-            ) values (?, ?, ?, ?, ?, ?)
+                user_id, anime_id, is_favorite, progress_episode_number, watched,
+                watch_status, not_interested, updated_at, favorite_updated_at,
+                watch_status_updated_at, not_interested_updated_at
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             on conflict(user_id, anime_id) do update set
                 is_favorite = excluded.is_favorite,
                 progress_episode_number = excluded.progress_episode_number,
                 watched = excluded.watched,
-                updated_at = excluded.updated_at
+                watch_status = excluded.watch_status,
+                not_interested = excluded.not_interested,
+                updated_at = excluded.updated_at,
+                favorite_updated_at = excluded.favorite_updated_at,
+                watch_status_updated_at = excluded.watch_status_updated_at,
+                not_interested_updated_at = excluded.not_interested_updated_at
             """,
             (
                 user_id,
                 target_id,
-                1 if current["is_favorite"] else 0,
-                current["progress_episode_number"],
-                1 if current["watched"] else 0,
-                timestamp,
+                1 if next_state["is_favorite"] else 0,
+                next_state["progress_episode_number"],
+                1 if next_state["watched"] else 0,
+                next_state["watch_status"],
+                1 if next_state["not_interested"] else 0,
+                next_state["updated_at"],
+                next_state["favorite_updated_at"],
+                next_state["watch_status_updated_at"],
+                next_state["not_interested_updated_at"],
             ),
-        )
-
-        assignments = []
-        values = []
-        if "is_favorite" in patch:
-            assignments.append("is_favorite = ?")
-            values.append(1 if patch["is_favorite"] else 0)
-        if "progress_episode_number" in patch:
-            assignments.append("progress_episode_number = ?")
-            values.append(patch["progress_episode_number"])
-        if "watched" in patch:
-            assignments.append("watched = ?")
-            values.append(1 if patch["watched"] else 0)
-        assignments.append("updated_at = ?")
-        values.extend((timestamp, user_id, target_id))
-        con.execute(
-            f"update user_title_state set {', '.join(assignments)} where user_id = ? and anime_id = ?",
-            values,
         )
 
         duplicate_state_ids = [item for item in member_ids if item != target_id]
@@ -3851,20 +4039,25 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
             )
 
         manual_last_watch = None
-        if "progress_episode_number" in patch:
+        sync_episode_state = "progress_episode_number" in patch or (
+            patch.get("watch_status") in {"planned", "dropped"}
+        )
+        if sync_episode_state:
             manual_last_watch = sync_manual_progress_to_episode_state(
                 con,
                 group,
                 user_id,
-                patch["progress_episode_number"],
+                next_state["progress_episode_number"],
                 timestamp,
+                translation_rankings=translation_rankings,
+                selected_video_source_id=patch.get("video_source_id"),
             )
         row = con.execute(
             "select * from user_title_state where user_id = ? and anime_id = ?",
             (user_id, target_id),
         ).fetchone()
         next_state = normalize_state(row)
-        if "progress_episode_number" in patch:
+        if sync_episode_state:
             next_state["last_watch"] = manual_last_watch
         con.commit()
         return next_state
@@ -4060,37 +4253,66 @@ def load_episode_for_progress(con, member_ids, progress_episode_number, target_i
     return row
 
 
-def load_preferred_video_source_for_progress(con, member_ids, progress_episode_number):
-    row = con.execute(
+def load_preferred_video_source_for_progress(
+    con,
+    member_ids,
+    progress_episode_number,
+    selected_video_source_id=None,
+    translation_rankings=None,
+):
+    rows = con.execute(
         f"""
         select
             vs.id,
             vs.anime_id as source_anime_id,
+            vs.episode_id,
             vs.provider_id,
             vs.provider_title,
             vs.translation_id,
             vs.translation_title,
             vs.embed_host,
             a.source,
-            a.source_id
+            a.source_id,
+            e.number as episode_number
         from video_sources vs
         join anime a on a.id = vs.anime_id
         join episodes e on e.id = vs.episode_id
-        where e.anime_id in ({sql_placeholders(member_ids)})
-          and cast(e.number as integer) = ?
-          and vs.anime_id in ({sql_placeholders(member_ids)})
+        where vs.anime_id in ({sql_placeholders(member_ids)})
           and vs.embed_url is not null
-        order by
-            case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
-            vs.translation_title,
-            case when lower(vs.provider_title) = 'kodik' then 0 else 1 end,
-            vs.provider_title,
-            vs.id
-        limit 1
         """,
-        (*member_ids, int(progress_episode_number), *member_ids),
-    ).fetchone()
-    return row
+        member_ids,
+    ).fetchall()
+
+    by_episode = {}
+    candidates = []
+    for raw_row in rows:
+        source = dict(raw_row)
+        episode_bucket = episode_number_key(source.get("episode_number"), source.get("episode_id"))
+        by_episode.setdefault(episode_bucket, []).append(source)
+        if episode_progress_number(source.get("episode_number")) == int(progress_episode_number):
+            candidates.append(source)
+
+    if not candidates:
+        return None
+
+    if selected_video_source_id is not None:
+        selected = next(
+            (source for source in candidates if str(source.get("id")) == str(selected_video_source_id)),
+            None,
+        )
+        if selected:
+            return selected
+
+    # Detail view canonicalizes source rows into a shared episode bucket before
+    # applying source_row_sort_key. Mirror that here so a manual progress PATCH
+    # gets exactly the same fallback source as the player UI.
+    for sources in by_episode.values():
+        for source in sources:
+            source["episode_id"] = 0
+    if translation_rankings is None:
+        translation_rankings = build_translation_rankings(con)
+    context = build_source_ranking_context(by_episode, translation_rankings)
+    return min(candidates, key=lambda source: source_row_sort_key(source, context))
 
 
 def watch_target_from_episode_source(episode, source, progress_episode_number, timestamp, engaged_seconds=0):
@@ -4110,19 +4332,38 @@ def watch_target_from_episode_source(episode, source, progress_episode_number, t
     }
 
 
-def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_number, timestamp):
+def apply_watch_progress_to_user_state(
+    con,
+    group,
+    user_id,
+    progress_episode_number,
+    timestamp,
+    event_type=None,
+):
     if progress_episode_number is None:
         return get_group_state(con, [variant["id"] for variant in group.get("source_variants") or []], user_id)
 
     target_id = group["id"]
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     current = get_group_state(con, member_ids, user_id)
-    next_state = {
-        "is_favorite": current["is_favorite"],
-        "progress_episode_number": max(0, int(progress_episode_number)),
-        "watched": current["watched"],
-        "updated_at": timestamp,
-    }
+    explicit_resume = event_type in {"player_engaged", "episode_selected", "source_changed"}
+    protected_status = current.get("watch_status") == "completed"
+    resumable_status = current.get("watch_status") in {"planned", "paused", "dropped"}
+    negative_feedback = current.get("not_interested")
+    if protected_status or ((resumable_status or negative_feedback) and not explicit_resume):
+        # A heartbeat already in flight when the user changes a shelf/status
+        # must not undo that explicit decision.  The episode telemetry is still
+        # retained, but only a fresh direct player action resumes the title.
+        return current
+    next_state = user_state_model.apply_patch(
+        current,
+        {
+            "progress_episode_number": max(0, int(progress_episode_number)),
+            "watch_status": "watching",
+            **({"not_interested": False} if explicit_resume else {}),
+        },
+        timestamp,
+    )
     con.execute(
         """
         insert into user_title_state (
@@ -4131,13 +4372,24 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
             is_favorite,
             progress_episode_number,
             watched,
-            updated_at
+            watch_status,
+            not_interested,
+            updated_at,
+            favorite_updated_at,
+            watch_status_updated_at,
+            not_interested_updated_at
         )
-        values (?, ?, ?, ?, ?, ?)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         on conflict(user_id, anime_id) do update set
+            is_favorite = excluded.is_favorite,
             progress_episode_number = excluded.progress_episode_number,
-            watched = max(user_title_state.watched, excluded.watched),
-            updated_at = excluded.updated_at
+            watched = excluded.watched,
+            watch_status = excluded.watch_status,
+            not_interested = excluded.not_interested,
+            updated_at = excluded.updated_at,
+            favorite_updated_at = excluded.favorite_updated_at,
+            watch_status_updated_at = excluded.watch_status_updated_at,
+            not_interested_updated_at = excluded.not_interested_updated_at
         """,
         (
             user_id,
@@ -4145,7 +4397,12 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
             1 if next_state["is_favorite"] else 0,
             next_state["progress_episode_number"],
             1 if next_state["watched"] else 0,
+            next_state["watch_status"],
+            1 if next_state["not_interested"] else 0,
             next_state["updated_at"],
+            next_state["favorite_updated_at"],
+            next_state["watch_status_updated_at"],
+            next_state["not_interested_updated_at"],
         ),
     )
     duplicate_state_ids = [item for item in member_ids if item != target_id]
@@ -4161,7 +4418,15 @@ def apply_watch_progress_to_user_state(con, group, user_id, progress_episode_num
     return next_state
 
 
-def sync_manual_progress_to_episode_state(con, group, user_id, progress_episode_number, timestamp):
+def sync_manual_progress_to_episode_state(
+    con,
+    group,
+    user_id,
+    progress_episode_number,
+    timestamp,
+    translation_rankings=None,
+    selected_video_source_id=None,
+):
     target_id = group["id"]
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     if not member_ids:
@@ -4186,17 +4451,41 @@ def sync_manual_progress_to_episode_state(con, group, user_id, progress_episode_
     if not episode:
         return None
 
-    source = load_preferred_video_source_for_progress(con, member_ids, progress_episode_number)
     existing = con.execute(
-        """
-        select engaged_seconds
+        f"""
+        select *
         from user_episode_state
         where user_id = ?
-          and anime_id = ?
-          and episode_id = ?
+          and anime_id in ({sql_placeholders(member_ids)})
+          and progress_episode_number = ?
+        order by
+            case
+                when video_source_id is not null
+                 and last_event_type not in ('manual_progress', 'manual_clear')
+                then 0 else 1
+            end,
+            last_seen_at desc,
+            last_confidence desc,
+            updated_at desc
+        limit 1
         """,
-        (user_id, target_id, episode["id"]),
+        (user_id, *member_ids, progress_episode_number),
     ).fetchone()
+    source = load_preferred_video_source_for_progress(
+        con,
+        member_ids,
+        progress_episode_number,
+        selected_video_source_id=(
+            selected_video_source_id
+            if selected_video_source_id is not None
+            else (existing["video_source_id"] if existing else None)
+        ),
+        translation_rankings=translation_rankings,
+    )
+    if selected_video_source_id is not None and (
+        source is None or int(source["id"]) != int(selected_video_source_id)
+    ):
+        raise ValueError("video_source_id is invalid for this title and episode")
     engaged_seconds = int(existing["engaged_seconds"] or 0) if existing else 0
     upsert_episode_watch_state(
         con,
@@ -4430,6 +4719,10 @@ def record_watch_event(payload, db_path=None, user_id=None):
         group = canonical_group_for_anime_ref(con, payload.get("anime_id"), user_id)
         if not group:
             raise ValueError("anime_id is invalid")
+        # Serialize the episode/source read and both progress writes with manual
+        # PATCH updates. Whichever request arrives last sees the complete prior
+        # state instead of racing on a stale user_episode_state row.
+        con.execute("begin immediate")
         anime_id = group["id"]
         member_ids = [variant["id"] for variant in group.get("source_variants") or []]
         episode = load_event_episode(con, member_ids, payload)
@@ -4587,10 +4880,16 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 user_id,
                 progress_episode_number,
                 timestamp,
+                event_type=event_type,
             )
         con.commit()
         if title_state is None:
             title_state = get_group_state(con, member_ids, user_id)
+        total_engaged_seconds = int(episode_state.get("engaged_seconds") or 0)
+        previous_engaged_seconds = max(0, total_engaged_seconds - engaged_seconds)
+        recommendation_signal_changed = (
+            previous_engaged_seconds < MEANINGFUL_WATCH_SECONDS <= total_engaged_seconds
+        )
         return {
             "ok": True,
             "event": {
@@ -4614,6 +4913,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 )
             },
             "state": title_state,
+            "recommendation_signal_changed": recommendation_signal_changed,
         }
     finally:
         con.close()
@@ -4685,9 +4985,11 @@ def next_available_episode(episodes, progress_episode_number):
     return candidates[0] if candidates else None
 
 
-def continue_target_from_episode_state(row, db_path=None, user_id=None):
-    detail = get_anime_detail(row["anime_id"], db_path, user_id)
+def continue_target_from_episode_state(row, db_path=None, user_id=None, detail=None):
+    detail = detail or get_anime_detail(row["anime_id"], db_path, user_id)
     if not detail:
+        return None
+    if detail.get("not_interested") or detail.get("watch_status") not in {"watching", "paused"}:
         return None
 
     episodes = detail.get("episodes") or []
@@ -4747,17 +5049,41 @@ def get_continue_watching(db_path=None, user_id=None):
             where user_id = ?
               and started_at is not null
             order by last_seen_at desc, last_confidence desc, updated_at desc
-            limit 20
             """,
             (user_id,),
         ).fetchall()
     finally:
         con.close()
 
+    catalog_items = get_anime_list(db_path, user_id=user_id)
+    eligible_group_by_member_id = {}
+    for item in catalog_items:
+        if item.get("not_interested") or item.get("watch_status") not in {"watching", "paused"}:
+            continue
+        member_ids = item.get("source_member_ids") or [item.get("id")]
+        for member_id in member_ids:
+            if member_id is not None:
+                eligible_group_by_member_id[int(member_id)] = item["id"]
+
+    rows_by_group = OrderedDict()
     for row in rows:
-        target = continue_target_from_episode_state(dict(row), db_path, user_id)
-        if target:
-            return {"item": target}
+        group_id = eligible_group_by_member_id.get(int(row["anime_id"]))
+        if group_id is not None:
+            rows_by_group.setdefault(group_id, []).append(dict(row))
+
+    for group_id, group_rows in rows_by_group.items():
+        detail = get_anime_detail(group_id, db_path, user_id)
+        if not detail:
+            continue
+        for row in group_rows:
+            target = continue_target_from_episode_state(
+                row,
+                db_path,
+                user_id,
+                detail=detail,
+            )
+            if target:
+                return {"item": target}
     return {"item": None}
 
 
@@ -6038,15 +6364,35 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/recommendations":
-            raw_limit = parse_qs(parsed.query).get("limit", [str(DEFAULT_RECOMMENDATION_LIMIT)])[0]
-            self.send_json(get_recommendations(self.server.db_path, raw_limit, user["id"]))
+            query = parse_qs(parsed.query)
+            raw_limit = query.get("limit", [str(DEFAULT_RECOMMENDATION_LIMIT)])[0]
+            filters = {
+                key: query[key][0]
+                for key in ("genre", "year", "year_from", "year_to", "kind", "status", "source", "video")
+                if query.get(key)
+            }
+            self.send_json(get_recommendations(self.server.db_path, raw_limit, user["id"], filters))
             return
 
         if path == "/api/content-updates":
             query = parse_qs(parsed.query)
             raw_days = query.get("days", [str(DEFAULT_CONTENT_UPDATE_DAYS)])[0]
             raw_limit = query.get("limit", [str(DEFAULT_CONTENT_UPDATE_LIMIT)])[0]
-            self.send_json(get_content_updates(self.server.db_path, raw_days, raw_limit, user["id"]))
+            raw_event_type = query.get("event_type", ["all"])[0]
+            raw_offset = query.get("offset", ["0"])[0]
+            try:
+                payload = get_content_updates(
+                    self.server.db_path,
+                    raw_days,
+                    raw_limit,
+                    user["id"],
+                    event_type=raw_event_type,
+                    offset=raw_offset,
+                )
+            except ValueError as error:
+                self.send_json({"error": str(error)}, 400)
+                return
+            self.send_json(payload)
             return
 
         if path == "/api/continue-watching":

@@ -424,7 +424,7 @@ select {
 
 .view-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 10px 18px 12px;
   border-bottom: 1px solid var(--line);
@@ -754,6 +754,31 @@ select {
   background: rgba(244, 184, 96, 0.14);
 }
 
+.watch-status-control {
+  display: grid;
+  grid-template-columns: auto minmax(130px, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.watch-status-control select {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 7px 9px;
+}
+
+.watch-status-control select:focus-visible {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(244, 184, 96, 0.2);
+  outline: none;
+}
+
 .clear-watch-button {
   border-color: rgba(255, 104, 93, 0.45);
   color: #ffd6d2;
@@ -765,8 +790,19 @@ select {
   background: rgba(255, 104, 93, 0.14);
 }
 
+.dismiss-button {
+  border-color: rgba(169, 176, 184, 0.45);
+  color: #d5d9de;
+}
+
+.dismiss-button.active {
+  border-color: rgba(255, 104, 93, 0.72);
+  background: rgba(255, 104, 93, 0.14);
+  color: #ffd6d2;
+}
+
 .watched-control {
-  display: inline-flex;
+  display: none;
   gap: 8px;
   align-items: center;
   min-height: 40px;

@@ -8,6 +8,33 @@ const DEFAULT_FILTERS = {
 };
 const DEFAULT_SORT_BY = "rating_best";
 const DEFAULT_SORT_DIR = "desc";
+const VIEW_SORT_DEFAULTS = {
+  all: { by: DEFAULT_SORT_BY, dir: DEFAULT_SORT_DIR },
+  favorites: { by: "favorite_added", dir: "desc" },
+  planned: { by: "status_updated", dir: "desc" },
+  progress: { by: "watch_recent", dir: "desc" },
+  completed: { by: "status_updated", dir: "desc" },
+  dropped: { by: "status_updated", dir: "desc" },
+};
+const USER_STATE_RESPONSE_FIELDS = [
+  "is_favorite",
+  "watched",
+  "progress_episode_number",
+  "watch_status",
+  "not_interested",
+  "updated_at",
+  "favorite_updated_at",
+  "watch_status_updated_at",
+  "not_interested_updated_at",
+];
+const USER_STATE_TRANSPORT_FIELDS = new Set(["video_source_id"]);
+const RECOMMENDATION_SEMANTIC_FIELDS = [
+  "is_favorite",
+  "watched",
+  "progress_episode_number",
+  "watch_status",
+  "not_interested",
+];
 const RECOMMENDATION_LIMIT = 20;
 const CONTENT_UPDATE_LIMIT = 220;
 const CONTENT_UPDATE_DEFAULT_DAYS = "7";
@@ -72,11 +99,14 @@ const state = {
   recommendationsLoading: null,
   recommendationsError: null,
   recommendationsRequestId: 0,
+  recommendationsQueryKey: null,
   recommendationsDirtyConfirmed: false,
   contentUpdates: null,
   contentUpdatesLoaded: false,
   contentUpdatesLoading: null,
+  contentUpdatesLoadingMore: null,
   contentUpdatesError: null,
+  contentUpdatesPageError: null,
   contentUpdatesRequestId: 0,
   contentUpdateDays: CONTENT_UPDATE_DEFAULT_DAYS,
   contentUpdateType: "all",
@@ -92,11 +122,15 @@ const state = {
   selectedContentSource: null,
   selectedTranslation: null,
   selectedSourceId: null,
+  sourceSelectionPreference: null,
   viewMode: "all",
   filters: { ...DEFAULT_FILTERS },
   activeFilterIds: [],
   sortBy: DEFAULT_SORT_BY,
   sortDir: DEFAULT_SORT_DIR,
+  viewSorts: Object.fromEntries(
+    Object.entries(VIEW_SORT_DEFAULTS).map(([mode, value]) => [mode, { ...value }])
+  ),
   renderLimit: INITIAL_RENDER_LIMIT,
   filterControls: {},
   userStateRevision: 0,
@@ -137,7 +171,9 @@ const el = {
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
   favoriteToggle: document.getElementById("favorite-toggle"),
+  watchStatus: document.getElementById("watch-status"),
   notWatchingButton: document.getElementById("not-watching-button"),
+  notInterestedButton: document.getElementById("not-interested-button"),
   watchedToggle: document.getElementById("watched-toggle"),
   recommendationContext: document.getElementById("recommendation-context"),
   recentUpdates: document.getElementById("recent-updates"),
@@ -631,9 +667,20 @@ function numberFrom(value) {
   return match ? Number.parseInt(match[0], 10) : null;
 }
 
+function effectiveWatchStatus(item) {
+  return frontendRuntime.effectiveWatchStatus(item);
+}
+
+function watchStatusLabel(status) {
+  return frontendRuntime.watchStatusLabel(status);
+}
+
 function progressText(item) {
-  if (item.watched) return "просмотрено";
-  return "";
+  const status = effectiveWatchStatus(item);
+  const progress = item?.last_watch?.progress_episode_number ?? item?.progress_episode_number;
+  const label = watchStatusLabel(status);
+  if (progress == null || !["watching", "paused"].includes(status)) return label;
+  return `${label} · серия ${progress}`;
 }
 
 function effectiveProgressEpisodeNumber(detail) {
@@ -738,6 +785,9 @@ function applyDetailLinkState(linkState = {}) {
 
   state.selectedTranslation = linkState.translation || (lastWatchEpisodeId ? lastWatch?.translation_id : null) || null;
   state.selectedSourceId = linkState.provider || (lastWatchEpisodeId ? lastWatch?.video_source_id : null) || null;
+  state.sourceSelectionPreference = lastWatchEpisodeId
+    ? frontendRuntime.sourcePreference(lastWatch)
+    : null;
 }
 
 function numericValue(value) {
@@ -776,9 +826,10 @@ function ratingText(item) {
   return source ? `${formatted} ${source}` : formatted;
 }
 
-function formatPercent(value) {
+function formatRecommendationScore(value) {
   const score = numericValue(value);
-  return score == null ? "" : `${Math.round(score)}%`;
+  if (score == null) return "";
+  return `${score.toFixed(1).replace(/\.0$/, "")}/100`;
 }
 
 function russianPlural(count, one, few, many) {
@@ -912,9 +963,28 @@ function recommendationFor(id) {
 
 function invalidateRecommendations() {
   state.recommendationsLoaded = false;
+  state.recommendationsQueryKey = null;
   state.recommendationProfile = null;
   state.recommendationsError = null;
   state.recommendationsRequestId += 1;
+}
+
+function recommendationFilterParams() {
+  const params = new URLSearchParams({ limit: String(RECOMMENDATION_LIMIT) });
+  for (const key of ["genre", "year", "kind", "status", "source", "video"]) {
+    const value = state.filters[key];
+    if (value != null && value !== "" && value !== "any") params.set(key, value);
+  }
+  return params;
+}
+
+function currentRecommendationQueryKey() {
+  return recommendationFilterParams().toString();
+}
+
+function refreshRecommendationsForCriteria() {
+  if (!isRecommendationView()) return;
+  loadRecommendationsForView({ force: true, selectFirst: true });
 }
 
 function supersedeRecommendationsRequest() {
@@ -928,6 +998,39 @@ function baseItemsForView() {
   return state.recommendationsLoaded || (state.recommendationsLoading && state.recommendations.length)
     ? state.recommendations
     : [];
+}
+
+function itemMatchesView(item, mode = state.viewMode) {
+  if (mode === "recommendations") return true;
+  if (mode === "updates") return state.contentUpdatesLoaded && hasRecentUpdates(item);
+  if (mode === "favorites") return Boolean(item.is_favorite);
+  const status = effectiveWatchStatus(item);
+  if (mode === "planned") return status === "planned";
+  if (mode === "progress") return status === "watching" || status === "paused";
+  if (mode === "completed") return status === "completed";
+  if (mode === "dropped") return status === "dropped";
+  return true;
+}
+
+function currentShelfTotal() {
+  if (isUpdatesView()) {
+    return state.contentUpdates?.summary?.updated_title_count
+      ?? state.anime.filter(item => itemMatchesView(item)).length;
+  }
+  return baseItemsForView().filter(item => itemMatchesView(item)).length;
+}
+
+function currentShelfCountLabel(total) {
+  const labels = {
+    favorites: "избранных",
+    planned: "в планах",
+    progress: "в просмотре",
+    completed: "просмотрено",
+    dropped: "брошено",
+  };
+  if (isRecommendationView()) return `${state.filtered.length} из ${total} советов`;
+  if (isUpdatesView()) return `${state.filtered.length} из ${total} обновл.`;
+  return `${state.filtered.length} из ${total} ${labels[state.viewMode] || "тайтлов"}`;
 }
 
 function normalizeOptionValues(value) {
@@ -1012,6 +1115,32 @@ const filterDefinitions = [
 
 const sortDefinitions = [
   {
+    id: "favorite_added",
+    label: "Добавлено",
+    defaultDir: "desc",
+    type: "number",
+    value: item => dateValue(item.favorite_updated_at || item.updated_at),
+  },
+  {
+    id: "watch_recent",
+    label: "Недавно смотрел",
+    defaultDir: "desc",
+    type: "number",
+    value: item => dateValue(
+      item.watch_last_seen_at
+      || item.last_watch?.last_seen_at
+      || item.watch_status_updated_at
+      || item.updated_at
+    ),
+  },
+  {
+    id: "status_updated",
+    label: "Статус изменён",
+    defaultDir: "desc",
+    type: "number",
+    value: item => dateValue(item.watch_status_updated_at || item.updated_at),
+  },
+  {
     id: "rating_best",
     label: "Лучший",
     defaultDir: "desc",
@@ -1062,8 +1191,42 @@ const sortDefinitions = [
   },
 ];
 
+function dateValue(value) {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function viewSortDefault(mode = state.viewMode) {
+  return VIEW_SORT_DEFAULTS[mode] || VIEW_SORT_DEFAULTS.all;
+}
+
+function rememberCurrentViewSort() {
+  if (fixedSortForView()) return;
+  state.viewSorts[state.viewMode] = { by: state.sortBy, dir: state.sortDir };
+}
+
+function restoreViewSort(mode = state.viewMode) {
+  const saved = state.viewSorts[mode] || viewSortDefault(mode);
+  state.sortBy = saved.by;
+  state.sortDir = saved.dir;
+}
+
 function sortDefinition(id = state.sortBy) {
-  return sortDefinitions.find(item => item.id === id) || sortDefinitions[0];
+  return sortDefinitions.find(item => item.id === id)
+    || sortDefinitions.find(item => item.id === DEFAULT_SORT_BY);
+}
+
+function sortDefinitionsForView(mode = state.viewMode) {
+  const shelfSort = {
+    favorites: "favorite_added",
+    planned: "status_updated",
+    progress: "watch_recent",
+    completed: "status_updated",
+    dropped: "status_updated",
+  }[mode];
+  const shelfOnly = new Set(["favorite_added", "watch_recent", "status_updated"]);
+  return sortDefinitions.filter(definition => definition.id === shelfSort || !shelfOnly.has(definition.id));
 }
 
 function compareAnime(left, right) {
@@ -1169,6 +1332,7 @@ function renderFilterControls() {
     select.addEventListener("change", () => {
       state.filters[definition.id] = select.value;
       applyFilter({ selectFirst: true });
+      refreshRecommendationsForCriteria();
     });
 
     const remove = document.createElement("button");
@@ -1183,6 +1347,7 @@ function renderFilterControls() {
       renderFilterControls();
       renderAddFilterControl();
       applyFilter({ selectFirst: true });
+      refreshRecommendationsForCriteria();
     });
 
     state.filterControls[definition.id] = select;
@@ -1195,19 +1360,68 @@ function renderFilterControls() {
 }
 
 function renderSortControls() {
-  el.sortBy.replaceChildren(...sortDefinitions.map(definition => {
+  const fixedSort = fixedSortForView();
+  if (fixedSort) {
+    const option = document.createElement("option");
+    option.value = fixedSort.id;
+    option.textContent = fixedSort.label;
+    el.sortBy.replaceChildren(option);
+    el.sortBy.value = fixedSort.id;
+    el.sortBy.disabled = true;
+    el.sortBy.dataset.sortMode = "fixed";
+    el.sortBy.title = fixedSort.description;
+    el.sortBy.setAttribute("aria-label", fixedSort.description);
+    renderSortDirection();
+    return;
+  }
+
+  el.sortBy.replaceChildren(...sortDefinitionsForView().map(definition => {
     const option = document.createElement("option");
     option.value = definition.id;
     option.textContent = definition.label;
     return option;
   }));
   el.sortBy.value = state.sortBy;
+  el.sortBy.disabled = false;
+  delete el.sortBy.dataset.sortMode;
+  el.sortBy.removeAttribute("title");
+  el.sortBy.setAttribute("aria-label", "Сортировка");
   renderSortDirection();
 }
 
+function fixedSortForView() {
+  if (isRecommendationView()) {
+    return {
+      id: "recommendation_rank",
+      label: "По рекомендации",
+      description: "Фиксированная сортировка: лучшие рекомендации сначала",
+    };
+  }
+  if (isUpdatesView()) {
+    return {
+      id: "update_time",
+      label: "По свежести",
+      description: "Фиксированная сортировка: новые обновления сначала",
+    };
+  }
+  return null;
+}
+
 function renderSortDirection() {
+  const fixedSort = fixedSortForView();
+  if (fixedSort) {
+    el.sortDirToggle.textContent = "↓";
+    el.sortDirToggle.disabled = true;
+    el.sortDirToggle.dataset.sortMode = "fixed";
+    el.sortDirToggle.title = fixedSort.description;
+    el.sortDirToggle.setAttribute("aria-label", fixedSort.description);
+    return;
+  }
+
   const isDesc = state.sortDir === "desc";
   const label = isDesc ? "По убыванию" : "По возрастанию";
+  el.sortDirToggle.disabled = false;
+  delete el.sortDirToggle.dataset.sortMode;
   el.sortDirToggle.textContent = isDesc ? "↓" : "↑";
   el.sortDirToggle.title = label;
   el.sortDirToggle.setAttribute("aria-label", label);
@@ -1221,24 +1435,27 @@ function renderActiveFilters() {
 function hasActiveCatalogTools() {
   const query = el.search.value.trim();
   const filtersChanged = Object.keys(DEFAULT_FILTERS).some(key => state.filters[key] !== DEFAULT_FILTERS[key]);
+  const defaultSort = viewSortDefault();
   return Boolean(query)
     || filtersChanged
     || state.activeFilterIds.length > 0
-    || state.sortBy !== DEFAULT_SORT_BY
-    || state.sortDir !== DEFAULT_SORT_DIR;
+    || (!fixedSortForView() && state.sortBy !== defaultSort.by)
+    || (!fixedSortForView() && state.sortDir !== defaultSort.dir);
 }
 
 function resetCatalogTools() {
   el.search.value = "";
   state.filters = { ...DEFAULT_FILTERS };
   state.activeFilterIds = [];
-  state.sortBy = DEFAULT_SORT_BY;
-  state.sortDir = DEFAULT_SORT_DIR;
+  const defaultSort = viewSortDefault();
+  state.sortBy = defaultSort.by;
+  state.sortDir = defaultSort.dir;
+  state.viewSorts[state.viewMode] = { ...defaultSort };
 
   renderFilterControls();
-  el.sortBy.value = state.sortBy;
-  renderSortDirection();
+  renderSortControls();
   applyFilter({ selectFirst: true });
+  refreshRecommendationsForCriteria();
 }
 
 function renderList() {
@@ -1247,16 +1464,8 @@ function renderList() {
     : null;
   hideTitleTooltip();
   resetListImageObserver();
-  const total = isRecommendationView()
-    ? state.recommendations.length
-    : isUpdatesView()
-      ? (state.contentUpdates?.summary?.updated_title_count ?? state.filtered.length)
-      : state.anime.length;
-  el.count.textContent = isRecommendationView()
-    ? `${state.filtered.length} из ${total} советов`
-    : isUpdatesView()
-      ? `${state.filtered.length} из ${total} обновл.`
-      : `${state.filtered.length} из ${total} тайтлов`;
+  const total = currentShelfTotal();
+  el.count.textContent = currentShelfCountLabel(total);
   renderRecommendationMeta();
   el.list.replaceChildren();
 
@@ -1295,6 +1504,7 @@ function renderList() {
     if (String(item.id) === String(state.selectedAnimeId)) button.setAttribute("aria-current", "true");
     if (item.is_favorite) button.classList.add("favorite");
     if (item.watched) button.classList.add("watched");
+    if (item.not_interested) button.classList.add("not-interested");
     if (item.recommendation_score != null) button.classList.add("recommended");
     if (hasRecentUpdates(item)) button.classList.add("recently-updated");
 
@@ -1309,7 +1519,7 @@ function renderList() {
     titleRow.className = "anime-title-row";
     const title = document.createElement("strong");
     const rank = isRecommendationView() && item.recommendation_rank ? `${item.recommendation_rank}. ` : "";
-    title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
+    title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.not_interested ? "⊘ " : ""}${item.title}`;
     button.dataset.fullTitle = item.title || title.textContent;
     titleRow.append(title);
     const badgeText = recentUpdateBadgeText(item);
@@ -1325,7 +1535,7 @@ function renderList() {
     const watch = progressText(item);
     const source = sourceLabelList(item);
     if (isRecommendationView()) {
-      const recScore = formatPercent(item.recommendation_score);
+      const recScore = formatRecommendationScore(item.recommendation_score);
       const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
       meta.textContent = [recScore, confidence, `${available} видео`, score, source].filter(Boolean).join(" · ");
     } else {
@@ -1392,7 +1602,7 @@ function renderRecommendationMeta() {
   }
 
   const profile = state.recommendationProfile || {};
-  const mode = profile.mode === "personalized" ? "персонально" : "популярное";
+  const mode = profile.mode === "personalized" ? "персонально" : "стартовый выбор";
   const seedText = profile.seed_count
     ? `по ${profile.seed_count} выбранным`
     : "без профиля вкусов";
@@ -1441,21 +1651,6 @@ function renderContentUpdateMeta() {
   }
 }
 
-function contentUpdateCounts(events) {
-  const counts = {};
-  for (const option of CONTENT_UPDATE_TYPES) {
-    if (option.id !== "all") counts[option.id] = 0;
-  }
-  for (const event of events) {
-    if (event.event_type in counts) counts[event.event_type] += 1;
-  }
-  return counts;
-}
-
-function uniqueContentUpdateTitleCount(events) {
-  return new Set(events.map(event => event.anime_id).filter(value => value != null).map(String)).size;
-}
-
 function updateDateHeading(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Без даты";
@@ -1487,9 +1682,12 @@ function renderContentUpdateControls(parent) {
     button.setAttribute("aria-pressed", state.contentUpdateType === option.id ? "true" : "false");
     button.textContent = option.label;
     button.addEventListener("click", () => {
+      if (state.contentUpdateType === option.id) return;
       state.contentUpdateType = option.id;
-      renderContentUpdatesView();
+      resetContentUpdatesForQuery();
+      loadContentUpdatesForView({ force: true });
       applyFilter({ selectFirst: false });
+      renderContentUpdatesView();
     });
     typeRow.append(button);
   }
@@ -1506,8 +1704,7 @@ function renderContentUpdateControls(parent) {
     button.addEventListener("click", () => {
       if (state.contentUpdateDays === option.id) return;
       state.contentUpdateDays = option.id;
-      state.contentUpdatesLoaded = false;
-      state.contentUpdates = null;
+      resetContentUpdatesForQuery();
       loadContentUpdatesForView({ force: true });
       applyFilter({ selectFirst: false });
       renderContentUpdatesView();
@@ -1518,8 +1715,8 @@ function renderContentUpdateControls(parent) {
   parent.append(typeRow, periodRow);
 }
 
-function renderContentUpdateStats(parent, events) {
-  const counts = contentUpdateCounts(events);
+function renderContentUpdateStats(parent, summary) {
+  const counts = summary?.event_counts || {};
   const stats = [
     ["Тайтлы", counts.new_title || 0],
     ["Серии", counts.new_episode || 0],
@@ -1539,6 +1736,33 @@ function renderContentUpdateStats(parent, events) {
     grid.append(item);
   }
   parent.append(grid);
+}
+
+function renderContentUpdatePagination(parent) {
+  const pagination = state.contentUpdates?.pagination || {};
+  if (!pagination.has_more && !state.contentUpdatesLoadingMore && !state.contentUpdatesPageError) return;
+
+  const row = document.createElement("div");
+  row.className = "updates-control-row compact";
+  if (state.contentUpdatesPageError) {
+    const error = document.createElement("span");
+    error.className = "updates-empty warn";
+    error.textContent = "Не удалось догрузить события";
+    row.append(error);
+  }
+
+  if (pagination.has_more) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "updates-segment";
+    more.disabled = Boolean(state.contentUpdatesLoadingMore);
+    more.textContent = state.contentUpdatesLoadingMore ? "Загружаю..." : "Показать ещё";
+    more.addEventListener("click", () => {
+      loadMoreContentUpdates().catch(reportActionError("load more content updates"));
+    });
+    row.append(more);
+  }
+  parent.append(row);
 }
 
 function eventAnimeTitle(event) {
@@ -1625,7 +1849,7 @@ function renderContentUpdatesView() {
 
   renderContentUpdateControls(el.updatesView);
 
-  if (state.contentUpdatesLoading) {
+  if (state.contentUpdatesLoading && !state.contentUpdatesLoaded) {
     const loading = document.createElement("div");
     loading.className = "updates-empty";
     loading.textContent = "Загружаю новое...";
@@ -1633,7 +1857,7 @@ function renderContentUpdatesView() {
     return;
   }
 
-  if (state.contentUpdatesError) {
+  if (state.contentUpdatesError && !state.contentUpdatesLoaded) {
     const error = document.createElement("div");
     error.className = "updates-empty warn";
     error.textContent = "Не удалось загрузить новое";
@@ -1642,25 +1866,26 @@ function renderContentUpdatesView() {
   }
 
   const events = filteredContentUpdateEvents();
+  const totals = state.contentUpdates?.summary || {};
   const summary = document.createElement("div");
   summary.className = "updates-summary";
   const count = document.createElement("strong");
-  count.textContent = `${events.length} событий`;
+  count.textContent = `${totals.event_count || 0} событий`;
   const titles = document.createElement("span");
-  titles.textContent = `${uniqueContentUpdateTitleCount(events)} тайтлов`;
+  titles.textContent = `${totals.updated_title_count || 0} тайтлов`;
   const type = document.createElement("span");
   type.textContent = contentUpdateTypeLabel(state.contentUpdateType);
   summary.append(count, titles, type);
-  if ((state.contentUpdates?.events || []).length >= CONTENT_UPDATE_LIMIT) {
-    const limited = document.createElement("span");
-    limited.textContent = `Показаны последние ${CONTENT_UPDATE_LIMIT}`;
-    limited.title = "Лента ограничена последними событиями";
-    summary.append(limited);
+  if (events.length < (totals.event_count || 0)) {
+    const loaded = document.createElement("span");
+    loaded.textContent = `Загружено ${events.length}`;
+    summary.append(loaded);
   }
   el.updatesView.append(summary);
 
-  renderContentUpdateStats(el.updatesView, events);
+  renderContentUpdateStats(el.updatesView, totals);
   renderContentUpdateRows(el.updatesView, events);
+  renderContentUpdatePagination(el.updatesView);
 }
 
 function descriptionIsClampedLayout() {
@@ -1730,10 +1955,18 @@ function renderWatchState(detail) {
   el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
-  el.watchedToggle.checked = Boolean(detail.watched);
+  const status = effectiveWatchStatus(detail);
+  el.watchStatus.value = status;
+  el.watchedToggle.checked = status === "completed";
   const hasProgress = effectiveProgressEpisodeNumber(detail) != null;
-  el.notWatchingButton.hidden = !hasProgress || Boolean(detail.watched);
+  el.notWatchingButton.hidden = !hasProgress || !["watching", "paused"].includes(status);
   el.notWatchingButton.setAttribute("aria-label", "Убрать тайтл из «Смотрю»");
+  el.notInterestedButton.classList.toggle("active", Boolean(detail.not_interested));
+  el.notInterestedButton.setAttribute("aria-pressed", detail.not_interested ? "true" : "false");
+  el.notInterestedButton.textContent = detail.not_interested ? "⊘ Не интересно" : "⊘ Не интересно";
+  el.notInterestedButton.title = detail.not_interested
+    ? "Вернуть тайтл в рекомендации"
+    : "Не предлагать этот тайтл в рекомендациях";
 }
 
 function renderRecommendationContext(detail) {
@@ -1749,10 +1982,13 @@ function renderRecommendationContext(detail) {
   header.className = "recommendation-context-header";
 
   const score = document.createElement("strong");
-  score.textContent = `Совет ${formatPercent(rec.recommendation_score)}`;
-  const confidence = document.createElement("span");
-  confidence.textContent = `${rec.recommendation_confidence || "средняя"} уверенность`;
-  header.append(score, confidence);
+  score.textContent = `Рейтинг совета ${formatRecommendationScore(rec.recommendation_score)}`;
+  header.append(score);
+  if (rec.recommendation_confidence) {
+    const confidence = document.createElement("span");
+    confidence.textContent = `${rec.recommendation_confidence} уверенность`;
+    header.append(confidence);
+  }
 
   const reasons = document.createElement("div");
   reasons.className = "recommendation-reasons";
@@ -1904,13 +2140,10 @@ function renderEpisodes(detail) {
 }
 
 function uniqueTranslations(sources) {
-  const map = new Map();
-  for (const source of sources) {
-    if (!map.has(source.translation_id)) {
-      map.set(source.translation_id, source.translation_title || String(source.translation_id));
-    }
-  }
-  return [...map.entries()].map(([id, title]) => ({ id: String(id), title }));
+  return frontendRuntime.groupSourcesByTranslation(sources).map(group => ({
+    id: group.key,
+    title: group.title,
+  }));
 }
 
 function renderContentSourceOptions() {
@@ -1968,22 +2201,31 @@ function renderSources() {
     return;
   }
 
-  if (!translations.some(item => item.id === String(state.selectedTranslation))) {
-    state.selectedTranslation = translations[0]?.id || null;
+  const selected = frontendRuntime.selectSourceForEpisode(sources, {
+    selectedSourceId: state.selectedSourceId,
+    selectedTranslationId: state.selectedTranslation,
+    preference: state.sourceSelectionPreference,
+  });
+  state.selectedTranslation = selected?.translation_id != null
+    ? String(selected.translation_id)
+    : null;
+  state.selectedSourceId = selected?.id != null ? String(selected.id) : null;
+  const selectedTranslationKey = frontendRuntime.sourceTranslationKey(selected);
+  if (!state.sourceSelectionPreference && selected) {
+    state.sourceSelectionPreference = frontendRuntime.sourcePreference(selected);
   }
 
   for (const item of translations) {
     const option = document.createElement("option");
     option.value = item.id;
     option.textContent = item.title;
-    option.selected = item.id === String(state.selectedTranslation);
+    option.selected = item.id === selectedTranslationKey;
     el.translation.append(option);
   }
 
-  const providers = sources.filter(source => String(source.translation_id) === String(state.selectedTranslation));
-  if (!providers.some(source => String(source.id) === String(state.selectedSourceId))) {
-    state.selectedSourceId = providers[0]?.id ? String(providers[0].id) : null;
-  }
+  const providers = sources.filter(source => (
+    frontendRuntime.sourceTranslationKey(source) === selectedTranslationKey
+  ));
 
   for (const source of providers) {
     const option = document.createElement("option");
@@ -1993,9 +2235,9 @@ function renderSources() {
     el.provider.append(option);
   }
 
-  const selected = providers.find(source => String(source.id) === String(state.selectedSourceId)) || providers[0];
-  if (selected) {
-    setPlayer(selected, episode);
+  const activeSource = providers.find(source => String(source.id) === String(state.selectedSourceId)) || providers[0];
+  if (activeSource) {
+    setPlayer(activeSource, episode);
   } else {
     clearPlayer("Источник недоступен");
   }
@@ -2102,38 +2344,43 @@ function animeStateRevision(animeId) {
 }
 
 function applyWatchState(nextState, animeId = state.selectedAnimeId, requestRevision = animeStateRevision(animeId)) {
-  if (!nextState || !animeId) return;
-  if (requestRevision !== animeStateRevision(animeId)) return;
+  if (!nextState || !animeId) return false;
+  if (requestRevision !== animeStateRevision(animeId)) return false;
   const watchState = {};
-  if (Object.prototype.hasOwnProperty.call(nextState, "watched")) {
-    watchState.watched = Boolean(nextState.watched);
+  for (const field of USER_STATE_RESPONSE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(nextState, field)) watchState[field] = nextState[field];
   }
-  if (Object.prototype.hasOwnProperty.call(nextState, "progress_episode_number")) {
-    watchState.progress_episode_number = nextState.progress_episode_number == null
-      ? null
-      : nextState.progress_episode_number;
-  }
-  if (!Object.keys(watchState).length) return;
+  if (!Object.keys(watchState).length) return false;
   updateConfirmedUserState(animeId, watchState);
-  const watched = Boolean(watchState.watched);
-  const progress = watchState.progress_episode_number == null ? null : watchState.progress_episode_number;
   const applyToItem = item => {
-    if (!item) return false;
-    const changed = item.progress_episode_number !== progress || Boolean(item.watched) !== watched;
+    if (!item) return { changed: false, semanticChanged: false };
+    const changed = frontendRuntime.patchChanges(item, watchState);
+    const semanticChanged = frontendRuntime.patchChanges(
+      item,
+      watchState,
+      RECOMMENDATION_SEMANTIC_FIELDS,
+    );
     Object.assign(item, watchState);
-    return changed;
+    return { changed, semanticChanged };
   };
 
   const catalogChanged = applyToItem(state.anime.find(entry => entry.id === animeId));
   const recommendationsChanged = applyToItem(state.recommendations.find(entry => entry.id === animeId));
-  const detailChanged = state.detail?.id === animeId ? applyToItem(state.detail) : false;
-  const changed = catalogChanged || recommendationsChanged || detailChanged;
+  const detailChanged = state.detail?.id === animeId
+    ? applyToItem(state.detail)
+    : { changed: false, semanticChanged: false };
+  const changed = catalogChanged.changed || recommendationsChanged.changed || detailChanged.changed;
+  const semanticChanged = catalogChanged.semanticChanged
+    || recommendationsChanged.semanticChanged
+    || detailChanged.semanticChanged;
 
-  if (!changed) return;
+  if (!changed) return false;
+  if (!semanticChanged) return false;
   invalidateRecommendations();
   if (isRecommendationView()) loadRecommendationsForView({ force: true, selectFirst: false });
   applyFilter();
   if (state.detail?.id === animeId) renderWatchState(state.detail);
+  return true;
 }
 
 function postWatchPayload(payload, { beacon = false } = {}) {
@@ -2159,7 +2406,15 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
   const requestRevision = animeStateRevision(session.animeId);
   return postWatchPayload(payload, { beacon })
     .then(result => {
-      if (result?.state) applyWatchState(result.state, session.animeId, requestRevision);
+      const semanticChanged = result?.state
+        ? applyWatchState(result.state, session.animeId, requestRevision)
+        : false;
+      if (result?.recommendation_signal_changed && !semanticChanged) {
+        invalidateRecommendations();
+        if (isRecommendationView()) {
+          loadRecommendationsForView({ force: true, selectFirst: false });
+        }
+      }
       return result;
     })
     .catch(error => {
@@ -2379,6 +2634,12 @@ async function selectAnime(id, options = {}) {
         is_favorite: Boolean(detail.is_favorite),
         watched: Boolean(detail.watched),
         progress_episode_number: detail.progress_episode_number ?? null,
+        watch_status: effectiveWatchStatus(detail) || null,
+        not_interested: Boolean(detail.not_interested),
+        updated_at: detail.updated_at || null,
+        favorite_updated_at: detail.favorite_updated_at || null,
+        watch_status_updated_at: detail.watch_status_updated_at || null,
+        not_interested_updated_at: detail.not_interested_updated_at || null,
       });
     }
     applyDetailLinkState(options.linkState || {});
@@ -2399,8 +2660,13 @@ async function selectAnime(id, options = {}) {
   }
 }
 
-async function selectEpisode(id, { history = "push" } = {}) {
+async function selectEpisode(id, { history = "push", persist = true } = {}) {
+  if (!state.sourceSelectionPreference) {
+    state.sourceSelectionPreference = frontendRuntime.sourcePreference(selectedSourceForEpisode());
+  }
   state.selectedEpisodeId = id;
+  // Source row IDs are episode-local. Keep the semantic preference and resolve
+  // it against the next episode's backend-ranked source list.
   state.selectedTranslation = null;
   state.selectedSourceId = null;
   const episode = activeEpisode();
@@ -2410,11 +2676,29 @@ async function selectEpisode(id, { history = "push" } = {}) {
   renderDetail();
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: history !== "push" });
-  if (number != null) {
+  if (persist && number != null) {
+    const selectedSource = selectedSourceForEpisode();
     markWatchEngaged("episode_selected");
-    await saveUserState({ progress_episode_number: number, watched: false });
+    await saveUserState({
+      progress_episode_number: number,
+      watched: false,
+      watch_status: "watching",
+      ...(selectedSource?.id != null ? { video_source_id: selectedSource.id } : {}),
+    });
     return;
   }
+}
+
+function persistCurrentEpisodeSelection() {
+  const episodeNumber = numberFrom(activeEpisode()?.number);
+  const source = selectedSourceForEpisode();
+  if (episodeNumber == null || source?.id == null) return Promise.resolve(null);
+  return saveUserState({
+    progress_episode_number: episodeNumber,
+    watched: false,
+    watch_status: "watching",
+    video_source_id: source.id,
+  });
 }
 
 function userStateTargets(animeId) {
@@ -2476,19 +2760,24 @@ function rerenderAfterUserState(animeId, { list = true, detail = true } = {}) {
 }
 
 const userStateSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKey, mutation) => {
-  const { patch, before, revision } = mutation;
+  const { patch, requestPatch, before, revision } = mutation;
   try {
     const payload = await api(`/api/anime/${encodeURIComponent(animeKey)}/state`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
+      body: JSON.stringify(requestPatch),
     });
     const confirmedRecord = state.userStateFieldRevisions.get(String(animeKey));
     const confirmed = {};
-    for (const field of Object.keys(patch)) {
-      if (Object.prototype.hasOwnProperty.call(payload.state || {}, field)) {
-        if (confirmedRecord) confirmedRecord.confirmed[field] = payload.state[field];
-        if (mutationStillCurrent(animeKey, field, revision)) confirmed[field] = payload.state[field];
+    const mutationIsLatest = confirmedRecord?.animeRevision === revision;
+    for (const field of USER_STATE_RESPONSE_FIELDS) {
+      if (!Object.prototype.hasOwnProperty.call(payload.state || {}, field)) continue;
+      const belongsToPatch = Object.prototype.hasOwnProperty.call(patch, field);
+      if (confirmedRecord && (belongsToPatch || mutationIsLatest)) {
+        confirmedRecord.confirmed[field] = payload.state[field];
+      }
+      if ((belongsToPatch && mutationStillCurrent(animeKey, field, revision)) || (!belongsToPatch && mutationIsLatest)) {
+        confirmed[field] = payload.state[field];
       }
     }
     if (
@@ -2501,7 +2790,7 @@ const userStateSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKe
     const listChanged = userStatePatchChangesLocalState(animeKey, confirmed, { includeObjects: false });
     const detailChanged = userStatePatchChangesLocalState(animeKey, confirmed);
     applyLocalUserStatePatch(animeKey, confirmed);
-    if (["is_favorite", "watched", "progress_episode_number"].some(field => field in patch)) {
+    if (["is_favorite", "watched", "progress_episode_number", "watch_status", "not_interested"].some(field => field in patch)) {
       state.recommendationsDirtyConfirmed = true;
     }
     rerenderAfterUserState(animeKey, { list: listChanged, detail: detailChanged });
@@ -2526,11 +2815,16 @@ const userStateSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKe
 
 async function saveUserState(patch, animeId = state.selectedAnimeId) {
   if (!animeId || !patch || !Object.keys(patch).length) return null;
-  const normalizedPatch = { ...patch };
+  const requestPatch = { ...patch };
+  const normalizedPatch = Object.fromEntries(
+    Object.entries(requestPatch).filter(([field]) => !USER_STATE_TRANSPORT_FIELDS.has(field))
+  );
+  if (!Object.keys(normalizedPatch).length) return null;
   const before = userStateSnapshot(animeId, normalizedPatch);
   const revision = registerUserStateMutation(animeId, normalizedPatch, before);
   applyLocalUserStatePatch(animeId, normalizedPatch);
-  const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number"].some(key => key in normalizedPatch);
+  const affectsRecommendations = ["is_favorite", "watched", "progress_episode_number", "watch_status", "not_interested"]
+    .some(key => key in normalizedPatch);
   if (affectsRecommendations) {
     supersedeRecommendationsRequest();
   }
@@ -2538,7 +2832,12 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
   if (String(state.detail?.id) === String(animeId)) renderDetail();
   const animeKey = String(animeId);
   try {
-    return await userStateSaveQueue.enqueue(animeKey, { patch: normalizedPatch, before, revision });
+    return await userStateSaveQueue.enqueue(animeKey, {
+      patch: normalizedPatch,
+      requestPatch,
+      before,
+      revision,
+    });
   } finally {
     if (userStateSaveQueue.pending() === 0 && state.recommendationsDirtyConfirmed) {
       state.recommendationsDirtyConfirmed = false;
@@ -2573,16 +2872,7 @@ function applyFilter({ selectFirst = false } = {}) {
   }).filter(entry => {
     const item = entry.item;
     const queryMatch = !query.tokens.length || entry.searchScore > 0;
-    const viewMatch =
-      state.viewMode === "recommendations"
-        ? true
-        : state.viewMode === "updates"
-          ? hasRecentUpdates(item)
-        : state.viewMode === "favorites"
-        ? item.is_favorite
-        : state.viewMode === "progress"
-          ? !item.watched && item.progress_episode_number != null
-          : true;
+    const viewMatch = itemMatchesView(item);
     const filterMatch = filterDefinitions.every(definition => (
       definition.match(item, state.filters[definition.id])
     ));
@@ -2648,8 +2938,8 @@ function loadSearchFieldsInBackground() {
   ensureSearchFields().catch(reportActionError("load search fields"));
 }
 
-async function loadRecommendations(requestId) {
-  const payload = await api(`/api/recommendations?limit=${RECOMMENDATION_LIMIT}`);
+async function loadRecommendations(requestId, queryKey) {
+  const payload = await api(`/api/recommendations?${queryKey}`);
   if (requestId !== state.recommendationsRequestId) return state.recommendations;
   state.recommendationProfile = payload.profile || null;
   state.recommendations = (payload.items || []).map(item => {
@@ -2658,12 +2948,14 @@ async function loadRecommendations(requestId) {
   });
   applyLoadedSearchFields(state.recommendations);
   state.recommendationsLoaded = true;
+  state.recommendationsQueryKey = queryKey;
   state.recommendationsError = null;
   return state.recommendations;
 }
 
 function ensureRecommendations({ force = false } = {}) {
-  if (!force && state.recommendationsLoaded) {
+  const queryKey = currentRecommendationQueryKey();
+  if (!force && state.recommendationsLoaded && state.recommendationsQueryKey === queryKey) {
     return Promise.resolve(state.recommendations);
   }
   if (!force && state.recommendationsLoading) return state.recommendationsLoading;
@@ -2671,7 +2963,7 @@ function ensureRecommendations({ force = false } = {}) {
   state.recommendationsError = null;
   const requestId = state.recommendationsRequestId + 1;
   state.recommendationsRequestId = requestId;
-  const request = loadRecommendations(requestId)
+  const request = loadRecommendations(requestId, queryKey)
     .catch(error => {
       if (requestId !== state.recommendationsRequestId) return state.recommendations;
       state.recommendationsError = error;
@@ -2688,7 +2980,11 @@ function ensureRecommendations({ force = false } = {}) {
 
 function loadRecommendationsForView({ force = false, selectFirst = true } = {}) {
   if (!isRecommendationView()) return;
-  if (!force && state.recommendationsLoaded) return;
+  if (
+    !force
+    && state.recommendationsLoaded
+    && state.recommendationsQueryKey === currentRecommendationQueryKey()
+  ) return;
   const request = ensureRecommendations({ force });
   const requestId = state.recommendationsRequestId;
   request
@@ -2704,16 +3000,66 @@ function loadRecommendationsForView({ force = false, selectFirst = true } = {}) 
     });
 }
 
-async function loadContentUpdates(requestId) {
+function resetContentUpdatesForQuery() {
+  state.contentUpdatesRequestId += 1;
+  state.contentUpdates = null;
+  state.contentUpdatesLoaded = false;
+  state.contentUpdatesLoading = null;
+  state.contentUpdatesLoadingMore = null;
+  state.contentUpdatesError = null;
+  state.contentUpdatesPageError = null;
+}
+
+function contentUpdateEventKey(event) {
+  if (event?.id != null) return `id:${event.id}`;
+  return [
+    event?.event_type,
+    event?.source_anime_id ?? event?.anime_id,
+    event?.episode_id,
+    event?.video_source_id,
+    event?.occurred_at,
+  ].join(":");
+}
+
+function mergeContentUpdateList(current, incoming, keyGetter) {
+  const merged = new Map();
+  for (const item of [...(current || []), ...(incoming || [])]) {
+    merged.set(keyGetter(item), item);
+  }
+  return [...merged.values()];
+}
+
+async function loadContentUpdates(requestId, { offset = 0, append = false } = {}) {
   const params = new URLSearchParams({
     days: state.contentUpdateDays,
     limit: String(CONTENT_UPDATE_LIMIT),
+    event_type: state.contentUpdateType,
+    offset: String(offset),
   });
   const payload = await api(`${CONTENT_UPDATE_ENDPOINT}?${params.toString()}`);
   if (requestId !== state.contentUpdatesRequestId) return state.contentUpdates;
-  state.contentUpdates = payload;
+  if (append && state.contentUpdates) {
+    const events = mergeContentUpdateList(
+      state.contentUpdates.events,
+      payload.events,
+      contentUpdateEventKey,
+    ).sort((left, right) => {
+      const byTime = String(right?.occurred_at || "").localeCompare(String(left?.occurred_at || ""));
+      if (byTime) return byTime;
+      return Number(right?.id || 0) - Number(left?.id || 0);
+    });
+    const items = mergeContentUpdateList(
+      state.contentUpdates.items,
+      payload.items,
+      item => String(item?.id ?? item?.slug ?? ""),
+    );
+    state.contentUpdates = { ...payload, events, items };
+  } else {
+    state.contentUpdates = payload;
+  }
   state.contentUpdatesLoaded = true;
   state.contentUpdatesError = null;
+  state.contentUpdatesPageError = null;
   return state.contentUpdates;
 }
 
@@ -2724,6 +3070,7 @@ function ensureContentUpdates({ force = false } = {}) {
   if (!force && state.contentUpdatesLoading) return state.contentUpdatesLoading;
 
   state.contentUpdatesError = null;
+  state.contentUpdatesPageError = null;
   const requestId = state.contentUpdatesRequestId + 1;
   state.contentUpdatesRequestId = requestId;
   const request = loadContentUpdates(requestId)
@@ -2739,6 +3086,36 @@ function ensureContentUpdates({ force = false } = {}) {
     });
   state.contentUpdatesLoading = request;
   return state.contentUpdatesLoading;
+}
+
+async function loadMoreContentUpdates() {
+  const pagination = state.contentUpdates?.pagination;
+  if (!isUpdatesView() || !pagination?.has_more || state.contentUpdatesLoadingMore) return;
+  const nextOffset = Number(pagination.next_offset);
+  if (!Number.isInteger(nextOffset) || nextOffset < 0) return;
+
+  state.contentUpdatesPageError = null;
+  const requestId = state.contentUpdatesRequestId + 1;
+  state.contentUpdatesRequestId = requestId;
+  const request = loadContentUpdates(requestId, { offset: nextOffset, append: true });
+  state.contentUpdatesLoadingMore = request;
+  renderContentUpdatesView();
+  try {
+    await request;
+    if (requestId !== state.contentUpdatesRequestId) return;
+    applyFilter({ selectFirst: false });
+  } catch (error) {
+    if (requestId !== state.contentUpdatesRequestId) return;
+    state.contentUpdatesPageError = error;
+    throw error;
+  } finally {
+    if (state.contentUpdatesLoadingMore === request) {
+      state.contentUpdatesLoadingMore = null;
+    }
+    if (requestId === state.contentUpdatesRequestId && isUpdatesView()) {
+      renderDetail();
+    }
+  }
 }
 
 function loadContentUpdatesForView({ force = false } = {}) {
@@ -2773,8 +3150,11 @@ function renderViewTabs() {
 }
 
 function activateViewMode(mode, { selectFirst = true } = {}) {
+  rememberCurrentViewSort();
   state.viewMode = mode || "all";
+  restoreViewSort();
   renderViewTabs();
+  renderSortControls();
   loadRecommendationsForView();
   loadContentUpdatesForView();
   applyFilter({ selectFirst: isUpdatesView() ? false : selectFirst });
@@ -2803,7 +3183,12 @@ async function openContentUpdateEvent(event) {
     openedTitle = true;
   }
   const episodeId = episodeIdForUpdateEvent(event);
-  if (episodeId) await selectEpisode(episodeId, { history: openedTitle ? "replace" : "push" });
+  if (episodeId) {
+    await selectEpisode(episodeId, {
+      history: openedTitle ? "replace" : "push",
+      persist: false,
+    });
+  }
 }
 
 el.search.addEventListener("input", () => {
@@ -2816,13 +3201,17 @@ el.search.addEventListener("input", () => {
   }, SEARCH_INPUT_DEBOUNCE_MS);
 });
 el.sortBy.addEventListener("change", () => {
+  if (fixedSortForView()) return;
   state.sortBy = el.sortBy.value;
   state.sortDir = sortDefinition(state.sortBy).defaultDir;
+  rememberCurrentViewSort();
   renderSortDirection();
   applyFilter({ selectFirst: true });
 });
 el.sortDirToggle.addEventListener("click", () => {
+  if (fixedSortForView()) return;
   state.sortDir = state.sortDir === "desc" ? "asc" : "desc";
+  rememberCurrentViewSort();
   renderSortDirection();
   applyFilter({ selectFirst: true });
 });
@@ -2850,17 +3239,41 @@ el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
   saveUserState({ is_favorite: !state.detail.is_favorite }).catch(reportActionError("toggle favorite"));
 });
+el.watchStatus.addEventListener("change", () => {
+  if (!state.detail) return;
+  const watchStatus = el.watchStatus.value || null;
+  const patch = {
+    watch_status: watchStatus,
+    watched: watchStatus === "completed",
+  };
+  if (watchStatus == null || watchStatus === "planned" || watchStatus === "dropped") {
+    patch.progress_episode_number = null;
+  }
+  if (watchStatus !== "watching") discardWatchSession();
+  saveUserState(patch).catch(reportActionError("change watch status"));
+});
 el.notWatchingButton.addEventListener("click", () => {
   if (!state.detail) return;
   discardWatchSession();
-  saveUserState({ progress_episode_number: null, watched: false }).catch(reportActionError("clear watching state"));
+  saveUserState({ progress_episode_number: null, watched: false, watch_status: null })
+    .catch(reportActionError("clear watching state"));
+});
+el.notInterestedButton.addEventListener("click", () => {
+  if (!state.detail) return;
+  saveUserState({ not_interested: !state.detail.not_interested })
+    .catch(reportActionError("toggle recommendation dismissal"));
 });
 el.logoutButton.addEventListener("click", () => {
   logout().catch(reportActionError("logout"));
 });
 el.watchedToggle.addEventListener("change", () => {
   if (!state.detail) return;
-  saveUserState({ watched: el.watchedToggle.checked }).catch(reportActionError("toggle watched"));
+  const watched = el.watchedToggle.checked;
+  saveUserState({
+    watched,
+    watch_status: watched ? "completed" : null,
+    ...(watched ? {} : { progress_episode_number: null }),
+  }).catch(reportActionError("toggle watched"));
 });
 el.contentSource.addEventListener("change", event => {
   state.selectedContentSource = event.target.value || null;
@@ -2872,25 +3285,39 @@ el.contentSource.addEventListener("change", event => {
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
+  persistCurrentEpisodeSelection().catch(reportActionError("save content source"));
 });
 el.translation.addEventListener("change", event => {
-  state.selectedTranslation = event.target.value;
-  state.selectedSourceId = null;
+  const matchingSources = sourcesForEpisode(state.selectedEpisodeId).filter(source => (
+    frontendRuntime.sourceTranslationKey(source) === event.target.value
+  ));
+  const selected = frontendRuntime.selectPreferredProvider(
+    matchingSources,
+    state.sourceSelectionPreference,
+  );
+  state.selectedTranslation = selected?.translation_id != null
+    ? String(selected.translation_id)
+    : null;
+  state.selectedSourceId = selected?.id != null ? String(selected.id) : null;
+  state.sourceSelectionPreference = frontendRuntime.sourcePreference(selected);
   const previousUrlSync = state.urlSyncSuspended;
   state.urlSyncSuspended = true;
   renderSources();
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
+  persistCurrentEpisodeSelection().catch(reportActionError("save translation"));
 });
 el.provider.addEventListener("change", event => {
   state.selectedSourceId = event.target.value;
+  state.sourceSelectionPreference = frontendRuntime.sourcePreference(selectedSourceForEpisode());
   const previousUrlSync = state.urlSyncSuspended;
   state.urlSyncSuspended = true;
   renderSources();
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
+  persistCurrentEpisodeSelection().catch(reportActionError("save provider"));
 });
 el.fullscreenToggle.addEventListener("click", () => {
   toggleFullscreen().catch(reportActionError("fullscreen button"));

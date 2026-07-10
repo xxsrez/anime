@@ -3,6 +3,147 @@
     return String(value || "").trim().toLocaleLowerCase("en-US").replace(/\.$/, "");
   }
 
+  function normalizeSourceIdentity(value) {
+    return String(value || "")
+      .trim()
+      .toLocaleLowerCase("ru-RU")
+      .replace(/ё/g, "е")
+      .replace(/э/g, "е")
+      .normalize("NFKD")
+      .replace(/\p{M}+/gu, "")
+      .replace(/[^\p{L}\p{N}_\s]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeTranslationKey(value) {
+    let key = normalizeSourceIdentity(value);
+    if (key.startsWith("озвучка ")) key = key.slice("озвучка ".length).trim();
+    const compact = key.replace(/\s+/g, "");
+    const aliases = {
+      dreamcast: "dream cast",
+      "dream cast": "dream cast",
+      "light family": "lightfamily",
+    };
+    return aliases[key] || aliases[compact] || key;
+  }
+
+  function sourceTranslationKey(source) {
+    return normalizeTranslationKey(
+      source?.translation_key
+      || source?.translation_title
+      || source?.translation_id,
+    );
+  }
+
+  function groupSourcesByTranslation(sources) {
+    const groups = new Map();
+    for (const source of (sources || []).filter(Boolean)) {
+      const key = sourceTranslationKey(source);
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          title: source.translation_title || String(source.translation_id ?? "Без озвучки"),
+          sources: [],
+        });
+      }
+      groups.get(key).sources.push(source);
+    }
+    return [...groups.values()];
+  }
+
+  function sourcePreference(source) {
+    if (!source) return null;
+    return {
+      translationKey: sourceTranslationKey(source),
+      providerTitleKey: normalizeSourceIdentity(source.provider_title),
+      providerHost: normalizeHostname(source.embed_host),
+    };
+  }
+
+  function normalizeSourcePreference(preference) {
+    if (!preference) return null;
+    return {
+      translationKey: normalizeTranslationKey(
+        preference.translationKey
+          || preference.translation_key
+          || preference.translationTitle
+          || preference.translation_title,
+      ),
+      providerTitleKey: normalizeSourceIdentity(
+        preference.providerTitleKey
+          || preference.provider_title_key
+          || preference.providerTitle
+          || preference.provider_title,
+      ),
+      providerHost: normalizeHostname(
+        preference.providerHost
+          || preference.provider_host
+          || preference.embedHost
+          || preference.embed_host,
+      ),
+    };
+  }
+
+  function selectPreferredProvider(sources, preference) {
+    const ranked = (sources || []).filter(Boolean);
+    if (!ranked.length) return null;
+    const normalized = normalizeSourcePreference(preference);
+    if (!normalized) return ranked[0];
+
+    const providerTitleMatches = source => (
+      normalized.providerTitleKey
+      && normalizeSourceIdentity(source.provider_title) === normalized.providerTitleKey
+    );
+    const providerHostMatches = source => (
+      normalized.providerHost
+      && normalizeHostname(source.embed_host) === normalized.providerHost
+    );
+    return ranked.find(source => providerTitleMatches(source) && providerHostMatches(source))
+      || ranked.find(providerTitleMatches)
+      || ranked.find(providerHostMatches)
+      || ranked[0];
+  }
+
+  function selectPreferredSource(sources, preference) {
+    const ranked = (sources || []).filter(Boolean);
+    if (!ranked.length) return null;
+    const normalized = normalizeSourcePreference(preference);
+    if (!normalized?.translationKey) return ranked[0];
+
+    const matchingTranslation = ranked.filter(source => (
+      sourceTranslationKey(source) === normalized.translationKey
+    ));
+    return matchingTranslation.length
+      ? selectPreferredProvider(matchingTranslation, normalized)
+      : ranked[0];
+  }
+
+  function selectSourceForEpisode(sources, {
+    selectedSourceId = null,
+    selectedTranslationId = null,
+    preference = null,
+  } = {}) {
+    const ranked = (sources || []).filter(Boolean);
+    if (!ranked.length) return null;
+
+    if (selectedSourceId != null && selectedSourceId !== "") {
+      const exactSource = ranked.find(source => String(source.id) === String(selectedSourceId));
+      if (exactSource) return exactSource;
+    }
+
+    if (selectedTranslationId != null && selectedTranslationId !== "") {
+      const matchingTranslationId = ranked.filter(source => (
+        String(source.translation_id) === String(selectedTranslationId)
+      ));
+      if (matchingTranslationId.length) {
+        return selectPreferredProvider(matchingTranslationId, preference);
+      }
+    }
+
+    return selectPreferredSource(ranked, preference);
+  }
+
   function hostnameMatches(hostname, allowedHostname) {
     const host = normalizeHostname(hostname);
     const allowed = normalizeHostname(allowedHostname);
@@ -45,6 +186,32 @@
   function hasPlaybackEvidence({ pageHidden = false, playerFocused = false, fullscreen = false, evidenceExpiresAt = 0, now = Date.now() } = {}) {
     if (pageHidden || Number(evidenceExpiresAt) <= Number(now)) return false;
     return Boolean(playerFocused || fullscreen);
+  }
+
+  function effectiveWatchStatus(item) {
+    const status = String(item?.watch_status || "").trim();
+    if (status) return status;
+    if (item?.watched) return "completed";
+    if (item?.progress_episode_number != null || item?.last_watch?.progress_episode_number != null) return "watching";
+    return "";
+  }
+
+  function watchStatusLabel(status) {
+    return {
+      planned: "буду смотреть",
+      watching: "смотрю",
+      paused: "на паузе",
+      completed: "просмотрено",
+      dropped: "брошено",
+    }[status] || "";
+  }
+
+  function patchChanges(target, patch, fields = null) {
+    const keys = fields || Object.keys(patch || {});
+    return keys.some(key => (
+      Object.prototype.hasOwnProperty.call(patch || {}, key)
+      && !Object.is(target?.[key], patch[key])
+    ));
   }
 
   function createKeyedSerialQueue(worker) {
@@ -96,10 +263,21 @@
   const api = {
     hostnameMatches,
     safeHttpsUrl,
+    normalizeSourceIdentity,
+    normalizeTranslationKey,
+    sourceTranslationKey,
+    groupSourcesByTranslation,
+    sourcePreference,
+    selectPreferredProvider,
+    selectPreferredSource,
+    selectSourceForEpisode,
     localCalendarDayNumber,
     localCalendarDayDifference,
     boundedElapsedSeconds,
     hasPlaybackEvidence,
+    effectiveWatchStatus,
+    watchStatusLabel,
+    patchChanges,
     createKeyedSerialQueue,
   };
 

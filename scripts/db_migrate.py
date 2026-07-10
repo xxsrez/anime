@@ -24,6 +24,10 @@ HISTORY_TABLE = "schema_migrations"
 LINE_COMMENT_RE = re.compile(r"--[^\n]*(?=\n|$)")
 BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 TRANSACTION_CONTROL_RE = re.compile(r"^(begin|commit|end|rollback|savepoint|release)\b", re.I)
+RUNTIME_SCHEMA_CONTRACT_RE = re.compile(
+    r"^\s*--\s*runtime-schema-contract:\s*([a-z0-9][a-z0-9._-]*)\s*$",
+    re.I | re.M,
+)
 
 
 class MigrationError(RuntimeError):
@@ -304,6 +308,141 @@ def apply_migration_body(con, migration):
     return duration_ms
 
 
+def migration_runtime_schema_contract(migration):
+    header = migration.full_path.read_text(encoding="utf-8")[:4096]
+    match = RUNTIME_SCHEMA_CONTRACT_RE.search(header)
+    return match.group(1).lower() if match else None
+
+
+def user_library_state_v1_satisfied(con):
+    table = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_title_state'"
+    ).fetchone()
+    if not table:
+        return False
+    columns = {row[1] for row in con.execute("pragma table_info(user_title_state)")}
+    required_columns = {
+        "user_id",
+        "anime_id",
+        "is_favorite",
+        "progress_episode_number",
+        "watched",
+        "watch_status",
+        "not_interested",
+        "updated_at",
+        "favorite_updated_at",
+        "watch_status_updated_at",
+        "not_interested_updated_at",
+    }
+    if not required_columns <= columns:
+        return False
+    indexes = {row[1] for row in con.execute("pragma index_list(user_title_state)")}
+    if not {
+        "idx_user_title_state_user_watch_status",
+        "idx_user_title_state_user_not_interested",
+    } <= indexes:
+        return False
+    # Finish the idempotent data part of the contract before recording it.  The
+    # SQL file itself cannot conditionally skip SQLite ADD COLUMN statements,
+    # so a full runtime-created shape is adopted and repaired here instead.
+    con.execute(
+        """
+        update user_title_state
+        set watch_status = case
+                when watched = 1 then 'completed'
+                when progress_episode_number is not null then 'watching'
+                else watch_status
+            end,
+            favorite_updated_at = case
+                when is_favorite = 1 then coalesce(favorite_updated_at, updated_at)
+                else favorite_updated_at
+            end,
+            watch_status_updated_at = case
+                when watch_status is not null or watched = 1 or progress_episode_number is not null
+                then coalesce(watch_status_updated_at, updated_at)
+                else watch_status_updated_at
+            end,
+            not_interested_updated_at = case
+                when not_interested = 1 then coalesce(not_interested_updated_at, updated_at)
+                else not_interested_updated_at
+            end
+        where (watch_status is null and (watched = 1 or progress_episode_number is not null))
+           or (is_favorite = 1 and favorite_updated_at is null)
+           or (watch_status is not null and watch_status_updated_at is null)
+           or (not_interested = 1 and not_interested_updated_at is null)
+        """
+    )
+    return True
+
+
+RUNTIME_SCHEMA_CONTRACTS = {
+    "user-library-state-v1": {
+        "path": "2026-07-09_zzzzz-user-library-state/00_add_user_library_state.sql",
+        "canonical_file": DEFAULT_MIGRATIONS
+        / "2026-07-09_zzzzz-user-library-state"
+        / "00_add_user_library_state.sql",
+        "checker": user_library_state_v1_satisfied,
+    },
+}
+
+
+def runtime_schema_contract_satisfied(con, migration):
+    name = migration_runtime_schema_contract(migration)
+    contract = RUNTIME_SCHEMA_CONTRACTS.get(name)
+    if not contract or migration.path != contract["path"]:
+        return False
+    canonical_file = contract["canonical_file"]
+    if not canonical_file.is_file() or migration.checksum_sha256 != file_checksum(canonical_file):
+        return False
+    return bool(contract["checker"](con))
+
+
+def record_adopted_migration(con, migration):
+    con.execute(
+        f"""
+        insert into {HISTORY_TABLE} (
+            path, folder, filename, checksum_sha256, size_bytes,
+            applied_at, duration_ms, status
+        ) values (?, ?, ?, ?, ?, ?, 0, 'applied')
+        """,
+        (
+            migration.path,
+            migration.folder,
+            migration.filename,
+            migration.checksum_sha256,
+            migration.size_bytes,
+            now_iso(),
+        ),
+    )
+
+
+def adopt_runtime_satisfied_migrations(db_path, pending):
+    if not pending:
+        return []
+    con = connect_existing(db_path)
+    try:
+        con.execute("begin immediate")
+        adopted = [
+            migration
+            for migration in pending
+            if runtime_schema_contract_satisfied(con, migration)
+        ]
+        if not adopted:
+            con.execute("rollback")
+            return []
+        ensure_history_table(con)
+        for migration in adopted:
+            record_adopted_migration(con, migration)
+        con.execute("commit")
+        return adopted
+    except Exception:
+        if con.in_transaction:
+            con.execute("rollback")
+        raise
+    finally:
+        con.close()
+
+
 def verify_connection(con):
     integrity = con.execute("pragma integrity_check").fetchone()[0]
     if integrity != "ok":
@@ -379,20 +518,40 @@ def apply_pending(
         if not pending:
             if verify:
                 verify_database(db_path)
-            return {"applied": [], "backup": None, "missing_files": plan["missing_files"]}
+            return {
+                "applied": [],
+                "adopted": [],
+                "backup": None,
+                "missing_files": plan["missing_files"],
+            }
+
+        # Snapshot before contract adoption: adoption repairs data and writes
+        # migration history, so it is part of the migration operation too.
+        if verify:
+            verify_quick_integrity(db_path)
+        backup_path = None
+        if not no_backup:
+            backup_path = backup_database(db_path, backup_dir or db_path.parent / "backups")
+
+        adopted = adopt_runtime_satisfied_migrations(db_path, pending)
+        if adopted:
+            adopted_paths = {migration.path for migration in adopted}
+            pending = [migration for migration in pending if migration.path not in adopted_paths]
+        if not pending:
+            if verify:
+                verify_database(db_path)
+            return {
+                "applied": [],
+                "adopted": adopted,
+                "backup": backup_path,
+                "missing_files": plan["missing_files"],
+            }
 
         # The checks have distinct roles: a cheap source quick-check rejects
         # obvious damage, a full candidate check proves the complete batch and
         # its FKs before live writes, and a final full check proves the actual
         # live result before commit. FK damage in the source may deliberately be
         # repaired by a pending migration, so it is checked after the batch.
-        if verify:
-            verify_quick_integrity(db_path)
-
-        backup_path = None
-        if not no_backup:
-            backup_path = backup_database(db_path, backup_dir or db_path.parent / "backups")
-
         if verify:
             if backup_path is not None:
                 # The transaction in preflight_migrations is always rolled
@@ -421,7 +580,12 @@ def apply_pending(
                 raise
         finally:
             con.close()
-        return {"applied": applied, "backup": backup_path, "missing_files": plan["missing_files"]}
+        return {
+            "applied": applied,
+            "adopted": adopted,
+            "backup": backup_path,
+            "missing_files": plan["missing_files"],
+        }
 
 
 def print_plan(plan):

@@ -13,6 +13,110 @@ assert.equal(
   "https://kodikplayer.com/seria/1/token/720p",
 );
 
+assert.equal(runtime.normalizeTranslationKey("Dreamcast"), "dream cast");
+assert.equal(runtime.normalizeTranslationKey("Dream Cast"), "dream cast");
+assert.equal(runtime.normalizeTranslationKey("Озвучка Dream Cast"), "dream cast");
+
+const previousDreamCast = {
+  id: 100,
+  translation_id: 10,
+  translation_title: "Dreamcast",
+  provider_title: "Kodik",
+  embed_host: "kodikplayer.com",
+};
+const nextEpisodeSources = [
+  {
+    id: 201,
+    translation_id: 20,
+    translation_title: "AniLibria",
+    provider_title: "Kodik",
+    embed_host: "kodikplayer.com",
+  },
+  {
+    id: 202,
+    translation_id: 21,
+    translation_title: "Озвучка Dream Cast",
+    provider_title: "Sibnet",
+    embed_host: "video.sibnet.ru",
+  },
+  {
+    id: 203,
+    translation_id: 21,
+    translation_title: "Dream Cast",
+    provider_title: "Kodik",
+    embed_host: "kodikplayer.com",
+  },
+];
+const dreamCastPreference = runtime.sourcePreference(previousDreamCast);
+assert.deepEqual(dreamCastPreference, {
+  translationKey: "dream cast",
+  providerTitleKey: "kodik",
+  providerHost: "kodikplayer.com",
+});
+assert.equal(runtime.selectPreferredSource(nextEpisodeSources, dreamCastPreference).id, 203);
+assert.equal(runtime.selectSourceForEpisode(nextEpisodeSources, {
+  preference: dreamCastPreference,
+}).id, 203);
+
+const providerFallbackSources = [
+  {
+    id: 301,
+    translation_id: 31,
+    translation_title: "Dream Cast",
+    provider_title: "AniBoom",
+    embed_host: "aniboom.one",
+  },
+  {
+    id: 302,
+    translation_id: 31,
+    translation_title: "Dream Cast",
+    provider_title: "Kodik Mirror",
+    embed_host: "kodikplayer.com",
+  },
+];
+assert.equal(runtime.selectPreferredSource(providerFallbackSources, dreamCastPreference).id, 302);
+
+const unavailableProviderSources = [
+  {
+    id: 401,
+    translation_id: 41,
+    translation_title: "Dream Cast",
+    provider_title: "AniBoom",
+    embed_host: "aniboom.one",
+  },
+  {
+    id: 402,
+    translation_id: 41,
+    translation_title: "Dream Cast",
+    provider_title: "Sibnet",
+    embed_host: "video.sibnet.ru",
+  },
+];
+assert.equal(runtime.selectPreferredSource(unavailableProviderSources, dreamCastPreference).id, 401);
+assert.equal(runtime.selectPreferredSource(nextEpisodeSources, null).id, 201);
+assert.equal(runtime.selectPreferredSource(nextEpisodeSources, {
+  translationKey: "Missing Dub",
+  providerTitleKey: "Missing Player",
+}).id, 201);
+assert.equal(runtime.selectPreferredSource([], dreamCastPreference), null);
+
+assert.equal(runtime.selectSourceForEpisode(nextEpisodeSources, {
+  selectedSourceId: "202",
+  preference: dreamCastPreference,
+}).id, 202);
+assert.equal(runtime.selectSourceForEpisode(nextEpisodeSources, {
+  selectedTranslationId: "21",
+  preference: dreamCastPreference,
+}).id, 203);
+
+const semanticTranslationGroups = runtime.groupSourcesByTranslation([
+  { id: 1, translation_id: 10, translation_title: "Akari Group" },
+  { id: 2, translation_id: 11, translation_title: "Akari GROUP" },
+  { id: 3, translation_id: 12, translation_title: "Dream Cast" },
+]);
+assert.equal(semanticTranslationGroups.length, 2);
+assert.deepEqual(semanticTranslationGroups[0].sources.map(source => source.id), [1, 2]);
+
 const springBefore = new Date(2026, 2, 28, 23, 30);
 const springAfter = new Date(2026, 2, 29, 23, 30);
 assert.equal(runtime.localCalendarDayDifference(springAfter, springBefore), 1);
@@ -24,6 +128,31 @@ assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresA
 assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresAt: 5, now: 10 }), false);
 assert.equal(runtime.hasPlaybackEvidence({ fullscreen: true, evidenceExpiresAt: 20, now: 10 }), true);
 assert.equal(runtime.hasPlaybackEvidence({ pageHidden: true, playerFocused: true, evidenceExpiresAt: 20, now: 10 }), false);
+
+assert.equal(runtime.effectiveWatchStatus({ watched: true }), "completed");
+assert.equal(runtime.effectiveWatchStatus({ progress_episode_number: 3 }), "watching");
+assert.equal(runtime.effectiveWatchStatus({ last_watch: { progress_episode_number: 4 } }), "watching");
+assert.equal(runtime.effectiveWatchStatus({ watched: true, watch_status: "dropped" }), "dropped");
+assert.equal(runtime.effectiveWatchStatus({}), "");
+assert.equal(runtime.watchStatusLabel("planned"), "буду смотреть");
+assert.equal(runtime.watchStatusLabel("paused"), "на паузе");
+assert.equal(runtime.patchChanges({ updated_at: "old" }, { updated_at: "new" }), true);
+assert.equal(
+  runtime.patchChanges(
+    { watch_status: "watching", updated_at: "old" },
+    { watch_status: "watching", updated_at: "new" },
+    ["watch_status", "watched", "progress_episode_number"],
+  ),
+  false,
+);
+assert.equal(
+  runtime.patchChanges(
+    { watch_status: "paused" },
+    { watch_status: "watching", updated_at: "new" },
+    ["watch_status"],
+  ),
+  true,
+);
 
 let meaningfulPlaybackSeconds = 0;
 for (let heartbeat = 0; heartbeat < 11; heartbeat += 1) {
