@@ -3,7 +3,9 @@ import argparse
 from collections import OrderedDict, defaultdict
 from contextlib import ExitStack
 import copy
+import datetime as dt
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -13,7 +15,7 @@ import tempfile
 import time
 import traceback
 import urllib.error
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request
 
 import backfill_players
@@ -31,6 +33,13 @@ YUMMY_ONGOING_PAGE_SIZE = 100
 RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 ROOT = Path(__file__).resolve().parent
 DEFAULT_PRIVATE_MIGRATIONS = ROOT / "data" / "private-migrations"
+ANIMEGO_BUNDLE_VERSION = 1
+MAX_ANIMEGO_BUNDLE_TITLES = 250
+MAX_ANIMEGO_BUNDLE_EPISODES = 10_000
+MAX_ANIMEGO_BUNDLE_PROVIDERS = 100_000
+MAX_ANIMEGO_BUNDLE_AGE = dt.timedelta(hours=6)
+MAX_ANIMEGO_BUNDLE_FUTURE_SKEW = dt.timedelta(minutes=10)
+MAX_ANIMEGO_COLLECTION_DURATION = dt.timedelta(minutes=45)
 
 
 class SyncFailedError(RuntimeError):
@@ -160,7 +169,7 @@ def record_update_events(con, args, item, writes, *, new_title, reason):
 
         seen_translation_events = set()
         for provider in providers:
-            identity = modern_yummy_provider_identity(provider)
+            identity = stable_provider_identity(provider)
             if identity is not None and identity in before.get("known_provider_identities", set()):
                 # A stable upstream provider whose URL/metadata rotated was
                 # refreshed, not newly added content.
@@ -225,6 +234,9 @@ def call_with_retries(args, label, func):
     attempts = max(1, args.retry_attempts)
     last_exc = None
     for attempt in range(1, attempts + 1):
+        deadline = getattr(args, "deadline_monotonic", None)
+        if deadline is not None and time.monotonic() >= deadline:
+            raise TimeoutError("content sync collection deadline exceeded")
         try:
             return func()
         except urllib.error.HTTPError as exc:
@@ -234,6 +246,8 @@ def call_with_retries(args, label, func):
             if code not in RETRYABLE_HTTP_CODES or attempt == attempts:
                 raise
             wait = args.retry_backoff * attempt
+            if deadline is not None and time.monotonic() + wait >= deadline:
+                raise TimeoutError("content sync collection deadline exceeded") from exc
             print(f"  retry {label} after HTTP {code} ({attempt}/{attempts}), sleeping {wait:.1f}s")
             time.sleep(wait)
         except urllib.error.URLError as exc:
@@ -241,6 +255,8 @@ def call_with_retries(args, label, func):
             if attempt == attempts:
                 raise
             wait = args.retry_backoff * attempt
+            if deadline is not None and time.monotonic() + wait >= deadline:
+                raise TimeoutError("content sync collection deadline exceeded") from exc
             print(f"  retry {label} after network error ({attempt}/{attempts}), sleeping {wait:.1f}s")
             time.sleep(wait)
     raise last_exc
@@ -276,6 +292,32 @@ def modern_yummy_provider_identity(provider):
     if not str(provider_id or "").startswith("yummyani-"):
         return None
     return (str(provider_id), int(provider.get("translation_id") or 0))
+
+
+def stable_provider_identity(provider):
+    provider_id = provider.get("provider_id")
+    if provider_id in (None, ""):
+        return None
+    return (str(provider_id), int(provider.get("translation_id") or 0))
+
+
+def stable_provider_identity_known(con, episode_id, provider):
+    identity = stable_provider_identity(provider)
+    if identity is None:
+        return False
+    row = con.execute(
+        """
+        select 1
+        from video_sources
+        where episode_id = ?
+          and provider_id = ?
+          and coalesce(translation_id, 0) = ?
+          and embed_url is not null
+        limit 1
+        """,
+        (episode_id, *identity),
+    ).fetchone()
+    return row is not None
 
 
 def modern_yummy_provider_identity_known(con, episode_id, provider):
@@ -886,6 +928,9 @@ def collect_animego_listing(args, stats=None):
                 break
             page_items = animego.parse_listing(page_html)
             new_items = [item for item in page_items if item["id"] not in seen]
+            if stats is not None:
+                stats["listing_pages"] += 1
+                stats["listing_titles"] += len(new_items)
             for item in new_items:
                 seen.add(item["id"])
                 item["source"] = "animego"
@@ -915,17 +960,14 @@ def animego_source_unavailable_error(error):
     return isinstance(error, urllib.error.URLError)
 
 
-def sync_animego_item(con, item, args, stats, reason):
-    stats["titles_checked"] += 1
-    new_title = not anime_row_exists(con, item["id"])
+def fetch_animego_snapshot(item, args, episode_selector=None):
     detail = call_with_retries(
         args,
         item["url"],
         lambda: animego.parse_detail(animego.fetch_text(item["url"], delay=args.delay)),
     )
     if not detail["player_url"]:
-        stats["no_player_skipped"] += 1
-        return
+        return None
 
     player_json = call_with_retries(
         args,
@@ -937,12 +979,12 @@ def sync_animego_item(con, item, args, stats, reason):
     if not episodes and initial_providers:
         episodes = [animego.synthetic_episode(item["id"], item["title"])]
 
-    writes = []
-    for episode in selected_episodes(episodes, args.episode_limit):
-        if args.missing_only and not args.refresh_known and episode_has_playable(con, episode["id"]):
-            stats["episode_known_skipped"] += 1
-            continue
+    selected = selected_episodes(episodes, args.episode_limit)
+    if episode_selector is not None:
+        selected = list(episode_selector(selected, selected_episode_id))
 
+    snapshots = []
+    for episode in selected:
         if initial_providers and (
             episode["id"] == int(item["id"]) * 1000 + 1
             or selected_episode_id == episode["id"]
@@ -965,6 +1007,36 @@ def sync_animego_item(con, item, args, stats, reason):
             unavailable_reason = animego.parse_unavailable_reason(data.get("content_online") or "")
 
         providers = [provider for provider in providers if provider_has_embed(provider)]
+        snapshots.append(
+            {
+                "episode": dict(episode),
+                "providers": [dict(provider) for provider in providers],
+                "unavailable_reason": unavailable_reason,
+            }
+        )
+
+    return {
+        "item": dict(item),
+        "detail": dict(detail),
+        "episodes": snapshots,
+    }
+
+
+def apply_animego_snapshot(con, snapshot, args, stats, reason):
+    item = snapshot["item"]
+    detail = snapshot["detail"]
+    new_title = not anime_row_exists(con, item["id"])
+    writes = []
+    for episode_snapshot in snapshot.get("episodes") or []:
+        episode = episode_snapshot["episode"]
+        providers = list(episode_snapshot.get("providers") or [])
+        unavailable_reason = episode_snapshot.get("unavailable_reason")
+        known_provider_identities = {
+            identity
+            for provider in providers
+            if (identity := stable_provider_identity(provider)) is not None
+            and stable_provider_identity_known(con, episode["id"], provider)
+        }
         if not args.refresh_known:
             providers = [
                 provider
@@ -988,6 +1060,7 @@ def sync_animego_item(con, item, args, stats, reason):
                     {
                         "episode_had_playable": episode_has_playable(con, episode["id"]),
                         "known_translations": known_translations,
+                        "known_provider_identities": known_provider_identities,
                     },
                 )
             )
@@ -998,6 +1071,7 @@ def sync_animego_item(con, item, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
+    writes_before_quarantine = len(writes)
     writes, duplicate_providers = quarantine_cross_episode_provider_urls(
         con,
         item["id"],
@@ -1006,6 +1080,10 @@ def sync_animego_item(con, item, args, stats, reason):
     )
     if duplicate_providers:
         stats["cross_episode_provider_urls_skipped"] += duplicate_providers
+    quarantined_episodes = writes_before_quarantine - len(writes)
+    if duplicate_providers and quarantined_episodes:
+        stats["failed"] += quarantined_episodes
+        stats["cross_episode_quarantined_episodes"] += quarantined_episodes
     if not writes:
         stats["known_skipped"] += 1
         return
@@ -1034,6 +1112,23 @@ def sync_animego_item(con, item, args, stats, reason):
 
     stats["titles_imported"] += 1
     print(f"  animego {item['id']} {item['title']}: {len(writes)} episodes from {reason}")
+
+
+def sync_animego_item(con, item, args, stats, reason):
+    stats["titles_checked"] += 1
+
+    def episode_selector(episodes, _selected_episode_id):
+        for episode in episodes:
+            if args.missing_only and not args.refresh_known and episode_has_playable(con, episode["id"]):
+                stats["episode_known_skipped"] += 1
+                continue
+            yield episode
+
+    snapshot = fetch_animego_snapshot(item, args, episode_selector=episode_selector)
+    if snapshot is None:
+        stats["no_player_skipped"] += 1
+        return
+    apply_animego_snapshot(con, snapshot, args, stats, reason)
 
 
 def sync_animego(con, args):
@@ -1125,6 +1220,460 @@ def sync_animego(con, args):
                 )
                 break
     return stats
+
+
+def parse_animego_bundle_timestamp(value, field):
+    if not isinstance(value, str) or not value or len(value) > 64:
+        raise ValueError(f"AnimeGO bundle {field} is invalid")
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"AnimeGO bundle {field} is invalid") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"AnimeGO bundle {field} must include a timezone")
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def validate_animego_bundle(bundle, now=None):
+    if not isinstance(bundle, dict):
+        raise ValueError("AnimeGO bundle must be an object")
+    bundle = copy.deepcopy(bundle)
+    if bundle.get("version") != ANIMEGO_BUNDLE_VERSION:
+        raise ValueError(f"unsupported AnimeGO bundle version: {bundle.get('version')!r}")
+    if bundle.get("source") != "animego":
+        raise ValueError("AnimeGO bundle source must be animego")
+    if type(bundle.get("complete")) is not bool:
+        raise ValueError("AnimeGO bundle complete flag must be boolean")
+
+    collected_at = parse_animego_bundle_timestamp(bundle.get("collected_at"), "collected_at")
+    collection_started_at = parse_animego_bundle_timestamp(
+        bundle.get("collection_started_at"),
+        "collection_started_at",
+    )
+    now = now or dt.datetime.now(dt.timezone.utc)
+    now = now.replace(tzinfo=dt.timezone.utc) if now.tzinfo is None else now.astimezone(dt.timezone.utc)
+    if collection_started_at > collected_at:
+        raise ValueError("AnimeGO bundle collection timestamps are reversed")
+    if collected_at - collection_started_at > MAX_ANIMEGO_COLLECTION_DURATION:
+        raise ValueError("AnimeGO bundle collection exceeded the maximum duration")
+    if collected_at < now - MAX_ANIMEGO_BUNDLE_AGE:
+        raise ValueError("AnimeGO bundle is stale")
+    if collected_at > now + MAX_ANIMEGO_BUNDLE_FUTURE_SKEW:
+        raise ValueError("AnimeGO bundle timestamp is too far in the future")
+
+    mode = bundle.get("mode")
+    if mode not in {"hourly", "daily", "full"}:
+        raise ValueError(f"unsupported AnimeGO bundle mode: {mode}")
+    snapshots = bundle.get("snapshots")
+    errors = bundle.get("errors")
+    if not isinstance(snapshots, list) or not isinstance(errors, list):
+        raise ValueError("AnimeGO bundle snapshots and errors must be arrays")
+    if any(not isinstance(error, str) or not error or len(error) > 1000 for error in errors):
+        raise ValueError("AnimeGO bundle contains an invalid collector error")
+    if len(snapshots) > MAX_ANIMEGO_BUNDLE_TITLES:
+        raise ValueError("AnimeGO bundle contains too many titles")
+    if len(errors) > MAX_ANIMEGO_BUNDLE_TITLES:
+        raise ValueError("AnimeGO bundle contains too many errors")
+
+    collector = bundle.get("collector")
+    if not isinstance(collector, dict):
+        raise ValueError("AnimeGO bundle collector summary is required")
+    collector_fields = (
+        "candidates",
+        "selected_candidates",
+        "listing_candidates",
+        "listing_pages",
+        "listing_failed",
+        "snapshots",
+        "errors",
+        "episodes",
+        "providers",
+        "duration_ms",
+    )
+    if any(type(collector.get(field)) is not int or collector[field] < 0 for field in collector_fields):
+        raise ValueError("AnimeGO bundle collector summary is invalid")
+    if collector["duration_ms"] > int(MAX_ANIMEGO_COLLECTION_DURATION.total_seconds() * 1000):
+        raise ValueError("AnimeGO bundle collector duration is invalid")
+    if collector["snapshots"] != len(snapshots) or collector["errors"] != len(errors):
+        raise ValueError("AnimeGO bundle collector counts do not match payload")
+    if collector["selected_candidates"] > collector["candidates"]:
+        raise ValueError("AnimeGO bundle selected candidate count is invalid")
+    if collector["listing_candidates"] > collector["candidates"]:
+        raise ValueError("AnimeGO bundle listing candidate count is invalid")
+
+    episode_count = 0
+    provider_count = 0
+    seen_anime_ids = set()
+    seen_episode_ids = set()
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            raise ValueError("AnimeGO snapshot must be an object")
+        item = snapshot.get("item")
+        detail = snapshot.get("detail")
+        episodes = snapshot.get("episodes")
+        if not isinstance(item, dict) or not isinstance(detail, dict) or not isinstance(episodes, list):
+            raise ValueError("AnimeGO snapshot item, detail, and episodes are required")
+        anime_id = item.get("id")
+        if type(anime_id) is not int or not 0 < anime_id < 10_000_000:
+            raise ValueError("AnimeGO snapshot has an invalid title id")
+        if anime_id in seen_anime_ids:
+            raise ValueError(f"AnimeGO bundle contains duplicate title id: {anime_id}")
+        seen_anime_ids.add(anime_id)
+        title = item.get("title")
+        slug = item.get("slug")
+        if not isinstance(title, str) or not title.strip() or len(title) > 1000:
+            raise ValueError(f"AnimeGO title {anime_id} has an invalid title")
+        if not isinstance(slug, str) or not slug.strip() or len(slug) > 500:
+            raise ValueError(f"AnimeGO title {anime_id} has an invalid slug")
+        source_url = str(item.get("url") or "")
+        parsed_url = urlparse(source_url)
+        if (
+            parsed_url.scheme != "https"
+            or (parsed_url.hostname or "").lower() != "animego.me"
+            or parsed_url.username is not None
+            or parsed_url.password is not None
+            or animego.parse_anime_id(source_url) != anime_id
+            or animego.parse_slug(source_url) != slug
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} has an invalid source URL")
+        if item.get("source") not in (None, "animego") or item.get("source_id") not in (None, str(anime_id)):
+            raise ValueError(f"AnimeGO title {anime_id} has inconsistent source identity")
+        for key in ("subtitle", "cover_url", "kind", "year", "listing_description"):
+            value = item.get(key)
+            if value is not None and (not isinstance(value, str) or len(value) > 20_000):
+                raise ValueError(f"AnimeGO title {anime_id} item.{key} is invalid")
+        listing_score = item.get("listing_score")
+        if listing_score is not None and (
+            isinstance(listing_score, bool)
+            or not isinstance(listing_score, (int, float))
+            or not math.isfinite(listing_score)
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} listing score is invalid")
+        item_genres = item.get("genres", [])
+        if not isinstance(item_genres, list) or any(not isinstance(value, str) for value in item_genres):
+            raise ValueError(f"AnimeGO title {anime_id} item.genres is invalid")
+        item["source"] = "animego"
+        item["source_id"] = str(anime_id)
+
+        required_detail_keys = {
+            "title",
+            "cover_url",
+            "description",
+            "fields",
+            "schema_data",
+            "aggregate_score",
+            "aggregate_count",
+            "content_rating",
+            "date_published",
+            "genres",
+            "dubbings",
+            "player_url",
+        }
+        if not required_detail_keys.issubset(detail):
+            raise ValueError(f"AnimeGO title {anime_id} detail is incomplete")
+        for key in ("fields", "schema_data"):
+            if not isinstance(detail[key], dict):
+                raise ValueError(f"AnimeGO title {anime_id} detail.{key} must be an object")
+        if any(
+            not isinstance(key, str)
+            or (value is not None and not isinstance(value, str))
+            or len(key) > 1000
+            or (isinstance(value, str) and len(value) > 20_000)
+            for key, value in detail["fields"].items()
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} detail.fields is invalid")
+        for key in ("genres", "dubbings"):
+            if not isinstance(detail[key], list) or any(not isinstance(value, str) for value in detail[key]):
+                raise ValueError(f"AnimeGO title {anime_id} detail.{key} must be a text array")
+        for key in ("title", "cover_url", "description", "content_rating", "date_published"):
+            value = detail[key]
+            if value is not None and (not isinstance(value, str) or len(value) > 20_000):
+                raise ValueError(f"AnimeGO title {anime_id} detail.{key} is invalid")
+        aggregate_score = detail["aggregate_score"]
+        aggregate_count = detail["aggregate_count"]
+        if aggregate_score is not None and (
+            isinstance(aggregate_score, bool)
+            or not isinstance(aggregate_score, (int, float))
+            or not math.isfinite(aggregate_score)
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} aggregate score is invalid")
+        if aggregate_count is not None and (
+            isinstance(aggregate_count, bool) or not isinstance(aggregate_count, int) or aggregate_count < 0
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} aggregate count is invalid")
+        player_url = animego.absolute_url(detail["player_url"])
+        parsed_player = urlparse(player_url or "")
+        if (
+            parsed_player.scheme != "https"
+            or (parsed_player.hostname or "").lower() != "animego.me"
+            or parsed_player.path != f"/player/{anime_id}"
+        ):
+            raise ValueError(f"AnimeGO title {anime_id} has an invalid player URL")
+
+        episode_count += len(episodes)
+        if episode_count > MAX_ANIMEGO_BUNDLE_EPISODES:
+            raise ValueError("AnimeGO bundle contains too many episodes")
+        title_episode_ids = set()
+        for episode_snapshot in episodes:
+            if not isinstance(episode_snapshot, dict):
+                raise ValueError(f"AnimeGO title {anime_id} has an invalid episode snapshot")
+            episode = episode_snapshot.get("episode")
+            providers = episode_snapshot.get("providers")
+            if not isinstance(episode, dict) or not isinstance(providers, list):
+                raise ValueError(f"AnimeGO title {anime_id} episode and providers are required")
+            episode_id = episode.get("id")
+            if type(episode_id) is not int or not 0 < episode_id < 2_000_000_000:
+                raise ValueError(f"AnimeGO title {anime_id} has an invalid episode id")
+            if episode_id in title_episode_ids:
+                raise ValueError(f"AnimeGO title {anime_id} contains duplicate episode id: {episode_id}")
+            if episode_id in seen_episode_ids:
+                raise ValueError(f"AnimeGO bundle contains episode {episode_id} under multiple titles")
+            title_episode_ids.add(episode_id)
+            seen_episode_ids.add(episode_id)
+            for key in ("number", "title", "release_label", "episode_type", "description"):
+                value = episode.get(key)
+                if value is not None and (not isinstance(value, str) or len(value) > 20_000):
+                    raise ValueError(f"AnimeGO episode {episode_id} has invalid {key}")
+            unavailable_reason = episode_snapshot.get("unavailable_reason")
+            if unavailable_reason is not None and (
+                not isinstance(unavailable_reason, str) or len(unavailable_reason) > 20_000
+            ):
+                raise ValueError(f"AnimeGO episode {episode_id} has an invalid unavailable reason")
+            if not providers and not str(unavailable_reason or "").strip():
+                raise ValueError(
+                    f"AnimeGO episode {episode_id} has no provider or unavailable reason"
+                )
+
+            provider_count += len(providers)
+            if provider_count > MAX_ANIMEGO_BUNDLE_PROVIDERS:
+                raise ValueError("AnimeGO bundle contains too many providers")
+            for provider in providers:
+                if not isinstance(provider, dict):
+                    raise ValueError(f"AnimeGO episode {episode_id} has an invalid provider")
+                required_provider_keys = {
+                    "provider_id",
+                    "provider_title",
+                    "translation_id",
+                    "translation_title",
+                    "embed_host",
+                    "embed_url",
+                    "embed_url_redacted",
+                }
+                if not required_provider_keys.issubset(provider):
+                    raise ValueError(f"AnimeGO episode {episode_id} provider is incomplete")
+                if not isinstance(provider["provider_id"], str) or not provider["provider_id"].strip():
+                    raise ValueError(f"AnimeGO episode {episode_id} provider id is required")
+                translation_id = provider["translation_id"]
+                if type(translation_id) is not int or translation_id < 0:
+                    raise ValueError(f"AnimeGO episode {episode_id} has an invalid translation id")
+                if not isinstance(provider["translation_title"], str) or not provider["translation_title"]:
+                    raise ValueError(f"AnimeGO episode {episode_id} has an invalid translation title")
+                if provider["provider_title"] is not None and not isinstance(provider["provider_title"], str):
+                    raise ValueError(f"AnimeGO episode {episode_id} has an invalid provider title")
+                embed_url = animego.normalize_embed_url(provider["embed_url"])
+                redacted_url = animego.normalize_embed_url(provider["embed_url_redacted"])
+                if not embed_url or not redacted_url or len(embed_url) > 8192 or len(redacted_url) > 8192:
+                    raise ValueError(f"AnimeGO episode {episode_id} has an invalid player URL")
+                parsed_embed = urlparse("https:" + embed_url if embed_url.startswith("//") else embed_url)
+                parsed_redacted = urlparse("https:" + redacted_url if redacted_url.startswith("//") else redacted_url)
+                embed_host = animego.credential_free_netloc(parsed_embed)
+                computed_redacted = animego.redact_embed_url(embed_url)
+                canonical_redacted = (
+                    "https:" + redacted_url if redacted_url.startswith("//") else redacted_url
+                )
+                canonical_computed_redacted = (
+                    "https:" + computed_redacted
+                    if computed_redacted and computed_redacted.startswith("//")
+                    else computed_redacted
+                )
+                if (
+                    parsed_embed.scheme != "https"
+                    or parsed_redacted.scheme != "https"
+                    or not embed_host
+                    or not animego.credential_free_netloc(parsed_redacted)
+                    or embed_host.lower() != str(provider["embed_host"] or "").lower()
+                    or parsed_embed.hostname != parsed_redacted.hostname
+                    or canonical_computed_redacted != canonical_redacted
+                ):
+                    raise ValueError(f"AnimeGO episode {episode_id} has an unsafe player URL")
+                provider["embed_host"] = embed_host
+                provider["embed_url"] = embed_url
+                provider["embed_url_redacted"] = computed_redacted
+
+    if collector["episodes"] != episode_count or collector["providers"] != provider_count:
+        raise ValueError("AnimeGO bundle collector media counts do not match payload")
+    if bundle["complete"] and not errors:
+        if collector["listing_pages"] < 1 or collector["listing_failed"]:
+            raise ValueError("AnimeGO complete bundle requires a successful listing fetch")
+        if collector["listing_candidates"] < 1:
+            raise ValueError("AnimeGO complete bundle requires a non-empty listing")
+        if (
+            collector["candidates"] < 1
+            or collector["selected_candidates"] != collector["candidates"]
+            or len(snapshots) != collector["selected_candidates"]
+        ):
+            raise ValueError("AnimeGO complete bundle does not cover every candidate")
+        if episode_count < 1 or provider_count < 1:
+            raise ValueError("AnimeGO complete bundle has no playable episode coverage")
+    return bundle
+
+
+def preflight_animego_bundle(con, bundle):
+    mode = bundle["mode"]
+    collected_at = parse_animego_bundle_timestamp(bundle["collected_at"], "collected_at")
+    last_bundle = con.execute(
+        "select value from video_sync_state where key = ?",
+        (f"animego:{mode}:last_bundle_collected_at",),
+    ).fetchone()
+    if last_bundle:
+        previous = parse_animego_bundle_timestamp(last_bundle["value"], "previous collected_at")
+        if collected_at <= previous:
+            raise ValueError("AnimeGO bundle is stale or already applied")
+
+    for snapshot in bundle.get("snapshots") or []:
+        anime_id = int(snapshot["item"]["id"])
+        existing_anime = con.execute(
+            "select source from anime where id = ?",
+            (anime_id,),
+        ).fetchone()
+        if existing_anime and existing_anime["source"] not in (None, "animego"):
+            raise ValueError(f"AnimeGO title id {anime_id} belongs to another source")
+        for episode_snapshot in snapshot.get("episodes") or []:
+            episode_id = int(episode_snapshot["episode"]["id"])
+            existing_episode = con.execute(
+                "select anime_id from episodes where id = ?",
+                (episode_id,),
+            ).fetchone()
+            if existing_episode and int(existing_episode["anime_id"]) != anime_id:
+                raise ValueError(
+                    f"AnimeGO episode id {episode_id} belongs to title {existing_episode['anime_id']}"
+                )
+
+
+def apply_animego_bundle(db_path, bundle, trigger="trusted-animego-worker"):
+    bundle = validate_animego_bundle(bundle)
+    mode = bundle["mode"]
+    started_at = bundle["collection_started_at"]
+    args = parse_args(["--db", str(db_path), "--mode", mode, "--source", "animego", "--trigger", trigger])
+    args.scraped_at = bundle["collected_at"]
+    # The collector already selected the bounded set of known episodes that
+    # needs refreshing. Preserve rotated raw player URLs for that set.
+    args.refresh_known = True
+    stats = defaultdict(int)
+    for key, value in bundle["collector"].items():
+        stats[f"collector_{key}"] = value
+    stats["collection_started_at"] = bundle["collection_started_at"]
+    stats["collected_at"] = bundle["collected_at"]
+    collector_errors = bundle.get("errors") or []
+    if collector_errors:
+        stats["failed"] += len(collector_errors)
+        stats["collector_failed"] += len(collector_errors)
+        stats["collector_error_samples"] = [str(error)[:300] for error in collector_errors[:5]]
+    if not bundle["complete"]:
+        stats["failed"] += 1
+        stats["incomplete_bundle"] += 1
+
+    lock_path = args.lock_file or default_lock_path(args.db)
+    with FileLock(lock_path, wait=args.wait_lock, timeout=args.lock_timeout):
+        con = connect(args.db)
+        run_id = None
+        try:
+            ensure_sync_tables(con)
+            preflight_animego_bundle(con, bundle)
+            run_id = content_updates.create_run(con, mode, trigger, ["animego"], started_at=started_at)
+            args.content_update_run_id = run_id
+            con.commit()
+            for snapshot in bundle.get("snapshots") or []:
+                stats["titles_checked"] += 1
+                begin_title(con, args)
+                try:
+                    apply_animego_snapshot(con, snapshot, args, stats, "trusted worker")
+                    finish_title(con, args)
+                except Exception as exc:
+                    abort_title(con, args)
+                    stats["failed"] += 1
+                    stats["title_failed"] += 1
+                    stats["error"] = str(exc)[:500]
+                    print(f"  ERROR applying trusted AnimeGO snapshot: {exc}")
+            state_updated_at = animego.now_iso()
+            con.execute(
+                """
+                insert into video_sync_state(key, value, updated_at)
+                values (?, ?, ?)
+                on conflict(key) do update set value=excluded.value, updated_at=excluded.updated_at
+                """,
+                (
+                    f"animego:{mode}:last_bundle_collected_at",
+                    bundle["collected_at"],
+                    state_updated_at,
+                ),
+            )
+            write_sync_run(con, mode, "animego", started_at, stats)
+            status = "partial" if int(stats.get("failed") or 0) else "success"
+            content_updates.finish_run(con, run_id, started_at, status, {"animego": dict(stats)})
+            con.commit()
+        except Exception as exc:
+            if run_id:
+                try:
+                    content_updates.finish_run(con, run_id, started_at, "failed", {"animego": dict(stats)}, error=exc)
+                    con.commit()
+                except sqlite3.Error:
+                    con.rollback()
+            raise
+        finally:
+            con.close()
+
+    result = {"animego": dict(stats)}
+    if int(stats.get("failed") or 0):
+        raise SyncFailedError(result)
+    return result
+
+
+def animego_sync_manifest(db_path):
+    con = connect(db_path)
+    try:
+        ensure_sync_tables(con)
+        candidates = OrderedDict((int(row["id"]), row) for row in animego_ongoing_rows(con))
+        for row in backfill_players.playable_missing_rows(con, source="animego"):
+            candidates.setdefault(int(row["id"]), row)
+
+        items = []
+        for row in candidates.values():
+            anime_id = int(row["id"])
+            episode_rows = con.execute(
+                """
+                select e.id,
+                       exists(
+                           select 1 from video_sources vs
+                           where vs.episode_id = e.id and vs.embed_url is not null
+                       ) as playable
+                from episodes e
+                where e.anime_id = ?
+                order by e.id
+                """,
+                (anime_id,),
+            ).fetchall()
+            items.append(
+                {
+                    "item": animego_item_from_row(row),
+                    "known_episode_ids": [int(episode["id"]) for episode in episode_rows],
+                    "playable_episode_ids": [int(episode["id"]) for episode in episode_rows if episode["playable"]],
+                }
+            )
+        state = {
+            row["key"]: row["value"]
+            for row in con.execute(
+                "select key, value from video_sync_state where key like 'animego:%' or key like 'yummyanime:%'"
+            ).fetchall()
+        }
+        return {
+            "version": ANIMEGO_BUNDLE_VERSION,
+            "items": items,
+            "sync_state": state,
+            "generated_at": animego.now_iso(),
+        }
+    finally:
+        con.close()
 
 
 def apply_mode_defaults(args):

@@ -136,6 +136,30 @@ def finish_run(con, run_id, started_at, status, stats=None, error=None):
     )
 
 
+def fail_running_runs(con, error="interrupted before server restart", finished_at=None):
+    finished_at = finished_at or now_iso()
+    rows = con.execute(
+        "select id, started_at from content_update_runs where status = 'running'"
+    ).fetchall()
+    for row in rows:
+        duration_ms = None
+        try:
+            started = dt.datetime.fromisoformat(row[1])
+            finished = dt.datetime.fromisoformat(finished_at)
+            duration_ms = max(0, int((finished - started).total_seconds() * 1000))
+        except (TypeError, ValueError):
+            pass
+        con.execute(
+            """
+            update content_update_runs
+            set finished_at = ?, duration_ms = ?, status = 'failed', error = ?
+            where id = ? and status = 'running'
+            """,
+            (finished_at, duration_ms, str(error)[:2000], row[0]),
+        )
+    return len(rows)
+
+
 def insert_event(
     con,
     run_id,

@@ -887,6 +887,119 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 self.assertEqual(json.loads(body)["status"], "busy")
                 self.assertFalse(json.loads(body)["ok"])
 
+    def test_internal_animego_push_endpoints_require_token_and_use_wrapper(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=93, title="Trusted Push")
+            manifest = {"version": 1, "items": [], "sync_state": {}, "generated_at": server.now_iso()}
+            event = {
+                "event": "content_sync_push",
+                "source": "animego",
+                "status": "success",
+                "mode": "daily",
+                "trigger": "trusted-animego-worker",
+                "duration_ms": 5,
+                "stats": {"animego": {"failed": 0}},
+                "timestamp": server.now_iso(),
+            }
+            bundle = {"version": 1, "source": "animego", "mode": "daily", "snapshots": []}
+            encoded_bundle = json.dumps(bundle).encode("utf-8")
+            with patch.dict(os.environ, {"ANIMEGO_PUSH_TOKEN": "secret"}, clear=False):
+                status, _, _ = self.request_test_server(
+                    db_path,
+                    "GET",
+                    "/api/internal/animego-sync-manifest",
+                )
+                self.assertEqual(status, 401)
+
+                with patch.object(sync_videos, "animego_sync_manifest", return_value=manifest) as manifest_mock:
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "GET",
+                        "/api/internal/animego-sync-manifest",
+                        headers={"Authorization": "Bearer secret"},
+                    )
+                self.assertEqual(status, 200)
+                self.assertEqual(json.loads(body), manifest)
+                manifest_mock.assert_called_once_with(db_path)
+
+                status, _, _ = self.request_test_server(
+                    db_path,
+                    "POST",
+                    "/api/internal/animego-push-sync",
+                    headers={"Content-Type": "application/json"},
+                    body=encoded_bundle,
+                )
+                self.assertEqual(status, 401)
+
+                with patch.object(server, "run_pushed_animego_sync", return_value=event) as push_mock:
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/animego-push-sync",
+                        headers={
+                            "Authorization": "Bearer secret",
+                            "Content-Type": "application/json",
+                            "Content-Length": str(len(encoded_bundle)),
+                        },
+                        body=encoded_bundle,
+                    )
+                self.assertEqual(status, 200)
+                self.assertTrue(json.loads(body)["ok"])
+                push_mock.assert_called_once_with(db_path, bundle)
+
+                with patch.object(server, "run_pushed_animego_sync", side_effect=ValueError("bad bundle")):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/animego-push-sync",
+                        headers={"Authorization": "Bearer secret", "Content-Type": "application/json"},
+                        body=encoded_bundle,
+                    )
+                self.assertEqual(status, 400)
+                self.assertIn("bad bundle", body.decode("utf-8"))
+
+                with patch.object(
+                    server,
+                    "run_pushed_animego_sync",
+                    side_effect=server.ContentSyncBusyError("content sync is already running"),
+                ):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/animego-push-sync",
+                        headers={"Authorization": "Bearer secret", "Content-Type": "application/json"},
+                        body=encoded_bundle,
+                    )
+                self.assertEqual(status, 423)
+                self.assertEqual(json.loads(body)["status"], "busy")
+
+                partial = {**event, "status": "partial"}
+                with patch.object(
+                    server,
+                    "run_pushed_animego_sync",
+                    side_effect=server.ContentSyncPartialError(partial),
+                ):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/animego-push-sync",
+                        headers={"Authorization": "Bearer secret", "Content-Type": "application/json"},
+                        body=encoded_bundle,
+                    )
+                self.assertEqual(status, 502)
+                self.assertEqual(json.loads(body)["status"], "partial")
+
+                with patch.object(server, "MAX_ANIMEGO_PUSH_BODY_BYTES", 8):
+                    status, _, _ = self.request_test_server(
+                        db_path,
+                        "POST",
+                        "/api/internal/animego-push-sync",
+                        headers={"Authorization": "Bearer secret", "Content-Type": "application/json"},
+                        body=b'{"too":"large"}',
+                    )
+                self.assertEqual(status, 413)
+
     def test_animego_listing_http_500_is_counted_without_aborting_daily_sync(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -932,6 +1045,86 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             server.next_daily_sync_run(after_cutoff, hour=2, minute=0),
             dt.datetime(2026, 7, 9, 2, 0, tzinfo=dt.timezone.utc),
         )
+        self.assertEqual(
+            server.previous_daily_sync_run(before_cutoff, hour=2, minute=0),
+            dt.datetime(2026, 7, 7, 2, 0, tzinfo=dt.timezone.utc),
+        )
+        self.assertEqual(
+            server.previous_daily_sync_run(after_cutoff, hour=2, minute=0),
+            dt.datetime(2026, 7, 8, 2, 0, tzinfo=dt.timezone.utc),
+        )
+
+    def test_daily_sync_due_uses_each_enabled_source_last_success(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "animego.sqlite"
+            scrape_animego.init_db(db_path).close()
+            scheduled_at = dt.datetime(2026, 7, 10, 2, 0, tzinfo=dt.timezone.utc)
+
+            self.assertTrue(server.content_sync_is_due(db_path, "daily", ["yummyanime"], scheduled_at))
+
+            con = sync_videos.connect(db_path)
+            try:
+                sync_videos.ensure_sync_tables(con)
+                con.executemany(
+                    "insert into video_sync_state(key, value, updated_at) values (?, ?, ?)",
+                    [
+                        (
+                            "yummyanime:daily:last_success",
+                            "2026-07-10T02:05:00+00:00",
+                            "2026-07-10T02:05:00+00:00",
+                        ),
+                        (
+                            "animego:daily:last_success",
+                            "2026-07-09T02:05:00+00:00",
+                            "2026-07-09T02:05:00+00:00",
+                        ),
+                    ],
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            self.assertFalse(server.content_sync_is_due(db_path, "daily", ["yummyanime"], scheduled_at))
+            self.assertTrue(
+                server.content_sync_is_due(db_path, "daily", ["yummyanime", "animego"], scheduled_at)
+            )
+
+    def test_server_startup_marks_interrupted_content_runs_failed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "animego.sqlite"
+            server.prepare_database(db_path)
+            con = server.connect(db_path)
+            try:
+                run_id = content_updates.create_run(
+                    con,
+                    "daily",
+                    "internal-daily-scheduler",
+                    ["yummyanime"],
+                    started_at="2026-07-10T02:00:00+00:00",
+                )
+                con.execute(
+                    "update content_update_runs set stats_json = ? where id = ?",
+                    ('{"preserved": true}', run_id),
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            self.assertEqual(server.recover_interrupted_content_sync_runs(db_path), 1)
+
+            con = server.connect(db_path)
+            try:
+                row = con.execute(
+                    "select status, error, stats_json, finished_at from content_update_runs where id = ?",
+                    (run_id,),
+                ).fetchone()
+            finally:
+                con.close()
+
+        self.assertEqual(row["status"], "failed")
+        self.assertEqual(row["error"], "interrupted before server restart")
+        self.assertEqual(row["stats_json"], '{"preserved": true}')
+        self.assertIsNotNone(row["finished_at"])
 
     def test_video_sync_filters_empty_episodes(self):
         episodes = [{"number": "1"}, {"number": "2"}, {"number": "3"}]

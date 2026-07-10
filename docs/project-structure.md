@@ -62,6 +62,9 @@ can change outside git.
 | `scripts/db_data_diff.py` | Streaming catalog-data migration generator. |
 | `scripts/missing_db_bootstrap.py` | Railway 503 bootstrap that hands off after a stable valid DB appears. |
 | `scripts/railway_start.sh` | Railway start command wrapper for `server.py`. |
+| `scripts/animego_push_worker.py` | Collects AnimeGO through an allowed egress and sends a validated bundle to the protected production endpoint. |
+| `scripts/install_animego_push_launch_agent.sh` | Installs the hourly macOS catch-up worker for AnimeGO. |
+| `scripts/run_animego_push_worker.sh` | LaunchAgent wrapper with a stable PATH and local logging. |
 
 ## Automation And Migrations
 

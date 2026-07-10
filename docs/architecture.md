@@ -299,6 +299,10 @@ AnimeGO:
   small AnimeGO ongoing/missing coverage checks.
 - `sync_videos.py --mode daily` checks broader ongoing coverage and can find
   newly added voices/providers without rewriting existing rows.
+- Because AnimeGO rejects the current Railway/cloud egress, production uses a
+  trusted push collector for that source. The collector checks upstream data,
+  but the production web process validates the complete bundle and remains the
+  only SQLite writer. YummyAnime continues through the built-in web sync.
 
 YummyAnime/YummyAni:
 

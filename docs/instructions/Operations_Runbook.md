@@ -202,6 +202,8 @@ ANIME_GOOGLE_AUTH_STATE_SECRET
 ANIME_SESSION_SECURE=1
 ANIMEGO_DB=/data/animego.sqlite
 ANIME_LOG_DIR=/data/logs
+ANIME_SYNC_TOKEN
+ANIMEGO_PUSH_TOKEN
 ```
 
 Optional Railway variables:
@@ -504,17 +506,53 @@ The endpoint runs `sync_videos.py` with both sources by default, writes
 `content_update_runs` and `content_update_events`, invalidates the catalog
 cache, and logs a JSON `content_sync` entry to `server.log`.
 
-If one upstream is blocked from the production egress, restrict the web
-service explicitly instead of accepting a permanently partial cron. The run
-history records the enabled source list, so this degraded mode stays visible:
+AnimeGO currently rejects the Railway/cloud egress while remaining reachable
+from the trusted local egress. Keep the direct web sync restricted to
+YummyAnime instead of accepting a permanently partial cron:
 
 ```text
 ANIME_CONTENT_SYNC_SOURCES=yummyanime
 ```
 
-Remove the override after direct AnimeGO requests from the web container are
-healthy again. Supported values are `yummyanime` and `animego`, separated by
-commas or spaces; at least one source is required.
+AnimeGO is collected separately by `scripts/animego_push_worker.py`. The worker
+reads the protected production manifest, checks every exposed episode in daily
+mode, and posts a versioned snapshot bundle back to the web service. The web
+process validates freshness and complete coverage, takes the normal database
+operation lock, writes SQLite/update events, and advances
+`animego:<mode>:last_success` only after a complete successful run:
+
+```bash
+.venv/bin/python scripts/animego_push_worker.py --force
+```
+
+The push boundary uses its own high-entropy `ANIMEGO_PUSH_TOKEN`; do not reuse
+the cron-trigger `ANIME_SYNC_TOKEN`:
+
+```text
+GET  /api/internal/animego-sync-manifest
+POST /api/internal/animego-push-sync
+Authorization: Bearer $ANIMEGO_PUSH_TOKEN
+```
+
+On the trusted macOS host, install the hourly catch-up worker once:
+
+```bash
+scripts/install_animego_push_launch_agent.sh
+launchctl print gui/$(id -u)/com.xxsrez.animego-sync
+tail -f ~/Library/Logs/Anime/animego-push-worker.log
+```
+
+It checks hourly but skips collection while the production AnimeGO success is
+less than 20 hours old. Failures remain non-successful and are retried on the
+next hourly invocation. The collection has a 30-minute cooperative deadline.
+This worker requires the Mac to be running with network access and an
+authenticated Railway CLI; move the same worker to an always-on allowed egress
+if those conditions cannot be guaranteed.
+
+Remove `ANIME_CONTENT_SYNC_SOURCES=yummyanime` only after direct AnimeGO
+requests from the web container are healthy again. Supported direct-web values
+are `yummyanime` and `animego`, separated by commas or spaces; at least one
+source is required.
 
 Create a separate Railway Cron service or Function that exits after calling the
 endpoint. The production Function entrypoint is
@@ -563,4 +601,6 @@ The cron script logs JSON start/finish/error lines to stdout and, if
 `ANIME_CRON_LOG_PATH` is set, appends them to that file. Persistent production
 run history lives in SQLite table `content_update_runs`; user-visible recent
 changes live in `content_update_events`. Partial source results return `502` and
-do not advance `last_success`; overlapping data operations return `423`.
+do not advance `last_success`; overlapping data operations return `423`. The
+built-in scheduler catches up immediately after a missed daily slot, retries a
+busy database after five minutes, and retries failures after thirty minutes.

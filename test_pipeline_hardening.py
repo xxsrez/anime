@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime as dt
 import json
 import os
 import sqlite3
@@ -19,12 +20,88 @@ from scripts import check_data_health
 from scripts import check_repo_hygiene
 from scripts import http_safety
 from scripts import missing_db_bootstrap
+from scripts import animego_push_worker
 from scripts import railway_daily_sync
 from scripts.atomic_publish import atomic_publish_directory
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError, default_lock_path
 
 
 class PipelineHardeningTest(unittest.TestCase):
+    @staticmethod
+    def animego_bundle(*, anime_id=3623, episode_id=45887, complete=True):
+        collected_at = server.now_iso()
+        return {
+            "version": sync_videos.ANIMEGO_BUNDLE_VERSION,
+            "source": "animego",
+            "mode": "daily",
+            "collection_started_at": collected_at,
+            "collected_at": collected_at,
+            "complete": complete,
+            "errors": [],
+            "collector": {
+                "candidates": 1,
+                "selected_candidates": 1,
+                "listing_candidates": 1,
+                "listing_pages": 1,
+                "listing_failed": 0,
+                "snapshots": 1,
+                "errors": 0,
+                "episodes": 1,
+                "providers": 1,
+                "duration_ms": 0,
+            },
+            "snapshots": [
+                {
+                    "item": {
+                        "id": anime_id,
+                        "slug": f"trusted-title-{anime_id}",
+                        "title": "Trusted AnimeGO Title",
+                        "url": f"https://animego.me/anime/trusted-title-{anime_id}",
+                        "source": "animego",
+                        "source_id": str(anime_id),
+                    },
+                    "detail": {
+                        "title": "Trusted AnimeGO Title",
+                        "cover_url": "https://animego.me/media/cover.jpg",
+                        "description": "Trusted snapshot",
+                        "fields": {"Статус": "Онгоинг", "Эпизоды": "1"},
+                        "schema_data": {},
+                        "aggregate_score": None,
+                        "aggregate_count": None,
+                        "content_rating": None,
+                        "date_published": None,
+                        "genres": ["Фэнтези"],
+                        "dubbings": ["Dream Cast"],
+                        "player_url": f"https://animego.me/player/{anime_id}",
+                    },
+                    "episodes": [
+                        {
+                            "episode": {
+                                "id": episode_id,
+                                "number": "1",
+                                "title": "Серия 1",
+                                "release_label": None,
+                                "episode_type": "episode",
+                                "description": None,
+                            },
+                            "providers": [
+                                {
+                                    "provider_id": "kodik-1",
+                                    "provider_title": "Kodik",
+                                    "translation_id": 101,
+                                    "translation_title": "Dream Cast",
+                                    "embed_host": "kodikplayer.com",
+                                    "embed_url": "https://kodikplayer.com/seria/1/token",
+                                    "embed_url_redacted": "https://kodikplayer.com/seria/1/<redacted>",
+                                }
+                            ],
+                            "unavailable_reason": None,
+                        }
+                    ],
+                }
+            ],
+        }
+
     def test_http_retry_closes_http_error_response_before_propagating(self):
         response = MagicMock()
         http_error = urllib.error.HTTPError(
@@ -135,6 +212,344 @@ class PipelineHardeningTest(unittest.TestCase):
         finally:
             retryable.close()
             removed.close()
+
+    def test_trusted_animego_bundle_applies_and_records_success(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            result = sync_videos.apply_animego_bundle(db_path, self.animego_bundle(), trigger="test-worker")
+
+            self.assertEqual(result["animego"]["titles_imported"], 1)
+            self.assertEqual(result["animego"]["episodes_written"], 1)
+            self.assertEqual(result["animego"]["providers_written"], 1)
+            con = sync_videos.connect(db_path)
+            try:
+                self.assertEqual(con.execute("select source from anime where id = 3623").fetchone()[0], "animego")
+                self.assertEqual(con.execute("select anime_id from episodes where id = 45887").fetchone()[0], 3623)
+                self.assertEqual(con.execute("select count(*) from video_sources where episode_id = 45887").fetchone()[0], 1)
+                state = dict(
+                    con.execute(
+                        "select key, value from video_sync_state where key like 'animego:daily:%'"
+                    ).fetchall()
+                )
+                self.assertEqual(state["animego:daily:last_status"], "success")
+                self.assertIn("animego:daily:last_success", state)
+                run = con.execute(
+                    "select trigger, status from content_update_runs order by id desc limit 1"
+                ).fetchone()
+                self.assertEqual(tuple(run), ("test-worker", "success"))
+            finally:
+                con.close()
+
+    def test_trusted_animego_bundle_partial_run_does_not_advance_last_success(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            with self.assertRaises(sync_videos.SyncFailedError):
+                sync_videos.apply_animego_bundle(
+                    db_path,
+                    self.animego_bundle(complete=False),
+                    trigger="test-worker",
+                )
+
+            con = sync_videos.connect(db_path)
+            try:
+                state = dict(
+                    con.execute(
+                        "select key, value from video_sync_state where key like 'animego:daily:%'"
+                    ).fetchall()
+                )
+                self.assertEqual(state["animego:daily:last_status"], "failed")
+                self.assertNotIn("animego:daily:last_success", state)
+                self.assertEqual(
+                    con.execute("select status from content_update_runs order by id desc limit 1").fetchone()[0],
+                    "partial",
+                )
+            finally:
+                con.close()
+
+    def test_trusted_animego_bundle_preflight_rejects_cross_source_id_collision(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = sync_videos.connect(db_path)
+            try:
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, scraped_at)
+                    values (3623, 'other', 'Other Source', 'https://example.test/other', 'yummyanime', 'other', ?)
+                    """,
+                    (server.now_iso(),),
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            with self.assertRaisesRegex(ValueError, "belongs to another source"):
+                sync_videos.apply_animego_bundle(db_path, self.animego_bundle())
+
+            con = sync_videos.connect(db_path)
+            try:
+                self.assertEqual(con.execute("select title from anime where id = 3623").fetchone()[0], "Other Source")
+                self.assertEqual(con.execute("select count(*) from content_update_runs").fetchone()[0], 0)
+            finally:
+                con.close()
+
+    def test_trusted_animego_bundle_cannot_claim_success_without_coverage_proof(self):
+        bundle = self.animego_bundle()
+        bundle["snapshots"] = []
+        bundle["collector"].update(candidates=1, snapshots=0, episodes=0, providers=0)
+
+        with self.assertRaisesRegex(ValueError, "does not cover every candidate"):
+            sync_videos.validate_animego_bundle(bundle)
+
+        for required_field in ("mode", "complete", "collection_started_at", "collected_at", "collector"):
+            missing = self.animego_bundle()
+            missing.pop(required_field)
+            with self.subTest(required_field=required_field):
+                with self.assertRaises(ValueError):
+                    sync_videos.validate_animego_bundle(missing)
+
+    def test_animego_manifest_includes_ongoing_and_incomplete_known_titles(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            con = sync_videos.connect(db_path)
+            now = server.now_iso()
+            try:
+                for anime_id, status in ((4101, "Онгоинг"), (4102, "Завершён"), (4103, "Завершён")):
+                    con.execute(
+                        """
+                        insert into anime(id, slug, title, url, source, source_id, status, scraped_at)
+                        values (?, ?, ?, ?, 'animego', ?, ?, ?)
+                        """,
+                        (
+                            anime_id,
+                            f"title-{anime_id}",
+                            f"Title {anime_id}",
+                            f"https://animego.me/anime/title-{anime_id}",
+                            str(anime_id),
+                            status,
+                            now,
+                        ),
+                    )
+                for anime_id, episode_id in ((4101, 5101), (4103, 5103)):
+                    con.execute(
+                        "insert into episodes(id, anime_id, number, has_video, scraped_at) values (?, ?, '1', 1, ?)",
+                        (episode_id, anime_id, now),
+                    )
+                    con.execute(
+                        """
+                        insert into video_sources(
+                            anime_id, episode_id, provider_id, translation_id,
+                            embed_url, embed_url_redacted, scraped_at
+                        ) values (?, ?, 'provider', 1, 'https://example.test/embed',
+                                  'https://example.test/embed', ?)
+                        """,
+                        (anime_id, episode_id, now),
+                    )
+                con.commit()
+            finally:
+                con.close()
+
+            manifest = sync_videos.animego_sync_manifest(db_path)
+
+        self.assertEqual({entry["item"]["id"] for entry in manifest["items"]}, {4101, 4102})
+        ongoing = next(entry for entry in manifest["items"] if entry["item"]["id"] == 4101)
+        self.assertEqual(ongoing["playable_episode_ids"], [5101])
+
+    def test_trusted_worker_refreshes_unseen_selected_and_recent_episodes(self):
+        selector = animego_push_worker.incremental_episode_selector([1, 2, 3, 4], refresh_recent=2)
+        episodes = [{"id": value, "number": str(value)} for value in range(1, 6)]
+
+        selected = selector(episodes, selected_episode_id=2)
+
+        self.assertEqual([episode["id"] for episode in selected], [2, 4, 5])
+
+        without_recent = animego_push_worker.incremental_episode_selector(
+            [1, 2, 3, 4],
+            refresh_recent=0,
+        )(episodes, selected_episode_id=2)
+        self.assertEqual([episode["id"] for episode in without_recent], [2, 5])
+
+    def test_trusted_animego_bundle_refreshes_rotated_player_without_false_event(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            first = self.animego_bundle()
+            sync_videos.apply_animego_bundle(db_path, first)
+
+            second = self.animego_bundle()
+            next_timestamp = (
+                dt.datetime.fromisoformat(first["collected_at"]) + dt.timedelta(seconds=1)
+            ).isoformat(timespec="seconds")
+            second["collection_started_at"] = next_timestamp
+            second["collected_at"] = next_timestamp
+            second_provider = second["snapshots"][0]["episodes"][0]["providers"][0]
+            second_provider["embed_url"] = "https://kodikplayer.com/seria/1/ROTATED"
+
+            result = sync_videos.apply_animego_bundle(db_path, second)
+
+            con = sync_videos.connect(db_path)
+            try:
+                embed_url = con.execute(
+                    "select embed_url from video_sources where episode_id = 45887"
+                ).fetchone()[0]
+                event_count = con.execute("select count(*) from content_update_events").fetchone()[0]
+            finally:
+                con.close()
+
+        self.assertEqual(embed_url, "https://kodikplayer.com/seria/1/ROTATED")
+        self.assertEqual(result["animego"]["update_events_written"], 0)
+        self.assertEqual(event_count, 1)
+
+    def test_trusted_animego_bundle_rejects_stale_and_replayed_collection(self):
+        stale = self.animego_bundle()
+        old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=7)).isoformat(timespec="seconds")
+        stale["collection_started_at"] = old
+        stale["collected_at"] = old
+        with self.assertRaisesRegex(ValueError, "stale"):
+            sync_videos.validate_animego_bundle(stale)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            current = self.animego_bundle()
+            sync_videos.apply_animego_bundle(db_path, current)
+            with self.assertRaisesRegex(ValueError, "already applied"):
+                sync_videos.apply_animego_bundle(db_path, current)
+
+    def test_trusted_animego_bundle_marks_quarantined_episode_coverage_partial(self):
+        bundle = self.animego_bundle()
+        duplicate_episode = json.loads(json.dumps(bundle["snapshots"][0]["episodes"][0]))
+        duplicate_episode["episode"]["id"] = 45888
+        duplicate_episode["episode"]["number"] = "2"
+        duplicate_episode["providers"][0]["provider_id"] = "kodik-2"
+        bundle["snapshots"][0]["episodes"].append(duplicate_episode)
+        bundle["collector"].update(episodes=2, providers=2)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            with self.assertRaises(sync_videos.SyncFailedError) as raised:
+                sync_videos.apply_animego_bundle(db_path, bundle)
+
+            con = sync_videos.connect(db_path)
+            try:
+                state = dict(
+                    con.execute(
+                        "select key, value from video_sync_state where key like 'animego:daily:%'"
+                    ).fetchall()
+                )
+            finally:
+                con.close()
+
+        stats = raised.exception.stats["animego"]
+        self.assertEqual(stats["cross_episode_provider_urls_skipped"], 2)
+        self.assertEqual(stats["cross_episode_quarantined_episodes"], 2)
+        self.assertEqual(stats["failed"], 2)
+        self.assertNotIn("animego:daily:last_success", state)
+
+    def test_trusted_worker_rejects_cleartext_credentials_and_redirects(self):
+        with self.assertRaisesRegex(ValueError, "HTTPS"):
+            animego_push_worker.validate_https_url("http://anime.example")
+        with self.assertRaisesRegex(ValueError, "credentials"):
+            animego_push_worker.validate_https_url("https://secret@anime.example")
+
+        handler = animego_push_worker.RejectRedirectHandler()
+        redirected = handler.redirect_request(
+            MagicMock(),
+            MagicMock(),
+            302,
+            "Found",
+            {},
+            "https://attacker.example/token",
+        )
+        self.assertIsNone(redirected)
+
+    def test_trusted_sync_retry_deadline_is_cooperative(self):
+        args = SimpleNamespace(
+            retry_attempts=3,
+            retry_backoff=1,
+            deadline_monotonic=time.monotonic() - 1,
+        )
+        fetch = MagicMock()
+
+        with self.assertRaisesRegex(TimeoutError, "deadline"):
+            sync_videos.call_with_retries(args, "deadline fixture", fetch)
+
+        fetch.assert_not_called()
+
+    def test_trusted_worker_propagates_caught_listing_failure(self):
+        fixture = self.animego_bundle()
+        manifest = {
+            "items": [
+                {
+                    "item": fixture["snapshots"][0]["item"],
+                    "known_episode_ids": [],
+                    "playable_episode_ids": [],
+                }
+            ]
+        }
+        args = SimpleNamespace(
+            mode="daily",
+            discover_pages=3,
+            retry_attempts=1,
+            retry_backoff=0,
+            delay=0,
+            refresh_recent=3,
+            limit=0,
+            source_failure_threshold=2,
+            max_runtime_seconds=1800,
+        )
+
+        def failed_listing(_sync_args, stats):
+            stats["listing_failed"] += 1
+            stats["failed"] += 1
+            return []
+
+        with patch.object(sync_videos, "collect_animego_listing", side_effect=failed_listing), patch.object(
+            sync_videos,
+            "fetch_animego_snapshot",
+            return_value=fixture["snapshots"][0],
+        ):
+            bundle = animego_push_worker.collect_bundle(manifest, args)
+
+        self.assertEqual(bundle["collector"]["listing_failed"], 1)
+        self.assertEqual(len(bundle["errors"]), 1)
+        self.assertIn("listing", bundle["errors"][0])
+
+    def test_trusted_worker_limited_bundle_preserves_total_coverage_counts(self):
+        fixture = self.animego_bundle()
+        first_item = fixture["snapshots"][0]["item"]
+        second_item = {
+            **first_item,
+            "id": 3624,
+            "slug": "trusted-title-3624",
+            "url": "https://animego.me/anime/trusted-title-3624",
+            "source_id": "3624",
+        }
+        args = SimpleNamespace(
+            mode="daily",
+            discover_pages=3,
+            retry_attempts=1,
+            retry_backoff=0,
+            delay=0,
+            refresh_recent=3,
+            limit=1,
+            source_failure_threshold=2,
+            max_runtime_seconds=1800,
+        )
+
+        def listing(_sync_args, stats):
+            stats["listing_pages"] += 1
+            stats["listing_titles"] += 2
+            return [first_item, second_item]
+
+        with patch.object(sync_videos, "collect_animego_listing", side_effect=listing), patch.object(
+            sync_videos,
+            "fetch_animego_snapshot",
+            return_value=fixture["snapshots"][0],
+        ):
+            bundle = animego_push_worker.collect_bundle({"items": []}, args)
+
+        self.assertFalse(bundle["complete"])
+        self.assertEqual(bundle["collector"]["candidates"], 2)
+        self.assertEqual(bundle["collector"]["selected_candidates"], 1)
+        sync_videos.validate_animego_bundle(bundle)
 
     def test_content_sync_sources_can_explicitly_degrade_to_yummyanime(self):
         with tempfile.TemporaryDirectory() as tmpdir:

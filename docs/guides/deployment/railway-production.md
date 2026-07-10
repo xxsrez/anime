@@ -41,6 +41,7 @@ ANIME_SESSION_SECURE=1
 ANIMEGO_DB=/data/animego.sqlite
 ANIME_LOG_DIR=/data/logs
 ANIME_SYNC_TOKEN
+ANIMEGO_PUSH_TOKEN
 ```
 
 Optional access controls may also be set:
@@ -322,11 +323,14 @@ ANIME_SYNC_TOKEN=<same secret as web>
 ANIME_SYNC_MODE=daily
 ```
 
-The web service normally syncs both upstreams. If production egress is
-temporarily blocked by one provider, set an explicit degraded source list on
-the web service (for example `ANIME_CONTENT_SYNC_SOURCES=yummyanime`) and remove
-it once direct requests recover. `content_update_runs.sources_json` remains the
-source of truth for what each run actually checked.
+The web service directly syncs YummyAnime. AnimeGO currently blocks the
+Railway/cloud egress, so keep `ANIME_CONTENT_SYNC_SOURCES=yummyanime` and run
+`scripts/animego_push_worker.py` from a trusted allowed egress. The worker uses
+the separate `ANIMEGO_PUSH_TOKEN` and sends validated data to the protected web
+endpoint; only the web process writes production SQLite. See `Daily Content
+Sync` in the central runbook for the worker and macOS LaunchAgent commands.
+Remove the override only after direct AnimeGO requests from the web container
+recover.
 
 If Railway Function/Cron service deployment is unavailable, enable the web
 service scheduler instead:

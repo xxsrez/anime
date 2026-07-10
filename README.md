@@ -155,3 +155,7 @@ node --test static/frontend_runtime.test.js
 Production has an independent content-sync cron and can legitimately contain
 newer episodes than dev. Treat that freshness difference as expected; never
 replace production with the older local database just to align row counts.
+YummyAnime is fetched directly by the Railway web sync. AnimeGO blocks the
+current cloud egress, so production AnimeGO updates are collected by the
+trusted push worker documented in `docs/instructions/Operations_Runbook.md`;
+the production web process still performs all validation and SQLite writes.

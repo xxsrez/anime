@@ -29,6 +29,7 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 import content_updates
 import recommendation_model
 import user_state_model
+from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
@@ -42,6 +43,7 @@ MAX_CONTENT_UPDATE_LIMIT = 500
 MAX_SEARCH_QUERY_CHARS = 240
 MAX_SEARCH_QUERY_TOKENS = 12
 MAX_JSON_BODY_BYTES = 64 * 1024
+MAX_ANIMEGO_PUSH_BODY_BYTES = 32 * 1024 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
 MAX_WATCH_METADATA_BYTES = 4096
@@ -49,6 +51,8 @@ MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNC_MODES = {"hourly", "daily", "full"}
 CONTENT_SYNC_SOURCES = ("yummyanime", "animego")
+CONTENT_SYNC_BUSY_RETRY_SECONDS = 5 * 60
+CONTENT_SYNC_ERROR_RETRY_SECONDS = 30 * 60
 TRUTHY_VALUES = {"1", "true", "yes", "on"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
@@ -5788,6 +5792,10 @@ def configured_sync_token():
     return os.environ.get("ANIME_SYNC_TOKEN", "").strip()
 
 
+def configured_animego_push_token():
+    return os.environ.get("ANIMEGO_PUSH_TOKEN", "").strip()
+
+
 def configured_content_sync_sources():
     raw = os.environ.get("ANIME_CONTENT_SYNC_SOURCES", "").strip()
     if not raw:
@@ -5857,6 +5865,64 @@ def run_content_sync(db_path, mode="daily", trigger="internal-api"):
     return event
 
 
+def run_pushed_animego_sync(db_path, bundle, trigger="trusted-animego-worker"):
+    import sync_videos
+
+    started = time.perf_counter()
+    try:
+        stats = sync_videos.apply_animego_bundle(db_path, bundle, trigger=trigger)
+    except sync_videos.SyncFailedError as exc:
+        stats = exc.stats
+        status = "partial"
+    except sync_videos.OperationLockError as exc:
+        raise ContentSyncBusyError("content sync is already running") from exc
+    except Exception as exc:
+        duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+        event = {
+            "event": "content_sync_push_error",
+            "source": "animego",
+            "trigger": trigger,
+            "duration_ms": duration_ms,
+            "error": str(exc),
+            "timestamp": now_iso(),
+        }
+        server_logger().exception(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        raise
+    else:
+        status = "success"
+
+    apply_duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+    end_to_end_duration_ms = apply_duration_ms
+    try:
+        collection_started_at = dt.datetime.fromisoformat(
+            str(bundle["collection_started_at"]).replace("Z", "+00:00")
+        )
+        end_to_end_duration_ms = max(
+            apply_duration_ms,
+            int((dt.datetime.now(dt.timezone.utc) - collection_started_at).total_seconds() * 1000),
+        )
+    except (KeyError, TypeError, ValueError):
+        pass
+    event = {
+        "event": "content_sync_push",
+        "source": "animego",
+        "status": status,
+        "mode": str(bundle.get("mode") or "daily"),
+        "trigger": trigger,
+        "duration_ms": end_to_end_duration_ms,
+        "apply_duration_ms": apply_duration_ms,
+        "collection_duration_ms": int((bundle.get("collector") or {}).get("duration_ms") or 0),
+        "stats": stats,
+        "timestamp": now_iso(),
+    }
+    invalidate_catalog_cache(db_path)
+    if status != "success":
+        server_logger().warning(json.dumps(event, ensure_ascii=False, sort_keys=True))
+        raise ContentSyncPartialError(event)
+    server_logger().info(json.dumps(event, ensure_ascii=False, sort_keys=True))
+    return event
+
+
 def env_flag(name):
     return os.environ.get(name, "").strip().lower() in TRUTHY_VALUES
 
@@ -5883,6 +5949,63 @@ def next_daily_sync_run(now=None, hour=2, minute=0):
     return target
 
 
+def previous_daily_sync_run(now=None, hour=2, minute=0):
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    else:
+        now = now.astimezone(dt.timezone.utc)
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target > now:
+        target -= dt.timedelta(days=1)
+    return target
+
+
+def content_sync_is_due(db_path, mode, sources, scheduled_at):
+    if mode not in SYNC_MODES:
+        raise ValueError(f"unsupported sync mode: {mode}")
+    if scheduled_at.tzinfo is None:
+        scheduled_at = scheduled_at.replace(tzinfo=dt.timezone.utc)
+    else:
+        scheduled_at = scheduled_at.astimezone(dt.timezone.utc)
+    try:
+        con = sqlite3.connect(db_path, timeout=2)
+        try:
+            table_exists = con.execute(
+                "select 1 from sqlite_master where type = 'table' and name = 'video_sync_state'"
+            ).fetchone()
+            if not table_exists:
+                return True
+            keys = [f"{source}:{mode}:last_success" for source in sources]
+            if not keys:
+                return False
+            placeholders = ",".join("?" for _ in keys)
+            state = dict(
+                con.execute(
+                    f"select key, value from video_sync_state where key in ({placeholders})",
+                    keys,
+                ).fetchall()
+            )
+        finally:
+            con.close()
+    except (OSError, sqlite3.Error):
+        return True
+
+    for key in keys:
+        value = state.get(key)
+        try:
+            succeeded_at = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return True
+        if succeeded_at.tzinfo is None:
+            succeeded_at = succeeded_at.replace(tzinfo=dt.timezone.utc)
+        else:
+            succeeded_at = succeeded_at.astimezone(dt.timezone.utc)
+        if succeeded_at < scheduled_at:
+            return True
+    return False
+
+
 def sleep_until(target):
     while True:
         delay = (target - dt.datetime.now(dt.timezone.utc)).total_seconds()
@@ -5899,22 +6022,28 @@ def daily_sync_scheduler_loop(db_path):
         return
 
     while True:
-        scheduled_at = next_daily_sync_run(hour=hour, minute=minute)
-        server_logger().info(
-            json.dumps(
-                {
-                    "event": "content_sync_scheduler_scheduled",
-                    "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
-                    "hour_utc": hour,
-                    "minute_utc": minute,
-                    "timestamp": now_iso(),
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-        )
-        sleep_until(scheduled_at)
         mode = os.environ.get("ANIME_SYNC_MODE", "daily").strip() or "daily"
+        sources = configured_content_sync_sources()
+        now = dt.datetime.now(dt.timezone.utc)
+        scheduled_at = previous_daily_sync_run(now, hour=hour, minute=minute)
+        if not content_sync_is_due(db_path, mode, sources, scheduled_at):
+            next_run = next_daily_sync_run(now, hour=hour, minute=minute)
+            server_logger().info(
+                json.dumps(
+                    {
+                        "event": "content_sync_scheduler_scheduled",
+                        "scheduled_at": next_run.isoformat(timespec="seconds"),
+                        "hour_utc": hour,
+                        "minute_utc": minute,
+                        "timestamp": now_iso(),
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            sleep_until(next_run)
+            continue
+
         server_logger().info(
             json.dumps(
                 {
@@ -5929,8 +6058,50 @@ def daily_sync_scheduler_loop(db_path):
         )
         try:
             run_content_sync(db_path, mode=mode, trigger="internal-daily-scheduler")
+        except ContentSyncBusyError as exc:
+            retry_seconds = CONTENT_SYNC_BUSY_RETRY_SECONDS
+            retry_reason = "busy"
+            server_logger().warning(f"content sync scheduler is busy: {exc}")
         except Exception:
+            retry_seconds = CONTENT_SYNC_ERROR_RETRY_SECONDS
+            retry_reason = "failed"
             server_logger().exception("content sync scheduler failed")
+        else:
+            continue
+
+        next_attempt = dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=retry_seconds)
+        server_logger().info(
+            json.dumps(
+                {
+                    "event": "content_sync_scheduler_retry",
+                    "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
+                    "next_attempt_at": next_attempt.isoformat(timespec="seconds"),
+                    "retry_reason": retry_reason,
+                    "timestamp": now_iso(),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        sleep_until(next_attempt)
+
+
+def recover_interrupted_content_sync_runs(db_path):
+    try:
+        with DatabaseOperationLock(db_path, operation="recover interrupted content sync runs"):
+            con = connect(db_path)
+            try:
+                content_updates.ensure_schema(con)
+                recovered = content_updates.fail_running_runs(con)
+                con.commit()
+            finally:
+                con.close()
+    except OperationLockError:
+        server_logger().warning("skipped interrupted sync recovery because the database lock is busy")
+        return 0
+    if recovered:
+        server_logger().warning(f"marked {recovered} interrupted content sync run(s) as failed")
+    return recovered
 
 
 def start_daily_sync_scheduler(db_path):
@@ -6516,6 +6687,17 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def require_animego_push_token(self):
+        expected = configured_animego_push_token()
+        if not expected:
+            self.send_json({"error": "AnimeGO push token is not configured"}, 503)
+            return False
+        received = self.sync_request_token()
+        if not received or not hmac.compare_digest(received, expected):
+            self.send_json({"error": "authentication required"}, 401)
+            return False
+        return True
+
     def current_user_is_admin(self):
         user = self.current_user()
         return bool(user and user.get("is_admin"))
@@ -6660,6 +6842,14 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True})
             else:
                 self.send_json({"ok": False, "error": "database unavailable"}, 503)
+            return
+
+        if path == "/api/internal/animego-sync-manifest":
+            if not self.require_animego_push_token():
+                return
+            import sync_videos
+
+            self.send_json(sync_videos.animego_sync_manifest(self.server.db_path))
             return
 
         if path == "/api/auth/config":
@@ -6832,6 +7022,34 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_json({"ok": True, **result})
             return
 
+        if path == "/api/internal/animego-push-sync":
+            if not self.require_animego_push_token():
+                return
+            try:
+                bundle = self.read_limited_json_body(MAX_ANIMEGO_PUSH_BODY_BYTES)
+                result = run_pushed_animego_sync(self.server.db_path, bundle)
+            except ClientErrorPayloadTooLarge:
+                self.send_json({"error": "payload too large"}, 413)
+                return
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            except ContentSyncBusyError as exc:
+                self.send_json({"ok": False, "status": "busy", "error": str(exc)}, 423)
+                return
+            except ContentSyncPartialError as exc:
+                self.send_json({"ok": False, **exc.event}, 502)
+                return
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+            except Exception:
+                server_logger().exception("trusted AnimeGO push sync failed")
+                self.send_json({"error": "sync failed"}, 500)
+                return
+            self.send_json({"ok": True, **result})
+            return
+
         if path == "/api/client-errors":
             self.handle_client_error_post()
             return
@@ -6961,6 +7179,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
 def run(port, host, db_path):
     db_path = prepare_database(db_path)
     configure_logging()
+    recover_interrupted_content_sync_runs(db_path)
     prewarm_catalog_cache(db_path)
     server = ThreadingHTTPServer((host, port), AnimeHandler)
     server.db_path = str(db_path)
