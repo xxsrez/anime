@@ -3105,6 +3105,27 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         )
         self.assertEqual(len(conflicting), 2)
 
+        coiling_dragon = server.canonicalize_items(
+            [
+                item(10008976, "yummyanime", "8976", "Извивающийся дракон", "Panlong"),
+                {
+                    **item(
+                        20027850,
+                        "yummyanime",
+                        "yummyani:27850",
+                        "Извивающийся дракон",
+                        "Coiling Dragon",
+                    ),
+                    "_canonical_aliases": ["Coiling Dragon", "Panlong"],
+                },
+            ]
+        )
+        self.assertEqual(len(coiling_dragon), 1)
+        self.assertEqual(
+            set(coiling_dragon[0]["source_member_ids"]),
+            {10008976, 20027850},
+        )
+
         bridged = server.canonicalize_items(
             [
                 item(2, "animego", "2", "Shared Bridge Title", "Shared Original"),

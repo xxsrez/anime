@@ -1907,6 +1907,28 @@ def canonical_alias_names(item):
     }
 
 
+def canonical_alias_matches_other_primary(bucket, min_length=5):
+    primary_names = [
+        {
+            normalize_match_title(item.get("title")),
+            normalize_match_title(item.get("subtitle")),
+        }
+        for item in bucket
+    ]
+    for index, item in enumerate(bucket):
+        own_primary = primary_names[index]
+        aliases = {
+            name
+            for value in item.get("_canonical_aliases") or []
+            if (name := normalize_match_title(value))
+            and len(name) >= min_length
+            and name not in own_primary
+        }
+        if any(aliases & other for other_index, other in enumerate(primary_names) if other_index != index):
+            return True
+    return False
+
+
 def canonical_names(item):
     names = canonical_alias_names(item)
     for value in (item.get("title"), item.get("subtitle")):
@@ -2083,7 +2105,7 @@ def can_auto_merge_by_title(bucket):
     title_key = normalize_match_title(bucket[0].get("title"))
     subtitle_keys = {normalize_match_title(item.get("subtitle")) for item in bucket if normalize_match_title(item.get("subtitle"))}
     short_title_has_matching_subtitle = len(title_key) >= 8 or len(subtitle_keys) == 1
-    subtitles_do_not_conflict = len(subtitle_keys) <= 1
+    subtitles_do_not_conflict = len(subtitle_keys) <= 1 or canonical_alias_matches_other_primary(bucket)
     return source_namespaces_are_unique(bucket) and short_title_has_matching_subtitle and subtitles_do_not_conflict
 
 
