@@ -2146,6 +2146,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             nonce = script_directive.split("'nonce-", 1)[1].split("'", 1)[0]
             self.assertIn(f'nonce="{nonce}"'.encode(), response_body)
             self.assertIn(b"waitForSession", response_body)
+            self.assertIn(b"const sessionDeadline = Date.now() + 12_000", response_body)
+            self.assertIn(b"attempt < 120 && Date.now() < sessionDeadline", response_body)
             self.assertIn(b'fetch("/api/me"', response_body)
             self.assertIn(b'credentials: "same-origin"', response_body)
             self.assertIn(b"window.location.replace", response_body)
@@ -2616,7 +2618,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("function authError()", js)
         self.assertIn('get("auth_error")', js)
         self.assertIn("api/auth/config?next=", js)
-        self.assertIn("auto_select: true", js)
+        self.assertIn("const recoveringSession = !redirectError && recoverExistingSession()", js)
+        self.assertIn("auto_select: !recoveringSession", js)
+        self.assertIn("itp_support: true", js)
         self.assertIn("callback: handleCredential", js)
         self.assertIn('fetch("/api/auth/google"', js)
         self.assertIn('credentials: "same-origin"', js)
@@ -2641,7 +2645,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("locale: GOOGLE_LOCALE", js)
         self.assertIn("click_listener: handleGoogleButtonClick", js)
         self.assertIn("state: config.state", js)
-        self.assertIn("maybeShowOneTap(google, Boolean(redirectError))", js)
+        self.assertIn("if (!recoveringSession) maybeShowOneTap(google, Boolean(redirectError))", js)
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)
@@ -2769,6 +2773,21 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn('class="view-tab-label">Готово</span>', html)
         self.assertNotIn('class="view-tab-label">Брошено</span>', html)
         self.assertIn('aria-pressed="true"', html)
+
+    def test_mobile_watch_actions_are_compact_and_consistent(self):
+        html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        css = Path(server.STATIC_DIR / "app.css").read_text(encoding="utf-8")
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn('id="favorite-toggle" class="watch-button"', html)
+        self.assertIn('class="watched-control"', html)
+        self.assertIn('id="not-interested-button" class="watch-button dismiss-button"', html)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", css)
+        self.assertIn(".watch-button,\n.watched-control", css)
+        self.assertIn(".watched-control:has(input:checked)", css)
+        self.assertIn(".watch-button[hidden]", css)
+        self.assertNotIn(".dismiss-button.active", css)
+        self.assertIn('detail.is_favorite ? "★ Избранное" : "☆ Избранное"', js)
 
     def test_admin_page_has_dashboard_assets(self):
         html = Path(server.STATIC_DIR / "admin.html").read_text(encoding="utf-8")

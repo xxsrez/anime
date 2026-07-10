@@ -6555,9 +6555,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
     const nextPath = {next_js};
     const state = document.getElementById("login-complete-state");
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const sessionDeadline = Date.now() + 12_000;
 
     async function waitForSession() {{
-      for (let attempt = 0; attempt < 30; attempt += 1) {{
+      for (let attempt = 0; attempt < 120 && Date.now() < sessionDeadline; attempt += 1) {{
         try {{
           const response = await fetch("/api/me", {{
             cache: "no-store",

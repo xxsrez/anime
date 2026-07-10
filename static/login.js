@@ -258,10 +258,11 @@ function maybeShowOneTap(google, keepMessage = false) {
 
 async function bootLogin() {
   const redirectError = authError();
+  const recoveringSession = !redirectError && recoverExistingSession();
   if (redirectError) {
     setLoginState(redirectError, "warn");
     startSessionWatcher();
-  } else if (!recoverExistingSession()) {
+  } else if (!recoveringSession) {
     startSessionWatcher();
   }
 
@@ -290,10 +291,13 @@ async function bootLogin() {
 
   const google = await waitForGoogle();
   if (redirectingAfterSession) return;
+  // Recovery must only poll the app session. Starting One Tap again here can
+  // mint another handoff before Firefox exposes the cookie from the first one.
   google.accounts.id.initialize({
     client_id: config.client_id,
     callback: handleCredential,
-    auto_select: true,
+    auto_select: !recoveringSession,
+    itp_support: true,
     prompt_parent_id: el.oneTapAnchor?.id,
   });
   google.accounts.id.renderButton(el.googleButton, {
@@ -307,7 +311,7 @@ async function bootLogin() {
     state: config.state,
     width: Math.min(360, el.googleButton.clientWidth || 360),
   });
-  maybeShowOneTap(google, Boolean(redirectError));
+  if (!recoveringSession) maybeShowOneTap(google, Boolean(redirectError));
 }
 
 bootLogin().catch(error => {

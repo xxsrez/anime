@@ -2058,7 +2058,7 @@ function renderDetail() {
 function renderWatchState(detail) {
   el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
-  el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
+  el.favoriteToggle.textContent = detail.is_favorite ? "★ Избранное" : "☆ Избранное";
   const status = effectiveWatchStatus(detail);
   el.watchedToggle.checked = status === "completed";
   const hasProgress = effectiveProgressEpisodeNumber(detail) != null;
