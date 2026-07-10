@@ -2765,7 +2765,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('class="view-tab-label">Избр.</span>', html)
         self.assertIn('aria-label="Избранное"', html)
         self.assertIn('class="view-tab-label">Смотрю</span>', html)
-        self.assertIn('class="view-tab-label">Брошено</span>', html)
+        self.assertNotIn('class="view-tab-label">Буду</span>', html)
+        self.assertNotIn('class="view-tab-label">Готово</span>', html)
+        self.assertNotIn('class="view-tab-label">Брошено</span>', html)
         self.assertIn('aria-pressed="true"', html)
 
     def test_admin_page_has_dashboard_assets(self):
@@ -2837,7 +2839,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn("el.progressEpisode", js)
         self.assertIn('id="not-watching-button"', html)
         self.assertIn("Убрать из «Смотрю»", html)
-        self.assertIn('id="watch-status"', html)
+        self.assertNotIn('id="watch-status"', html)
+        self.assertIn('id="watched-toggle"', html)
         self.assertIn('id="not-interested-button"', html)
         self.assertIn('document.getElementById("not-watching-button")', js)
         self.assertIn("function discardWatchSession", js)
@@ -2868,7 +2871,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
 
         self.assertIn('mode === "progress"', view_match)
         self.assertIn('status === "watching" || status === "paused"', view_match)
-        self.assertIn('mode === "completed"', view_match)
+        self.assertNotIn('mode === "planned"', view_match)
+        self.assertNotIn('mode === "completed"', view_match)
+        self.assertNotIn('mode === "dropped"', view_match)
         self.assertNotIn("item.watched || item.progress_episode_number != null", view_match)
 
     def test_frontend_hides_episode_count_meta_from_title_cards(self):

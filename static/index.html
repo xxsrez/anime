@@ -58,21 +58,9 @@
           <span class="view-tab-icon" aria-hidden="true">★</span>
           <span class="view-tab-label">Избр.</span>
         </button>
-        <button id="view-planned" type="button" data-view="planned" aria-label="Буду смотреть" aria-pressed="false" title="Буду смотреть">
-          <span class="view-tab-icon" aria-hidden="true">＋</span>
-          <span class="view-tab-label">Буду</span>
-        </button>
         <button id="view-progress" type="button" data-view="progress" aria-label="Прогресс просмотра" aria-pressed="false" title="Прогресс просмотра">
           <span class="view-tab-icon" aria-hidden="true">▶</span>
           <span class="view-tab-label">Смотрю</span>
-        </button>
-        <button id="view-completed" type="button" data-view="completed" aria-label="Просмотрено" aria-pressed="false" title="Просмотрено">
-          <span class="view-tab-icon" aria-hidden="true">✓</span>
-          <span class="view-tab-label">Готово</span>
-        </button>
-        <button id="view-dropped" type="button" data-view="dropped" aria-label="Брошено" aria-pressed="false" title="Брошено">
-          <span class="view-tab-icon" aria-hidden="true">×</span>
-          <span class="view-tab-label">Брошено</span>
         </button>
         <button id="view-updates" type="button" data-view="updates" aria-label="Новое в базе" aria-pressed="false" title="Новое в базе">
           <span class="view-tab-icon" aria-hidden="true">＋</span>
@@ -99,17 +87,6 @@
             <p id="subtitle"></p>
             <div class="watch-row">
               <button id="favorite-toggle" class="watch-button" type="button" aria-pressed="false">☆ Избранное</button>
-              <label class="watch-status-control">
-                <span>Полка</span>
-                <select id="watch-status" aria-label="Статус просмотра">
-                  <option value="">Без статуса</option>
-                  <option value="planned">Буду смотреть</option>
-                  <option value="watching">Смотрю</option>
-                  <option value="paused">Пауза</option>
-                  <option value="completed">Просмотрено</option>
-                  <option value="dropped">Брошено</option>
-                </select>
-              </label>
               <label class="watched-control">
                 <input id="watched-toggle" type="checkbox">
                 <span>Просмотрен</span>

@@ -11,10 +11,7 @@ const DEFAULT_SORT_DIR = "desc";
 const VIEW_SORT_DEFAULTS = {
   all: { by: DEFAULT_SORT_BY, dir: DEFAULT_SORT_DIR },
   favorites: { by: "favorite_added", dir: "desc" },
-  planned: { by: "status_updated", dir: "desc" },
   progress: { by: "watch_recent", dir: "desc" },
-  completed: { by: "status_updated", dir: "desc" },
-  dropped: { by: "status_updated", dir: "desc" },
 };
 const USER_STATE_RESPONSE_FIELDS = [
   "is_favorite",
@@ -171,7 +168,6 @@ const el = {
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
   favoriteToggle: document.getElementById("favorite-toggle"),
-  watchStatus: document.getElementById("watch-status"),
   notWatchingButton: document.getElementById("not-watching-button"),
   notInterestedButton: document.getElementById("not-interested-button"),
   watchedToggle: document.getElementById("watched-toggle"),
@@ -1029,10 +1025,7 @@ function itemMatchesView(item, mode = state.viewMode) {
   if (mode === "updates") return state.contentUpdatesLoaded && hasRecentUpdates(item);
   if (mode === "favorites") return Boolean(item.is_favorite);
   const status = effectiveWatchStatus(item);
-  if (mode === "planned") return status === "planned";
   if (mode === "progress") return status === "watching" || status === "paused";
-  if (mode === "completed") return status === "completed";
-  if (mode === "dropped") return status === "dropped";
   return true;
 }
 
@@ -1047,10 +1040,7 @@ function currentShelfTotal() {
 function currentShelfCountLabel(total) {
   const labels = {
     favorites: "избранных",
-    planned: "в планах",
     progress: "в просмотре",
-    completed: "просмотрено",
-    dropped: "брошено",
   };
   if (isRecommendationView()) return `${state.filtered.length} из ${total} советов`;
   if (isUpdatesView()) return `${state.filtered.length} из ${total} обновл.`;
@@ -1158,13 +1148,6 @@ const sortDefinitions = [
     ),
   },
   {
-    id: "status_updated",
-    label: "Статус изменён",
-    defaultDir: "desc",
-    type: "number",
-    value: item => dateValue(item.watch_status_updated_at || item.updated_at),
-  },
-  {
     id: "rating_best",
     label: "Лучший",
     defaultDir: "desc",
@@ -1244,12 +1227,9 @@ function sortDefinition(id = state.sortBy) {
 function sortDefinitionsForView(mode = state.viewMode) {
   const shelfSort = {
     favorites: "favorite_added",
-    planned: "status_updated",
     progress: "watch_recent",
-    completed: "status_updated",
-    dropped: "status_updated",
   }[mode];
-  const shelfOnly = new Set(["favorite_added", "watch_recent", "status_updated"]);
+  const shelfOnly = new Set(["favorite_added", "watch_recent"]);
   return sortDefinitions.filter(definition => definition.id === shelfSort || !shelfOnly.has(definition.id));
 }
 
@@ -2080,7 +2060,6 @@ function renderWatchState(detail) {
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ Избранное";
   const status = effectiveWatchStatus(detail);
-  el.watchStatus.value = status;
   el.watchedToggle.checked = status === "completed";
   const hasProgress = effectiveProgressEpisodeNumber(detail) != null;
   el.notWatchingButton.hidden = !hasProgress || !["watching", "paused"].includes(status);
@@ -3368,19 +3347,6 @@ for (const button of el.viewTabs) {
 el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
   saveUserState({ is_favorite: !state.detail.is_favorite }).catch(reportActionError("toggle favorite"));
-});
-el.watchStatus.addEventListener("change", () => {
-  if (!state.detail) return;
-  const watchStatus = el.watchStatus.value || null;
-  const patch = {
-    watch_status: watchStatus,
-    watched: watchStatus === "completed",
-  };
-  if (watchStatus == null || watchStatus === "planned" || watchStatus === "dropped") {
-    patch.progress_episode_number = null;
-  }
-  if (watchStatus !== "watching") discardWatchSession();
-  saveUserState(patch).catch(reportActionError("change watch status"));
 });
 el.notWatchingButton.addEventListener("click", () => {
   if (!state.detail) return;
