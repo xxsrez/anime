@@ -7,6 +7,11 @@ troubleshooting. This file is a Railway-specific quick reference.
 Railway is the production environment for Anime Local. The retired localhost
 production install at `127.0.0.1:8766` must not be used for releases.
 
+`origin/main` is the ledger of the last successfully verified production
+commit. Normal releases deploy a clean pushed candidate first and fast-forward
+`main` to that exact SHA only after production smoke checks pass. See
+`../../instructions/Operations_Runbook.md` for the drift-recovery exception.
+
 ## Production Target
 
 - Project: `anime-local`
@@ -83,6 +88,25 @@ node --test static/frontend_runtime.test.js
 .venv/bin/python scripts/smoke_dev_app.py
 ```
 
+Pin the candidate after verification and keep these values in the release
+shell:
+
+```bash
+set -euo pipefail
+git fetch origin --prune
+test -z "$(git status --porcelain=v1)"
+test "$(git branch --show-current)" != "main"
+test "$(git rev-parse --abbrev-ref '@{u}')" != "origin/main"
+RELEASE_SHA="$(git rev-parse HEAD)"
+MAIN_BEFORE_RELEASE="$(git rev-parse origin/main)"
+test "$RELEASE_SHA" = "$(git rev-parse '@{u}')"
+git merge-base --is-ancestor "$MAIN_BEFORE_RELEASE" "$RELEASE_SHA"
+RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
+```
+
+Keep fail-closed mode enabled for the entire release. Any failed guard,
+deployment, migration, data patch, or smoke check aborts promotion.
+
 2. Confirm Railway linkage:
 
 ```bash
@@ -149,16 +173,47 @@ Full upload is emergency-only for deliberate full restores:
 railway volume files -v web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
 ```
 
-4. Deploy the current working tree to Railway production:
+4. Deploy the exact clean pushed candidate to Railway production:
 
 ```bash
-railway up --service web --environment production --detach --message "production release"
+test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+test -z "$(git status --porcelain=v1)"
+railway up --service web --environment production --detach \
+  --message "production release $RELEASE_MARKER"
 ```
 
 `railway up` uploads from the current directory and respects `.gitignore`.
-Use it only when the current working tree is the intended production code.
+Use it only when the checks above prove the tree matches the release commit.
 
-5. Copy private data patches to the Railway volume if production data should
+5. Wait for the matching deployment to reach `SUCCESS`; do not let migrations
+   or smoke checks accidentally target the previous deployment:
+
+```bash
+for attempt in $(seq 1 120); do
+  DEPLOYMENT_JSON="$(
+    railway deployment list --service web --environment production \
+      --limit 20 --json |
+      jq -c --arg message "production release $RELEASE_MARKER" \
+        'map(select(.meta.cliMessage == $message)) | sort_by(.createdAt) | last // {}'
+  )"
+  RELEASE_DEPLOYMENT_ID="$(jq -r '.id // empty' <<<"$DEPLOYMENT_JSON")"
+  DEPLOY_STATUS="$(jq -r '.status // empty' <<<"$DEPLOYMENT_JSON")"
+  case "$DEPLOY_STATUS" in
+    SUCCESS) break ;;
+    FAILED|CRASHED|REMOVED|CANCELED|CANCELLED) exit 1 ;;
+  esac
+  sleep 5
+done
+test "$DEPLOY_STATUS" = "SUCCESS"
+test -n "$RELEASE_DEPLOYMENT_ID"
+LATEST_DEPLOYMENT_ID="$(
+  railway deployment list --service web --environment production \
+    --limit 20 --json | jq -r 'sort_by(.createdAt) | last | .id // empty'
+)"
+test "$LATEST_DEPLOYMENT_ID" = "$RELEASE_DEPLOYMENT_ID"
+```
+
+6. Copy private data patches to the Railway volume if production data should
    change:
 
 ```bash
@@ -169,7 +224,7 @@ railway volume files -v web-volume upload \
   --json
 ```
 
-6. Apply tracked schema/control migrations on every release. Include the
+7. Apply tracked schema/control migrations on every release. Include the
    private root only for a deliberate data patch:
 
 ```bash
@@ -188,14 +243,14 @@ For a data release, add `--root /data/private-migrations`. The migration runner
 and production cron use the same lock; an overlapping cron invocation fails
 fast rather than writing concurrently.
 
-7. Watch deployment state and logs:
+8. Inspect deployment state and logs:
 
 ```bash
 railway deployment list --json
 railway logs --latest --lines 100
 ```
 
-8. Smoke-check production:
+9. Smoke-check production:
 
 ```bash
 curl -fsS https://anime-srez.up.railway.app/api/health
@@ -209,6 +264,41 @@ Expected smoke results:
 - `/api/me` returns `401` without a session.
 - `/login` returns HTML with the Google login page.
 - Authenticated browser login succeeds and catalog pages load.
+
+10. Immediately after successful smoke checks, promote the exact released SHA
+   to `main` with no merge commit:
+
+```bash
+DEPLOYMENT_SNAPSHOT="$(
+  railway deployment list --service web --environment production \
+    --limit 20 --json
+)"
+test "$(
+  jq -r --arg message "production release $RELEASE_MARKER" \
+    'map(select(.meta.cliMessage == $message)) | sort_by(.createdAt) | last | .id // empty' \
+    <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "$RELEASE_DEPLOYMENT_ID"
+test "$(
+  jq -r 'sort_by(.createdAt) | last | .id // empty' <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "$RELEASE_DEPLOYMENT_ID"
+test "$(
+  jq -r --arg id "$RELEASE_DEPLOYMENT_ID" \
+    'map(select(.id == $id)) | last | .status // empty' <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "SUCCESS"
+git fetch origin --prune
+test "$(git rev-parse origin/main)" = "$MAIN_BEFORE_RELEASE"
+git switch main
+git pull --ff-only origin main
+git merge --ff-only "$RELEASE_SHA"
+git push origin main
+git fetch origin --prune
+test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+```
+
+Do not move `main` after a failed release. If fast-forward promotion is no
+longer possible, reconcile, verify, and deploy a new candidate. For the
+one-time recovery procedure when `main` and production already disagree, use
+`Recovering Main/Production Drift` in the central runbook.
 
 ## Daily Content Sync Cron
 

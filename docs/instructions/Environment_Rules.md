@@ -72,7 +72,9 @@ Code release command, only after the user explicitly asks to release and after
 the `Operations_Runbook.md` release checklist passes:
 
 ```bash
-railway up --service web --environment production --detach --message "production release"
+RELEASE_SHA="$(git rev-parse HEAD)"
+railway up --service web --environment production --detach \
+  --message "production release $RELEASE_SHA"
 ```
 
 Routine data release: upload a reviewed private migration folder, then apply it
@@ -95,12 +97,17 @@ user state must be preserved.
 
 1. Make changes and run all experiments on `http://127.0.0.1:8765/`.
 2. Verify the app on dev, including browser checks for UI/player changes.
-3. Commit the intended code and docs only; keep database snapshots under ignored
-   `db/`.
+3. Commit and push the intended candidate from a branch based on `origin/main`;
+   keep database snapshots under ignored `db/` and keep `main` unchanged.
 4. Wait for an explicit user release command.
-5. If data should change, upload and apply only the reviewed private patch.
-6. Deploy the intended code to Railway and apply tracked migrations.
-7. Smoke-check production after release, then stop making changes there.
+5. If data should change, generate and verify the private patch locally, but do
+   not upload or apply it yet.
+6. Deploy that exact clean pushed commit to Railway and apply tracked
+   migrations only after the matching deployment reaches `SUCCESS`.
+7. Upload and apply the reviewed private patch, if any, then smoke-check
+   production.
+8. Immediately fast-forward and push `main` to the released SHA. In steady
+   state `origin/main` is the exact code commit verified on production.
 
 Never use Railway production as scratch space. If a change needs investigation,
 reproduce it on dev first.

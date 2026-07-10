@@ -32,6 +32,15 @@ Railway production, and releasing code or database changes.
   operation lock; cron fails fast when another data operation owns it.
 - GitHub must contain only license-clean project source, docs, tests, and
   schema/control migrations. Do not commit scraped catalog/player data patches.
+- `origin/main` is the production code ledger. In steady state it must point to
+  the exact commit used by the last successfully smoke-tested production
+  deployment.
+- Never deploy dirty or unpushed code, and never advance `main` with unreleased
+  code. The normal order is: verify a clean pushed candidate, deploy that exact
+  commit, smoke production, then immediately fast-forward `main` to it.
+- Never overlap production releases. A release owns the production lane until
+  its deployment, migrations, smoke checks, and `main` promotion finish or the
+  release is explicitly aborted.
 
 ## Environment Map
 
@@ -224,7 +233,29 @@ railway volume list --json
 
 2. Run verification from `## Verification Before Release`.
 
-3. If production data should change, generate a migration from the intended
+3. Pin the release to a clean pushed commit based on the current `origin/main`.
+   Keep these variables in the same shell for the remaining release steps:
+
+```bash
+set -euo pipefail
+git fetch origin --prune
+test -z "$(git status --porcelain=v1)"
+test "$(git branch --show-current)" != "main"
+test "$(git rev-parse --abbrev-ref '@{u}')" != "origin/main"
+RELEASE_SHA="$(git rev-parse HEAD)"
+MAIN_BEFORE_RELEASE="$(git rev-parse origin/main)"
+test "$RELEASE_SHA" = "$(git rev-parse '@{u}')"
+git merge-base --is-ancestor "$MAIN_BEFORE_RELEASE" "$RELEASE_SHA"
+RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
+```
+
+Any non-zero command aborts the release shell. Do not disable this fail-closed
+mode or continue with later steps after a failed guard.
+
+If the candidate is not a descendant of `origin/main`, reconcile it on dev and
+rerun the full verification gate before touching production.
+
+4. If production data should change, generate a migration from the intended
    local database state. Do not download production SQLite just to generate a
    routine patch:
 
@@ -279,16 +310,49 @@ not for adding titles or episodes:
 railway volume files -v web-volume upload db/animego.sqlite /animego.sqlite --overwrite --json
 ```
 
-4. Deploy code and tracked schema/control migrations:
+5. Deploy the exact candidate code tree:
 
 ```bash
-railway up --service web --environment production --detach --message "production release"
+test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+test -z "$(git status --porcelain=v1)"
+railway up --service web --environment production --detach \
+  --message "production release $RELEASE_MARKER"
 ```
 
 `railway up` uploads the current working tree and respects `.gitignore`. Use it
-only when the working tree is exactly the intended production code.
+only after the checks above prove that the working tree is the exact committed
+and pushed release candidate.
 
-5. Copy private data patches to the Railway volume when production data should
+6. Wait for `SUCCESS` from the deployment whose message contains the exact
+   release SHA. Do not apply migrations or smoke the URL while Railway may still
+   be serving the previous deployment:
+
+```bash
+for attempt in $(seq 1 120); do
+  DEPLOYMENT_JSON="$(
+    railway deployment list --service web --environment production \
+      --limit 20 --json |
+      jq -c --arg message "production release $RELEASE_MARKER" \
+        'map(select(.meta.cliMessage == $message)) | sort_by(.createdAt) | last // {}'
+  )"
+  RELEASE_DEPLOYMENT_ID="$(jq -r '.id // empty' <<<"$DEPLOYMENT_JSON")"
+  DEPLOY_STATUS="$(jq -r '.status // empty' <<<"$DEPLOYMENT_JSON")"
+  case "$DEPLOY_STATUS" in
+    SUCCESS) break ;;
+    FAILED|CRASHED|REMOVED|CANCELED|CANCELLED) exit 1 ;;
+  esac
+  sleep 5
+done
+test "$DEPLOY_STATUS" = "SUCCESS"
+test -n "$RELEASE_DEPLOYMENT_ID"
+LATEST_DEPLOYMENT_ID="$(
+  railway deployment list --service web --environment production \
+    --limit 20 --json | jq -r 'sort_by(.createdAt) | last | .id // empty'
+)"
+test "$LATEST_DEPLOYMENT_ID" = "$RELEASE_DEPLOYMENT_ID"
+```
+
+7. Copy private data patches to the Railway volume when production data should
    change:
 
 ```bash
@@ -301,7 +365,7 @@ railway volume files -v web-volume upload \
 
 Skip this step for code-only releases.
 
-6. Apply tracked schema/control migrations on every release. Add the private
+8. Apply tracked schema/control migrations on every release. Add the private
    migration root only when this release deliberately changes catalog data:
 
 ```bash
@@ -319,14 +383,14 @@ railway ssh --service web --environment production '
 For a data release, add `--root /data/private-migrations`. A cron run that loses
 the lock returns `423` and must fail rather than queue behind the release.
 
-7. Watch deployment:
+9. Inspect the successful deployment logs:
 
 ```bash
 railway deployment list --json
 railway logs --latest --lines 100
 ```
 
-8. Smoke-check production:
+10. Smoke-check production:
 
 ```bash
 curl -fsS https://anime-srez.up.railway.app/api/health
@@ -340,6 +404,78 @@ Expected:
 - `/api/me` returns `401` without a session.
 - `/login` returns the Google login HTML.
 - Authenticated browser login succeeds.
+
+11. After every successful production smoke, fast-forward `main` to the exact
+    released commit and verify the remote ref. `main` must not move before this
+    point during the normal release flow:
+
+```bash
+DEPLOYMENT_SNAPSHOT="$(
+  railway deployment list --service web --environment production \
+    --limit 20 --json
+)"
+test "$(
+  jq -r --arg message "production release $RELEASE_MARKER" \
+    'map(select(.meta.cliMessage == $message)) | sort_by(.createdAt) | last | .id // empty' \
+    <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "$RELEASE_DEPLOYMENT_ID"
+test "$(
+  jq -r 'sort_by(.createdAt) | last | .id // empty' <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "$RELEASE_DEPLOYMENT_ID"
+test "$(
+  jq -r --arg id "$RELEASE_DEPLOYMENT_ID" \
+    'map(select(.id == $id)) | last | .status // empty' <<<"$DEPLOYMENT_SNAPSHOT"
+)" = "SUCCESS"
+git fetch origin --prune
+test "$(git rev-parse origin/main)" = "$MAIN_BEFORE_RELEASE"
+git switch main
+git pull --ff-only origin main
+git merge --ff-only "$RELEASE_SHA"
+git push origin main
+git fetch origin --prune
+test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+```
+
+If deployment, migration/data-patch apply, or smoke fails, do not move `main`.
+Repair and release a new candidate, or roll production back to the captured
+`$MAIN_BEFORE_RELEASE` and smoke the rollback. If `origin/main` changed
+concurrently after deployment, do not create a merge commit: reconcile on dev,
+verify, and release a new fast-forward candidate.
+
+## Recovering Main/Production Drift
+
+Use this only when the invariant was already broken and production contains
+code not represented by `main`. Outstanding branches alone are not a recovery
+case; combine them on a candidate branch and use the normal production-first
+flow. Drift recovery is the one temporary exception where `main` moves before
+the production deployment:
+
+1. Fetch and audit every local and remote branch. Include only intended release
+   changes; do not merge stale or experimental branches merely because they
+   exist.
+2. Merge the intended branches into local `main`, preferring fast-forward
+   merges where ancestry permits.
+3. Run the complete dev gate and browser checks from the resulting `main`.
+4. Push `main`, then prove that the clean local tree is exactly `origin/main`:
+
+```bash
+set -euo pipefail
+git push origin main
+git fetch origin --prune
+test -z "$(git status --porcelain=v1)"
+RELEASE_SHA="$(git rev-parse origin/main)"
+test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
+```
+
+5. Deploy exactly `$RELEASE_SHA` with the SHA in the Railway deployment message
+   using `$RELEASE_MARKER`; use the same matching-ID wait from normal release
+   step 6 and require that deployment to remain the latest `SUCCESS`.
+6. Apply migrations, smoke production, and verify both production and
+   `origin/main` before declaring reconciliation complete.
+
+Complete this recovery as one operation, then return to the normal
+production-first, fast-forward-main-after-smoke procedure above.
 
 ## Admin Access
 
