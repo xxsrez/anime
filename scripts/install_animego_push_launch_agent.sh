@@ -11,6 +11,5 @@ install -m 600 "$ROOT/scripts/${LABEL}.plist" "$TARGET"
 launchctl bootout "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
 launchctl bootstrap "$DOMAIN" "$TARGET"
 launchctl enable "$DOMAIN/$LABEL"
-launchctl kickstart -k "$DOMAIN/$LABEL"
 
 echo "Installed $LABEL; log: ${HOME}/Library/Logs/Anime/animego-push-worker.log"
