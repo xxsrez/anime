@@ -20,6 +20,7 @@ let sessionWatcherMode = "idle";
 let sessionCheckAttempts = 0;
 let redirectingAfterSession = false;
 let sessionCheckErrorReported = false;
+let lastSessionCheckStatus = null;
 
 function setLoginState(message, tone = "") {
   el.state.textContent = message || "";
@@ -104,6 +105,7 @@ async function checkExistingSession() {
       cache: "no-store",
       credentials: "same-origin",
     });
+    lastSessionCheckStatus = response.status;
     if (response.ok) {
       redirectingAfterSession = true;
       clearLoginRecovery();
@@ -112,6 +114,7 @@ async function checkExistingSession() {
       return true;
     }
   } catch (error) {
+    lastSessionCheckStatus = null;
     if (!sessionCheckErrorReported) {
       sessionCheckErrorReported = true;
       reportClientError(error, { action: "check existing login session" });
@@ -139,8 +142,19 @@ async function runSessionCheck() {
     return;
   }
   if (Date.now() >= fastSessionChecksUntil || sessionCheckAttempts >= LOGIN_RECOVERY_MAX_CHECKS) {
+    const attempts = sessionCheckAttempts;
     clearLoginRecovery();
     stopSessionWatcher();
+    reportClientError(new Error("Login session recovery timed out"), {
+      type: "login.session_recovery_timeout",
+      action: "recover existing login session",
+      attempts,
+      recoveryWindowMs: LOGIN_RECOVERY_FAST_WINDOW_MS,
+      lastStatus: lastSessionCheckStatus,
+      authComplete: authComplete(),
+      online: navigator.onLine,
+      visibilityState: document.visibilityState,
+    });
     setLoginState("Сессия пока не появилась. Попробуйте войти ещё раз.", "warn");
     return;
   }
@@ -153,6 +167,7 @@ async function runSessionCheck() {
 
 function startSessionWatcher({ recovery = false } = {}) {
   stopSessionWatcher();
+  lastSessionCheckStatus = null;
   sessionWatcherMode = recovery ? "recovery" : "single";
   if (recovery) {
     fastSessionChecksUntil = Math.max(

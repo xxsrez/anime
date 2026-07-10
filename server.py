@@ -6579,6 +6579,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
   <title>Вход выполнен - Anime Catalog</title>
+  <script src=\"/static/client_errors.js\"></script>
 </head>
 <body>
   <p id=\"login-complete-state\">Вход выполнен. Открываю приложение...</p>
@@ -6590,22 +6591,40 @@ class AnimeHandler(BaseHTTPRequestHandler):
     const sessionDeadline = Date.now() + 12_000;
 
     async function waitForSession() {{
+      let attempts = 0;
+      let lastStatus = null;
       for (let attempt = 0; attempt < 120 && Date.now() < sessionDeadline; attempt += 1) {{
+        attempts = attempt + 1;
         try {{
           const response = await fetch("/api/me", {{
             cache: "no-store",
             credentials: "same-origin",
           }});
+          lastStatus = response.status;
           if (response.ok) {{
             window.location.replace(nextPath);
             return;
           }}
         }} catch (error) {{
+          lastStatus = null;
           // The next retry handles transient navigation/cookie timing.
         }}
         await delay(100);
       }}
       state.textContent = "Вход выполнен. Открываю приложение...";
+      const report = window.reportClientError?.(
+        new Error("Login completion session recovery timed out"),
+        {{
+          type: "login.session_completion_timeout",
+          action: "wait for login session",
+          attempts,
+          recoveryWindowMs: 12_000,
+          lastStatus,
+          online: navigator.onLine,
+          visibilityState: document.visibilityState,
+        }},
+      );
+      if (report) await Promise.race([report, delay(500)]);
       window.location.replace({recovery_js});
     }}
 

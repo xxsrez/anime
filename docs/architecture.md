@@ -120,6 +120,9 @@ Files:
 authenticated session, so login-page errors can be captured. The endpoint caps
 the request body, stores sanitized fields only, and redacts obvious credentials,
 tokens, cookies, and third-party player/embed URLs before writing the log.
+The reporter loads before other page scripts and captures uncaught errors,
+unhandled promise rejections, CSP violations, and explicit login-session
+recovery timeouts. CSP reports omit blocked script contents and the full policy.
 
 ## Health Checks
 

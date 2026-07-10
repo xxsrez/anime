@@ -30,11 +30,36 @@
       if (value == null) continue;
       if (typeof value === "object") {
         result[key] = trim(value);
+      } else if (typeof value === "string") {
+        result[key] = trim(value);
       } else {
         result[key] = value;
       }
     }
     return result;
+  }
+
+  function safeCspLocation(value, fallback = "resource") {
+    const raw = trim(value, fallback).trim();
+    if (!raw) return fallback;
+    if (["inline", "eval", "wasm-eval", "trusted-types-sink", "trusted-types-policy"].includes(raw)) {
+      return raw;
+    }
+    const lower = raw.toLowerCase();
+    if (lower.startsWith("data:")) return "data:";
+    if (lower.startsWith("blob:")) return "blob:";
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (["moz-extension:", "chrome-extension:", "safari-web-extension:"].includes(url.protocol)) {
+        const filename = url.pathname.split("/").filter(Boolean).pop() || "resource";
+        return `${url.protocol}//<redacted>/${filename}`;
+      }
+      if (url.origin === window.location.origin) return url.pathname || "/";
+      if (url.origin === "null") return url.protocol;
+      return `${url.origin}${url.pathname}`;
+    } catch (error) {
+      return raw.split(/[?#]/, 1)[0] || fallback;
+    }
   }
 
   function dedupeKey(payload) {
@@ -72,14 +97,14 @@
 
   function reportClientError(error, context = {}) {
     const payload = payloadFromError(error, context);
-    if (!shouldSend(payload)) return;
-    fetch(ENDPOINT, {
+    if (!shouldSend(payload)) return Promise.resolve(false);
+    return fetch(ENDPOINT, {
       method: "POST",
       credentials: "same-origin",
       keepalive: true,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }).catch(() => {});
+    }).then(response => response.ok).catch(() => false);
   }
 
   function reportActionError(action, context = {}) {
@@ -106,5 +131,26 @@
       type: "unhandledrejection",
       source: "window",
     });
+  });
+
+  document.addEventListener("securitypolicyviolation", event => {
+    const effectiveDirective = trim(
+      event.effectiveDirective || event.violatedDirective || "unknown",
+      "unknown",
+    );
+    const blockedURI = safeCspLocation(event.blockedURI, "resource");
+    const source = safeCspLocation(event.sourceFile, "document");
+    reportClientError(
+      new Error(`Content Security Policy blocked ${blockedURI} (${effectiveDirective})`),
+      {
+        type: "securitypolicyviolation",
+        source,
+        lineno: event.lineNumber,
+        colno: event.columnNumber,
+        effectiveDirective,
+        blockedURI,
+        disposition: event.disposition || "enforce",
+      },
+    );
   });
 })();

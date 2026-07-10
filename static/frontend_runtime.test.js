@@ -1,5 +1,83 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
 const runtime = require("./frontend_runtime.js");
+
+async function testClientErrorReporter() {
+  const listeners = new Map();
+  const requests = [];
+  const addEventListener = (type, listener) => {
+    const handlers = listeners.get(type) || [];
+    handlers.push(listener);
+    listeners.set(type, handlers);
+  };
+  const window = {
+    addEventListener,
+    location: {
+      origin: "https://anime.test",
+      pathname: "/login",
+      search: "?auth_complete=1",
+      hash: "",
+    },
+  };
+  const sandbox = {
+    document: { addEventListener },
+    fetch: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true };
+    },
+    navigator: { userAgent: "runtime-test-browser" },
+    URL,
+    window,
+  };
+  const source = fs.readFileSync(`${__dirname}/client_errors.js`, "utf8");
+  vm.runInNewContext(source, sandbox, { filename: "client_errors.js" });
+
+  const cspHandlers = listeners.get("securitypolicyviolation") || [];
+  assert.equal(cspHandlers.length, 1);
+  const violation = {
+    blockedURI: "inline",
+    effectiveDirective: "script-src-elem",
+    disposition: "enforce",
+    sourceFile: "moz-extension://example/content.js",
+    lineNumber: 74,
+    columnNumber: 196,
+  };
+  cspHandlers[0](violation);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, "/api/client-errors");
+  assert.equal(requests[0].options.keepalive, true);
+  const payload = JSON.parse(requests[0].options.body);
+  assert.equal(payload.type, "securitypolicyviolation");
+  assert.equal(payload.message, "Content Security Policy blocked inline (script-src-elem)");
+  assert.equal(payload.source, "moz-extension://<redacted>/content.js");
+  assert.equal(payload.context.source, "moz-extension://<redacted>/content.js");
+  assert.equal(payload.context.blockedURI, "inline");
+  assert.equal(payload.context.effectiveDirective, "script-src-elem");
+  assert.equal(payload.context.disposition, "enforce");
+
+  cspHandlers[0](violation);
+  assert.equal(requests.length, 1);
+
+  cspHandlers[0]({
+    ...violation,
+    blockedURI: "https://cdn.example/script.js?token=secret#fragment",
+    sourceFile: "https://anime.test/login?private=value#fragment",
+  });
+  assert.equal(requests.length, 2);
+  const privatePayload = JSON.parse(requests[1].options.body);
+  assert.equal(privatePayload.message, "Content Security Policy blocked https://cdn.example/script.js (script-src-elem)");
+  assert.equal(privatePayload.source, "/login");
+  assert.equal(privatePayload.context.blockedURI, "https://cdn.example/script.js");
+  assert.equal(privatePayload.context.source, "/login");
+  assert.doesNotMatch(requests[1].options.body, /secret|private|fragment/);
+
+  const sent = await window.reportClientError(new Error("fresh error"), {
+    type: "runtime.test",
+  });
+  assert.equal(sent, true);
+  assert.equal(requests.length, 3);
+}
 
 assert.equal(
   runtime.safeHttpsUrl("https://video.sibnet.ru/shell.php?videoid=1", ["sibnet.ru"]),
@@ -187,7 +265,7 @@ async function testKeyedQueue() {
   assert.equal(queue.pending(), 0);
 }
 
-testKeyedQueue().then(() => {
+Promise.all([testClientErrorReporter(), testKeyedQueue()]).then(() => {
   console.log("frontend_runtime tests passed");
 }).catch(error => {
   console.error(error);

@@ -2214,11 +2214,15 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertNotIn("'unsafe-inline'", script_directive)
             nonce = script_directive.split("'nonce-", 1)[1].split("'", 1)[0]
             self.assertIn(f'nonce="{nonce}"'.encode(), response_body)
+            self.assertIn(b'src="/static/client_errors.js"', response_body)
             self.assertIn(b"waitForSession", response_body)
             self.assertIn(b"const sessionDeadline = Date.now() + 12_000", response_body)
             self.assertIn(b"attempt < 120 && Date.now() < sessionDeadline", response_body)
             self.assertIn(b'fetch("/api/me"', response_body)
             self.assertIn(b'credentials: "same-origin"', response_body)
+            self.assertIn(b"login.session_completion_timeout", response_body)
+            self.assertIn(b"window.reportClientError", response_body)
+            self.assertIn(b"Promise.race([report, delay(500)])", response_body)
             self.assertIn(b"window.location.replace", response_body)
             self.assertIn(b"/some-title", response_body)
             self.assertIn(b"auth_complete", response_body)
@@ -2681,6 +2685,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         reporter_js = Path(server.STATIC_DIR / "client_errors.js").read_text(encoding="utf-8")
         self.assertIn("https://accounts.google.com/gsi/client?hl=ru", html)
         self.assertIn('src="/static/client_errors.js"', html)
+        self.assertLess(
+            html.index('src="/static/client_errors.js"'),
+            html.index("https://accounts.google.com/gsi/client?hl=ru"),
+        )
         self.assertIn('id="one-tap-anchor"', html)
         self.assertIn('id="google-button"', html)
         self.assertIn("google.accounts.id.prompt", js)
@@ -2718,9 +2726,13 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("renderUnavailableGoogleButton", js)
         self.assertIn("google-fallback-button", js)
         self.assertIn("Ошибка конфигурации деплоймента", js)
+        self.assertIn("login.session_recovery_timeout", js)
+        self.assertIn("lastSessionCheckStatus = response.status", js)
         self.assertIn("/api/client-errors", reporter_js)
         self.assertIn("window.addEventListener(\"error\"", reporter_js)
         self.assertIn("window.addEventListener(\"unhandledrejection\"", reporter_js)
+        self.assertIn('document.addEventListener("securitypolicyviolation"', reporter_js)
+        self.assertIn("Content Security Policy blocked", reporter_js)
 
     def test_app_boot_parallelizes_initial_api_and_defers_recommendations(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
