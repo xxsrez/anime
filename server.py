@@ -20,7 +20,6 @@ import threading
 import time
 import unicodedata
 from collections import OrderedDict
-from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from functools import lru_cache
 from logging.handlers import RotatingFileHandler
@@ -54,6 +53,8 @@ TRUTHY_VALUES = {"1", "true", "yes", "on"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
 SESSION_COOKIE_NAME = "anime_session"
+MAX_SESSION_COOKIE_CANDIDATES = 8
+MAX_SESSION_TOKEN_CHARS = 512
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS = 5 * 60
 GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
@@ -6435,19 +6436,50 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def session_tokens(self):
+        if hasattr(self, "_session_tokens"):
+            return self._session_tokens
+
+        # Google GIS stores raw JSON in its first-party g_state cookie. Python's
+        # SimpleCookie rejects the entire header when that value appears before
+        # our session cookie, which is a common Firefox cookie order. Parse only
+        # the cookie we own and retain a few candidates so stale duplicates
+        # cannot hide a newer valid session.
+        values = []
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            name, separator, value = part.strip().partition("=")
+            value = value.strip()
+            if (
+                not separator
+                or name != SESSION_COOKIE_NAME
+                or not value
+                or len(value) > MAX_SESSION_TOKEN_CHARS
+                or value in values
+            ):
+                continue
+            values.append(value)
+            if len(values) >= MAX_SESSION_COOKIE_CANDIDATES:
+                break
+        self._session_tokens = tuple(values)
+        return self._session_tokens
+
     def session_token(self):
-        cookie_header = self.headers.get("Cookie")
-        if not cookie_header:
-            return None
-        cookie = SimpleCookie()
-        cookie.load(cookie_header)
-        morsel = cookie.get(SESSION_COOKIE_NAME)
-        return morsel.value if morsel else None
+        selected = getattr(self, "_current_session_token", None)
+        if selected:
+            return selected
+        return next(iter(self.session_tokens()), None)
 
     def current_user(self):
         if hasattr(self, "_current_user"):
             return self._current_user
-        self._current_user = get_session_user(self.session_token(), self.server.db_path)
+        self._current_user = None
+        self._current_session_token = None
+        for token in self.session_tokens():
+            user = get_session_user(token, self.server.db_path)
+            if user:
+                self._current_user = user
+                self._current_session_token = token
+                break
         return self._current_user
 
     def require_user(self):
@@ -6859,7 +6891,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/logout":
-            revoke_session(self.session_token(), self.server.db_path)
+            for token in self.session_tokens():
+                revoke_session(token, self.server.db_path)
             self.send_json(
                 {"ok": True},
                 headers=[("Set-Cookie", self.clear_session_cookie_header())],

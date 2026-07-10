@@ -1702,6 +1702,75 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(status, 200)
             self.assertIn(b"one@example.com", body)
 
+    def test_api_accepts_session_cookie_alongside_google_g_state(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "google-g-state", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            g_state = 'g_state={"i_l":0,"i_ll":123}'
+
+            for cookie_header in (
+                f"{g_state}; {server.SESSION_COOKIE_NAME}={token}",
+                f"{server.SESSION_COOKIE_NAME}={token}; {g_state}",
+            ):
+                with self.subTest(cookie_header=cookie_header):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "GET",
+                        "/api/me",
+                        headers={"Cookie": cookie_header},
+                    )
+
+                    self.assertEqual(status, 200)
+                    self.assertIn(b"one@example.com", body)
+
+    def test_api_tries_duplicate_session_cookie_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "duplicate-session", "one@example.com")
+            token = self.create_session(db_path, user_id)
+
+            for cookie_header in (
+                f"{server.SESSION_COOKIE_NAME}=stale; {server.SESSION_COOKIE_NAME}={token}",
+                f"{server.SESSION_COOKIE_NAME}={token}; {server.SESSION_COOKIE_NAME}=stale",
+            ):
+                with self.subTest(cookie_header=cookie_header):
+                    status, _, body = self.request_test_server(
+                        db_path,
+                        "GET",
+                        "/api/me",
+                        headers={"Cookie": cookie_header},
+                    )
+
+                    self.assertEqual(status, 200)
+                    self.assertIn(b"one@example.com", body)
+
+    def test_logout_revokes_duplicate_session_cookie_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "duplicate-logout", "one@example.com")
+            first_token = self.create_session(db_path, user_id)
+            second_token = self.create_session(db_path, user_id)
+            cookie_header = (
+                f'g_state={{"i_l":0}}; {server.SESSION_COOKIE_NAME}={first_token}; '
+                f"{server.SESSION_COOKIE_NAME}={second_token}"
+            )
+
+            status, _, body = self.request_test_server(
+                db_path,
+                "POST",
+                "/api/logout",
+                headers={"Cookie": cookie_header},
+            )
+
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body), {"ok": True})
+            self.assertIsNone(server.get_session_user(first_token, db_path))
+            self.assertIsNone(server.get_session_user(second_token, db_path))
+
     def test_session_updates_last_seen_and_honors_current_allowlist(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
