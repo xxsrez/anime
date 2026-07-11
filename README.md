@@ -96,7 +96,10 @@ titles. `Просмотрено` is unavailable for ongoing titles and the API r
 transition until the title is finished. Automatic
 iframe-focus, fullscreen/PiP, and engaged heartbeat signals update progress;
 episode and source selection alone do not. The sidebar can filter all titles,
-favorites, titles with progress, or the top recommendation list. Recommendations are
+favorites, titles with progress, or the top recommendation list.
+Favorites are grouped as watching, not watching, then completed; within each
+group, titles with a recent-update badge come first and the selected sort is the
+final tie-breaker. Recommendations are
 computed from the current user's favorites, titles marked `Просмотрено`, and
 meaningful watch history from the player; a short accidental visit does not
 become a taste seed. Favorites and explicitly completed titles are weighted much

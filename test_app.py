@@ -3330,6 +3330,27 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn('mode === "dropped"', view_match)
         self.assertNotIn("item.watched || item.progress_episode_number != null", view_match)
 
+    def test_frontend_favorites_sort_by_watch_status_then_recent_update(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        compare_start = js.index("function favoriteWatchStatusRank")
+        compare_end = js.index("function compareRecommendations", compare_start)
+        favorite_compare = js[compare_start:compare_end]
+        self.assertIn('status === "watching"', favorite_compare)
+        self.assertIn('status === "completed"', favorite_compare)
+        self.assertIn("favoriteWatchStatusRank(left) - favoriteWatchStatusRank(right)", favorite_compare)
+        self.assertIn("Number(hasRecentUpdates(right)) - Number(hasRecentUpdates(left))", favorite_compare)
+
+        filter_start = js.index("function applyFilter")
+        filter_end = js.index("async function loadSearchFields", filter_start)
+        apply_filter = js[filter_start:filter_end]
+        priority_call = 'compareFavoritePriority(left.item, right.item)'
+        self.assertIn('state.viewMode === "favorites"', apply_filter)
+        self.assertIn(priority_call, apply_filter)
+        self.assertLess(
+            apply_filter.index(priority_call),
+            apply_filter.index("left.searchScore !== right.searchScore"),
+        )
+
     def test_frontend_hides_episode_count_meta_from_title_cards(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
 

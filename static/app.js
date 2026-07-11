@@ -1322,6 +1322,20 @@ function compareAnime(left, right) {
   return String(left.title || "").localeCompare(String(right.title || ""), "ru", { sensitivity: "base" });
 }
 
+function favoriteWatchStatusRank(item) {
+  const status = effectiveWatchStatus(item);
+  if (status === "watching") return 0;
+  if (status === "completed") return 2;
+  return 1;
+}
+
+function compareFavoritePriority(left, right) {
+  const statusDiff = favoriteWatchStatusRank(left) - favoriteWatchStatusRank(right);
+  if (statusDiff !== 0) return statusDiff;
+  const recentDiff = Number(hasRecentUpdates(right)) - Number(hasRecentUpdates(left));
+  return recentDiff;
+}
+
 function compareRecommendations(left, right) {
   const scoreDiff = (numericValue(right.recommendation_score) || 0) - (numericValue(left.recommendation_score) || 0);
   if (scoreDiff !== 0) return scoreDiff;
@@ -3065,6 +3079,10 @@ function applyFilter({ selectFirst = false } = {}) {
     if (isUpdatesView()) {
       const result = compareContentUpdates(left.item, right.item);
       return result || left.index - right.index;
+    }
+    if (state.viewMode === "favorites") {
+      const priorityResult = compareFavoritePriority(left.item, right.item);
+      if (priorityResult !== 0) return priorityResult;
     }
     if (query.tokens.length && left.searchScore !== right.searchScore) {
       return right.searchScore - left.searchScore;
