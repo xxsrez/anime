@@ -28,6 +28,39 @@
         </div>
         <button id="logout-button" class="icon-button logout-button" type="button" aria-label="Выйти" title="Выйти">↪</button>
       </div>
+      <section id="animego-scan-control" class="animego-scan-control" aria-label="Обновление AnimeGO">
+        <div id="animego-scan-split" class="animego-scan-split">
+          <button
+            id="animego-scan-button"
+            class="animego-scan-button"
+            type="button"
+            aria-label="Partial Scan AnimeGO"
+            title="Проверить часть каталога AnimeGO">
+            Scan
+          </button>
+          <button
+            id="animego-scan-menu-toggle"
+            class="animego-scan-menu-toggle"
+            type="button"
+            aria-label="Выбрать режим сканирования"
+            aria-haspopup="menu"
+            aria-controls="animego-scan-menu"
+            aria-expanded="false">
+            <span aria-hidden="true">▾</span>
+          </button>
+          <div id="animego-scan-menu" class="animego-scan-menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-scan-mode="partial">
+              <strong>Partial Scan</strong>
+              <span>Ваши тайтлы и случайная выборка</span>
+            </button>
+            <button type="button" role="menuitem" data-scan-mode="full">
+              <strong>Full Scan</strong>
+              <span>Все актуальные кандидаты AnimeGO</span>
+            </button>
+          </div>
+        </div>
+        <span id="animego-scan-state" class="animego-scan-state" role="status" aria-live="polite"></span>
+      </section>
       <label class="search-box">
         <span>Поиск</span>
         <input id="search" type="search" autocomplete="off">
@@ -166,6 +199,17 @@
     </section>
   </main>
   <div id="app-status" class="app-status" role="status" aria-live="polite" hidden></div>
+  <dialog id="animego-scan-dialog" class="animego-scan-dialog" aria-labelledby="animego-scan-dialog-title">
+    <div class="animego-scan-dialog-body">
+      <h2 id="animego-scan-dialog-title"></h2>
+      <p id="animego-scan-dialog-message"></p>
+      <div class="animego-scan-dialog-actions">
+        <a id="animego-scan-setup-link" class="animego-scan-dialog-primary" href="/scanner-setup">Установить сканер</a>
+        <button id="animego-scan-dialog-cancel" type="button">Закрыть</button>
+        <button id="animego-scan-dialog-confirm" class="animego-scan-dialog-primary" type="button" hidden>Продолжить</button>
+      </div>
+    </div>
+  </dialog>
   <script src="/static/search.js"></script>
   <script src="/static/frontend_runtime.js"></script>
   <script src="/static/app.js"></script>

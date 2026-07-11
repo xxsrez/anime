@@ -27,9 +27,11 @@ and player prototype. It follows the `project-docs` layout:
    reference; defer to the operations runbook for the release checklist.
 9. `guides/data-model/README.md` - SQLite tables, relationships, ID
    conventions, and mutable data.
-10. `instructions/Code_Style_Instructions.md` - coding rules and contribution
+10. `guides/animego-scanner/README.md` - Partial/Full user scans, Chrome setup,
+    attribution, API, and troubleshooting.
+11. `instructions/Code_Style_Instructions.md` - coding rules and contribution
    conventions.
-11. `tasks/project-hardening/README.md` - 2026-07-09 repository-wide
+12. `tasks/project-hardening/README.md` - 2026-07-09 repository-wide
     correctness, concurrency, recovery, security, and performance hardening.
 
 ## Directory Map

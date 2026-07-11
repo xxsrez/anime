@@ -161,7 +161,9 @@ Run local health and smoke checks:
 
 ```bash
 .venv/bin/python -m unittest discover -v -p 'test*.py'
+node static/animego_scan_ui.test.js
 node --test static/frontend_runtime.test.js
+npm test --prefix browser-extension/animego-scanner
 .venv/bin/python scripts/check_repo_hygiene.py
 .venv/bin/python scripts/check_data_health.py
 .venv/bin/python scripts/smoke_dev_app.py
@@ -174,3 +176,6 @@ YummyAnime is fetched directly by the Railway web sync. AnimeGO blocks the
 current cloud egress, so production AnimeGO updates are collected by the
 trusted push worker documented in `docs/instructions/Operations_Runbook.md`;
 the production web process still performs all validation and SQLite writes.
+Authenticated users can also contribute additive AnimeGo updates with the
+`Scan` / `Full Scan` browser-extension workflow documented in
+`docs/guides/animego-scanner/README.md`.

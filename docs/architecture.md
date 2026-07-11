@@ -14,6 +14,9 @@
 ## Main Components
 
 - `server.py` serves static assets and JSON API endpoints from SQLite.
+- `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
+  results, applies additive episode/provider changes, records attribution, and
+  packages the Chrome extension download.
 - `scrape_animego.py` owns the base SQLite schema and the AnimeGO scraper.
 - `scrape_yummyanime.py` imports selected YummyAnime/YummyAni titles into the
   same schema.
@@ -29,6 +32,9 @@
   source selection, recommendations, player controls, and user-state PATCH
   calls.
 - `static/app.css` owns the compact dark UI.
+- `browser-extension/animego-scanner/` reads assigned AnimeGo player endpoints
+  through an authenticated user's Chrome network path, checkpoints progress,
+  and submits title results back to the web service.
 - `test_app.py` contains the current regression tests.
 
 ## Local Server
@@ -256,6 +262,31 @@ iframe, fullscreen/PiP, episode/source changes, heartbeat, visibility changes,
 and session end. Strong signals update `user_title_state.progress_episode_number`
 so the existing manual progress control stays in sync with automatic tracking.
 
+`POST /api/animego-scans`
+
+Requires an authenticated app session. Creates one `partial` or `full` user
+scan job and returns its assigned titles plus a job-scoped bearer token. Only
+one user scan job can be active globally; competing creates return `409`.
+
+`GET /api/animego-scans/<id>`
+
+Requires the job bearer token. Returns status/counters for extension recovery.
+
+`POST /api/animego-scans/<id>/results`
+
+Requires the job bearer token. Validates and applies one assigned title's
+additive-only episode/provider result. Existing rows are not overwritten.
+
+`POST /api/animego-scans/<id>/complete`
+
+Requires the job bearer token. Completes or stops the job and finishes its
+content-update run.
+
+`GET /api/animego-scanner-extension`
+
+Requires an authenticated app session. Returns the current unpacked Chrome
+extension as a ZIP. The setup UI is `/scanner-setup`.
+
 ## Data Flow
 
 1. Scrapers fetch upstream pages/API responses.
@@ -285,6 +316,12 @@ so the existing manual progress control stays in sync with automatic tracking.
    appends raw events, updates per-episode aggregate state, and updates the same
    per-title progress summary used by the manual controls.
 11. Recommendation data is reloaded after favorite/progress/status changes.
+12. A user may start a Partial or Full AnimeGo scan. The server chooses eligible
+    source-title tasks and issues a job-only token; the extension fetches
+    AnimeGo player metadata through the user's Chrome connection and posts each
+    title back. The server validates assigned IDs and allowed HTTPS player URLs,
+    applies only new episodes/providers under the database-operation lock,
+    writes attribution/content-update rows, and invalidates the catalog cache.
 
 ## Scraper Notes
 
@@ -309,6 +346,10 @@ AnimeGO:
   trusted push collector for that source. The collector checks upstream data,
   but the production web process validates the complete bundle and remains the
   only SQLite writer. YummyAnime continues through the built-in web sync.
+- Authenticated users can additionally run distributed Partial/Full catch-up
+  scans through the Chrome extension. These scans do not replace the trusted
+  worker or advance its `animego:<mode>:last_success` marker. See
+  `guides/animego-scanner/README.md`.
 
 YummyAnime/YummyAni:
 

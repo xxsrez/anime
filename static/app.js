@@ -43,6 +43,7 @@ const PLAYER_IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms allow
 let playerHosts = [];
 const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
+const ANIMEGO_SCAN_ENDPOINT = "/api/animego-scans";
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
 const WATCH_EVIDENCE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
@@ -141,6 +142,11 @@ const state = {
   watchSession: null,
   watchHeartbeatTimer: null,
   watchFullscreenActive: false,
+  animeGoScannerReady: false,
+  animeGoScannerVersion: null,
+  animeGoScanPhase: "idle",
+  animeGoScanJobId: null,
+  animeGoScanMode: null,
 };
 
 const el = {
@@ -151,6 +157,19 @@ const el = {
   accountEmail: document.getElementById("account-email"),
   adminLink: null,
   logoutButton: document.getElementById("logout-button"),
+  animeGoScanControl: document.getElementById("animego-scan-control"),
+  animeGoScanSplit: document.getElementById("animego-scan-split"),
+  animeGoScanButton: document.getElementById("animego-scan-button"),
+  animeGoScanMenuToggle: document.getElementById("animego-scan-menu-toggle"),
+  animeGoScanMenu: document.getElementById("animego-scan-menu"),
+  animeGoScanMenuItems: document.querySelectorAll("#animego-scan-menu [role='menuitem']"),
+  animeGoScanState: document.getElementById("animego-scan-state"),
+  animeGoScanDialog: document.getElementById("animego-scan-dialog"),
+  animeGoScanDialogTitle: document.getElementById("animego-scan-dialog-title"),
+  animeGoScanDialogMessage: document.getElementById("animego-scan-dialog-message"),
+  animeGoScanSetupLink: document.getElementById("animego-scan-setup-link"),
+  animeGoScanDialogCancel: document.getElementById("animego-scan-dialog-cancel"),
+  animeGoScanDialogConfirm: document.getElementById("animego-scan-dialog-confirm"),
   search: document.getElementById("search"),
   filterGrid: document.getElementById("filter-grid"),
   activeFilters: document.getElementById("active-filters"),
@@ -195,6 +214,7 @@ let titleTooltip = null;
 let titleTooltipTarget = null;
 let appStatusTimer = 0;
 let searchInputTimer = 0;
+let animeGoScanDialogResolve = null;
 
 function isAbortError(error) {
   return error?.name === "AbortError";
@@ -364,6 +384,7 @@ async function api(path, options = {}) {
     if (!response.ok) {
       const error = new Error(payload?.error || `${response.status} ${response.statusText}`);
       error.status = response.status;
+      error.payload = payload;
       throw error;
     }
     return payload;
@@ -428,6 +449,267 @@ function renderAdminLink() {
 async function logout() {
   await api("/api/logout", { method: "POST" });
   window.location.replace("/login");
+}
+
+function setAnimeGoScanMenuOpen(open, { focus = null } = {}) {
+  if (!el.animeGoScanMenu || !el.animeGoScanMenuToggle) return;
+  const next = Boolean(open) && !el.animeGoScanMenuToggle.disabled;
+  el.animeGoScanMenu.hidden = !next;
+  el.animeGoScanMenuToggle.setAttribute("aria-expanded", next ? "true" : "false");
+  if (!next || !focus) return;
+  const items = [...el.animeGoScanMenuItems];
+  (focus === "last" ? items.at(-1) : items[0])?.focus();
+}
+
+function setAnimeGoScanPhase(phase, message = "", tone = "") {
+  state.animeGoScanPhase = phase;
+  const busy = phase === "starting" || phase === "active";
+  el.animeGoScanControl?.setAttribute("aria-busy", busy ? "true" : "false");
+  if (el.animeGoScanButton) {
+    el.animeGoScanButton.disabled = busy;
+    el.animeGoScanButton.textContent = phase === "starting"
+      ? "Starting…"
+      : phase === "active"
+        ? "Scanning…"
+        : "Scan";
+  }
+  if (el.animeGoScanMenuToggle) el.animeGoScanMenuToggle.disabled = busy;
+  if (busy) setAnimeGoScanMenuOpen(false);
+  if (el.animeGoScanState) {
+    el.animeGoScanState.textContent = message;
+    el.animeGoScanState.dataset.tone = tone;
+    el.animeGoScanState.title = message;
+  }
+}
+
+function settleAnimeGoScanDialog(value) {
+  const resolve = animeGoScanDialogResolve;
+  animeGoScanDialogResolve = null;
+  if (el.animeGoScanDialog?.open) {
+    el.animeGoScanDialog.close();
+  } else {
+    el.animeGoScanDialog?.removeAttribute("open");
+  }
+  resolve?.(value);
+}
+
+function showAnimeGoScanDialog({ kind, title, message, confirmLabel = "Продолжить" }) {
+  if (!el.animeGoScanDialog) return Promise.resolve(false);
+  if (animeGoScanDialogResolve) settleAnimeGoScanDialog(false);
+  el.animeGoScanDialog.dataset.kind = kind;
+  el.animeGoScanDialogTitle.textContent = title;
+  el.animeGoScanDialogMessage.textContent = message;
+  const setup = kind === "setup";
+  el.animeGoScanSetupLink.hidden = !setup;
+  el.animeGoScanDialogConfirm.hidden = setup;
+  el.animeGoScanDialogConfirm.textContent = confirmLabel;
+  el.animeGoScanDialogCancel.textContent = setup ? "Закрыть" : "Отмена";
+  return new Promise(resolve => {
+    animeGoScanDialogResolve = resolve;
+    if (typeof el.animeGoScanDialog.showModal === "function") {
+      el.animeGoScanDialog.showModal();
+    } else {
+      el.animeGoScanDialog.setAttribute("open", "");
+    }
+    (setup ? el.animeGoScanSetupLink : el.animeGoScanDialogConfirm).focus();
+  });
+}
+
+function showAnimeGoScannerSetup() {
+  setAnimeGoScanPhase("idle", "Требуется сканер", "warn");
+  showAnimeGoScanDialog({
+    kind: "setup",
+    title: "Нужен AnimeGO Scanner",
+    message: "Установите расширение один раз. После этого Scan будет проверять AnimeGO через ваше подключение одним кликом.",
+  });
+}
+
+function confirmFullAnimeGoScan() {
+  return showAnimeGoScanDialog({
+    kind: "full-confirm",
+    title: "Запустить Full Scan?",
+    message: "Full Scan проверит полный набор актуальных кандидатов AnimeGO. Это займёт заметно больше времени и создаст больше запросов с вашего подключения.",
+    confirmLabel: "Запустить Full Scan",
+  });
+}
+
+function animeGoScanJobId(detail) {
+  return detail?.job_id ?? detail?.job?.id ?? null;
+}
+
+function animeGoScanEventMatches(detail) {
+  const jobId = animeGoScanJobId(detail);
+  if (state.animeGoScanJobId == null) return false;
+  return jobId == null || String(jobId) === String(state.animeGoScanJobId);
+}
+
+function animeGoScanMetric(detail, ...keys) {
+  for (const key of keys) {
+    const value = detail?.[key] ?? detail?.job?.[key];
+    if (value != null && Number.isFinite(Number(value))) return Number(value);
+  }
+  return null;
+}
+
+function animeGoScanProgressMessage(detail) {
+  const checked = animeGoScanMetric(detail, "checked_items", "checked") ?? 0;
+  const total = animeGoScanMetric(detail, "total_items", "total");
+  const added = animeGoScanMetric(detail, "new_episode_count", "added") ?? 0;
+  const progress = total != null ? `${checked}/${total}` : `${checked}`;
+  const current = detail?.current?.title ? ` · ${detail.current.title}` : "";
+  return `${progress} · +${added} серий${current}`;
+}
+
+function handleAnimeGoScannerReady(event) {
+  state.animeGoScannerReady = true;
+  state.animeGoScannerVersion = event?.detail?.version || null;
+  if (el.animeGoScanDialog?.dataset.kind === "setup") settleAnimeGoScanDialog(true);
+  if (state.animeGoScanPhase === "idle" && el.animeGoScanState?.textContent === "Требуется сканер") {
+    setAnimeGoScanPhase("idle");
+  }
+}
+
+function pingAnimeGoScanner() {
+  document.dispatchEvent(new CustomEvent("animego-scanner-ping", {
+    detail: { origin: window.location.origin },
+  }));
+}
+
+function handleAnimeGoScanProgress(event) {
+  const detail = event?.detail || {};
+  if (!animeGoScanEventMatches(detail)) return;
+  setAnimeGoScanPhase("active", animeGoScanProgressMessage(detail));
+}
+
+async function refreshCatalogAfterAnimeGoScan() {
+  const selectedRef = state.detail?.slug || state.detail?.id || state.selectedAnimeId;
+  const linkState = {
+    episodeId: state.selectedEpisodeId,
+    contentSource: state.selectedContentSource,
+    translation: state.selectedTranslation,
+    provider: state.selectedSourceId,
+  };
+  const payload = await api("/api/anime");
+  state.anime = Array.isArray(payload.items) ? payload.items : [];
+  applyLoadedSearchFields(state.anime);
+  applyFilter({ selectFirst: false });
+  resetContentUpdatesForQuery();
+  invalidateRecommendations();
+  if (isUpdatesView()) loadContentUpdatesForView({ force: true });
+  if (isRecommendationView()) {
+    loadRecommendationsForView({ force: true, selectFirst: false });
+  }
+  if (selectedRef != null) {
+    await selectAnime(selectedRef, { linkState, updateUrl: false });
+  }
+}
+
+function handleAnimeGoScanComplete(event) {
+  const detail = event?.detail || {};
+  if (!animeGoScanEventMatches(detail)) return;
+  const checked = animeGoScanMetric(detail, "checked_items", "checked") ?? 0;
+  const total = animeGoScanMetric(detail, "total_items", "total") ?? checked;
+  const added = animeGoScanMetric(detail, "new_episode_count", "added") ?? 0;
+  const message = `Готово: ${checked}/${total} · добавлено серий: ${added}`;
+  state.animeGoScanJobId = null;
+  state.animeGoScanMode = null;
+  setAnimeGoScanPhase("idle", message, "ok");
+  showAppStatus(message, "ok");
+  refreshCatalogAfterAnimeGoScan().catch(error => {
+    reportClientError(error, { action: "refresh catalog after animego scan" });
+  });
+}
+
+function handleAnimeGoScanError(event) {
+  const detail = event?.detail || {};
+  if (!animeGoScanEventMatches(detail)) return;
+  const message = detail.blocked
+    ? "AnimeGO временно остановил запросы. Попробуйте позже."
+    : detail.error || detail.message || "Сканирование завершилось с ошибкой";
+  state.animeGoScanJobId = null;
+  state.animeGoScanMode = null;
+  setAnimeGoScanPhase("idle", message, "warn");
+  showAppStatus(message, "warn");
+}
+
+async function startAnimeGoScan(mode = "partial") {
+  if (state.animeGoScanPhase === "starting" || state.animeGoScanPhase === "active") return;
+  if (!state.animeGoScannerReady) pingAnimeGoScanner();
+  if (!state.animeGoScannerReady) {
+    showAnimeGoScannerSetup();
+    return;
+  }
+  const normalizedMode = mode === "full" ? "full" : "partial";
+  if (normalizedMode === "full" && !(await confirmFullAnimeGoScan())) return;
+
+  setAnimeGoScanPhase("starting", "Готовим задание…");
+  try {
+    const payload = await api(ANIMEGO_SCAN_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: normalizedMode,
+        current_anime_id: state.selectedAnimeId,
+      }),
+    });
+    const tasks = Array.isArray(payload.tasks)
+      ? payload.tasks
+      : Array.isArray(payload.items)
+        ? payload.items
+        : [];
+    const status = String(payload.status || payload.job?.status || "").toLowerCase();
+    if (["busy", "locked", "already_running"].includes(status)) {
+      setAnimeGoScanPhase("idle", payload.message || "AnimeGO уже сканируется", "warn");
+      return;
+    }
+    if (!tasks.length || ["no_work", "empty", "up_to_date"].includes(status)) {
+      const message = payload.message || "Сейчас нечего проверять — каталог уже актуален";
+      setAnimeGoScanPhase("idle", message, "ok");
+      showAppStatus(message, "ok");
+      return;
+    }
+
+    const jobId = animeGoScanJobId(payload);
+    const token = payload.token || payload.job_token;
+    if (jobId == null || !token) throw new Error("Сервер вернул неполное задание сканирования");
+    const total = animeGoScanMetric(payload, "total_items", "total") ?? tasks.length;
+    state.animeGoScanJobId = jobId;
+    state.animeGoScanMode = normalizedMode;
+    setAnimeGoScanPhase("active", `0/${total} · передано сканеру`);
+    if (normalizedMode === "full") {
+      showAppStatus(`Full Scan: сервер подготовил ${total} актуальных тайтлов`, "warn");
+    }
+    document.dispatchEvent(new CustomEvent("animego-scan-start", {
+      detail: {
+        job: payload.job || null,
+        job_id: jobId,
+        token,
+        tasks,
+        origin: window.location.origin,
+        mode: normalizedMode,
+        raw: payload,
+      },
+    }));
+  } catch (error) {
+    const busy = error?.status === 409;
+    const activeJob = error?.payload?.job;
+    const resumeOwnScan = busy
+      && state.user?.id != null
+      && Number(activeJob?.user_id) === Number(state.user.id);
+    if (resumeOwnScan) {
+      document.dispatchEvent(new CustomEvent("animego-scanner-open"));
+    }
+    const message = resumeOwnScan
+      ? "Ваш Scan уже идёт — открываем сканер"
+      : busy
+        ? "AnimeGO уже сканируется другим пользователем"
+      : error?.message || "Не удалось запустить сканирование";
+    state.animeGoScanJobId = null;
+    state.animeGoScanMode = null;
+    setAnimeGoScanPhase("idle", message, "warn");
+    showAppStatus(message, "warn");
+    if (!busy) reportClientError(error, { action: "start animego scan", mode: normalizedMode });
+  }
 }
 
 function searchText(value) {
@@ -3396,6 +3678,72 @@ async function openContentUpdateEvent(event) {
     });
   }
 }
+
+el.animeGoScanButton?.addEventListener("click", () => {
+  startAnimeGoScan("partial");
+});
+el.animeGoScanMenuToggle?.addEventListener("click", () => {
+  const open = el.animeGoScanMenuToggle.getAttribute("aria-expanded") !== "true";
+  setAnimeGoScanMenuOpen(open);
+});
+el.animeGoScanMenuToggle?.addEventListener("keydown", event => {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    setAnimeGoScanMenuOpen(true, { focus: event.key === "ArrowUp" ? "last" : "first" });
+  } else if (event.key === "Escape") {
+    setAnimeGoScanMenuOpen(false);
+  }
+});
+for (const item of el.animeGoScanMenuItems || []) {
+  item.addEventListener("click", () => {
+    const mode = item.dataset.scanMode || "partial";
+    setAnimeGoScanMenuOpen(false);
+    startAnimeGoScan(mode);
+  });
+}
+el.animeGoScanMenu?.addEventListener("keydown", event => {
+  const items = [...el.animeGoScanMenuItems];
+  const index = items.indexOf(document.activeElement);
+  if (event.key === "Escape") {
+    event.preventDefault();
+    setAnimeGoScanMenuOpen(false);
+    el.animeGoScanMenuToggle.focus();
+    return;
+  }
+  if (event.key === "Tab") {
+    setAnimeGoScanMenuOpen(false);
+    return;
+  }
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key) || !items.length) return;
+  event.preventDefault();
+  const nextIndex = event.key === "Home"
+    ? 0
+    : event.key === "End"
+      ? items.length - 1
+      : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+  items[nextIndex].focus();
+});
+document.addEventListener("pointerdown", event => {
+  if (el.animeGoScanMenu?.hidden || el.animeGoScanSplit?.contains(event.target)) return;
+  setAnimeGoScanMenuOpen(false);
+});
+el.animeGoScanDialogCancel?.addEventListener("click", () => settleAnimeGoScanDialog(false));
+el.animeGoScanDialogConfirm?.addEventListener("click", () => settleAnimeGoScanDialog(true));
+el.animeGoScanDialog?.addEventListener("cancel", event => {
+  event.preventDefault();
+  settleAnimeGoScanDialog(false);
+});
+el.animeGoScanDialog?.addEventListener("close", () => {
+  if (!animeGoScanDialogResolve) return;
+  const resolve = animeGoScanDialogResolve;
+  animeGoScanDialogResolve = null;
+  resolve(false);
+});
+document.addEventListener("animego-scanner-ready", handleAnimeGoScannerReady);
+document.addEventListener("animego-scan-progress", handleAnimeGoScanProgress);
+document.addEventListener("animego-scan-complete", handleAnimeGoScanComplete);
+document.addEventListener("animego-scan-error", handleAnimeGoScanError);
+pingAnimeGoScanner();
 
 el.search.addEventListener("input", () => {
   if (searchInputTimer) window.clearTimeout(searchInputTimer);

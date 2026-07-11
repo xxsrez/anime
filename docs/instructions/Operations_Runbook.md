@@ -156,12 +156,15 @@ Run these before any release:
 ```bash
 ruff check .
 pip-audit -r requirements.txt
-.venv/bin/python -m compileall -q server.py content_updates.py scrape_animego.py \
+.venv/bin/python -m compileall -q server.py animego_scans.py content_updates.py scrape_animego.py \
   scrape_yummyanime.py sync_videos.py backfill_players.py prune_non_playable.py \
-  update_backup.py scripts test_app.py test_db_migrate.py test_pipeline_hardening.py
+  update_backup.py scripts test_app.py test_animego_scans.py test_db_migrate.py \
+  test_pipeline_hardening.py
 .venv/bin/python -m unittest discover -v -p 'test*.py'
-find static -name '*.js' -print0 | xargs -0 -n1 node --check
+find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
+node static/animego_scan_ui.test.js
 node --test static/frontend_runtime.test.js
+npm test --prefix browser-extension/animego-scanner
 npx --yes --package typescript@5.9.3 tsc railway-functions/daily-sync.ts \
   --noEmit --target ES2022 --module ES2022 --lib ES2022,DOM --strict
 sh -n scripts/*.sh
@@ -524,6 +527,14 @@ operation lock, writes SQLite/update events, and advances
 ```bash
 .venv/bin/python scripts/animego_push_worker.py --force
 ```
+
+Authenticated catalog users can also run additive catch-up scans through the
+unpacked Chrome extension. Keep that path separate from the trusted worker:
+user jobs receive only a job-scoped token, never `ANIMEGO_PUSH_TOKEN`, and
+do not advance the worker's last-success marker. Both paths still validate and
+write on the web process under the shared database-operation lock. Setup,
+Partial/Full selection, job expiry/resume, attribution audit, and troubleshooting
+are documented in `docs/guides/animego-scanner/README.md`.
 
 The push boundary uses its own high-entropy `ANIMEGO_PUSH_TOKEN`; do not reuse
 the cron-trigger `ANIME_SYNC_TOKEN`:

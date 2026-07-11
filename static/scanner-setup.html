@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121416">
+  <title>AnimeGo Scanner · Anime Catalog</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/scanner-setup.css">
+  <script src="/static/client_errors.js"></script>
+</head>
+<body>
+  <main class="setup-shell">
+    <section class="setup-panel">
+      <div class="setup-heading">
+        <div>
+          <p class="eyebrow">Anime Catalog</p>
+          <h1>AnimeGo Scanner</h1>
+        </div>
+        <a class="icon-link" href="/" aria-label="Вернуться в каталог" title="Вернуться в каталог">←</a>
+      </div>
+
+      <p class="lede">
+        Расширение делает запросы к AnimeGo через ваш браузер и отправляет в каталог
+        только найденные новые серии. Установка нужна один раз.
+      </p>
+
+      <ol class="setup-steps">
+        <li>
+          <strong>Скачайте расширение</strong>
+          <a class="primary-button" href="/api/animego-scanner-extension" download="animego-scanner.zip">
+            Скачать ZIP
+          </a>
+        </li>
+        <li>
+          <strong>Распакуйте ZIP</strong>
+          <span>Оставьте папку <code>animego-scanner</code> в удобном постоянном месте.</span>
+        </li>
+        <li>
+          <strong>Откройте расширения Chrome</strong>
+          <div class="copy-row">
+            <code id="extensions-url">chrome://extensions</code>
+            <button id="copy-extensions-url" type="button">Копировать</button>
+          </div>
+        </li>
+        <li>
+          <strong>Включите «Режим разработчика»</strong>
+          <span>Нажмите «Загрузить распакованное» и выберите распакованную папку.</span>
+        </li>
+        <li>
+          <strong>Вернитесь в каталог</strong>
+          <span>Обновите страницу. Кнопки Scan и Full Scan станут активны.</span>
+        </li>
+      </ol>
+
+      <aside class="permission-note">
+        Расширение запрашивает доступ только к <code>animego.me</code>, локальному dev
+        и production Anime Catalog. Оно не читает историю браузера и не скачивает видео.
+      </aside>
+
+      <a class="secondary-button" href="/">Вернуться в Anime Catalog</a>
+      <p id="setup-state" class="setup-state" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="/static/scanner-setup.js"></script>
+</body>
+</html>

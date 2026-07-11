@@ -22,6 +22,7 @@ can change outside git.
 | Path | Purpose |
 | --- | --- |
 | `server.py` | HTTP server, Google auth, API, canonical catalog, recommendations, logging. |
+| `animego_scans.py` | User-powered AnimeGo scan selection, job lifecycle, validation, additive imports, attribution, and extension ZIP packaging. |
 | `scrape_animego.py` | Base SQLite schema and AnimeGO scraper/importer. |
 | `scrape_yummyanime.py` | YummyAnime/YummyAni importer and provider parsing. |
 | `sync_videos.py` | Video-first periodic updater for hourly, daily, and full sync modes. |
@@ -29,6 +30,7 @@ can change outside git.
 | `prune_non_playable.py` | Removes source rows that still have no playable embed URL. |
 | `update_backup.py` | Updates the ignored local recovery snapshot. |
 | `test_app.py` | Regression tests for server, scraper, sync, auth, catalog, and recommendations behavior. |
+| `test_animego_scans.py` | User-scan selection, additive writes, attribution, lifecycle, ZIP, and HTTP-route regressions. |
 | `test_db_migrate.py` | Migration planning, drift, preflight, atomicity, and streaming-diff tests. |
 | `test_pipeline_hardening.py` | Locking, URL safety, backup, cron, and recovery regressions. |
 
@@ -41,12 +43,19 @@ can change outside git.
 | `static/frontend_runtime.js` | Independently testable URL, date, watch-evidence, and keyed-queue primitives. |
 | `static/frontend_runtime.test.js` | Node regression tests for those browser-independent primitives. |
 | `static/app.css` | Compact dark UI styling. |
+| `static/scanner-setup.html`, `static/scanner-setup.js`, `static/scanner-setup.css` | Authenticated one-time Chrome extension setup page. |
 | `static/login.html` | Google login page. |
 | `static/login.js` | Google Identity Services login flow and session handoff. |
 | `static/admin.html` | Admin page shell. |
 | `static/admin.js` | Admin users/activity UI. |
 | `static/client_errors.js` | Browser error reporting helper. |
 | `static/favicon.svg` | App icon. |
+
+## Browser Extension
+
+| Path | Purpose |
+| --- | --- |
+| `browser-extension/animego-scanner/` | Unpacked Chrome Manifest V3 extension plus Node parser/state tests; it receives assigned jobs, reads AnimeGo player metadata through the user's browser, checkpoints progress, and posts validated results. |
 
 ## Scripts
 

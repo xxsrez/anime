@@ -41,17 +41,19 @@ jobs:
       - name: Compile Python
         run: |
           python -m compileall -q \
-            server.py content_updates.py scrape_animego.py scrape_yummyanime.py \
+            server.py animego_scans.py content_updates.py scrape_animego.py scrape_yummyanime.py \
             sync_videos.py backfill_players.py prune_non_playable.py \
-            update_backup.py scripts test_app.py test_db_migrate.py
+            update_backup.py scripts test_app.py test_animego_scans.py test_db_migrate.py
 
       - name: Run unit and integration tests
         run: python -m unittest discover -v -p 'test*.py'
 
       - name: Check JavaScript syntax
         run: |
-          find static -name '*.js' -print0 | xargs -0 -n1 node --check
+          find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
+          node static/animego_scan_ui.test.js
           node --test static/frontend_runtime.test.js
+          npm test --prefix browser-extension/animego-scanner
 
       - name: Type-check Railway function
         run: >-

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Сканер AnimeGo</title>
+    <link rel="stylesheet" href="scanner.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Anime Catalog</p>
+          <h1>Сканер AnimeGo</h1>
+          <p id="subtitle" class="subtitle">Готовим задание…</p>
+        </div>
+        <span id="mode" class="mode">—</span>
+      </header>
+
+      <section class="panel progress-panel" aria-labelledby="progress-title">
+        <div class="progress-heading">
+          <div>
+            <p id="progress-title" class="label">Прогресс</p>
+            <p id="current-title" class="current">Ожидание задания</p>
+          </div>
+          <strong id="progress-text">0 / 0</strong>
+        </div>
+        <div
+          id="progress-track"
+          class="progress-track"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="0"
+          aria-valuenow="0"
+        >
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+
+        <dl class="stats">
+          <div><dt>Проверено</dt><dd id="checked">0</dd></div>
+          <div><dt>Новых серий</dt><dd id="episodes">0</dd></div>
+          <div><dt>Источников</dt><dd id="providers">0</dd></div>
+          <div><dt>Ошибок</dt><dd id="errors">0</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel controls" aria-label="Управление сканированием">
+        <button id="pause" class="button primary" type="button" disabled>Пауза</button>
+        <button id="stop" class="button danger" type="button" disabled>Остановить</button>
+        <p id="status" class="status" aria-live="polite">Подключаем расширение…</p>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <div class="log-heading">
+          <h2 id="log-title">Ход работы</h2>
+          <span id="job-label">—</span>
+        </div>
+        <ol id="log" class="log" aria-live="polite"></ol>
+      </section>
+    </main>
+    <script type="module" src="scanner.js"></script>
+  </body>
+</html>

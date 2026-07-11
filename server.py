@@ -26,6 +26,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
+import animego_scans
 import content_updates
 import recommendation_model
 import user_state_model
@@ -34,6 +35,7 @@ from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
+SCANNER_EXTENSION_DIR = ROOT / "browser-extension" / "animego-scanner"
 DEFAULT_LOG_DIR = ROOT / "data" / "logs"
 DEFAULT_RECOMMENDATION_LIMIT = 20
 MAX_RECOMMENDATION_LIMIT = 50
@@ -1357,6 +1359,7 @@ def initialize_database(path):
         changed |= clear_inactive_episode_starts(con)
         changed |= purge_orphaned_user_data(con)
         changed |= ensure_runtime_indexes(con)
+        changed |= animego_scans.ensure_schema(con)
         changed |= ensure_catalog_revision_schema(con)
         if changed:
             con.commit()
@@ -1473,6 +1476,31 @@ def check_database_readiness(path):
                 "anime_title_aliases": {"anime_id", "normalized_alias"},
                 "content_update_events": {"id", "anime_id", "occurred_at"},
                 "catalog_cache_revision": {"singleton", "generation", "dirty"},
+                "animego_scan_jobs": {
+                    "id",
+                    "user_id",
+                    "mode",
+                    "status",
+                    "token_hash",
+                    "expires_at",
+                },
+                "animego_scan_job_items": {
+                    "job_id",
+                    "anime_id",
+                    "selection_reason",
+                    "status",
+                },
+                "animego_title_scan_state": {"anime_id", "next_eligible_at"},
+                "animego_episode_additions": {
+                    "source_episode_id",
+                    "user_id",
+                    "scan_job_id",
+                },
+                "animego_provider_additions": {
+                    "source_episode_id",
+                    "user_id",
+                    "scan_job_id",
+                },
             }
             existing = {
                 row[0]
@@ -4056,6 +4084,27 @@ def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
         return canonical_group_for_anime_id(con, int(value), user_id)
     db_path = con.execute("pragma database_list").fetchone()["file"]
     return get_catalog_cache(db_path, user_id, connection=con)["slug_map"].get(value)
+
+
+def animego_scan_variant_map(db_path=None, user_id=None):
+    """Map every visible canonical member to its AnimeGO source row."""
+    mapping = {}
+    for group in get_catalog_cache(db_path, user_id)["items"]:
+        variants = group.get("source_variants") or []
+        animego_variant = next(
+            (variant for variant in variants if variant.get("source") == "animego"),
+            None,
+        )
+        if animego_variant is None and group.get("source") == "animego":
+            animego_variant = group
+        if animego_variant is None:
+            continue
+        animego_id = int(animego_variant["id"])
+        for member_id in group.get("source_member_ids") or [group.get("id")]:
+            if member_id is not None:
+                mapping[int(member_id)] = animego_id
+        mapping[animego_id] = animego_id
+    return mapping
 
 
 def row_value(row, key, default=None):
@@ -6728,6 +6777,22 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_binary(self, body, content_type, status=200, headers=None, filename=None):
+        body = bytes(body)
+        self._last_response_bytes = len(body)
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-store")
+        self.send_security_headers()
+        if filename:
+            safe_name = re.sub(r"[^A-Za-z0-9._-]", "-", str(filename)) or "download"
+            self.send_header("Content-Disposition", f'attachment; filename="{safe_name}"')
+        for name, value in (headers or []):
+            self.send_header(name, value)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_redirect(self, location, status=302, headers=None):
         self._last_response_bytes = 0
         self.send_response(status)
@@ -6988,6 +7053,29 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def bearer_request_token(self):
+        auth = self.headers.get("Authorization", "").strip()
+        prefix = "bearer "
+        return auth[len(prefix):].strip() if auth.lower().startswith(prefix) else ""
+
+    def request_origin(self):
+        configured = os.environ.get("ANIME_PUBLIC_URL", "").strip()
+        if configured:
+            parsed = urlparse(configured)
+            if (
+                parsed.scheme in {"http", "https"}
+                and parsed.netloc
+                and parsed.username is None
+                and parsed.password is None
+            ):
+                return f"{parsed.scheme}://{parsed.netloc}"
+        host = (self.headers.get("Host") or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9.\-:\[\]]+", host):
+            host = f"127.0.0.1:{self.server.server_port}"
+        forwarded_proto = (self.headers.get("X-Forwarded-Proto") or "").split(",", 1)[0].strip()
+        scheme = "https" if forwarded_proto == "https" else "http"
+        return f"{scheme}://{host}"
+
     def current_user_is_admin(self):
         user = self.current_user()
         return bool(user and user.get("is_admin"))
@@ -7142,6 +7230,20 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_json(sync_videos.animego_sync_manifest(self.server.db_path))
             return
 
+        scan_status_match = re.fullmatch(r"/api/animego-scans/(\d+)", path)
+        if scan_status_match:
+            try:
+                result = animego_scans.get_scan_job(
+                    self.server.db_path,
+                    int(scan_status_match.group(1)),
+                    self.bearer_request_token(),
+                )
+            except animego_scans.ScanAuthenticationError:
+                self.send_json({"error": "authentication required"}, 401)
+                return
+            self.send_json(result)
+            return
+
         if path == "/api/auth/config":
             client_id = google_client_id()
             next_path = safe_next_path(parse_qs(parsed.query).get("next", ["/"])[0])
@@ -7204,6 +7306,13 @@ class AnimeHandler(BaseHTTPRequestHandler):
             self.send_static("admin.html")
             return
 
+        if path == "/scanner-setup" or path == "/scanner-setup/":
+            if not self.current_user():
+                self.redirect_to_login()
+                return
+            self.send_static("scanner-setup.html")
+            return
+
         user = self.current_user()
         if path.startswith("/api/") and not user:
             self.send_json({"error": "authentication required"}, 401)
@@ -7211,6 +7320,19 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path == "/api/app-config":
             self.send_json({"player_hosts": list(PLAYER_HOSTS)})
+            return
+
+        if path == "/api/animego-scanner-extension":
+            try:
+                archive = animego_scans.build_extension_zip(SCANNER_EXTENSION_DIR)
+            except FileNotFoundError:
+                self.send_json({"error": "scanner extension is unavailable"}, 404)
+                return
+            self.send_binary(
+                archive,
+                "application/zip",
+                filename="animego-scanner.zip",
+            )
             return
 
         if path == "/api/admin/users":
@@ -7338,6 +7460,89 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_json({"error": "sync failed"}, 500)
                 return
             self.send_json({"ok": True, **result})
+            return
+
+        scan_action_match = re.fullmatch(
+            r"/api/animego-scans/(\d+)/(results|complete)", path
+        )
+        if scan_action_match:
+            job_id = int(scan_action_match.group(1))
+            action = scan_action_match.group(2)
+            try:
+                max_bytes = (
+                    animego_scans.MAX_RESULT_BODY_BYTES
+                    if action == "results"
+                    else animego_scans.MAX_COMPLETE_BODY_BYTES
+                )
+                payload = self.read_limited_json_body(max_bytes)
+                if action == "results":
+                    result = animego_scans.submit_scan_result(
+                        self.server.db_path,
+                        job_id,
+                        self.bearer_request_token(),
+                        payload,
+                        PLAYER_HOSTS,
+                    )
+                    result_stats = result.get("result") or {}
+                    if result_stats.get("new_episode_count") or result_stats.get("new_provider_count"):
+                        invalidate_catalog_cache(self.server.db_path)
+                else:
+                    result = animego_scans.complete_scan_job(
+                        self.server.db_path,
+                        job_id,
+                        self.bearer_request_token(),
+                        payload,
+                    )
+            except ClientErrorPayloadTooLarge:
+                self.send_json({"error": "payload too large"}, 413)
+                return
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            except animego_scans.ScanAuthenticationError:
+                self.send_json({"error": "authentication required"}, 401)
+                return
+            except animego_scans.ScanExpiredError:
+                self.send_json({"error": "scan expired"}, 410)
+                return
+            except animego_scans.ScanOperationBusyError as exc:
+                self.send_json({"error": str(exc)}, 423)
+                return
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+            self.send_json(result)
+            return
+
+        if path == "/api/animego-scans":
+            user = self.require_user()
+            if not user:
+                return
+            try:
+                payload = self.read_json_body()
+                if not isinstance(payload, dict):
+                    raise ValueError("payload must be an object")
+                result = animego_scans.create_scan_job(
+                    self.server.db_path,
+                    user,
+                    payload.get("mode"),
+                    current_anime_id=payload.get("current_anime_id"),
+                    variant_map=animego_scan_variant_map(self.server.db_path, user["id"]),
+                    origin=self.request_origin(),
+                )
+            except ClientErrorPayloadTooLarge:
+                self.send_json({"error": "payload too large"}, 413)
+                return
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            except animego_scans.ScanConflictError as exc:
+                self.send_json({"error": str(exc), "job": exc.job}, 409)
+                return
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+            self.send_json(result, 201)
             return
 
         if path == "/api/client-errors":
