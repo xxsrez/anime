@@ -3239,6 +3239,18 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("if (isUpdatesView()) renderContentUpdatesView();", apply_filter)
         self.assertIn("const orderedItems = [", js)
         self.assertIn("...items.filter(item => item.is_priority)", js)
+        self.assertIn("function contentUpdateHasUnseenEpisode(item)", js)
+        self.assertIn("function contentUpdateItemIsPriority(item)", js)
+        self.assertIn('effectiveWatchStatus(item) === "completed"', js)
+        self.assertIn("number > progress", js)
+        self.assertIn('heading.textContent = "Новое для меня · избранное и смотрю"', js)
+
+        compare_start = js.index("function compareContentUpdates")
+        compare_end = js.index("function filterOptionLabel", compare_start)
+        compare_updates = js[compare_start:compare_end]
+        self.assertIn("contentUpdateItemIsPriority(left)", compare_updates)
+        self.assertIn("contentUpdateItemIsPriority(right)", compare_updates)
+        self.assertNotIn("Boolean(left.is_favorite)", compare_updates)
 
     def test_frontend_opens_last_selected_episode_without_changing_progress(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

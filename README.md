@@ -101,7 +101,10 @@ become a taste seed. Favorites and explicitly completed titles are weighted much
 higher than automatic watch history. `not_interested` remains an internal
 recommendation-feedback signal and is not exposed as a title-page status. A
 newly created Google user starts with empty local state; anonymous/local profile
-state is not supported.
+state is not supported. The `Новое` view lifts favorite and currently watched
+titles only while their update report contains a new episode beyond the user's
+current progress; completed and caught-up titles stay in normal chronological
+order.
 
 Refresh the watchable catalog with player data:
 

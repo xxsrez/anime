@@ -1042,6 +1042,21 @@ function supersedeRecommendationsRequest() {
   state.recommendationsError = null;
 }
 
+function contentUpdateHasUnseenEpisode(item) {
+  const episodeNumbers = (item?.report?.episode_numbers || []).filter(value => String(value || "").trim());
+  if (effectiveWatchStatus(item) === "completed" || !episodeNumbers.length) return false;
+  const progress = numericValue(item?.progress_episode_number);
+  if (progress == null) return true;
+  const comparableNumbers = episodeNumbers.map(numericValue).filter(value => value != null);
+  if (!comparableNumbers.length) return true;
+  return comparableNumbers.some(number => number > progress);
+}
+
+function contentUpdateItemIsPriority(item) {
+  const followsTitle = Boolean(item?.is_favorite) || effectiveWatchStatus(item) === "watching";
+  return followsTitle && contentUpdateHasUnseenEpisode(item);
+}
+
 function contentUpdateItemsForView() {
   const catalogById = new Map(state.anime.map(item => [String(item.id), item]));
   return (state.contentUpdates?.items || []).map(update => {
@@ -1055,7 +1070,8 @@ function contentUpdateItemsForView() {
     for (const field of USER_STATE_RESPONSE_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(current, field)) item[field] = current[field];
     }
-    item.is_priority = Boolean(item.is_favorite) || effectiveWatchStatus(item) === "watching";
+    item.has_unseen_episode = contentUpdateHasUnseenEpisode(item);
+    item.is_priority = contentUpdateItemIsPriority(item);
     return item;
   });
 }
@@ -1311,8 +1327,8 @@ function compareRecommendations(left, right) {
 }
 
 function compareContentUpdates(left, right) {
-  const leftPriority = Boolean(left.is_favorite) || effectiveWatchStatus(left) === "watching";
-  const rightPriority = Boolean(right.is_favorite) || effectiveWatchStatus(right) === "watching";
+  const leftPriority = contentUpdateItemIsPriority(left);
+  const rightPriority = contentUpdateItemIsPriority(right);
   if (leftPriority !== rightPriority) return leftPriority ? -1 : 1;
   const leftSummary = recentUpdateSummary(left);
   const rightSummary = recentUpdateSummary(right);
@@ -1919,7 +1935,7 @@ function renderContentUpdateRows(parent, items) {
         priorityGroup = document.createElement("section");
         priorityGroup.className = "updates-day updates-priority";
         const heading = document.createElement("h3");
-        heading.textContent = "Избранное и смотрю";
+        heading.textContent = "Новое для меня · избранное и смотрю";
         priorityGroup.append(heading);
         parent.append(priorityGroup);
       }

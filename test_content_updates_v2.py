@@ -190,6 +190,126 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertEqual(anonymous["items"][0]["id"], 101)
         self.assertFalse(any(item["is_priority"] for item in anonymous["items"]))
 
+    def test_priority_requires_a_new_episode_beyond_user_progress(self):
+        con = server.connect(self.db_path)
+        now = dt.datetime.now(dt.timezone.utc)
+        try:
+            for anime_id, slug, title in (
+                (105, "caught-up-favorite", "Caught Up Favorite"),
+                (106, "watching-unseen", "Watching Unseen"),
+                (107, "completed-title", "Completed Title"),
+                (108, "favorite-unseen", "Favorite Unseen"),
+                (109, "translation-only", "Translation Only"),
+            ):
+                con.execute(
+                    """
+                    insert into anime(id, slug, title, url, source, source_id, year, scraped_at)
+                    values (?, ?, ?, ?, 'animego', ?, '2026', ?)
+                    """,
+                    (
+                        anime_id,
+                        slug,
+                        title,
+                        f"https://example.test/{slug}",
+                        str(anime_id),
+                        server.now_iso(),
+                    ),
+                )
+            for anime_id, episode_number, minutes in (
+                (105, "2", 2),
+                (106, "3", 5),
+                (107, "4", 4),
+                (108, "1", 1),
+            ):
+                content_updates.insert_event(
+                    con,
+                    None,
+                    "new_episode",
+                    anime_id,
+                    source="animego",
+                    source_id=str(anime_id),
+                    episode_number=episode_number,
+                    title=f"Update {anime_id}",
+                    occurred_at=(now + dt.timedelta(minutes=minutes)).isoformat(timespec="seconds"),
+                    dedupe_key=f"priority-unseen:{anime_id}",
+                )
+            content_updates.insert_event(
+                con,
+                None,
+                "new_translation",
+                109,
+                source="animego",
+                source_id="109",
+                episode_number="3",
+                translation_title="Dream Cast",
+                title="Translation Only",
+                occurred_at=(now + dt.timedelta(minutes=6)).isoformat(timespec="seconds"),
+                dedupe_key="priority-unseen:109",
+            )
+            user = server.upsert_google_user(
+                con,
+                {
+                    "sub": "unseen-priority",
+                    "email": "unseen-priority@example.test",
+                    "email_verified": True,
+                    "name": "Unseen Priority",
+                    "picture": None,
+                },
+            )
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db_path)
+
+        server.update_user_state(
+            105,
+            {"is_favorite": True, "progress_episode_number": 2},
+            self.db_path,
+            user["id"],
+        )
+        server.update_user_state(106, {"progress_episode_number": 2}, self.db_path, user["id"])
+        server.update_user_state(
+            107,
+            {"is_favorite": True, "progress_episode_number": 2},
+            self.db_path,
+            user["id"],
+        )
+        server.update_user_state(107, {"watch_status": "completed"}, self.db_path, user["id"])
+        server.update_user_state(108, {"is_favorite": True}, self.db_path, user["id"])
+        server.update_user_state(109, {"is_favorite": True}, self.db_path, user["id"])
+
+        personalized = server.get_content_updates(
+            self.db_path,
+            days=7,
+            limit=20,
+            user_id=user["id"],
+            offset=0,
+        )
+        items = {item["id"]: item for item in personalized["items"]}
+
+        self.assertEqual([item["id"] for item in personalized["items"][:2]], [106, 108])
+        self.assertTrue(items[106]["has_unseen_episode"])
+        self.assertTrue(items[108]["has_unseen_episode"])
+        self.assertFalse(items[105]["has_unseen_episode"])
+        self.assertFalse(items[107]["has_unseen_episode"])
+        self.assertFalse(items[109]["has_unseen_episode"])
+        self.assertFalse(items[105]["is_priority"])
+        self.assertFalse(items[107]["is_priority"])
+        self.assertFalse(items[109]["is_priority"])
+
+        server.update_user_state(106, {"progress_episode_number": 3}, self.db_path, user["id"])
+        caught_up = server.get_content_updates(
+            self.db_path,
+            days=7,
+            limit=20,
+            user_id=user["id"],
+            offset=0,
+        )
+        caught_up_items = {item["id"]: item for item in caught_up["items"]}
+        self.assertFalse(caught_up_items[106]["has_unseen_episode"])
+        self.assertFalse(caught_up_items[106]["is_priority"])
+        self.assertEqual([item["id"] for item in caught_up["items"] if item["is_priority"]], [108])
+
     def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
         now = server.now_iso()
         events = [
