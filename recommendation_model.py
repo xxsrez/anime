@@ -40,10 +40,7 @@ COLD_START_COMPONENT_WEIGHTS = {
     "popularity": 0.15,
 }
 
-KNOWN_WATCH_STATUSES = frozenset(
-    {"planned", "watching", "paused", "completed", "dropped"}
-)
-NON_POSITIVE_WATCH_STATUSES = frozenset({"planned", "dropped"})
+KNOWN_WATCH_STATUSES = frozenset({"watching", "completed"})
 
 _GENRE_ALIASES = {
     "isekai": "исэкай",
@@ -126,11 +123,19 @@ def meaningful_watch_seed_weight(seconds) -> float:
 
 
 def _watch_status(item: Mapping) -> str | None:
+    if item.get("watched"):
+        return "completed"
     for key in ("watch_status", "user_watch_status", "library_status"):
         value = _normalize_text(item.get(key))
         if value:
-            return value
-    return None
+            return {
+                "paused": "watching",
+                "planned": "none",
+                "dropped": "none",
+            }.get(value, value if value in {"none", "watching", "completed"} else None)
+    if item.get("progress_episode_number") is not None:
+        return "watching"
+    return "none"
 
 
 def _meaningful_watch_seconds(item: Mapping) -> float:
@@ -143,7 +148,7 @@ def seed_weight(item: Mapping) -> float:
     """Return positive-evidence strength without treating completion as a like."""
 
     status = _watch_status(item)
-    if item.get("not_interested") or status in NON_POSITIVE_WATCH_STATUSES:
+    if item.get("not_interested"):
         return 0.0
     if item.get("is_favorite"):
         return FAVORITE_SEED_WEIGHT

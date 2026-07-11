@@ -213,7 +213,7 @@ YummyAnime variant ID resolve to the same AnimeGO-primary canonical detail.
 
 Requires authentication. Returns recommended titles plus current-user profile
 metadata. Optional `limit` defaults to 20 and is clamped to 1..50. The taste
-profile uses favorites and explicit watched state as the strongest signals, and
+profile uses favorites and explicit `completed` state as the strongest signals, and
 automatic watch history only as a lighter signal after an episode has at least
 five engaged minutes. Short player visits update progress/continue-watching but
 do not become recommendation seeds. Response fields include:
@@ -239,7 +239,13 @@ fields:
 
 - `is_favorite`
 - `progress_episode_number`
-- `watched`
+- `watch_status`: `none`, `watching`, or `completed`
+- `watched`: backward-compatible alias derived from `watch_status`
+- `not_interested`: hidden recommendation feedback, not a visible library status
+
+The favorite flag is independent of the mutually exclusive viewing status.
+Legacy `planned`/`dropped` values normalize to `none`, while `paused` normalizes
+to `watching`.
 
 `POST /api/watch-events`
 
@@ -273,12 +279,12 @@ so the existing manual progress control stays in sync with automatic tracking.
 8. The browser URL is synchronized with the right-pane state using the canonical
    title slug in the path and query params for `episode`, `source`,
    `translation`, and `provider`.
-9. Favorites and manual progress corrections are written back through
-   `PATCH /api/anime/<id>/state`.
+9. Favorites, the three-state viewing status, and manual progress corrections
+   are written back through `PATCH /api/anime/<id>/state`.
 10. Automatic watch signals are written through `POST /api/watch-events`, which
    appends raw events, updates per-episode aggregate state, and updates the same
    per-title progress summary used by the manual controls.
-11. Recommendation data is reloaded after favorite/progress/watched changes.
+11. Recommendation data is reloaded after favorite/progress/status changes.
 
 ## Scraper Notes
 
@@ -353,8 +359,11 @@ Recommendation scoring lives in `server.py` and is intentionally explainable.
 It is scoped to the current authenticated user:
 
 - Favorites count most strongly as taste seeds.
-- Watched titles and titles with progress count as weaker seeds.
-- Candidates already favorited, watched, or in progress are excluded.
+- `completed` titles and meaningful watch history count as weaker seeds;
+  `watching` is known library state, while `none` is neutral.
+- Candidates already favorited, completed, or in progress are excluded.
+- `not_interested` remains a hidden negative recommendation signal and is not a
+  fourth viewing status.
 - Genre overlap and nearest-seed similarity form the taste score.
 - Rating, rating count, source availability, recency, and type match adjust the
   final ranking.
@@ -419,8 +428,8 @@ For recommendation/player changes, additionally verify:
 - Fullscreen enters on `#iframe-wrap` and exits cleanly.
 - PiP opens with document Picture-in-Picture in Chrome or shows the fallback
   message.
-- Fast consecutive state changes, such as progress then watched, do not drop the
-  second update.
+- Fast consecutive state changes, such as progress then `completed`, do not drop
+  the second update.
 
 If `http://127.0.0.1:8765/` serves new static files but API routes return 404,
 restart the long-running `server.py` process. Python route handlers are loaded

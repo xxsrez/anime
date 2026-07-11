@@ -254,7 +254,8 @@ select {
 .source-panel select:focus,
 .episode-select:focus,
 .anime-item:focus-visible,
-.watch-button:focus-visible,
+.favorite-toggle:focus-visible,
+.watch-status-option:focus-within,
 .icon-button:focus-visible,
 .active-filters button:focus-visible,
 .view-tabs button:focus-visible,
@@ -728,22 +729,21 @@ select {
   color: var(--muted);
 }
 
-.watch-row {
+.library-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
   margin-top: 14px;
   min-width: 0;
 }
 
-.watch-button,
-.watched-control {
+.favorite-toggle,
+.watch-status-option {
   display: inline-flex;
   gap: 6px;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -755,37 +755,79 @@ select {
   overflow-wrap: anywhere;
 }
 
-.watch-button.active,
-.watched-control:has(input:checked) {
+.favorite-toggle {
+  flex: 0 0 auto;
+  min-width: 148px;
+}
+
+.favorite-toggle.active {
   border-color: rgba(244, 184, 96, 0.8);
   background: rgba(244, 184, 96, 0.14);
 }
 
-.watch-button[hidden] {
-  display: none;
-}
-
-.clear-watch-button {
-  border-color: rgba(255, 104, 93, 0.45);
-  color: #ffd6d2;
-  background: rgba(255, 104, 93, 0.08);
-}
-
-.clear-watch-button:hover {
-  border-color: rgba(255, 104, 93, 0.72);
-  background: rgba(255, 104, 93, 0.14);
-}
-
-.watched-control {
-  font-size: 13px;
+.watch-status-control {
+  display: grid;
+  flex: 1 1 390px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 520px;
   min-width: 0;
+  min-inline-size: 0;
+  margin: 0;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(27, 31, 35, 0.72);
 }
 
-.watched-control input {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  accent-color: var(--accent);
+.watch-status-option {
+  position: relative;
+  min-width: 0;
+  border-color: transparent;
+  background: transparent;
+  padding-inline: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.watch-status-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.watch-status-option:hover {
+  border-color: rgba(52, 59, 68, 0.9);
+  background: var(--panel-2);
+}
+
+.watch-status-option:has(input:checked) {
+  border-color: rgba(169, 176, 184, 0.4);
+  background: rgba(169, 176, 184, 0.1);
+}
+
+.watch-status-option[data-watch-status="watching"]:has(input:checked) {
+  border-color: rgba(255, 104, 93, 0.55);
+  background: rgba(255, 104, 93, 0.12);
+}
+
+.watch-status-option[data-watch-status="completed"]:has(input:checked) {
+  border-color: rgba(116, 198, 157, 0.55);
+  background: rgba(116, 198, 157, 0.12);
 }
 
 .recommendation-context {
@@ -1638,61 +1680,31 @@ button.recent-update-row:focus-visible {
     font-size: 22px;
   }
 
-  .watch-row {
+  .library-controls {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid rgba(52, 59, 68, 0.72);
-    border-radius: 10px;
-    background: rgba(27, 31, 35, 0.72);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
   }
 
-  .watch-row:has(.clear-watch-button:not([hidden])) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .favorite-toggle {
+    justify-self: start;
+    min-width: 142px;
   }
 
-  .watch-button,
-  .watched-control {
-    min-width: 0;
-    min-height: 34px;
+  .watch-status-control {
+    width: 100%;
+    max-width: none;
+  }
+
+  .favorite-toggle,
+  .watch-status-option {
+    min-height: 38px;
     padding: 6px 8px;
-    border-color: transparent;
-    border-radius: 7px;
-    background: transparent;
     font-size: 11.5px;
     font-weight: 600;
     line-height: 1.15;
     overflow-wrap: normal;
     white-space: nowrap;
-  }
-
-  .watch-button:hover,
-  .watched-control:hover {
-    border-color: rgba(52, 59, 68, 0.9);
-    background: rgba(34, 39, 45, 0.9);
-  }
-
-  .watch-button.active,
-  .watched-control:has(input:checked) {
-    border-color: rgba(244, 184, 96, 0.34);
-    background: rgba(244, 184, 96, 0.12);
-  }
-
-  .watched-control {
-    gap: 4px;
-  }
-
-  .watched-control input {
-    width: 14px;
-    height: 14px;
-  }
-
-  .clear-watch-button,
-  .clear-watch-button:hover {
-    border-color: transparent;
-    background: transparent;
-    color: #e7aaa5;
   }
 
   .description {
@@ -1736,10 +1748,9 @@ button.recent-update-row:focus-visible {
     width: min(180px, 44vw);
   }
 
-  .watch-row {
+  .library-controls {
     align-items: stretch;
   }
-
 }
 
 @media (max-width: 640px) {

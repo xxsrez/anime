@@ -227,12 +227,21 @@ assert.equal(runtime.hasPlaybackEvidence({ fullscreen: true, evidenceExpiresAt: 
 assert.equal(runtime.hasPlaybackEvidence({ pageHidden: true, playerFocused: true, evidenceExpiresAt: 20, now: 10 }), false);
 
 assert.equal(runtime.effectiveWatchStatus({ watched: true }), "completed");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "completed" }), "completed");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "watching" }), "watching");
 assert.equal(runtime.effectiveWatchStatus({ progress_episode_number: 3 }), "watching");
 assert.equal(runtime.effectiveWatchStatus({ last_watch: { progress_episode_number: 4 } }), "watching");
-assert.equal(runtime.effectiveWatchStatus({ watched: true, watch_status: "dropped" }), "dropped");
-assert.equal(runtime.effectiveWatchStatus({}), "");
-assert.equal(runtime.watchStatusLabel("planned"), "буду смотреть");
-assert.equal(runtime.watchStatusLabel("paused"), "на паузе");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "none", progress_episode_number: 3 }), "none");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "paused" }), "watching");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "planned" }), "none");
+assert.equal(runtime.effectiveWatchStatus({ watch_status: "dropped" }), "none");
+assert.equal(runtime.effectiveWatchStatus({}), "none");
+assert.equal(runtime.effectiveWatchStatus({ is_favorite: true, watch_status: "none" }), "none");
+assert.equal(runtime.effectiveWatchStatus({ is_favorite: true, watch_status: "watching" }), "watching");
+assert.equal(runtime.effectiveWatchStatus({ not_interested: true, watch_status: "completed" }), "completed");
+assert.equal(runtime.watchStatusLabel("none"), "");
+assert.equal(runtime.watchStatusLabel("watching"), "смотрю");
+assert.equal(runtime.watchStatusLabel("completed"), "просмотрено");
 assert.equal(runtime.patchChanges({ updated_at: "old" }, { updated_at: "new" }), true);
 assert.equal(
   runtime.patchChanges(

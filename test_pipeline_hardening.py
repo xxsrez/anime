@@ -1656,8 +1656,9 @@ class PipelineHardeningTest(unittest.TestCase):
         con.execute(
             """
             insert into user_title_state(
-                user_id, anime_id, is_favorite, progress_episode_number, watched, updated_at
-            ) values (?, 101, 1, 1, 1, ?)
+                user_id, anime_id, is_favorite, progress_episode_number, watched,
+                watch_status, updated_at
+            ) values (?, 101, 1, 1, 1, 'completed', ?)
             """,
             (user_id, now),
         )

@@ -219,19 +219,17 @@
 
   function effectiveWatchStatus(item) {
     const status = String(item?.watch_status || "").trim();
-    if (status) return status;
-    if (item?.watched) return "completed";
+    if (status === "completed" || item?.watched) return "completed";
+    if (["watching", "paused"].includes(status)) return "watching";
+    if (["none", "planned", "dropped"].includes(status)) return "none";
     if (item?.progress_episode_number != null || item?.last_watch?.progress_episode_number != null) return "watching";
-    return "";
+    return "none";
   }
 
   function watchStatusLabel(status) {
     return {
-      planned: "буду смотреть",
       watching: "смотрю",
-      paused: "на паузе",
       completed: "просмотрено",
-      dropped: "брошено",
     }[status] || "";
   }
 

@@ -26,7 +26,7 @@ def item(item_id, title, *, genres=("Фэнтези",), score=8.0, **extra):
 
 
 class RecommendationV2IntegrationTest(unittest.TestCase):
-    def test_server_uses_v2_and_excludes_every_known_or_negative_state(self):
+    def test_server_uses_v2_and_keeps_none_status_neutral(self):
         catalog = [
             item(1, "Favorite", is_favorite=True),
             item(2, "Completed", watch_status="completed"),
@@ -39,7 +39,7 @@ class RecommendationV2IntegrationTest(unittest.TestCase):
             payload = server.get_recommendations(limit=20, user_id=7)
 
         self.assertEqual(payload["model_version"], recommendation_model.MODEL_VERSION)
-        self.assertEqual([entry["id"] for entry in payload["items"]], [6])
+        self.assertEqual({entry["id"] for entry in payload["items"]}, {3, 4, 6})
         self.assertIsNone(payload["items"][0]["recommendation_confidence"])
         self.assertTrue(payload["profile"]["confidence_available"])
 

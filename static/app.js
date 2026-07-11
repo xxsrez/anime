@@ -168,9 +168,7 @@ const el = {
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
   favoriteToggle: document.getElementById("favorite-toggle"),
-  notWatchingButton: document.getElementById("not-watching-button"),
-  notInterestedButton: document.getElementById("not-interested-button"),
-  watchedToggle: document.getElementById("watched-toggle"),
+  watchStatusInputs: document.querySelectorAll('input[name="watch-status"]'),
   recommendationContext: document.getElementById("recommendation-context"),
   recentUpdates: document.getElementById("recent-updates"),
   genres: document.getElementById("genres"),
@@ -675,7 +673,7 @@ function progressText(item) {
   const status = effectiveWatchStatus(item);
   const progress = item?.last_watch?.progress_episode_number ?? item?.progress_episode_number;
   const label = watchStatusLabel(status);
-  if (progress == null || !["watching", "paused"].includes(status)) return label;
+  if (progress == null || status !== "watching") return label;
   return `${label} · серия ${progress}`;
 }
 
@@ -1018,8 +1016,7 @@ function contentUpdateItemsForView() {
     for (const field of USER_STATE_RESPONSE_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(current, field)) item[field] = current[field];
     }
-    item.is_priority = Boolean(item.is_favorite)
-      || ["watching", "paused"].includes(effectiveWatchStatus(item));
+    item.is_priority = Boolean(item.is_favorite) || effectiveWatchStatus(item) === "watching";
     return item;
   });
 }
@@ -1037,7 +1034,7 @@ function itemMatchesView(item, mode = state.viewMode) {
   if (mode === "updates") return state.contentUpdatesLoaded && hasRecentUpdates(item);
   if (mode === "favorites") return Boolean(item.is_favorite);
   const status = effectiveWatchStatus(item);
-  if (mode === "progress") return status === "watching" || status === "paused";
+  if (mode === "progress") return status === "watching";
   return true;
 }
 
@@ -1275,8 +1272,8 @@ function compareRecommendations(left, right) {
 }
 
 function compareContentUpdates(left, right) {
-  const leftPriority = Boolean(left.is_favorite) || ["watching", "paused"].includes(effectiveWatchStatus(left));
-  const rightPriority = Boolean(right.is_favorite) || ["watching", "paused"].includes(effectiveWatchStatus(right));
+  const leftPriority = Boolean(left.is_favorite) || effectiveWatchStatus(left) === "watching";
+  const rightPriority = Boolean(right.is_favorite) || effectiveWatchStatus(right) === "watching";
   if (leftPriority !== rightPriority) return leftPriority ? -1 : 1;
   const leftSummary = recentUpdateSummary(left);
   const rightSummary = recentUpdateSummary(right);
@@ -1523,7 +1520,6 @@ function renderList() {
     if (String(item.id) === String(state.selectedAnimeId)) button.setAttribute("aria-current", "true");
     if (item.is_favorite) button.classList.add("favorite");
     if (item.watched) button.classList.add("watched");
-    if (item.not_interested) button.classList.add("not-interested");
     if (item.recommendation_score != null) button.classList.add("recommended");
     if (hasRecentUpdates(item)) button.classList.add("recently-updated");
 
@@ -1538,7 +1534,7 @@ function renderList() {
     titleRow.className = "anime-title-row";
     const title = document.createElement("strong");
     const rank = isRecommendationView() && item.recommendation_rank ? `${item.recommendation_rank}. ` : "";
-    title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.not_interested ? "⊘ " : ""}${item.title}`;
+    title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
     button.dataset.fullTitle = item.title || title.textContent;
     titleRow.append(title);
     const badgeText = recentUpdateBadgeText(item);
@@ -1935,7 +1931,7 @@ function renderContentUpdateRows(parent, items) {
     meta.textContent = [
       item.subtitle,
       item.is_favorite ? "в избранном" : "",
-      ["watching", "paused"].includes(effectiveWatchStatus(item)) ? "смотрю" : "",
+      effectiveWatchStatus(item) === "watching" ? "смотрю" : "",
       `${item.report?.event_count || item.events?.length || 0} событий`,
       updateClockLabel(item.latest_update_at),
     ].filter(Boolean).join(" · ");
@@ -2070,18 +2066,9 @@ function renderDetail() {
 function renderWatchState(detail) {
   el.favoriteToggle.classList.toggle("active", Boolean(detail.is_favorite));
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
-  el.favoriteToggle.textContent = detail.is_favorite ? "★ Избранное" : "☆ Избранное";
+  el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ В избранное";
   const status = effectiveWatchStatus(detail);
-  el.watchedToggle.checked = status === "completed";
-  const hasProgress = effectiveProgressEpisodeNumber(detail) != null;
-  el.notWatchingButton.hidden = !hasProgress || !["watching", "paused"].includes(status);
-  el.notWatchingButton.setAttribute("aria-label", "Убрать тайтл из «Смотрю»");
-  el.notInterestedButton.classList.toggle("active", Boolean(detail.not_interested));
-  el.notInterestedButton.setAttribute("aria-pressed", detail.not_interested ? "true" : "false");
-  el.notInterestedButton.textContent = detail.not_interested ? "⊘ Не интересно" : "⊘ Не интересно";
-  el.notInterestedButton.title = detail.not_interested
-    ? "Вернуть тайтл в рекомендации"
-    : "Не предлагать этот тайтл в рекомендациях";
+  for (const input of el.watchStatusInputs) input.checked = input.value === status;
 }
 
 function renderRecommendationContext(detail) {
@@ -2433,6 +2420,9 @@ function playerHasPlaybackEvidence(session = state.watchSession) {
 }
 
 function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
+  const libraryState = state.detail && String(state.detail.id) === String(session.animeId)
+    ? state.detail
+    : state.anime.find(item => String(item.id) === String(session.animeId));
   return {
     client_session_id: session.id,
     event_type: eventType,
@@ -2451,6 +2441,8 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     engaged_seconds: Math.max(0, Math.min(WATCH_MAX_DELTA_SECONDS, Math.round(engagedSeconds || 0))),
     page_visible: !document.hidden,
     player_focused: playerHasPlaybackEvidence(session),
+    library_watch_status: effectiveWatchStatus(libraryState),
+    library_watch_status_updated_at: libraryState?.watch_status_updated_at ?? null,
   };
 }
 
@@ -2749,7 +2741,7 @@ async function selectAnime(id, options = {}) {
         is_favorite: Boolean(detail.is_favorite),
         watched: Boolean(detail.watched),
         progress_episode_number: detail.progress_episode_number ?? null,
-        watch_status: effectiveWatchStatus(detail) || null,
+        watch_status: effectiveWatchStatus(detail),
         not_interested: Boolean(detail.not_interested),
         updated_at: detail.updated_at || null,
         favorite_updated_at: detail.favorite_updated_at || null,
@@ -3360,29 +3352,39 @@ el.favoriteToggle.addEventListener("click", () => {
   if (!state.detail) return;
   saveUserState({ is_favorite: !state.detail.is_favorite }).catch(reportActionError("toggle favorite"));
 });
-el.notWatchingButton.addEventListener("click", () => {
-  if (!state.detail) return;
-  discardWatchSession();
-  saveUserState({ progress_episode_number: null, watched: false, watch_status: null })
-    .catch(reportActionError("clear watching state"));
-});
-el.notInterestedButton.addEventListener("click", () => {
-  if (!state.detail) return;
-  saveUserState({ not_interested: !state.detail.not_interested })
-    .catch(reportActionError("toggle recommendation dismissal"));
-});
 el.logoutButton.addEventListener("click", () => {
   logout().catch(reportActionError("logout"));
 });
-el.watchedToggle.addEventListener("change", () => {
-  if (!state.detail) return;
-  const watched = el.watchedToggle.checked;
-  saveUserState({
-    watched,
-    watch_status: watched ? "completed" : null,
-    ...(watched ? {} : { progress_episode_number: null }),
-  }).catch(reportActionError("toggle watched"));
-});
+for (const input of el.watchStatusInputs) {
+  input.addEventListener("change", () => {
+    if (!input.checked || !state.detail) return;
+    const status = input.value;
+    if (status === effectiveWatchStatus(state.detail)) return;
+    if (status === "none") {
+      discardWatchSession();
+      saveUserState({
+        progress_episode_number: null,
+        watched: false,
+        watch_status: "none",
+      }).catch(reportActionError("set not watching"));
+      return;
+    }
+    if (status === "completed") discardWatchSession();
+    const progress = status === "watching"
+      ? (effectiveProgressEpisodeNumber(state.detail) ?? numberFrom(activeEpisode()?.number))
+      : null;
+    const source = status === "watching" ? selectedSourceForEpisode() : null;
+    saveUserState({
+      watched: status === "completed",
+      watch_status: status,
+      ...(progress != null ? {
+        progress_episode_number: progress,
+        ...(source?.id != null ? { video_source_id: source.id } : {}),
+      } : {}),
+      ...(state.detail.not_interested ? { not_interested: false } : {}),
+    }).catch(reportActionError("set watch status"));
+  });
+}
 el.contentSource.addEventListener("change", event => {
   const selectedContentSource = event.target.value || null;
   const selectedEpisodeId = nearestEpisodeIdForContentSource(selectedContentSource);

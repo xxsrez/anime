@@ -57,7 +57,7 @@ class RecommendationModelTest(unittest.TestCase):
         )
         self.assertEqual(
             model.seed_weight(catalog_item(6, "Plan", is_favorite=True, watch_status="planned")),
-            0.0,
+            model.FAVORITE_SEED_WEIGHT,
         )
 
     def test_genre_aliases_and_idf_specificity_are_used(self):
@@ -238,7 +238,7 @@ class RecommendationModelTest(unittest.TestCase):
             self.assertIsNone(item["recommendation_confidence"])
             self.assertIn("пока мало данных", item["recommendation_reasons"][0])
 
-    def test_negative_and_library_states_are_known_but_not_positive_seeds(self):
+    def test_none_is_neutral_while_active_and_negative_states_are_known(self):
         items = [
             catalog_item(1, "Planned", watch_status="planned"),
             catalog_item(2, "Dropped favorite", watch_status="dropped", is_favorite=True),
@@ -248,9 +248,9 @@ class RecommendationModelTest(unittest.TestCase):
         ]
 
         payload = model.rank_recommendations(items, limit=10)
-        self.assertEqual([item["id"] for item in payload["items"]], [5])
-        self.assertEqual(payload["profile"]["mode"], "cold_start")
-        self.assertEqual(payload["profile"]["seed_count"], 0)
+        self.assertEqual({item["id"] for item in payload["items"]}, {1, 5})
+        self.assertEqual(payload["profile"]["mode"], "personalized")
+        self.assertEqual(payload["profile"]["seed_count"], 1)
 
     def test_long_series_gets_no_bonus_beyond_binary_playability(self):
         items = [

@@ -17,10 +17,11 @@ choosing a provider/translation, and tracking personal progress.
   availability, or title.
 - Open a title detail view with poster, metadata, description, genres, fields,
   episodes, and player source selectors.
-- Add a title to favorites.
+- Add a title to favorites independently of its viewing status.
 - Store current episode progress manually or through automatic watch signals
   around the embedded player.
-- Mark a title as watched.
+- Choose exactly one viewing status: `Не смотрю`, `Смотрю`, or
+  `Просмотрено`.
 - View only favorites or titles with progress.
 - Resume the latest in-progress title on the home page when there is no explicit
   title in the URL.
@@ -66,11 +67,15 @@ to the embedded player's own PiP controls.
 ## Recommendation Model
 
 Recommendations are computed on demand from local data for the current Google
-user. Favorites have the highest profile weight; watched titles and titles with
-progress also contribute. The score combines genre similarity, similarity to
-known titles, rating quality, source availability, popularity, recency, and
-title type. Known titles already favorited, watched, or in progress are
-excluded.
+user. Favorites have the highest profile weight; `completed` titles and
+meaningful watch history also contribute. The score combines genre similarity,
+similarity to known titles, rating quality, source availability, popularity,
+recency, and title type. Known titles already favorited, completed, or in
+progress are excluded.
+
+The favorite flag and the three-state viewing status are independent. The
+internal `not_interested` signal is reserved for recommendation feedback; it is
+not shown as a fourth library status or title-page action.
 
 When no taste profile exists yet, the same endpoint falls back to a popularity
 and availability ranking.

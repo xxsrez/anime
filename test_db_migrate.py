@@ -47,6 +47,48 @@ class DatabaseMigrationTest(unittest.TestCase):
         finally:
             con.close()
 
+    def test_library_contract_adoption_does_not_timestamp_neutral_none(self):
+        con = sqlite3.connect(":memory:")
+        con.row_factory = sqlite3.Row
+        con.executescript(
+            """
+            create table user_title_state (
+                user_id integer not null,
+                anime_id integer not null,
+                is_favorite integer not null default 0,
+                progress_episode_number integer,
+                watched integer not null default 0,
+                watch_status text not null default 'none',
+                not_interested integer not null default 0,
+                updated_at text not null,
+                favorite_updated_at text,
+                watch_status_updated_at text,
+                not_interested_updated_at text,
+                primary key(user_id, anime_id)
+            );
+            create index idx_user_title_state_user_watch_status
+                on user_title_state(user_id, watch_status, watch_status_updated_at desc);
+            create index idx_user_title_state_user_not_interested
+                on user_title_state(user_id, not_interested) where not_interested = 1;
+            insert into user_title_state values
+                (1, 10, 0, 4, 1, 'completed', 0, '2026-01-01T00:00:00+00:00',
+                 null, '2026-01-01T00:00:00+00:00', null),
+                (1, 11, 1, null, 0, 'none', 0, '2026-02-01T00:00:00+00:00',
+                 '2026-02-01T00:00:00+00:00', null, null);
+            """
+        )
+
+        self.assertTrue(db_migrate.user_library_state_v1_satisfied(con))
+        rows = con.execute(
+            "select * from user_title_state order by anime_id"
+        ).fetchall()
+        con.close()
+
+        self.assertIsNone(rows[1]["watch_status_updated_at"])
+        aggregate = server.aggregate_state_rows(rows)
+        self.assertTrue(aggregate["is_favorite"])
+        self.assertEqual(aggregate["watch_status"], "completed")
+
     def test_applies_folders_and_files_in_lexicographic_order(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "migrations"

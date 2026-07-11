@@ -57,15 +57,14 @@ class UserStateBackendTest(unittest.TestCase):
     def test_schema_and_catalog_detail_patch_expose_complete_state(self):
         saved = server.update_user_state(
             10,
-            {"is_favorite": True, "watch_status": "planned", "not_interested": True},
+            {"is_favorite": True, "watch_status": "watching"},
             self.db_path,
             self.user_id,
         )
-        self.assertEqual(saved["watch_status"], "planned")
-        self.assertTrue(saved["not_interested"])
+        self.assertEqual(saved["watch_status"], "watching")
+        self.assertFalse(saved["not_interested"])
         self.assertIsNotNone(saved["favorite_updated_at"])
         self.assertIsNotNone(saved["watch_status_updated_at"])
-        self.assertIsNotNone(saved["not_interested_updated_at"])
 
         detail = self.detail()
         catalog = next(
@@ -82,8 +81,8 @@ class UserStateBackendTest(unittest.TestCase):
         }
         self.assertTrue(required <= detail.keys())
         self.assertTrue(required <= public.keys())
-        self.assertEqual(public["watch_status"], "planned")
-        self.assertTrue(public["not_interested"])
+        self.assertEqual(public["watch_status"], "watching")
+        self.assertFalse(public["not_interested"])
 
         con = server.connect(self.db_path)
         try:
@@ -91,6 +90,59 @@ class UserStateBackendTest(unittest.TestCase):
             self.assertTrue(required <= columns)
         finally:
             con.close()
+
+    def test_all_six_favorite_and_status_combinations_round_trip(self):
+        for favorite in (False, True):
+            for status in ("none", "watching", "completed"):
+                with self.subTest(favorite=favorite, status=status):
+                    saved = server.update_user_state(
+                        10,
+                        {"is_favorite": favorite, "watch_status": status},
+                        self.db_path,
+                        self.user_id,
+                    )
+                    detail = self.detail()
+                    self.assertEqual(saved["is_favorite"], favorite)
+                    self.assertEqual(saved["watch_status"], status)
+                    self.assertEqual(saved["watched"], status == "completed")
+                    self.assertEqual(detail["is_favorite"], favorite)
+                    self.assertEqual(detail["watch_status"], status)
+
+    def test_favorite_and_negative_feedback_invariant_round_trips(self):
+        favorite = server.update_user_state(
+            10,
+            {"is_favorite": True},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertTrue(favorite["is_favorite"])
+        self.assertFalse(favorite["not_interested"])
+
+        negative = server.update_user_state(
+            10,
+            {"not_interested": True},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertFalse(negative["is_favorite"])
+        self.assertTrue(negative["not_interested"])
+
+        favorite_again = server.update_user_state(
+            10,
+            {"is_favorite": True},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertTrue(favorite_again["is_favorite"])
+        self.assertFalse(favorite_again["not_interested"])
+
+        with self.assertRaisesRegex(ValueError, "favorite titles"):
+            server.update_user_state(
+                10,
+                {"is_favorite": True, "not_interested": True},
+                self.db_path,
+                self.user_id,
+            )
 
     def test_latest_field_timestamp_wins_when_canonical_variants_disagree(self):
         state = server.aggregate_state_rows(
@@ -121,43 +173,86 @@ class UserStateBackendTest(unittest.TestCase):
                 },
             ]
         )
-        self.assertEqual(state["watch_status"], "dropped")
+        self.assertEqual(state["watch_status"], "none")
         self.assertFalse(state["watched"])
         self.assertIsNone(state["progress_episode_number"])
         self.assertFalse(state["is_favorite"])
         self.assertTrue(state["not_interested"])
 
-    def test_status_only_dropped_and_planned_clear_episode_state_and_continue(self):
+    def test_none_clears_progress_and_continue_but_preserves_watch_history(self):
         server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
         self.assertEqual(self.detail()["watch_status"], "watching")
         self.assertIsNotNone(server.get_continue_watching(self.db_path, self.user_id)["item"])
 
-        for status in ("dropped", "planned"):
-            if status == "planned":
+        con = server.connect(self.db_path)
+        try:
+            history_before = con.execute(
+                "select count(*) from user_watch_events where user_id = ?",
+                (self.user_id,),
+            ).fetchone()[0]
+            episode_rows_before = con.execute(
+                "select count(*) from user_episode_state where user_id = ?",
+                (self.user_id,),
+            ).fetchone()[0]
+        finally:
+            con.close()
+
+        saved = server.update_user_state(
+            10,
+            {"watch_status": "none"},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertEqual(saved["watch_status"], "none")
+        self.assertIsNone(saved["progress_episode_number"])
+        self.assertIsNone(server.get_continue_watching(self.db_path, self.user_id)["item"])
+        con = server.connect(self.db_path)
+        try:
+            history_after = con.execute(
+                "select count(*) from user_watch_events where user_id = ?",
+                (self.user_id,),
+            ).fetchone()[0]
+            episode_rows_after = con.execute(
+                "select count(*) from user_episode_state where user_id = ?",
+                (self.user_id,),
+            ).fetchone()[0]
+            started = con.execute(
+                "select count(*) from user_episode_state where user_id = ? and started_at is not null",
+                (self.user_id,),
+            ).fetchone()[0]
+        finally:
+            con.close()
+        self.assertEqual(history_after, history_before)
+        self.assertEqual(episode_rows_after, episode_rows_before)
+        self.assertEqual(started, 0)
+
+    def test_null_and_empty_status_patch_are_none_aliases(self):
+        for alias in (None, ""):
+            with self.subTest(alias=alias):
                 server.update_user_state(
                     10,
                     {"progress_episode_number": 1, "watch_status": "watching"},
                     self.db_path,
                     self.user_id,
                 )
-            saved = server.update_user_state(
-                10,
-                {"watch_status": status},
-                self.db_path,
-                self.user_id,
-            )
-            self.assertEqual(saved["watch_status"], status)
-            self.assertIsNone(saved["progress_episode_number"])
-            self.assertIsNone(server.get_continue_watching(self.db_path, self.user_id)["item"])
-            con = server.connect(self.db_path)
-            try:
-                started = con.execute(
-                    "select count(*) from user_episode_state where user_id = ? and started_at is not null",
-                    (self.user_id,),
-                ).fetchone()[0]
-                self.assertEqual(started, 0)
-            finally:
-                con.close()
+                saved = server.update_user_state(
+                    10,
+                    {"watch_status": alias},
+                    self.db_path,
+                    self.user_id,
+                )
+                self.assertEqual(saved["watch_status"], "none")
+                self.assertIsNone(saved["progress_episode_number"])
+
+    def test_direct_legacy_status_patch_is_rejected(self):
+        for status in ("planned", "paused", "dropped"):
+            with self.subTest(status=status), self.assertRaisesRegex(ValueError, "watch_status"):
+                server.update_user_state(
+                    10,
+                    {"watch_status": status},
+                    self.db_path,
+                    self.user_id,
+                )
 
     def test_continue_prefilters_completed_history_before_loading_details(self):
         server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
@@ -174,11 +269,11 @@ class UserStateBackendTest(unittest.TestCase):
         self.assertIsNone(payload["item"])
         get_detail.assert_not_called()
 
-    def test_inflight_heartbeat_cannot_undo_explicit_pause(self):
+    def test_inflight_heartbeat_cannot_undo_explicit_none(self):
         server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
         server.update_user_state(
             10,
-            {"watch_status": "paused"},
+            {"watch_status": "none"},
             self.db_path,
             self.user_id,
         )
@@ -189,11 +284,63 @@ class UserStateBackendTest(unittest.TestCase):
             self.user_id,
         )
 
-        self.assertEqual(result["state"]["watch_status"], "paused")
-        self.assertEqual(self.detail()["watch_status"], "paused")
-        # Paused titles intentionally stay resumable; the regression contract
-        # is that passive telemetry cannot silently move them to Watching.
-        self.assertIsNotNone(server.get_continue_watching(self.db_path, self.user_id)["item"])
+        self.assertEqual(result["state"]["watch_status"], "none")
+        self.assertIsNone(result["state"]["progress_episode_number"])
+        self.assertEqual(self.detail()["watch_status"], "none")
+        self.assertIsNone(server.get_continue_watching(self.db_path, self.user_id)["item"])
+        con = server.connect(self.db_path)
+        try:
+            started = con.execute(
+                "select count(*) from user_episode_state where user_id = ? and started_at is not null",
+                (self.user_id,),
+            ).fetchone()[0]
+        finally:
+            con.close()
+        self.assertEqual(started, 0)
+
+    def test_delayed_explicit_event_cannot_undo_newer_none_status(self):
+        server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
+        before_none = self.detail()
+        delayed = self.watch_payload(event_type="episode_selected")
+        delayed["library_watch_status"] = before_none["watch_status"]
+        delayed["library_watch_status_updated_at"] = before_none["watch_status_updated_at"]
+
+        server.update_user_state(
+            10,
+            {"watch_status": "none"},
+            self.db_path,
+            self.user_id,
+        )
+        result = server.record_watch_event(delayed, self.db_path, self.user_id)
+
+        self.assertEqual(result["state"]["watch_status"], "none")
+        self.assertIsNone(result["state"]["progress_episode_number"])
+        con = server.connect(self.db_path)
+        try:
+            started = con.execute(
+                "select count(*) from user_episode_state where user_id = ? and started_at is not null",
+                (self.user_id,),
+            ).fetchone()[0]
+        finally:
+            con.close()
+        self.assertEqual(started, 0)
+
+    def test_direct_player_actions_resume_explicit_none(self):
+        for event_type in ("player_engaged", "episode_selected", "source_changed"):
+            with self.subTest(event_type=event_type):
+                server.update_user_state(
+                    10,
+                    {"watch_status": "none"},
+                    self.db_path,
+                    self.user_id,
+                )
+                resumed = server.record_watch_event(
+                    self.watch_payload(event_type=event_type),
+                    self.db_path,
+                    self.user_id,
+                )
+                self.assertEqual(resumed["state"]["watch_status"], "watching")
+                self.assertEqual(resumed["state"]["progress_episode_number"], 1)
 
     def test_direct_player_action_clears_negative_feedback_but_heartbeat_does_not(self):
         server.update_user_state(
@@ -331,7 +478,7 @@ class UserStateBackendTest(unittest.TestCase):
         root = self.copy_library_migration()
         server.update_user_state(
             10,
-            {"watch_status": "dropped", "not_interested": True},
+            {"watch_status": "none", "not_interested": True},
             self.db_path,
             self.user_id,
         )
@@ -347,7 +494,7 @@ class UserStateBackendTest(unittest.TestCase):
             server.prepare_database(self.db_path)
 
         detail = self.detail()
-        self.assertEqual(detail["watch_status"], "dropped")
+        self.assertEqual(detail["watch_status"], "none")
         self.assertTrue(detail["not_interested"])
         con = sqlite3.connect(self.db_path)
         try:
@@ -363,7 +510,7 @@ class UserStateBackendTest(unittest.TestCase):
         root = self.copy_library_migration()
         server.update_user_state(
             10,
-            {"watch_status": "dropped", "not_interested": True},
+            {"watch_status": "none", "not_interested": True},
             self.db_path,
             self.user_id,
         )
@@ -376,7 +523,7 @@ class UserStateBackendTest(unittest.TestCase):
             [server.USER_LIBRARY_MIGRATION_PATH],
         )
         detail = self.detail()
-        self.assertEqual(detail["watch_status"], "dropped")
+        self.assertEqual(detail["watch_status"], "none")
         self.assertTrue(detail["not_interested"])
 
     def test_direct_runner_does_not_adopt_spoofed_runtime_contract(self):

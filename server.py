@@ -608,7 +608,7 @@ def create_user_title_state_table(con):
             is_favorite integer not null default 0,
             progress_episode_number integer,
             watched integer not null default 0,
-            watch_status text,
+            watch_status text not null default 'none',
             not_interested integer not null default 0,
             updated_at text not null,
             favorite_updated_at text,
@@ -645,7 +645,7 @@ def ensure_user_state_schema(con):
             con,
             "user_title_state",
             {
-                "watch_status": "text",
+                "watch_status": "text not null default 'none'",
                 "not_interested": "integer not null default 0",
                 "favorite_updated_at": "text",
                 "watch_status_updated_at": "text",
@@ -657,10 +657,21 @@ def ensure_user_state_schema(con):
                 """
                 update user_title_state
                 set watch_status = case
-                        when watched = 1 then 'completed'
+                        when watched = 1 or watch_status = 'completed' then 'completed'
+                        when watch_status in ('planned', 'dropped') then 'none'
+                        when watch_status in ('watching', 'paused') then 'watching'
                         when progress_episode_number is not null then 'watching'
-                        else null
+                        else 'none'
                     end,
+                    watched = case
+                        when watched = 1 or watch_status = 'completed' then 1
+                        else 0
+                    end,
+                    progress_episode_number = case
+                        when watch_status in ('planned', 'dropped') then null
+                        else progress_episode_number
+                    end,
+                    not_interested = case when is_favorite = 1 then 0 else not_interested end,
                     favorite_updated_at = case when is_favorite = 1 then updated_at else null end,
                     watch_status_updated_at = case
                         when watched = 1 or progress_episode_number is not null then updated_at
@@ -668,6 +679,7 @@ def ensure_user_state_schema(con):
                     end
                 """
             )
+        changed |= normalize_user_title_state_rows(con)
         return ensure_user_state_indexes(con) or changed
 
     old_columns = {row[1] for row in con.execute("pragma table_info(user_title_state)").fetchall()}
@@ -699,7 +711,7 @@ def ensure_user_state_schema(con):
                 coalesce(is_favorite, 0),
                 progress_episode_number,
                 coalesce(watched, 0),
-                {existing_value("watch_status", "case when watched = 1 then 'completed' when progress_episode_number is not null then 'watching' else null end")},
+                {existing_value("watch_status", "case when watched = 1 then 'completed' when progress_episode_number is not null then 'watching' else 'none' end")},
                 coalesce({existing_value("not_interested", "0")}, 0),
                 coalesce(updated_at, ?),
                 {existing_value("favorite_updated_at", "case when is_favorite = 1 then updated_at else null end")},
@@ -717,8 +729,47 @@ def ensure_user_state_schema(con):
             (now_iso(),),
         )
     con.execute("drop table user_title_state_old")
+    normalize_user_title_state_rows(con)
     ensure_user_state_indexes(con)
     return True
+
+
+def normalize_user_title_state_rows(con):
+    before = con.total_changes
+    con.execute(
+        """
+        update user_title_state
+        set watch_status = case
+                when coalesce(watched, 0) = 1 or watch_status = 'completed' then 'completed'
+                when watch_status in ('watching', 'paused') then 'watching'
+                when watch_status is null and progress_episode_number is not null then 'watching'
+                else 'none'
+            end,
+            watched = case
+                when coalesce(watched, 0) = 1 or watch_status = 'completed' then 1
+                else 0
+            end,
+            progress_episode_number = case
+                when coalesce(watched, 0) = 0
+                 and coalesce(watch_status, '') not in ('completed', 'watching', 'paused')
+                 and not (watch_status is null and progress_episode_number is not null)
+                then null
+                else progress_episode_number
+            end,
+            not_interested = case
+                when coalesce(is_favorite, 0) = 1 then 0
+                else coalesce(not_interested, 0)
+            end
+        where watch_status is null
+           or watch_status not in ('none', 'watching', 'completed')
+           or (coalesce(watched, 0) = 1 and watch_status != 'completed')
+           or (watch_status = 'completed' and coalesce(watched, 0) != 1)
+           or (watch_status in ('none', 'watching') and coalesce(watched, 0) != 0)
+           or (watch_status = 'none' and progress_episode_number is not null)
+           or (coalesce(is_favorite, 0) = 1 and coalesce(not_interested, 0) = 1)
+        """
+    )
+    return con.total_changes > before
 
 
 def ensure_user_state_indexes(con):
@@ -932,6 +983,36 @@ def ensure_columns(con, table, columns):
             con.execute(f"alter table {table} add column {column} {definition}")
             changed = True
     return changed
+
+
+def clear_inactive_episode_starts(con):
+    before = con.total_changes
+    con.execute(
+        """
+        update user_episode_state
+        set started_at = null,
+            last_event_type = 'manual_clear',
+            last_confidence = 1.0,
+            updated_at = coalesce(
+                (
+                    select coalesce(uts.watch_status_updated_at, uts.updated_at)
+                    from user_title_state uts
+                    where uts.user_id = user_episode_state.user_id
+                      and uts.anime_id = user_episode_state.anime_id
+                ),
+                updated_at
+            )
+        where started_at is not null
+          and exists (
+              select 1
+              from user_title_state uts
+              where uts.user_id = user_episode_state.user_id
+                and uts.anime_id = user_episode_state.anime_id
+                and uts.watch_status = 'none'
+          )
+        """
+    )
+    return con.total_changes > before
 
 
 def ensure_index(con, name, sql):
@@ -1234,6 +1315,7 @@ def initialize_database(path):
         changed |= ensure_auth_schema(con)
         changed |= ensure_user_state_schema(con)
         changed |= ensure_watch_tracking_schema(con)
+        changed |= clear_inactive_episode_starts(con)
         changed |= purge_orphaned_user_data(con)
         changed |= ensure_runtime_indexes(con)
         changed |= ensure_catalog_revision_schema(con)
@@ -2685,7 +2767,7 @@ def content_update_report(events):
 
 
 def content_update_item_is_priority(item):
-    return bool(item.get("is_favorite")) or item.get("watch_status") in {"watching", "paused"}
+    return bool(item.get("is_favorite")) or item.get("watch_status") == "watching"
 
 
 def compact_content_update_item(item, events, days):
@@ -3930,7 +4012,7 @@ def aggregate_state_rows(rows):
         ]
         watched = any(state["watched"] for state in normalized_rows)
         progress = max(progress_values) if progress_values else None
-        watch_status = "completed" if watched else ("watching" if progress is not None else None)
+        watch_status = "completed" if watched else ("watching" if progress is not None else "none")
     else:
         watched = watch_row["watched"]
         progress = watch_row["progress_episode_number"]
@@ -3963,6 +4045,7 @@ def aggregate_state_rows(rows):
             default=None,
         ),
     }
+    state = normalize_state(state)
     watch_engaged_seconds = sum(int(row_value(row, "watch_engaged_seconds", 0) or 0) for row in rows)
     meaningful_watch_seconds = sum(int(row_value(row, "meaningful_watch_seconds", 0) or 0) for row in rows)
     meaningful_watch_episode_count = sum(int(row_value(row, "meaningful_watch_episode_count", 0) or 0) for row in rows)
@@ -4196,7 +4279,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     latest_watch_row = None
-    if user_id is not None and state.get("watch_status") in {"watching", "paused"}:
+    if user_id is not None and state.get("watch_status") == "watching":
         latest_watch_row = con.execute(
             f"""
             select *
@@ -4370,9 +4453,7 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
             )
 
         manual_last_watch = None
-        sync_episode_state = "progress_episode_number" in patch or (
-            patch.get("watch_status") in {"planned", "dropped"}
-        )
+        sync_episode_state = "progress_episode_number" in patch or patch.get("watch_status") == "none"
         if sync_episode_state:
             manual_last_watch = sync_manual_progress_to_episode_state(
                 con,
@@ -4677,11 +4758,8 @@ def apply_watch_progress_to_user_state(
     target_id = group["id"]
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     current = get_group_state(con, member_ids, user_id)
-    explicit_resume = event_type in {"player_engaged", "episode_selected", "source_changed"}
-    protected_status = current.get("watch_status") == "completed"
-    resumable_status = current.get("watch_status") in {"planned", "paused", "dropped"}
-    negative_feedback = current.get("not_interested")
-    if protected_status or ((resumable_status or negative_feedback) and not explicit_resume):
+    explicit_resume = watch_event_is_explicit_resume(event_type)
+    if not watch_event_can_start_title(current, event_type):
         # A heartbeat already in flight when the user changes a shelf/status
         # must not undo that explicit decision.  The episode telemetry is still
         # retained, but only a fresh direct player action resumes the title.
@@ -4747,6 +4825,18 @@ def apply_watch_progress_to_user_state(
             (user_id, *duplicate_state_ids),
         )
     return next_state
+
+
+def watch_event_is_explicit_resume(event_type):
+    return event_type in {"player_engaged", "episode_selected", "source_changed"}
+
+
+def watch_event_can_start_title(current, event_type):
+    if current.get("watch_status") == "completed":
+        return False
+    if current.get("watch_status") == "none" or current.get("not_interested"):
+        return watch_event_is_explicit_resume(event_type)
+    return True
 
 
 def sync_manual_progress_to_episode_state(
@@ -5179,6 +5269,18 @@ def record_watch_event(payload, db_path=None, user_id=None):
             ),
         )
         started = event_type in WATCH_PROGRESS_EVENT_TYPES and confidence >= WATCH_STARTED_CONFIDENCE
+        if started:
+            current_title_state = get_group_state(con, member_ids, user_id)
+            event_state_is_current = True
+            if "library_watch_status" in payload:
+                expected_status = bounded_text(payload.get("library_watch_status"), 40)
+                if expected_status not in user_state_model.WATCH_STATUS_SET:
+                    raise ValueError("library_watch_status is invalid")
+                event_state_is_current = expected_status == current_title_state.get("watch_status")
+            if event_state_is_current and "library_watch_status_updated_at" in payload:
+                expected_updated_at = bounded_text(payload.get("library_watch_status_updated_at"), 80)
+                event_state_is_current = expected_updated_at == current_title_state.get("watch_status_updated_at")
+            started = event_state_is_current and watch_event_can_start_title(current_title_state, event_type)
         episode_state = upsert_episode_watch_state(
             con,
             user_id=user_id,
@@ -5320,7 +5422,7 @@ def continue_target_from_episode_state(row, db_path=None, user_id=None, detail=N
     detail = detail or get_anime_detail(row["anime_id"], db_path, user_id)
     if not detail:
         return None
-    if detail.get("not_interested") or detail.get("watch_status") not in {"watching", "paused"}:
+    if detail.get("not_interested") or detail.get("watch_status") != "watching":
         return None
 
     episodes = detail.get("episodes") or []
@@ -5389,7 +5491,7 @@ def get_continue_watching(db_path=None, user_id=None):
     catalog_items = get_anime_list(db_path, user_id=user_id)
     eligible_group_by_member_id = {}
     for item in catalog_items:
-        if item.get("not_interested") or item.get("watch_status") not in {"watching", "paused"}:
+        if item.get("not_interested") or item.get("watch_status") != "watching":
             continue
         member_ids = item.get("source_member_ids") or [item.get("id")]
         for member_id in member_ids:

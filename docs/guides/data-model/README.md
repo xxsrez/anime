@@ -97,12 +97,19 @@ Per-user mutable state:
 - `anime_id`.
 - `is_favorite`.
 - `progress_episode_number`.
-- `watched`.
+- `watch_status`: exactly one of `none`, `watching`, or `completed`.
+- `watched`: backward-compatible value derived from `watch_status`.
+- `not_interested`: hidden recommendation feedback, not a library status.
 - `updated_at`.
+
+`is_favorite` is independent of `watch_status`, so each of the three statuses
+can exist with or without a favorite. `not_interested` is separate from those
+six user-visible combinations; setting a favorite clears contradictory negative
+feedback.
 
 The primary key is `(user_id, anime_id)`. The recommendation endpoint reads this
 table together with `user_episode_state` for the current-user taste profile.
-Favorites and explicit watched titles are strongest, while automatic watch
+Favorites and explicitly completed titles are strongest, while automatic watch
 history only counts after an episode has at least five engaged minutes and uses
 a lighter seed weight.
 In-progress titles from short visits still support progress/continue-watching

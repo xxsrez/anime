@@ -86,14 +86,23 @@
             <div id="meta-line" class="meta-line"></div>
             <h2 id="title"></h2>
             <p id="subtitle"></p>
-            <div class="watch-row">
-              <button id="favorite-toggle" class="watch-button" type="button" aria-pressed="false">☆ Избранное</button>
-              <label class="watched-control">
-                <input id="watched-toggle" type="checkbox">
-                <span>Просмотрен</span>
-              </label>
-              <button id="not-watching-button" class="watch-button clear-watch-button" type="button" aria-label="Убрать из «Смотрю»" title="Убрать из «Смотрю»" hidden>■ Не смотрю</button>
-              <button id="not-interested-button" class="watch-button dismiss-button" type="button" aria-pressed="false">⊘ Не интересно</button>
+            <div class="library-controls">
+              <button id="favorite-toggle" class="favorite-toggle" type="button" aria-pressed="false">☆ В избранное</button>
+              <fieldset id="watch-status-control" class="watch-status-control">
+                <legend class="visually-hidden">Статус просмотра</legend>
+                <label class="watch-status-option" data-watch-status="none">
+                  <input type="radio" name="watch-status" value="none" checked>
+                  <span>○ Не смотрю</span>
+                </label>
+                <label class="watch-status-option" data-watch-status="watching">
+                  <input type="radio" name="watch-status" value="watching">
+                  <span>▶ Смотрю</span>
+                </label>
+                <label class="watch-status-option" data-watch-status="completed">
+                  <input type="radio" name="watch-status" value="completed">
+                  <span>✓ Просмотрено</span>
+                </label>
+              </fieldset>
             </div>
             <div id="recommendation-context" class="recommendation-context" hidden></div>
             <div id="recent-updates" class="recent-updates" hidden></div>

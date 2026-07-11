@@ -121,8 +121,10 @@ release.
 - Selecting a catalog title loads detail and updates the URL.
 - Shared slug links restore title, episode, source, translation, and provider
   when those params are valid.
-- Favorite, progress episode, and watched controls persist per Google user and
-  do not leak to another user.
+- Favorite persists independently of the mutually exclusive `Не смотрю`,
+  `Смотрю`, and `Просмотрено` statuses; all six combinations persist per Google
+  user and do not leak to another user.
+- The title page does not expose `not_interested` as a fourth status or action.
 - Episode selector and previous/next episode controls update player source
   state.
 - Source, translation, and provider selectors choose a playable embed URL.
@@ -142,8 +144,9 @@ For each modern iPhone viewport:
   `100vh` or `100dvh` shell.
 - The catalog list has enough height to browse multiple cards.
 - Tapping a catalog card moves the user to the detail area on mobile.
-- Detail title, poster, watch controls, genres, fields, episode picker, player,
-  and source panel are reachable by normal vertical scrolling.
+- Detail title, poster, compact favorite/status controls, genres, fields,
+  episode picker, player, and source panel are reachable by normal vertical
+  scrolling.
 - Long Russian titles, subtitles, metadata, and filter labels do not overflow
   controls.
 - The lower safe area does not cover the final controls on iPhone.

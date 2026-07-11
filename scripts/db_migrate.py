@@ -358,7 +358,9 @@ def user_library_state_v1_satisfied(con):
                 else favorite_updated_at
             end,
             watch_status_updated_at = case
-                when watch_status is not null or watched = 1 or progress_episode_number is not null
+                when watched = 1
+                  or progress_episode_number is not null
+                  or (watch_status is not null and watch_status != 'none')
                 then coalesce(watch_status_updated_at, updated_at)
                 else watch_status_updated_at
             end,
@@ -368,7 +370,14 @@ def user_library_state_v1_satisfied(con):
             end
         where (watch_status is null and (watched = 1 or progress_episode_number is not null))
            or (is_favorite = 1 and favorite_updated_at is null)
-           or (watch_status is not null and watch_status_updated_at is null)
+           or (
+               watch_status_updated_at is null
+               and (
+                   watched = 1
+                   or progress_episode_number is not null
+                   or (watch_status is not null and watch_status != 'none')
+               )
+           )
            or (not_interested = 1 and not_interested_updated_at is null)
         """
     )

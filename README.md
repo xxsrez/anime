@@ -87,15 +87,19 @@ The local app stores favorites and watch progress per Google user in SQLite.
 `user_title_state` is the current per-title summary, while `user_watch_events`
 and `user_episode_state` keep automatic watch history around the embedded
 player. Use the title page controls to add a title to favorites, correct the
-current episode manually, or mark the title as watched. Automatic iframe-focus,
-fullscreen/PiP, source-change, and heartbeat signals update the same current
-episode control. The sidebar can filter all titles, favorites, titles with
-progress, or the top recommendation list. Recommendations are computed from the
-current user's favorites, explicitly watched titles, and meaningful watch
-history from the player; a short accidental visit does not become a taste seed.
-Favorites and explicitly watched titles are weighted much higher than automatic
-watch history. A newly created Google user starts with empty local state;
-anonymous/local profile state is not supported.
+current episode manually, or choose one mutually exclusive library status:
+`Не смотрю`, `Смотрю`, or `Просмотрено`. The favorite flag is independent
+of that status, so all six favorite/status combinations are valid. Automatic
+iframe-focus, fullscreen/PiP, source-change, and heartbeat signals update the
+same current episode control. The sidebar can filter all titles, favorites,
+titles with progress, or the top recommendation list. Recommendations are
+computed from the current user's favorites, titles marked `Просмотрено`, and
+meaningful watch history from the player; a short accidental visit does not
+become a taste seed. Favorites and explicitly completed titles are weighted much
+higher than automatic watch history. `not_interested` remains an internal
+recommendation-feedback signal and is not exposed as a title-page status. A
+newly created Google user starts with empty local state; anonymous/local profile
+state is not supported.
 
 Refresh the watchable catalog with player data:
 
