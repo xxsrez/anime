@@ -3056,7 +3056,12 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('id="favorite-toggle" class="watch-button"', html)
         self.assertIn('class="watched-control"', html)
         self.assertIn('id="not-interested-button" class="watch-button dismiss-button"', html)
+        self.assertIn('aria-label="Убрать из «Смотрю»"', html)
+        self.assertIn(">■ Не смотрю</button>", html)
         self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", css)
+        self.assertIn(".watch-row:has(.clear-watch-button:not([hidden]))", css)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", css)
+        self.assertNotIn("grid-column: 1 / -1;", css)
         self.assertIn(".watch-button,\n.watched-control", css)
         self.assertIn(".watched-control:has(input:checked)", css)
         self.assertIn(".watch-button[hidden]", css)
@@ -3101,6 +3106,17 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("persist = true", select_episode)
         self.assertIn("persist && number != null", select_episode)
         self.assertIn("persist: false", open_update)
+
+    def test_content_source_switch_moves_to_nearest_available_episode(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        handler_start = js.index('el.contentSource.addEventListener("change"')
+        handler_end = js.index('el.translation.addEventListener("change"', handler_start)
+        handler = js[handler_start:handler_end]
+
+        self.assertIn("nearestEpisodeIdForContentSource(selectedContentSource)", handler)
+        self.assertIn("state.selectedEpisodeId = selectedEpisodeId", handler)
+        self.assertIn("renderEpisodes(state.detail)", handler)
+        self.assertIn("persistCurrentEpisodeSelection()", handler)
 
     def test_frontend_content_update_filters_refresh_report_in_priority_time_order(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

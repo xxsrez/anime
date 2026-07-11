@@ -187,6 +187,25 @@ assert.equal(runtime.selectSourceForEpisode(nextEpisodeSources, {
   preference: dreamCastPreference,
 }).id, 203);
 
+const sourceSwitchEpisodes = [
+  { id: 45744, number: "1" },
+  { id: 45887, number: "2" },
+  { id: 46001, number: "3" },
+];
+assert.equal(
+  runtime.nearestAvailableEpisodeId(sourceSwitchEpisodes, [45744], 45887),
+  45744,
+);
+assert.equal(
+  runtime.nearestAvailableEpisodeId(sourceSwitchEpisodes, [45744, 46001], 45887),
+  45744,
+);
+assert.equal(
+  runtime.nearestAvailableEpisodeId(sourceSwitchEpisodes, [45887], 45887),
+  45887,
+);
+assert.equal(runtime.nearestAvailableEpisodeId(sourceSwitchEpisodes, [], 45887), null);
+
 const semanticTranslationGroups = runtime.groupSourcesByTranslation([
   { id: 1, translation_id: 10, translation_title: "Akari Group" },
   { id: 2, translation_id: 11, translation_title: "Akari GROUP" },

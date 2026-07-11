@@ -1641,18 +1641,42 @@ button.recent-update-row:focus-visible {
   .watch-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid rgba(52, 59, 68, 0.72);
+    border-radius: 10px;
+    background: rgba(27, 31, 35, 0.72);
+  }
+
+  .watch-row:has(.clear-watch-button:not([hidden])) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .watch-button,
   .watched-control {
     min-width: 0;
-    min-height: 36px;
-    padding: 6px 5px;
-    font-size: 11px;
+    min-height: 34px;
+    padding: 6px 8px;
+    border-color: transparent;
+    border-radius: 7px;
+    background: transparent;
+    font-size: 11.5px;
+    font-weight: 600;
     line-height: 1.15;
     overflow-wrap: normal;
     white-space: nowrap;
+  }
+
+  .watch-button:hover,
+  .watched-control:hover {
+    border-color: rgba(52, 59, 68, 0.9);
+    background: rgba(34, 39, 45, 0.9);
+  }
+
+  .watch-button.active,
+  .watched-control:has(input:checked) {
+    border-color: rgba(244, 184, 96, 0.34);
+    background: rgba(244, 184, 96, 0.12);
   }
 
   .watched-control {
@@ -1664,8 +1688,11 @@ button.recent-update-row:focus-visible {
     height: 14px;
   }
 
-  .clear-watch-button:not([hidden]) {
-    grid-column: 1 / -1;
+  .clear-watch-button,
+  .clear-watch-button:hover {
+    border-color: transparent;
+    background: transparent;
+    color: #e7aaa5;
   }
 
   .description {

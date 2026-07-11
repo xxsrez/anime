@@ -716,6 +716,18 @@ function contentSourceHasEpisode(source, episodeId) {
   return allSourcesForEpisode(episodeId).some(item => item.source === source);
 }
 
+function nearestEpisodeIdForContentSource(source, selectedEpisodeId = state.selectedEpisodeId) {
+  if (!source) return selectedEpisodeId;
+  const availableEpisodeIds = (state.detail?.episodes || [])
+    .filter(episode => contentSourceHasEpisode(source, episode.id))
+    .map(episode => episode.id);
+  return frontendRuntime.nearestAvailableEpisodeId(
+    state.detail?.episodes || [],
+    availableEpisodeIds,
+    selectedEpisodeId,
+  );
+}
+
 function preferredContentSource(detail, episodeId = null) {
   const variants = sourceVariants(detail);
   if (episodeId) {
@@ -3372,11 +3384,15 @@ el.watchedToggle.addEventListener("change", () => {
   }).catch(reportActionError("toggle watched"));
 });
 el.contentSource.addEventListener("change", event => {
-  state.selectedContentSource = event.target.value || null;
+  const selectedContentSource = event.target.value || null;
+  const selectedEpisodeId = nearestEpisodeIdForContentSource(selectedContentSource);
+  state.selectedContentSource = selectedContentSource;
+  if (selectedEpisodeId != null) state.selectedEpisodeId = selectedEpisodeId;
   state.selectedTranslation = null;
   state.selectedSourceId = null;
   const previousUrlSync = state.urlSyncSuspended;
   state.urlSyncSuspended = true;
+  renderEpisodes(state.detail);
   renderSources();
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });

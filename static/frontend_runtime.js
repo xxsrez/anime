@@ -144,6 +144,35 @@
     return selectPreferredSource(ranked, preference);
   }
 
+  function nearestAvailableEpisodeId(episodes, availableEpisodeIds, selectedEpisodeId = null) {
+    const ordered = (episodes || []).filter(episode => episode?.id != null);
+    if (!ordered.length) return null;
+
+    const available = new Set(
+      (availableEpisodeIds || [])
+        .filter(id => id != null)
+        .map(id => String(id)),
+    );
+    if (!available.size) return null;
+
+    const selectedKey = selectedEpisodeId == null ? null : String(selectedEpisodeId);
+    const selectedIndex = ordered.findIndex(episode => String(episode.id) === selectedKey);
+    if (selectedIndex >= 0 && available.has(selectedKey)) return ordered[selectedIndex].id;
+
+    const candidates = ordered
+      .map((episode, index) => ({ episode, index }))
+      .filter(({ episode }) => available.has(String(episode.id)));
+    if (!candidates.length) return null;
+    if (selectedIndex < 0) return candidates[0].episode.id;
+
+    candidates.sort((left, right) => (
+      Math.abs(left.index - selectedIndex) - Math.abs(right.index - selectedIndex)
+      || (left.index > selectedIndex ? 1 : 0) - (right.index > selectedIndex ? 1 : 0)
+      || right.index - left.index
+    ));
+    return candidates[0].episode.id;
+  }
+
   function hostnameMatches(hostname, allowedHostname) {
     const host = normalizeHostname(hostname);
     const allowed = normalizeHostname(allowedHostname);
@@ -271,6 +300,7 @@
     selectPreferredProvider,
     selectPreferredSource,
     selectSourceForEpisode,
+    nearestAvailableEpisodeId,
     localCalendarDayNumber,
     localCalendarDayDifference,
     boundedElapsedSeconds,
