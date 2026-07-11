@@ -200,6 +200,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
                 (107, "completed-title", "Completed Title"),
                 (108, "favorite-unseen", "Favorite Unseen"),
                 (109, "translation-only", "Translation Only"),
+                (110, "newest-regular", "Newest Regular"),
             ):
                 con.execute(
                     """
@@ -220,6 +221,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
                 (106, "3", 5),
                 (107, "4", 4),
                 (108, "1", 1),
+                (110, "1", 10),
             ):
                 content_updates.insert_event(
                     con,
@@ -280,14 +282,14 @@ class ContentUpdatesV2Test(unittest.TestCase):
 
         personalized = server.get_content_updates(
             self.db_path,
-            days=7,
             limit=20,
             user_id=user["id"],
             offset=0,
         )
         items = {item["id"]: item for item in personalized["items"]}
 
-        self.assertEqual([item["id"] for item in personalized["items"][:2]], [106, 108])
+        self.assertEqual(personalized["period"]["days"], 7)
+        self.assertEqual([item["id"] for item in personalized["items"][:3]], [106, 108, 110])
         self.assertTrue(items[106]["has_unseen_episode"])
         self.assertTrue(items[108]["has_unseen_episode"])
         self.assertFalse(items[105]["has_unseen_episode"])
@@ -309,6 +311,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertFalse(caught_up_items[106]["has_unseen_episode"])
         self.assertFalse(caught_up_items[106]["is_priority"])
         self.assertEqual([item["id"] for item in caught_up["items"] if item["is_priority"]], [108])
+        self.assertEqual([item["id"] for item in caught_up["items"][:4]], [108, 110, 109, 106])
 
     def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
         now = server.now_iso()

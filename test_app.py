@@ -706,6 +706,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     title="Fresh Update",
                     description="Добавлена серия 1",
                     metadata={"provider_count": 1},
+                    occurred_at=(
+                        dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=6)
+                    ).isoformat(timespec="seconds"),
                 )
                 con.commit()
             finally:
@@ -714,6 +717,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
 
             item = next(entry for entry in server.get_anime_list(db_path) if entry["id"] == anime_id)
             self.assertEqual(item["recent_update_summary"]["badge"], "+1 серия")
+            self.assertEqual(item["recent_update_summary"]["days"], 7)
             self.assertEqual(item["recent_updates"][0]["event_type"], "new_episode")
 
             detail = server.get_anime_detail(anime_id, db_path)
@@ -3244,6 +3248,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('effectiveWatchStatus(item) === "completed"', js)
         self.assertIn("number > progress", js)
         self.assertIn('heading.textContent = "Новое для меня · избранное и смотрю"', js)
+        self.assertIn('const CONTENT_UPDATE_DEFAULT_DAYS = "7"', js)
+        self.assertIn('russianPlural(days, "день", "дня", "дней")', js)
 
         compare_start = js.index("function compareContentUpdates")
         compare_end = js.index("function filterOptionLabel", compare_start)

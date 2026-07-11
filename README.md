@@ -104,7 +104,8 @@ newly created Google user starts with empty local state; anonymous/local profile
 state is not supported. The `Новое` view lifts favorite and currently watched
 titles only while their update report contains a new episode beyond the user's
 current progress; completed and caught-up titles stay in normal chronological
-order.
+order. The view defaults to the last seven days, and the same seven-day window
+powers recent-update badges on catalog cards and title details.
 
 Refresh the watchable catalog with player data:
 

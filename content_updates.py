@@ -4,7 +4,7 @@ import json
 import re
 
 
-RECENT_UPDATE_DAYS = 3
+RECENT_UPDATE_DAYS = 7
 EVENT_TYPES = {"new_title", "new_episode", "new_translation", "new_provider"}
 
 

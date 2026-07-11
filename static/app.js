@@ -2170,9 +2170,11 @@ function renderRecentUpdates(detail) {
   const header = document.createElement("div");
   header.className = "recent-updates-header";
   const title = document.createElement("strong");
-  title.textContent = "Новое за 3 дня";
+  const updateSummary = recentUpdateSummary(detail);
+  const days = updateSummary?.days || Number(CONTENT_UPDATE_DEFAULT_DAYS);
+  title.textContent = `Новое за ${days} ${russianPlural(days, "день", "дня", "дней")}`;
   const summary = document.createElement("span");
-  summary.textContent = recentUpdateSummary(detail)?.label || `${events.length} обновлений`;
+  summary.textContent = updateSummary?.label || `${events.length} обновлений`;
   header.append(title, summary);
 
   const list = document.createElement("div");
