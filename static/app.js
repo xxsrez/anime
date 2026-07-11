@@ -665,6 +665,10 @@ function effectiveWatchStatus(item) {
   return frontendRuntime.effectiveWatchStatus(item);
 }
 
+function canMarkTitleCompleted(item) {
+  return item?.can_mark_completed !== false;
+}
+
 function watchStatusLabel(status) {
   return frontendRuntime.watchStatusLabel(status);
 }
@@ -2123,7 +2127,16 @@ function renderWatchState(detail) {
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ В избранное";
   const status = effectiveWatchStatus(detail);
-  for (const input of el.watchStatusInputs) input.checked = input.value === status;
+  for (const input of el.watchStatusInputs) {
+    input.checked = input.value === status;
+    const unavailable = input.value === "completed" && !canMarkTitleCompleted(detail);
+    input.disabled = unavailable;
+    const option = input.closest(".watch-status-option");
+    if (option) {
+      option.setAttribute("aria-disabled", unavailable ? "true" : "false");
+      option.title = unavailable ? "Недоступно, пока тайтл выходит" : "";
+    }
+  }
 }
 
 function renderRecommendationContext(detail) {
@@ -3422,6 +3435,10 @@ for (const input of el.watchStatusInputs) {
     if (!input.checked || !state.detail) return;
     const status = input.value;
     if (status === effectiveWatchStatus(state.detail)) return;
+    if (status === "completed" && !canMarkTitleCompleted(state.detail)) {
+      renderWatchState(state.detail);
+      return;
+    }
     if (status === "none") {
       discardWatchSession();
       saveUserState({

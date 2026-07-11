@@ -108,6 +108,47 @@ class UserStateBackendTest(unittest.TestCase):
                     self.assertEqual(detail["is_favorite"], favorite)
                     self.assertEqual(detail["watch_status"], status)
 
+    def test_ongoing_title_cannot_be_marked_completed(self):
+        con = server.connect(self.db_path)
+        try:
+            con.execute("update anime set status = 'Онгоинг' where id = 10")
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db_path)
+
+        detail = self.detail()
+        catalog = next(item for item in server.get_anime_list(self.db_path) if item["id"] == 10)
+        self.assertFalse(detail["can_mark_completed"])
+        self.assertFalse(server.catalog_api_item(catalog)["can_mark_completed"])
+        for state_patch in ({"watch_status": "completed"}, {"watched": True}):
+            with self.subTest(patch=state_patch), self.assertRaisesRegex(ValueError, "ongoing titles"):
+                server.update_user_state(10, state_patch, self.db_path, self.user_id)
+
+        watching = server.update_user_state(
+            10,
+            {"watch_status": "watching", "progress_episode_number": 1},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertEqual(watching["watch_status"], "watching")
+
+        con = server.connect(self.db_path)
+        try:
+            con.execute("update anime set status = 'Вышел' where id = 10")
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db_path)
+        completed = server.update_user_state(
+            10,
+            {"watch_status": "completed"},
+            self.db_path,
+            self.user_id,
+        )
+        self.assertEqual(completed["watch_status"], "completed")
+        self.assertTrue(self.detail()["can_mark_completed"])
+
     def test_favorite_and_negative_feedback_invariant_round_trips(self):
         favorite = server.update_user_state(
             10,

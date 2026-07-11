@@ -815,6 +815,16 @@ select {
   background: var(--panel-2);
 }
 
+.watch-status-option:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.watch-status-option:has(input:disabled):hover {
+  border-color: transparent;
+  background: transparent;
+}
+
 .watch-status-option:has(input:checked) {
   border-color: rgba(169, 176, 184, 0.4);
   background: rgba(169, 176, 184, 0.1);

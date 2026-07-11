@@ -54,6 +54,7 @@ CONTENT_SYNC_SOURCES = ("yummyanime", "animego")
 CONTENT_SYNC_BUSY_RETRY_SECONDS = 5 * 60
 CONTENT_SYNC_ERROR_RETRY_SECONDS = 30 * 60
 TRUTHY_VALUES = {"1", "true", "yes", "on"}
+ONGOING_TITLE_STATUSES = {"ongoing", "онгоинг"}
 SYNTHETIC_RATING_PRIOR = 6.8
 SYNTHETIC_RATING_MIN_COUNT = 80
 SESSION_COOKIE_NAME = "anime_session"
@@ -2016,6 +2017,10 @@ def source_priority(source):
     return SOURCE_PRIORITY.get(source or "", 99)
 
 
+def title_is_ongoing(item):
+    return str(item.get("status") or "").strip().casefold() in ONGOING_TITLE_STATUSES
+
+
 def source_namespace(item):
     source = item.get("source") or ""
     if source == "yummyanime":
@@ -2228,6 +2233,7 @@ def merge_canonical_items(items):
     for field in ("subtitle", "cover_url", "listing_score", "aggregate_score", "aggregate_count", "kind", "year", "status", "episodes_text"):
         if merged.get(field) in (None, ""):
             merged[field] = next((item.get(field) for item in sorted_items if item.get(field) not in (None, "")), merged.get(field))
+    merged["can_mark_completed"] = not title_is_ongoing(merged)
 
     merged.pop("_canonical_aliases", None)
     return aggregate_item_state(merged, sorted_items)
@@ -3716,6 +3722,7 @@ CATALOG_API_ITEM_FIELDS = (
     "cover_url",
     "kind",
     "status",
+    "can_mark_completed",
     "episodes_text",
     "year",
     "date_published",
@@ -3765,6 +3772,7 @@ def catalog_api_item(item):
             "watch_status_updated_at": item.get("watch_status_updated_at"),
             "not_interested_updated_at": item.get("not_interested_updated_at"),
             "watch_last_seen_at": item.get("watch_last_seen_at"),
+            "can_mark_completed": bool(item.get("can_mark_completed", True)),
         }
     )
     genres = list(item.get("genres") or [])
@@ -4518,6 +4526,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["source_variant_count"] = group.get("source_variant_count") or 1
     detail["sources"] = group.get("sources") or [detail.get("source")]
     detail["source_member_ids"] = member_ids
+    detail["can_mark_completed"] = bool(group.get("can_mark_completed", True))
     for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
         detail[field] = group.get(field)
     detail["slug"] = group.get("slug")
@@ -4562,6 +4571,9 @@ def update_user_state(anime_ref, patch, db_path=None, user_id=None):
         group = canonical_group_for_anime_ref(con, anime_ref, user_id)
         if not group:
             return None
+        requests_completed = patch.get("watch_status") == "completed" or patch.get("watched") is True
+        if requests_completed and not group.get("can_mark_completed", not title_is_ongoing(group)):
+            raise ValueError("ongoing titles cannot be marked completed")
 
         target_id = group["id"]
         member_ids = [variant["id"] for variant in group.get("source_variants") or []] or [target_id]

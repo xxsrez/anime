@@ -91,7 +91,9 @@ automatic watch history around the embedded player. Use the title page controls
 to add a title to favorites, correct the current episode manually, or choose one
 mutually exclusive library status:
 `Не смотрю`, `Смотрю`, or `Просмотрено`. The favorite flag is independent
-of that status, so all six favorite/status combinations are valid. Automatic
+of that status, so all six favorite/status combinations are valid for finished
+titles. `Просмотрено` is unavailable for ongoing titles and the API rejects that
+transition until the title is finished. Automatic
 iframe-focus, fullscreen/PiP, and engaged heartbeat signals update progress;
 episode and source selection alone do not. The sidebar can filter all titles,
 favorites, titles with progress, or the top recommendation list. Recommendations are
