@@ -83,16 +83,18 @@ The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
 `http://localhost:8765`.
 
-The local app stores favorites and watch progress per Google user in SQLite.
-`user_title_state` is the current per-title summary, while `user_watch_events`
-and `user_episode_state` keep automatic watch history around the embedded
-player. Use the title page controls to add a title to favorites, correct the
-current episode manually, or choose one mutually exclusive library status:
+The local app stores favorites, watch progress, and the last opened episode per
+Google user in SQLite. `user_title_navigation_state` remembers which episode to
+reopen without treating browsing as watching. `user_title_state` is the current
+per-title summary, while `user_watch_events` and `user_episode_state` keep
+automatic watch history around the embedded player. Use the title page controls
+to add a title to favorites, correct the current episode manually, or choose one
+mutually exclusive library status:
 `Не смотрю`, `Смотрю`, or `Просмотрено`. The favorite flag is independent
 of that status, so all six favorite/status combinations are valid. Automatic
-iframe-focus, fullscreen/PiP, source-change, and heartbeat signals update the
-same current episode control. The sidebar can filter all titles, favorites,
-titles with progress, or the top recommendation list. Recommendations are
+iframe-focus, fullscreen/PiP, and engaged heartbeat signals update progress;
+episode and source selection alone do not. The sidebar can filter all titles,
+favorites, titles with progress, or the top recommendation list. Recommendations are
 computed from the current user's favorites, titles marked `Просмотрено`, and
 meaningful watch history from the player; a short accidental visit does not
 become a taste seed. Favorites and explicitly completed titles are weighted much

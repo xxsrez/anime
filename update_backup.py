@@ -17,7 +17,12 @@ from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "db" / "animego.sqlite"
 DEFAULT_OUT = ROOT / "db" / "backups" / "current"
-USER_STATE_TABLES = ("user_title_state", "user_episode_state", "user_watch_events")
+USER_STATE_TABLES = (
+    "user_title_state",
+    "user_title_navigation_state",
+    "user_episode_state",
+    "user_watch_events",
+)
 
 
 def connect(db_path):
@@ -180,6 +185,7 @@ def collect_counts(con, db_path):
             """,
         ),
         "user_state_rows": scalar(con, "select count(*) from user_title_state"),
+        "user_title_navigation_rows": scalar(con, "select count(*) from user_title_navigation_state"),
         "user_episode_state_rows": scalar(con, "select count(*) from user_episode_state"),
         "user_watch_event_rows": scalar(con, "select count(*) from user_watch_events"),
         "favorites": scalar(con, "select count(*) from user_title_state where is_favorite = 1"),
@@ -244,6 +250,7 @@ It lives under `db/`, which is intentionally ignored by git.
 - Playable video sources: {counts['playable_video_sources']}.
 - Non-playable source rows: {counts['non_playable_source_rows']}.
 - User-state rows: {counts['user_state_rows']}.
+- Title-navigation rows: {counts['user_title_navigation_rows']}.
 - Episode-state rows: {counts['user_episode_state_rows']}.
 - Watch-event rows: {counts['user_watch_event_rows']}.
 - Favorites: {counts['favorites']}.

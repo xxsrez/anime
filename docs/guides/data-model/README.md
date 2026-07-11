@@ -133,6 +133,15 @@ observe around the embedded player:
 `player_loaded` is only a technical signal. It does not update user progress by
 itself.
 
+`user_title_navigation_state`
+
+Per-user navigation cursor for a canonical title. It stores the last opened
+`episode_id`, its textual episode number as a resilient fallback, and
+`updated_at`. Opening or selecting an episode updates this cursor without
+changing library status, watch progress, or recommendation signals. Explicit
+episode links and Continue Watching targets override the cursor for that entry
+and then become the newly remembered episode.
+
 `user_episode_state`
 
 Aggregated per-user episode state derived from `user_watch_events`:
@@ -143,9 +152,9 @@ Aggregated per-user episode state derived from `user_watch_events`:
 - `engaged_seconds`, `heartbeat_count`, `last_event_type`, and confidence
   fields.
 
-Strong watch signals update the existing `user_title_state.progress_episode_number`
-so the old manual `Серия` control and the automatic tracker share the same title
-summary. The manual control remains available as a correction layer.
+Strong watch signals update `user_title_state.progress_episode_number`.
+Episode/source selection signals remain telemetry only and do not start or
+resume a title by themselves.
 
 ## Canonical Title View
 

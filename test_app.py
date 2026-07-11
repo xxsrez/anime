@@ -1636,6 +1636,90 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             finally:
                 con.close()
 
+    def test_title_navigation_remembers_episode_without_starting_title(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=101, episode_count=6)
+            user_id = self.create_google_user(db_path, "navigation-user", "navigation@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            episode = detail["episodes"][5]
+
+            self.assertNotIn("last_opened_episode", detail)
+            saved = server.update_title_navigation(anime_id, episode["id"], db_path, user_id)
+
+            self.assertEqual(saved["episode_id"], episode["id"])
+            self.assertEqual(saved["episode_number"], "6")
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertEqual(updated["last_opened_episode"]["episode_id"], episode["id"])
+            self.assertEqual(updated["last_opened_episode"]["episode_number"], "6")
+            self.assertIsNone(updated["progress_episode_number"])
+            self.assertEqual(updated["watch_status"], "none")
+            self.assertFalse(updated["watched"])
+
+    def test_title_navigation_rejects_episode_from_another_title(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            first_id = self.seed_watchable_title(db_path, anime_id=102, episode_count=2)
+            second_id = self.seed_watchable_title(db_path, anime_id=103, episode_count=1)
+            user_id = self.create_google_user(db_path, "navigation-user", "navigation@example.com")
+            other_episode_id = server.get_anime_detail(second_id, db_path, user_id)["episodes"][0]["id"]
+
+            with self.assertRaisesRegex(ValueError, "invalid for this title"):
+                server.update_title_navigation(first_id, other_episode_id, db_path, user_id)
+
+    def test_title_navigation_api_persists_episode_without_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=105, episode_count=2)
+            user_id = self.create_google_user(db_path, "navigation-api-user", "navigation-api@example.com")
+            token = self.create_session(db_path, user_id)
+            episode = server.get_anime_detail(anime_id, db_path, user_id)["episodes"][1]
+
+            status, _, response = self.request_test_server(
+                db_path,
+                "PATCH",
+                f"/api/anime/{anime_id}/navigation",
+                headers={
+                    "Cookie": f"{server.SESSION_COOKIE_NAME}={token}",
+                    "Content-Type": "application/json",
+                },
+                body=json.dumps({"episode_id": episode["id"]}).encode("utf-8"),
+            )
+
+            self.assertEqual(status, 200)
+            payload = json.loads(response)
+            self.assertEqual(payload["navigation"]["episode_id"], episode["id"])
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertEqual(detail["last_opened_episode"]["episode_id"], episode["id"])
+            self.assertIsNone(detail["progress_episode_number"])
+            self.assertEqual(detail["watch_status"], "none")
+
+    def test_episode_and_source_selection_do_not_update_watch_progress(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            anime_id = self.seed_watchable_title(db_path, anime_id=104, episode_count=2)
+            user_id = self.create_google_user(db_path, "navigation-user", "navigation@example.com")
+            detail = server.get_anime_detail(anime_id, db_path, user_id)
+
+            for index, event_type in enumerate(("episode_selected", "source_changed")):
+                result = server.record_watch_event(
+                    self.watch_payload(
+                        detail,
+                        episode_index=1,
+                        event_type=event_type,
+                        session_id=f"navigation-{index}",
+                    ),
+                    db_path,
+                    user_id,
+                )
+                self.assertIsNone(result["state"]["progress_episode_number"])
+                self.assertEqual(result["state"]["watch_status"], "none")
+                self.assertIsNone(result["episode_state"]["started_at"])
+
+            updated = server.get_anime_detail(anime_id, db_path, user_id)
+            self.assertIsNone(updated["progress_episode_number"])
+            self.assertEqual(updated["watch_status"], "none")
+
     def test_watch_engagement_updates_title_progress_and_continue_resume(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
@@ -3116,15 +3200,17 @@ assert.deepStrictEqual(rankedIds("zz"), []);
     def test_content_update_navigation_does_not_start_watching(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         select_start = js.index("async function selectEpisode")
-        select_end = js.index("function persistCurrentEpisodeSelection", select_start)
+        select_end = js.index("function userStateTargets", select_start)
         select_episode = js[select_start:select_end]
         update_start = js.index("async function openContentUpdateEvent")
         update_end = js.index('el.search.addEventListener("input"', update_start)
         open_update = js[update_start:update_end]
 
-        self.assertIn("persist = true", select_episode)
-        self.assertIn("persist && number != null", select_episode)
-        self.assertIn("persist: false", open_update)
+        self.assertIn("remember = true", select_episode)
+        self.assertIn("if (remember) await saveTitleNavigation(id)", select_episode)
+        self.assertNotIn("saveUserState", select_episode)
+        self.assertNotIn("progress_episode_number", select_episode)
+        self.assertNotIn("persist: false", open_update)
 
     def test_content_source_switch_moves_to_nearest_available_episode(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
@@ -3135,7 +3221,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("nearestEpisodeIdForContentSource(selectedContentSource)", handler)
         self.assertIn("state.selectedEpisodeId = selectedEpisodeId", handler)
         self.assertIn("renderEpisodes(state.detail)", handler)
-        self.assertIn("persistCurrentEpisodeSelection()", handler)
+        self.assertIn("saveTitleNavigation()", handler)
+        self.assertNotIn("persistCurrentEpisodeSelection()", handler)
 
     def test_frontend_content_update_filters_refresh_report_in_priority_time_order(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
@@ -3153,11 +3240,14 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("const orderedItems = [", js)
         self.assertIn("...items.filter(item => item.is_priority)", js)
 
-    def test_frontend_opens_saved_progress_episode_without_deep_link(self):
+    def test_frontend_opens_last_selected_episode_without_changing_progress(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         html = Path(server.STATIC_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn("function episodeIdForProgress(progressEpisodeNumber)", js)
         self.assertIn("function episodeIdForLastWatch(lastWatch)", js)
+        self.assertIn("function episodeIdForLastOpened(lastOpened)", js)
+        self.assertIn("last_opened_episode", js)
+        self.assertIn("/navigation", js)
         self.assertIn("function effectiveProgressEpisodeNumber(detail)", js)
         self.assertIn("numberFrom(episode.number) === progress", js)
         self.assertIn("effectiveProgressEpisodeNumber(detail)", js)
@@ -3185,14 +3275,23 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         selected_start = apply_detail.index("state.selectedEpisodeId")
         selected_end = apply_detail.index("state.selectedContentSource", selected_start)
         selected_chain = apply_detail[selected_start:selected_end]
-        explicit_index = selected_chain.index("matchingEpisodeId(linkState.episodeId)")
+        explicit_index = selected_chain.index("explicitEpisodeId")
+        last_opened_index = selected_chain.index("lastOpenedEpisodeId")
         last_watch_index = selected_chain.index("lastWatchEpisodeId")
         progress_index = selected_chain.index("episodeIdForProgress(state.detail.progress_episode_number)")
         first_available_index = selected_chain.index("firstAvailable || state.detail.episodes[0]")
-        self.assertLess(explicit_index, last_watch_index)
+        self.assertLess(explicit_index, last_opened_index)
+        self.assertLess(last_opened_index, last_watch_index)
         self.assertLess(last_watch_index, progress_index)
         self.assertLess(progress_index, first_available_index)
         self.assertIn("lastWatch?.video_source_id", apply_detail)
+
+        select_start = js.index("async function selectEpisode")
+        select_end = js.index("function userStateTargets", select_start)
+        select_episode = js[select_start:select_end]
+        self.assertIn("saveTitleNavigation(id)", select_episode)
+        self.assertNotIn("saveUserState", select_episode)
+        self.assertNotIn("progress_episode_number", select_episode)
 
     def test_frontend_progress_view_excludes_watched_titles(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")

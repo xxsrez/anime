@@ -155,8 +155,6 @@ WATCH_PROGRESS_EVENT_TYPES = {
     "heartbeat",
     "fullscreen_enter",
     "pip_open",
-    "episode_selected",
-    "source_changed",
 }
 WATCH_STARTED_CONFIDENCE = 0.65
 MEANINGFUL_WATCH_SECONDS = 5 * 60
@@ -881,6 +879,28 @@ def ensure_watch_tracking_schema(con):
     return not bool(had_events and had_state)
 
 
+def ensure_title_navigation_schema(con):
+    existed = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_title_navigation_state'"
+    ).fetchone()
+    con.executescript(
+        """
+        create table if not exists user_title_navigation_state (
+            user_id integer not null references users(id) on delete cascade,
+            anime_id integer not null references anime(id) on delete cascade,
+            episode_id integer references episodes(id) on delete set null,
+            episode_number text,
+            updated_at text not null,
+            primary key (user_id, anime_id)
+        );
+
+        create index if not exists idx_user_title_navigation_user_updated
+            on user_title_navigation_state(user_id, updated_at desc);
+        """
+    )
+    return not bool(existed)
+
+
 def purge_orphaned_user_data(con):
     if not con.execute("select 1 from sqlite_master where type = 'table' and name = 'users'").fetchone():
         return False
@@ -909,6 +929,23 @@ def purge_orphaned_user_data(con):
                    or not exists (select 1 from anime where anime.id = user_title_state.anime_id)
                 """
             )
+
+    if "user_title_navigation_state" in table_names:
+        con.execute(
+            """
+            delete from user_title_navigation_state
+            where not exists (select 1 from users where users.id = user_title_navigation_state.user_id)
+               or not exists (select 1 from anime where anime.id = user_title_navigation_state.anime_id)
+            """
+        )
+        con.execute(
+            """
+            update user_title_navigation_state
+            set episode_id = null
+            where episode_id is not null
+              and not exists (select 1 from episodes where episodes.id = user_title_navigation_state.episode_id)
+            """
+        )
 
     if "user_watch_events" in table_names:
         con.execute(
@@ -1315,6 +1352,7 @@ def initialize_database(path):
         changed |= ensure_auth_schema(con)
         changed |= ensure_user_state_schema(con)
         changed |= ensure_watch_tracking_schema(con)
+        changed |= ensure_title_navigation_schema(con)
         changed |= clear_inactive_episode_starts(con)
         changed |= purge_orphaned_user_data(con)
         changed |= ensure_runtime_indexes(con)
@@ -1424,6 +1462,13 @@ def check_database_readiness(path):
                 },
                 "user_watch_events": {"id", "user_id", "anime_id", "event_type"},
                 "user_episode_state": {"user_id", "anime_id", "episode_id"},
+                "user_title_navigation_state": {
+                    "user_id",
+                    "anime_id",
+                    "episode_id",
+                    "episode_number",
+                    "updated_at",
+                },
                 "anime_title_aliases": {"anime_id", "normalized_alias"},
                 "content_update_events": {"id", "anime_id", "occurred_at"},
                 "catalog_cache_revision": {"singleton", "generation", "dirty"},
@@ -4081,6 +4126,85 @@ def get_group_state(con, anime_ids, user_id=None):
     return aggregate_state_rows(rows)
 
 
+def get_group_title_navigation(con, anime_ids, user_id=None):
+    if not anime_ids:
+        return None
+    user_id = resolved_user_id(con, user_id)
+    if user_id is None:
+        return None
+    row = con.execute(
+        f"""
+        select episode_id, episode_number, updated_at
+        from user_title_navigation_state
+        where user_id = ?
+          and anime_id in ({sql_placeholders(anime_ids)})
+        order by updated_at desc, anime_id desc
+        limit 1
+        """,
+        (user_id, *anime_ids),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def update_title_navigation(anime_ref, episode_id, db_path=None, user_id=None):
+    if type(episode_id) is not int or episode_id < 1:
+        raise ValueError("episode_id must be a positive integer")
+    con = connect(db_path)
+    try:
+        user_id = require_user_id(con, user_id)
+        group = canonical_group_for_anime_ref(con, anime_ref, user_id)
+        if not group:
+            return None
+        target_id = group["id"]
+        member_ids = [variant["id"] for variant in group.get("source_variants") or []] or [target_id]
+        con.execute("begin immediate")
+        episode = con.execute(
+            f"""
+            select id, number
+            from episodes
+            where id = ?
+              and anime_id in ({sql_placeholders(member_ids)})
+            """,
+            (episode_id, *member_ids),
+        ).fetchone()
+        if not episode:
+            raise ValueError("episode_id is invalid for this title")
+        timestamp = now_iso()
+        con.execute(
+            """
+            insert into user_title_navigation_state (
+                user_id, anime_id, episode_id, episode_number, updated_at
+            ) values (?, ?, ?, ?, ?)
+            on conflict(user_id, anime_id) do update set
+                episode_id = excluded.episode_id,
+                episode_number = excluded.episode_number,
+                updated_at = excluded.updated_at
+            """,
+            (user_id, target_id, episode["id"], episode["number"], timestamp),
+        )
+        duplicate_ids = [item for item in member_ids if item != target_id]
+        if duplicate_ids:
+            con.execute(
+                f"""
+                delete from user_title_navigation_state
+                where user_id = ?
+                  and anime_id in ({sql_placeholders(duplicate_ids)})
+                """,
+                (user_id, *duplicate_ids),
+            )
+        con.commit()
+        return {
+            "episode_id": episode["id"],
+            "episode_number": episode["number"],
+            "updated_at": timestamp,
+        }
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
 def episode_number_key(value, fallback):
     raw = str(value or "").strip()
     number = numeric(raw)
@@ -4278,6 +4402,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     state = get_group_state(con, member_ids, user_id)
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
+    title_navigation = get_group_title_navigation(con, member_ids, user_id)
     latest_watch_row = None
     if user_id is not None and state.get("watch_status") == "watching":
         latest_watch_row = con.execute(
@@ -4354,6 +4479,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
     detail["recent_updates"] = [dict(update) for update in group.get("recent_updates") or []]
     detail["recent_update_summary"] = dict(group["recent_update_summary"]) if group.get("recent_update_summary") else None
+    if title_navigation:
+        detail["last_opened_episode"] = title_navigation
     if latest_watch_row:
         last_watch = detail_watch_target_from_episode_state(latest_watch_row, detail)
         if last_watch:
@@ -4555,8 +4682,10 @@ def watch_event_confidence(event_type, engaged_seconds=0, page_visible=None, pla
         return 0.15
     if event_type in {"fullscreen_enter", "pip_open"}:
         return 0.95
-    if event_type in {"player_engaged", "episode_selected", "source_changed"}:
+    if event_type == "player_engaged":
         return 0.85
+    if event_type in {"episode_selected", "source_changed"}:
+        return 0.4
     if event_type == "heartbeat":
         if engaged_seconds <= 0:
             return 0.35
@@ -4828,7 +4957,7 @@ def apply_watch_progress_to_user_state(
 
 
 def watch_event_is_explicit_resume(event_type):
-    return event_type in {"player_engaged", "episode_selected", "source_changed"}
+    return event_type == "player_engaged"
 
 
 def watch_event_can_start_title(current, event_type):
@@ -7256,6 +7385,31 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
         if path.startswith("/api/anime/"):
             parts = path.strip("/").split("/")
+            if len(parts) == 4 and parts[0] == "api" and parts[1] == "anime" and parts[3] == "navigation":
+                try:
+                    payload = self.read_json_body()
+                    if not isinstance(payload, dict):
+                        raise ValueError("navigation payload must be an object")
+                    updated = update_title_navigation(
+                        unquote(parts[2]),
+                        payload.get("episode_id"),
+                        self.server.db_path,
+                        user["id"],
+                    )
+                except ClientErrorPayloadTooLarge:
+                    self.send_json({"error": "payload too large"}, 413)
+                    return
+                except json.JSONDecodeError:
+                    self.send_json({"error": "invalid json"}, 400)
+                    return
+                except ValueError as exc:
+                    self.send_json({"error": str(exc)}, 400)
+                    return
+                if updated is None:
+                    self.send_json({"error": "not found"}, 404)
+                else:
+                    self.send_json({"navigation": updated})
+                return
             if len(parts) == 4 and parts[0] == "api" and parts[1] == "anime" and parts[3] == "state":
                 try:
                     payload = self.read_json_body()

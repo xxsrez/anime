@@ -325,8 +325,23 @@ class UserStateBackendTest(unittest.TestCase):
             con.close()
         self.assertEqual(started, 0)
 
-    def test_direct_player_actions_resume_explicit_none(self):
-        for event_type in ("player_engaged", "episode_selected", "source_changed"):
+    def test_player_engagement_resumes_explicit_none(self):
+        server.update_user_state(
+            10,
+            {"watch_status": "none"},
+            self.db_path,
+            self.user_id,
+        )
+        resumed = server.record_watch_event(
+            self.watch_payload(event_type="player_engaged"),
+            self.db_path,
+            self.user_id,
+        )
+        self.assertEqual(resumed["state"]["watch_status"], "watching")
+        self.assertEqual(resumed["state"]["progress_episode_number"], 1)
+
+    def test_navigation_actions_do_not_resume_explicit_none(self):
+        for event_type in ("episode_selected", "source_changed"):
             with self.subTest(event_type=event_type):
                 server.update_user_state(
                     10,
@@ -334,13 +349,13 @@ class UserStateBackendTest(unittest.TestCase):
                     self.db_path,
                     self.user_id,
                 )
-                resumed = server.record_watch_event(
+                result = server.record_watch_event(
                     self.watch_payload(event_type=event_type),
                     self.db_path,
                     self.user_id,
                 )
-                self.assertEqual(resumed["state"]["watch_status"], "watching")
-                self.assertEqual(resumed["state"]["progress_episode_number"], 1)
+                self.assertEqual(result["state"]["watch_status"], "none")
+                self.assertIsNone(result["state"]["progress_episode_number"])
 
     def test_direct_player_action_clears_negative_feedback_but_heartbeat_does_not(self):
         server.update_user_state(

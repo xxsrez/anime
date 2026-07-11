@@ -121,7 +121,7 @@ class PlaybackAlgorithmCorrectnessTest(unittest.TestCase):
         episode, source = self.source_for(detail, episode_number, translation_title)
         return {
             "client_session_id": session_id,
-            "event_type": "episode_selected",
+            "event_type": "player_engaged",
             "anime_id": detail["id"],
             "episode_id": episode["id"],
             "episode_number": episode["number"],

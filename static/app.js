@@ -770,6 +770,38 @@ function episodeIdForLastWatch(lastWatch) {
     || episodeIdForProgress(lastWatch.progress_episode_number || lastWatch.episode_number);
 }
 
+function episodeIdForLastOpened(lastOpened) {
+  if (!lastOpened) return null;
+  const episodes = state.detail?.episodes || [];
+  const available = episodes.filter(episode => (episode.source_count || 0) > 0);
+  const storedIdMatch = episodes.find(episode => String(episode.id) === String(lastOpened.episode_id));
+  const storedNumber = numberFrom(lastOpened.episode_number);
+  const numberMatch = episodes.find(episode => (
+    storedNumber != null
+      ? numberFrom(episode.number) === storedNumber
+      : String(episode.number || "").trim() === String(lastOpened.episode_number || "").trim()
+  ));
+  const exact = storedIdMatch || numberMatch;
+  if (exact && (exact.source_count || 0) > 0) return exact.id;
+  if (!available.length) return exact?.id || null;
+  if (exact) {
+    return frontendRuntime.nearestAvailableEpisodeId(
+      episodes,
+      new Set(available.map(episode => String(episode.id))),
+      exact.id,
+    );
+  }
+  if (storedNumber != null) {
+    return [...available].sort((left, right) => (
+      Math.abs((numberFrom(left.number) ?? Number.POSITIVE_INFINITY) - storedNumber)
+      - Math.abs((numberFrom(right.number) ?? Number.POSITIVE_INFINITY) - storedNumber)
+      || (numberFrom(left.number) ?? Number.POSITIVE_INFINITY)
+      - (numberFrom(right.number) ?? Number.POSITIVE_INFINITY)
+    ))[0]?.id || null;
+  }
+  return available[0]?.id || null;
+}
+
 function matchingContentSource(source) {
   if (!source) return null;
   return sourceVariants(state.detail).some(variant => variant.source === source) ? source : null;
@@ -778,8 +810,15 @@ function matchingContentSource(source) {
 function applyDetailLinkState(linkState = {}) {
   const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
   const lastWatch = state.detail.last_watch || null;
-  const lastWatchEpisodeId = !linkState.episodeId ? episodeIdForLastWatch(lastWatch) : null;
-  state.selectedEpisodeId = matchingEpisodeId(linkState.episodeId)
+  const explicitEpisodeId = matchingEpisodeId(linkState.episodeId);
+  const lastOpenedEpisodeId = !explicitEpisodeId
+    ? episodeIdForLastOpened(state.detail.last_opened_episode)
+    : null;
+  const lastWatchEpisodeId = !explicitEpisodeId && !lastOpenedEpisodeId
+    ? episodeIdForLastWatch(lastWatch)
+    : null;
+  state.selectedEpisodeId = explicitEpisodeId
+    || lastOpenedEpisodeId
     || lastWatchEpisodeId
     || episodeIdForProgress(state.detail.progress_episode_number)
     || (firstAvailable || state.detail.episodes[0] || {}).id
@@ -2758,6 +2797,7 @@ async function selectAnime(id, options = {}) {
     state.urlSyncSuspended = previousUrlSync;
     if (options.updateUrl !== false) syncUrlFromDetail({ replace: options.history !== "push" });
     if (options.scrollDetail) scrollDetailIntoViewForMobile();
+    saveTitleNavigation(state.selectedEpisodeId, detail.id).catch(reportActionError("save title navigation"));
     return true;
   } finally {
     if (requestId === state.detailRequestId) {
@@ -2767,7 +2807,7 @@ async function selectAnime(id, options = {}) {
   }
 }
 
-async function selectEpisode(id, { history = "push", persist = true } = {}) {
+async function selectEpisode(id, { history = "push", remember = true } = {}) {
   if (!state.sourceSelectionPreference) {
     state.sourceSelectionPreference = frontendRuntime.sourcePreference(selectedSourceForEpisode());
   }
@@ -2776,36 +2816,13 @@ async function selectEpisode(id, { history = "push", persist = true } = {}) {
   // it against the next episode's backend-ranked source list.
   state.selectedTranslation = null;
   state.selectedSourceId = null;
-  const episode = activeEpisode();
-  const number = numberFrom(episode?.number);
   const previousUrlSync = state.urlSyncSuspended;
   state.urlSyncSuspended = true;
   renderDetail();
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: history !== "push" });
-  if (persist && number != null) {
-    const selectedSource = selectedSourceForEpisode();
-    markWatchEngaged("episode_selected");
-    await saveUserState({
-      progress_episode_number: number,
-      watched: false,
-      watch_status: "watching",
-      ...(selectedSource?.id != null ? { video_source_id: selectedSource.id } : {}),
-    });
-    return;
-  }
-}
-
-function persistCurrentEpisodeSelection() {
-  const episodeNumber = numberFrom(activeEpisode()?.number);
-  const source = selectedSourceForEpisode();
-  if (episodeNumber == null || source?.id == null) return Promise.resolve(null);
-  return saveUserState({
-    progress_episode_number: episodeNumber,
-    watched: false,
-    watch_status: "watching",
-    video_source_id: source.id,
-  });
+  markWatchEngaged("episode_selected");
+  if (remember) await saveTitleNavigation(id);
 }
 
 function userStateTargets(animeId) {
@@ -2920,6 +2937,34 @@ const userStateSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKe
     throw failure;
   }
 });
+
+const titleNavigationSaveQueue = frontendRuntime.createKeyedSerialQueue(async (animeKey, episodeId) => {
+  const payload = await api(`/api/anime/${encodeURIComponent(animeKey)}/navigation`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ episode_id: episodeId }),
+  });
+  if (
+    String(state.detail?.id) === String(animeKey)
+    && String(state.selectedEpisodeId) === String(payload.navigation?.episode_id)
+  ) {
+    state.detail.last_opened_episode = payload.navigation;
+  }
+  return payload;
+});
+
+function saveTitleNavigation(episodeId = state.selectedEpisodeId, animeId = state.selectedAnimeId) {
+  if (episodeId == null || animeId == null) return Promise.resolve(null);
+  const saved = String(state.detail?.id) === String(animeId)
+    ? state.detail?.last_opened_episode
+    : null;
+  if (String(saved?.episode_id) === String(episodeId)) return Promise.resolve({ navigation: saved });
+  return titleNavigationSaveQueue.enqueue(String(animeId), episodeId).catch(error => {
+    const failure = new Error(`Не удалось запомнить серию: ${error?.message || "ошибка сети"}`);
+    failure.cause = error;
+    throw failure;
+  });
+}
 
 async function saveUserState(patch, animeId = state.selectedAnimeId) {
   if (!animeId || !patch || !Object.keys(patch).length) return null;
@@ -3299,7 +3344,6 @@ async function openContentUpdateEvent(event) {
   if (episodeId) {
     await selectEpisode(episodeId, {
       history: openedTitle ? "replace" : "push",
-      persist: false,
     });
   }
 }
@@ -3399,7 +3443,7 @@ el.contentSource.addEventListener("change", event => {
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
-  persistCurrentEpisodeSelection().catch(reportActionError("save content source"));
+  saveTitleNavigation().catch(reportActionError("save content source"));
 });
 el.translation.addEventListener("change", event => {
   const matchingSources = sourcesForEpisode(state.selectedEpisodeId).filter(source => (
@@ -3420,7 +3464,7 @@ el.translation.addEventListener("change", event => {
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
-  persistCurrentEpisodeSelection().catch(reportActionError("save translation"));
+  saveTitleNavigation().catch(reportActionError("save translation"));
 });
 el.provider.addEventListener("change", event => {
   state.selectedSourceId = event.target.value;
@@ -3431,7 +3475,7 @@ el.provider.addEventListener("change", event => {
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
-  persistCurrentEpisodeSelection().catch(reportActionError("save provider"));
+  saveTitleNavigation().catch(reportActionError("save provider"));
 });
 el.fullscreenToggle.addEventListener("click", () => {
   toggleFullscreen().catch(reportActionError("fullscreen button"));
