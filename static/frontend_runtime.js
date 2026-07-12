@@ -191,6 +191,172 @@
     }
   }
 
+  function integerValue(value, { minimum = null } = {}) {
+    if (typeof value === "string" && !value.trim()) return null;
+    const number = Number(value);
+    if (!Number.isInteger(number)) return null;
+    if (minimum != null && number < minimum) return null;
+    return number;
+  }
+
+  function parseKodikSerialUrl(value) {
+    try {
+      const safeUrl = safeHttpsUrl(value, ["kodikplayer.com"]);
+      if (!safeUrl) return null;
+      const url = new URL(safeUrl);
+      const parts = url.pathname.split("/").filter(Boolean);
+      const serialIndex = parts.indexOf("serial");
+      if (serialIndex < 0 || !parts[serialIndex + 1] || !parts[serialIndex + 2]) return null;
+      return {
+        serialId: parts[serialIndex + 1],
+        serialHash: parts[serialIndex + 2].toLocaleLowerCase("en-US"),
+        seasonNumber: integerValue(url.searchParams.get("season"), { minimum: 0 }),
+        episodeNumber: integerValue(url.searchParams.get("episode"), { minimum: 1 }),
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function sameKodikSerial(left, right) {
+    return Boolean(
+      left
+      && right
+      && left.serialId === right.serialId
+      && left.serialHash === right.serialHash
+    );
+  }
+
+  function normalizePlayerMessage(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+
+    const kodikKey = String(data.key || "");
+    if (kodikKey.startsWith("kodik_player_")) {
+      if (kodikKey === "kodik_player_current_episode") {
+        const value = data.value;
+        if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+        const episodeNumber = integerValue(value.episode, { minimum: 1 });
+        if (episodeNumber == null) return null;
+        return {
+          provider: "kodik",
+          type: "episode_changed",
+          episodeNumber,
+          seasonNumber: integerValue(value.season, { minimum: 0 }),
+        };
+      }
+      if (["kodik_player_video_started", "kodik_player_play"].includes(kodikKey)) {
+        return { provider: "kodik", type: "playback_started" };
+      }
+      if (kodikKey === "kodik_player_pause") {
+        return { provider: "kodik", type: "playback_paused" };
+      }
+      if (kodikKey === "kodik_player_video_ended") {
+        return { provider: "kodik", type: "playback_ended" };
+      }
+      if (kodikKey === "kodik_player_time_update") {
+        const positionSeconds = Number(data.value);
+        return Number.isFinite(positionSeconds) && positionSeconds >= 0
+          ? { provider: "kodik", type: "time_update", positionSeconds }
+          : null;
+      }
+      return null;
+    }
+
+    const source = String(data.source || "");
+    const eventType = String(data.type || data.event || "");
+    const payload = data.payload && typeof data.payload === "object"
+      ? data.payload
+      : data.detail && typeof data.detail === "object"
+        ? data.detail
+        : data;
+
+    if (source === "aniboom-player") {
+      if (["player.start", "player.play"].includes(eventType)) {
+        return { provider: "aniboom", type: "playback_started" };
+      }
+      if (eventType === "player.pause") {
+        return { provider: "aniboom", type: "playback_paused" };
+      }
+      if (eventType === "player.ended") {
+        return { provider: "aniboom", type: "playback_ended" };
+      }
+      if (eventType === "player.timeupdate") {
+        const positionSeconds = Number(payload.currentTime);
+        return Number.isFinite(positionSeconds) && positionSeconds >= 0
+          ? { provider: "aniboom", type: "time_update", positionSeconds }
+          : null;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  function findKodikEpisodeTarget({
+    episodes,
+    sourcesByEpisode,
+    currentSource,
+    episodeNumber,
+    seasonNumber = null,
+  } = {}) {
+    const reportedEpisode = integerValue(episodeNumber, { minimum: 1 });
+    const reportedSeason = integerValue(seasonNumber, { minimum: 0 });
+    const currentIdentity = parseKodikSerialUrl(currentSource?.embed_url);
+    if (reportedEpisode == null || !currentIdentity) return null;
+
+    const episodeList = (episodes || []).filter(episode => episode?.id != null);
+    const episodeById = new Map(episodeList.map(episode => [String(episode.id), episode]));
+    const matchingRows = [];
+    for (const [episodeId, sources] of Object.entries(sourcesByEpisode || {})) {
+      for (const source of sources || []) {
+        const identity = parseKodikSerialUrl(source?.embed_url);
+        if (!sameKodikSerial(identity, currentIdentity)) continue;
+        if (identity.episodeNumber !== reportedEpisode) continue;
+        if (
+          reportedSeason != null
+          && identity.seasonNumber != null
+          && identity.seasonNumber !== reportedSeason
+        ) continue;
+        matchingRows.push({
+          episode: episodeById.get(String(episodeId)) || null,
+          source,
+        });
+      }
+    }
+    matchingRows.sort((left, right) => {
+      const score = row => (
+        (currentSource?.source_anime_id != null
+          && String(row.source?.source_anime_id) === String(currentSource.source_anime_id) ? 16 : 0)
+        + (row.source?.source === currentSource?.source ? 8 : 0)
+        + (String(row.source?.translation_id) === String(currentSource?.translation_id) ? 4 : 0)
+        + (sourceTranslationKey(row.source) === sourceTranslationKey(currentSource) ? 2 : 0)
+        + (normalizeSourceIdentity(row.source?.provider_title) === normalizeSourceIdentity(currentSource?.provider_title) ? 1 : 0)
+      );
+      return score(right) - score(left);
+    });
+
+    const exactEpisode = episodeList.find(episode => (
+      integerValue(episode.number, { minimum: 1 }) === reportedEpisode
+    )) || null;
+    const mappedRow = matchingRows[0] || null;
+    if (
+      !mappedRow
+      && reportedSeason != null
+      && currentIdentity.seasonNumber != null
+      && reportedSeason !== currentIdentity.seasonNumber
+    ) return null;
+    // Kodik option values are not always the catalog's visible episode number.
+    // Grouped releases can report value=5 for a source bucket labelled 1-5, so
+    // the URL-backed source mapping is authoritative when it exists.
+    const episode = mappedRow?.episode || exactEpisode || null;
+    if (!episode) return null;
+
+    return {
+      episode,
+      source: mappedRow?.source || null,
+    };
+  }
+
   function localCalendarDayNumber(value) {
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return null;
@@ -212,9 +378,16 @@
     return Number.isFinite(maximumSeconds) ? Math.min(maximumSeconds, seconds) : seconds;
   }
 
-  function hasPlaybackEvidence({ pageHidden = false, playerFocused = false, fullscreen = false, evidenceExpiresAt = 0, now = Date.now() } = {}) {
+  function hasPlaybackEvidence({
+    pageHidden = false,
+    playerFocused = false,
+    fullscreen = false,
+    providerPlaybackActive = false,
+    evidenceExpiresAt = 0,
+    now = Date.now(),
+  } = {}) {
     if (pageHidden || Number(evidenceExpiresAt) <= Number(now)) return false;
-    return Boolean(playerFocused || fullscreen);
+    return Boolean(playerFocused || fullscreen || providerPlaybackActive);
   }
 
   function effectiveWatchStatus(item) {
@@ -290,6 +463,9 @@
   const api = {
     hostnameMatches,
     safeHttpsUrl,
+    parseKodikSerialUrl,
+    normalizePlayerMessage,
+    findKodikEpisodeTarget,
     normalizeSourceIdentity,
     normalizeTranslationKey,
     sourceTranslationKey,

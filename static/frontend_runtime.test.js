@@ -90,6 +90,151 @@ assert.equal(
   runtime.safeHttpsUrl("//kodikplayer.com/seria/1/token/720p", ["kodikplayer.com"]),
   "https://kodikplayer.com/seria/1/token/720p",
 );
+assert.deepEqual(
+  runtime.parseKodikSerialUrl(
+    "//kodikplayer.com/serial/49181/ABCDEF/720p?season=2&episode=5",
+  ),
+  {
+    serialId: "49181",
+    serialHash: "abcdef",
+    seasonNumber: 2,
+    episodeNumber: 5,
+  },
+);
+assert.equal(
+  runtime.parseKodikSerialUrl("https://kodikplayer.com/seria/49181/abcdef/720p"),
+  null,
+);
+assert.equal(
+  runtime.parseKodikSerialUrl("https://kodikplayer.com.evil.test/serial/1/hash/720p"),
+  null,
+);
+assert.equal(
+  runtime.parseKodikSerialUrl("http://kodikplayer.com/serial/1/hash/720p"),
+  null,
+);
+
+assert.deepEqual(runtime.normalizePlayerMessage({
+  key: "kodik_player_current_episode",
+  value: {
+    episode: 5,
+    season: 2,
+    translation: { id: 1043, title: "Animy" },
+  },
+}), {
+  provider: "kodik",
+  type: "episode_changed",
+  episodeNumber: 5,
+  seasonNumber: 2,
+});
+assert.deepEqual(
+  runtime.normalizePlayerMessage({ key: "kodik_player_video_started" }),
+  { provider: "kodik", type: "playback_started" },
+);
+assert.deepEqual(
+  runtime.normalizePlayerMessage({ key: "kodik_player_time_update", value: 31 }),
+  { provider: "kodik", type: "time_update", positionSeconds: 31 },
+);
+assert.equal(runtime.normalizePlayerMessage({
+  key: "kodik_player_current_episode",
+  value: { episode: "not-a-number" },
+}), null);
+assert.deepEqual(runtime.normalizePlayerMessage({
+  source: "aniboom-player",
+  type: "player.timeupdate",
+  payload: { currentTime: 44, duration: 1200 },
+}), {
+  provider: "aniboom",
+  type: "time_update",
+  positionSeconds: 44,
+});
+const kodikEpisodes = [
+  { id: 501, number: "1" },
+  { id: 502, number: "2" },
+  { id: 503, number: "3" },
+  { id: 504, number: "4" },
+  { id: 505, number: "5" },
+];
+const kodikSourcesByEpisode = {
+  501: [{
+    id: 601,
+    embed_url: "https://kodikplayer.com/serial/77/hash/720p?season=1&episode=1",
+  }],
+  505: [{
+    id: 605,
+    embed_url: "https://kodikplayer.com/serial/77/hash/720p?season=1&episode=5",
+  }],
+};
+assert.deepEqual(runtime.findKodikEpisodeTarget({
+  episodes: kodikEpisodes,
+  sourcesByEpisode: kodikSourcesByEpisode,
+  currentSource: kodikSourcesByEpisode[501][0],
+  seasonNumber: 1,
+  episodeNumber: 5,
+}), {
+  episode: kodikEpisodes[4],
+  source: kodikSourcesByEpisode[505][0],
+});
+
+const mergedVariantSources = {
+  501: [{
+    ...kodikSourcesByEpisode[501][0],
+    source_anime_id: 10,
+    source: "animego",
+    translation_id: "dream",
+    translation_title: "Dream Cast",
+    provider_title: "Kodik",
+  }],
+  505: [
+    {
+      ...kodikSourcesByEpisode[505][0],
+      id: 615,
+      source_anime_id: 20,
+      source: "yummyanime",
+      translation_id: "generic",
+      translation_title: "YummyAnime",
+      provider_title: "Kodik",
+    },
+    {
+      ...kodikSourcesByEpisode[505][0],
+      id: 625,
+      source_anime_id: 10,
+      source: "animego",
+      translation_id: "dream",
+      translation_title: "Dream Cast",
+      provider_title: "Kodik",
+    },
+  ],
+};
+assert.equal(runtime.findKodikEpisodeTarget({
+  episodes: kodikEpisodes,
+  sourcesByEpisode: mergedVariantSources,
+  currentSource: mergedVariantSources[501][0],
+  seasonNumber: 1,
+  episodeNumber: 5,
+}).source.id, 625);
+
+const mismatchedKodikSource = {
+  id: 701,
+  embed_url: "https://kodikplayer.com/serial/88/hash2/720p?season=1&episode=5",
+};
+assert.deepEqual(runtime.findKodikEpisodeTarget({
+  episodes: kodikEpisodes,
+  sourcesByEpisode: { 501: [mismatchedKodikSource] },
+  currentSource: mismatchedKodikSource,
+  seasonNumber: 1,
+  episodeNumber: 5,
+}), {
+  episode: kodikEpisodes[0],
+  source: mismatchedKodikSource,
+});
+assert.equal(runtime.findKodikEpisodeTarget({
+  episodes: kodikEpisodes,
+  sourcesByEpisode: kodikSourcesByEpisode,
+  currentSource: kodikSourcesByEpisode[501][0],
+  seasonNumber: 2,
+  episodeNumber: 2,
+}), null);
 
 assert.equal(runtime.normalizeTranslationKey("Dreamcast"), "dream cast");
 assert.equal(runtime.normalizeTranslationKey("Dream Cast"), "dream cast");
@@ -224,6 +369,7 @@ assert.equal(runtime.boundedElapsedSeconds(10_000, 5_000, 300), 0);
 assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresAt: 20, now: 10 }), true);
 assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresAt: 5, now: 10 }), false);
 assert.equal(runtime.hasPlaybackEvidence({ fullscreen: true, evidenceExpiresAt: 20, now: 10 }), true);
+assert.equal(runtime.hasPlaybackEvidence({ providerPlaybackActive: true, evidenceExpiresAt: 20, now: 10 }), true);
 assert.equal(runtime.hasPlaybackEvidence({ pageHidden: true, playerFocused: true, evidenceExpiresAt: 20, now: 10 }), false);
 
 assert.equal(runtime.effectiveWatchStatus({ watched: true }), "completed");

@@ -130,6 +130,10 @@ release.
 - The title page does not expose `not_interested` as a fourth status or action.
 - Episode selector and previous/next episode controls update player source
   state.
+- A Kodik serial player's internal episode selector updates the outer episode,
+  source, shared URL, and last-opened cursor without reloading the iframe.
+- Provider autostart alone does not create watch progress; a real focus/click,
+  fullscreen/PiP, or an already-engaged session is still required.
 - Source, translation, and provider selectors choose a playable embed URL.
 - Fullscreen button targets the iframe wrapper and exits cleanly.
 - PiP button either opens document Picture-in-Picture where supported or shows

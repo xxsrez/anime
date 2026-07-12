@@ -142,6 +142,7 @@ const state = {
   watchSession: null,
   watchHeartbeatTimer: null,
   watchFullscreenActive: false,
+  playerContext: null,
   animeGoScannerReady: false,
   animeGoScannerVersion: null,
   animeGoScanPhase: "idle",
@@ -2639,7 +2640,7 @@ function renderContentSourceOptions() {
   el.contentSource.disabled = variants.length < 2;
 }
 
-function renderSources() {
+function renderSources({ preservePlayer = false, playerMetadata = {} } = {}) {
   const episode = activeEpisode();
   if (episode && state.selectedContentSource && !contentSourceHasEpisode(state.selectedContentSource, episode.id)) {
     state.selectedContentSource = preferredContentSource(state.detail, episode.id);
@@ -2705,7 +2706,11 @@ function renderSources() {
 
   const activeSource = providers.find(source => String(source.id) === String(state.selectedSourceId)) || providers[0];
   if (activeSource) {
-    setPlayer(activeSource, episode);
+    if (preservePlayer) {
+      adoptPlayerSource(activeSource, episode, { metadata: playerMetadata });
+    } else {
+      setPlayer(activeSource, episode);
+    }
   } else {
     clearPlayer("Источник недоступен");
   }
@@ -2715,10 +2720,14 @@ function renderSources() {
 function setPlayer(source, episode) {
   const playerUrl = frontendRuntime.safeHttpsUrl(source?.embed_url, playerHosts);
   let playerHost = "";
+  let playerOrigin = "";
   try {
-    playerHost = playerUrl ? new URL(playerUrl).hostname : "";
+    const parsedPlayerUrl = playerUrl ? new URL(playerUrl) : null;
+    playerHost = parsedPlayerUrl?.hostname || "";
+    playerOrigin = parsedPlayerUrl?.origin || "";
   } catch (error) {
     playerHost = "";
+    playerOrigin = "";
   }
   if (!playerUrl || (source.embed_host && !frontendRuntime.hostnameMatches(playerHost, source.embed_host))) {
     clearPlayer("Небезопасный или неизвестный адрес плеера");
@@ -2732,16 +2741,53 @@ function setPlayer(source, episode) {
   ensureWatchSession(source, episode);
   el.wrap.classList.remove("empty");
   configurePlayerIframe(el.player);
-  if (el.player.getAttribute("src") !== playerUrl) {
+  const contextMatches = Boolean(
+    state.playerContext
+    && String(state.playerContext.source?.id) === String(source.id)
+    && String(state.playerContext.episode?.id) === String(episode.id)
+  );
+  if (contextMatches) {
+    updatePlayerDisplay(source, episode);
+    return;
+  }
+  const navigatesPlayer = el.player.getAttribute("src") !== playerUrl;
+  state.playerContext = {
+    source,
+    episode,
+    playerOrigin,
+    messageProvider: playerMessageProvider(source),
+    loaded: navigatesPlayer ? false : (state.playerContext?.loaded ?? true),
+  };
+  if (navigatesPlayer) {
     el.player.src = playerUrl;
   }
+  updatePlayerDisplay(source, episode);
+}
+
+function updatePlayerDisplay(source, episode) {
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
   el.empty.textContent = "";
 }
 
+function playerMessageProvider(source) {
+  if (frontendRuntime.parseKodikSerialUrl(source?.embed_url)) return "kodik";
+  if (frontendRuntime.hostnameMatches(source?.embed_host, "aniboom.one")) return "aniboom";
+  return null;
+}
+
+function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metadata = {} } = {}) {
+  if (!source || !episode || !state.playerContext) return;
+  ensureWatchSession(source, episode, { videoSourceId, metadata });
+  state.playerContext.source = source;
+  state.playerContext.episode = episode;
+  state.playerContext.messageProvider = playerMessageProvider(source);
+  updatePlayerDisplay(source, episode);
+}
+
 function clearPlayer(message) {
   clearWatchSession();
+  state.playerContext = null;
   el.player.removeAttribute("src");
   el.wrap.classList.add("empty");
   el.empty.textContent = message;
@@ -2765,11 +2811,12 @@ function newWatchSessionId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
-function watchContextKey(source, episode) {
+function watchContextKey(source, episode, videoSourceId = source?.id) {
   return [
     state.detail?.id,
     episode?.id,
-    source?.id,
+    videoSourceId,
+    source?.embed_host,
   ].map(value => value == null ? "" : String(value)).join(":");
 }
 
@@ -2780,6 +2827,7 @@ function playerHasPlaybackEvidence(session = state.watchSession) {
     pageHidden: document.hidden,
     playerFocused: document.hasFocus() && document.activeElement === el.player,
     fullscreen,
+    providerPlaybackActive: Boolean(session.providerPlaybackActive),
     evidenceExpiresAt: session.evidenceExpiresAt,
     now: performanceNow(),
   });
@@ -2809,6 +2857,7 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     player_focused: playerHasPlaybackEvidence(session),
     library_watch_status: effectiveWatchStatus(libraryState),
     library_watch_status_updated_at: libraryState?.watch_status_updated_at ?? null,
+    metadata: session.metadata || {},
   };
 }
 
@@ -2932,13 +2981,15 @@ function stopWatchHeartbeat() {
   state.watchHeartbeatTimer = null;
 }
 
-function markWatchEngaged(eventType) {
+function markWatchEngaged(eventType, { providerPlayback = false } = {}) {
   const session = state.watchSession;
   if (!session) return;
-  const playbackEvidence = ["player_engaged", "fullscreen_enter", "pip_open"].includes(eventType);
+  const playbackEvidence = providerPlayback
+    || ["player_engaged", "fullscreen_enter", "pip_open"].includes(eventType);
   if (playbackEvidence) {
     const now = performanceNow();
     session.evidenceExpiresAt = now + WATCH_EVIDENCE_MAX_AGE_MS;
+    if (providerPlayback) session.providerPlaybackActive = true;
     if (!session.engaged) {
       session.engaged = true;
       session.activeSince = now;
@@ -2959,12 +3010,13 @@ function flushWatchSession(eventType = "session_end", { beacon = false } = {}) {
   }
   session.engaged = false;
   session.evidenceExpiresAt = 0;
+  session.providerPlaybackActive = false;
   stopWatchHeartbeat();
 }
 
-function ensureWatchSession(source, episode) {
+function ensureWatchSession(source, episode, { videoSourceId = source?.id, metadata = {} } = {}) {
   if (!source || !episode || !state.detail) return null;
-  const key = watchContextKey(source, episode);
+  const key = watchContextKey(source, episode, videoSourceId);
   if (state.watchSession?.key === key) return state.watchSession;
 
   flushWatchSession("session_end", { beacon: true });
@@ -2975,7 +3027,7 @@ function ensureWatchSession(source, episode) {
     episodeId: episode.id,
     episodeNumber: episode.number,
     progressEpisodeNumber: numberFrom(episode.number),
-    videoSourceId: source.id,
+    videoSourceId,
     source: source.source,
     sourceAnimeId: source.source_anime_id,
     translationId: source.translation_id,
@@ -2983,9 +3035,11 @@ function ensureWatchSession(source, episode) {
     providerId: source.provider_id,
     providerTitle: source.provider_title,
     embedHost: source.embed_host,
+    metadata,
     engaged: false,
     activeSince: null,
     evidenceExpiresAt: 0,
+    providerPlaybackActive: false,
   };
   state.watchSession = session;
   return session;
@@ -3004,7 +3058,121 @@ function discardWatchSession() {
 }
 
 function handlePlayerLoaded() {
+  if (state.playerContext) state.playerContext.loaded = true;
   sendWatchEvent("player_loaded").catch(() => {});
+}
+
+function handleProviderPlaybackStarted(provider) {
+  const session = state.watchSession;
+  if (!session) return;
+  const reportedBy = `${provider}_player_api`;
+  if (session.metadata?.reported_by !== reportedBy) {
+    session.metadata = { ...session.metadata, reported_by: reportedBy };
+  }
+  const fullscreen = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
+  const userEvidence = session.engaged
+    || fullscreen
+    || (document.hasFocus() && document.activeElement === el.player);
+  if (!userEvidence) return;
+  if (session.providerPlaybackActive && session.engaged) {
+    session.evidenceExpiresAt = performanceNow() + WATCH_EVIDENCE_MAX_AGE_MS;
+    return;
+  }
+  markWatchEngaged("player_engaged", { providerPlayback: true });
+}
+
+function handleProviderPlaybackStopped() {
+  const session = state.watchSession;
+  if (!session?.providerPlaybackActive && !session?.engaged) return;
+  flushWatchSession("session_end");
+}
+
+function playerMessageMatchesContext(event) {
+  const context = state.playerContext;
+  if (!context?.loaded || !context.playerOrigin) return false;
+  if (event.source !== el.player.contentWindow) return false;
+  return event.origin === context.playerOrigin;
+}
+
+function applyPlayerEpisodeChange(message) {
+  if (message?.provider !== "kodik" || !state.detail || !state.playerContext) return false;
+  const source = state.playerContext.source;
+  const target = frontendRuntime.findKodikEpisodeTarget({
+    episodes: state.detail.episodes,
+    sourcesByEpisode: state.detail.sources_by_episode,
+    currentSource: source,
+    episodeNumber: message.episodeNumber,
+    seasonNumber: message.seasonNumber,
+  });
+  if (!target?.episode) {
+    reportClientError(new Error("Unable to map player episode"), {
+      action: "sync player episode",
+      provider: message.provider,
+      episodeNumber: message.episodeNumber,
+      seasonNumber: message.seasonNumber,
+      sourceId: source?.id ?? null,
+    });
+    return false;
+  }
+
+  const episodeChanged = String(target.episode.id) !== String(state.selectedEpisodeId);
+  const sourceChanged = target.source
+    && String(target.source.id) !== String(state.watchSession?.videoSourceId);
+  if (!episodeChanged && !sourceChanged) return true;
+
+  state.selectedEpisodeId = target.episode.id;
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
+  if (target.source) {
+    state.selectedContentSource = target.source.source || state.selectedContentSource;
+    state.selectedTranslation = target.source.translation_id != null
+      ? String(target.source.translation_id)
+      : null;
+    state.selectedSourceId = target.source.id != null ? String(target.source.id) : null;
+    state.sourceSelectionPreference = frontendRuntime.sourcePreference(target.source);
+    renderEpisodes(state.detail);
+    renderSources({
+      preservePlayer: true,
+      playerMetadata: {
+        reported_by: `${message.provider}_player_api`,
+        player_episode: message.episodeNumber,
+        player_season: message.seasonNumber,
+      },
+    });
+  } else {
+    state.selectedTranslation = null;
+    state.selectedSourceId = null;
+    renderEpisodes(state.detail);
+    adoptPlayerSource(source, target.episode, {
+      videoSourceId: null,
+      metadata: {
+        reported_by: `${message.provider}_player_api`,
+        unmapped_player_episode: message.episodeNumber,
+      },
+    });
+  }
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: false });
+  markWatchEngaged("episode_selected");
+  saveTitleNavigation(target.episode.id).catch(reportActionError("save player episode"));
+  return true;
+}
+
+function handlePlayerMessage(event) {
+  if (!playerMessageMatchesContext(event)) return;
+  const message = frontendRuntime.normalizePlayerMessage(event.data);
+  if (!message) return;
+
+  if (message.provider !== state.playerContext?.messageProvider) return;
+  if (message.type === "episode_changed") {
+    applyPlayerEpisodeChange(message);
+  } else if (message.type === "playback_started") {
+    handleProviderPlaybackStarted(message.provider);
+  } else if (message.type === "time_update") {
+    handleProviderPlaybackStarted(message.provider);
+  } else if (["playback_paused", "playback_ended"].includes(message.type)) {
+    handleProviderPlaybackStopped();
+  }
 }
 
 function handlePlayerEngaged() {
@@ -3887,6 +4055,7 @@ el.pipToggle.addEventListener("click", () => {
 el.player.addEventListener("load", handlePlayerLoaded);
 el.player.addEventListener("focus", handlePlayerEngaged);
 el.player.addEventListener("pointerdown", handlePlayerEngaged);
+window.addEventListener("message", handlePlayerMessage);
 document.addEventListener("fullscreenchange", handleFullscreenStateChange);
 document.addEventListener("webkitfullscreenchange", handleFullscreenStateChange);
 document.addEventListener("visibilitychange", handleVisibilityChange);

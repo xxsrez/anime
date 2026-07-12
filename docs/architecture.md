@@ -428,11 +428,20 @@ it. If unavailable or blocked, the UI reports that PiP is available inside the
 embedded player. The local app cannot directly control a cross-origin player's
 internal video element.
 
-Automatic watch tracking therefore attaches to the iframe boundary, not to the
-third-party player's internal `video.play`, `timeupdate`, or `ended` events.
-`iframe load` is stored as low-confidence history only. Progress starts moving
-after stronger user signals such as iframe focus, fullscreen/PiP, explicit
-episode selection, source changes, or heartbeat after engagement.
+Automatic watch tracking uses the iframe boundary as the universal fallback and
+provider `postMessage` adapters where a stable contract exists. Kodik serial
+players report the current season/episode and playback state. The frontend
+maps that report back through the exact serial ID/hash/season/episode URL,
+rolls the watch session to the mapped catalog episode, and updates the outer
+episode/source controls, shared URL, and last-opened cursor without reloading
+the already-playing iframe. Messages are accepted only from the active
+`iframe.contentWindow` and its exact HTTPS origin.
+
+`iframe load` and provider autostart remain low-confidence history only. A
+provider playback event can sustain tracking after real user evidence, but it
+cannot start progress by itself; focus/pointer interaction, fullscreen/PiP, or
+an already-engaged session is still required. Providers without a proven
+message contract continue to use the conservative iframe-boundary fallback.
 
 ## Shared Links
 
@@ -469,6 +478,9 @@ For recommendation/player changes, additionally verify:
 - Fullscreen enters on `#iframe-wrap` and exits cleanly.
 - PiP opens with document Picture-in-Picture in Chrome or shows the fallback
   message.
+- A Kodik internal episode change updates the outer episode/source controls,
+  URL, and last-opened cursor without replacing or reloading `#player`; an
+  autostart-only event must not mark the title as watching.
 - Fast consecutive state changes, such as progress then `completed`, do not drop
   the second update.
 
