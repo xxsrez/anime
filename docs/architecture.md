@@ -14,6 +14,8 @@
 ## Main Components
 
 - `server.py` serves static assets and JSON API endpoints from SQLite.
+- `franchise_catalog.py` validates checked-in franchise cards and connects
+  their releases to the canonical catalog using stable upstream IDs.
 - `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
   results, applies additive episode/provider changes, records attribution, and
   packages the Chrome extension download.
@@ -214,6 +216,17 @@ Requires authentication. Returns one canonical title with genres, dubbings,
 fields, source variants, episodes, video sources grouped by episode, and
 current-user state. Requests for a canonical `slug`/`internal_id` or a merged
 YummyAnime variant ID resolve to the same AnimeGO-primary canonical detail.
+When the title has a curated franchise membership, the response also contains
+a compact `franchise` entry point for the title page.
+
+`GET /api/franchises/<slug>`
+
+Requires authentication. Returns a curated franchise summary, separate release
+and watch orders, normalized statuses, official announcements, and the current
+user's canonical catalog/state payload for each matched release. Known releases
+that are missing from the playable catalog remain in the response with
+`availability: not_in_catalog` and no `catalog_item`. The shareable frontend URL
+is `/franchises/<slug>`.
 
 `GET /api/recommendations`
 

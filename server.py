@@ -28,6 +28,7 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
 import animego_scans
 import content_updates
+import franchise_catalog
 import recommendation_model
 import user_state_model
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
@@ -3737,7 +3738,7 @@ def clone_catalog_item(item, include_search_fields=False, user_state_by_source_i
 def compact_catalog_variant(variant):
     return {
         key: variant.get(key)
-        for key in ("id", "source", "title", "subtitle")
+        for key in ("id", "source", "source_id", "title", "subtitle")
         if variant.get(key) not in (None, "")
     }
 
@@ -3823,6 +3824,221 @@ def catalog_api_item(item):
 
 def catalog_api_items(items):
     return [catalog_api_item(item) for item in items]
+
+
+def franchise_teaser_for_group(con, group):
+    definition, entry = franchise_catalog.find_for_group(con, group)
+    if not definition:
+        return None
+    payload = franchise_catalog.compact_summary(definition)
+    payload.update(
+        {
+            "current_entry_id": entry["key"],
+            "current_entry_title": entry["title"],
+            "current_entry_kind": entry.get("kind"),
+        }
+    )
+    return payload
+
+
+def catalog_groups_by_source(items):
+    groups = {}
+    for item in items:
+        variants = [item, *(item.get("source_variants") or [])]
+        for variant in variants:
+            source = str(variant.get("source") or "").strip()
+            source_id = str(variant.get("source_id") or "").strip()
+            if source and source_id:
+                groups.setdefault(f"{source}:{source_id}", {})[item["id"]] = item
+    return groups
+
+
+def franchise_external_groups(con, items, definition):
+    requested = {
+        namespace: {
+            str(value)
+            for entry in definition["entries"]
+            for value in (entry.get("match") or {}).get(namespace) or []
+        }
+        for namespace in ("anidb", "shikimori")
+    }
+    clauses = []
+    values = []
+    for namespace, identifiers in requested.items():
+        for identifier in sorted(identifiers):
+            clauses.append("source_ref like ?")
+            values.append(f"{namespace}:{identifier}:%")
+    if not clauses:
+        return {}
+
+    group_by_member_id = {
+        int(member_id): item
+        for item in items
+        for member_id in item.get("source_member_ids") or [item.get("id")]
+        if member_id is not None
+    }
+    rows = con.execute(
+        f"""
+        select distinct anime_id, source_ref
+        from anime_title_aliases
+        where source_ref is not null
+          and ({' or '.join(clauses)})
+        """,
+        values,
+    ).fetchall()
+    groups = {}
+    for row in rows:
+        match = franchise_catalog.EXTERNAL_REF_RE.match(row["source_ref"] or "")
+        group = group_by_member_id.get(int(row["anime_id"]))
+        if not match or not group:
+            continue
+        key = (match.group(1), match.group(2))
+        groups.setdefault(key, {})[group["id"]] = group
+    return groups
+
+
+def franchise_entry_catalog_candidates(entry, source_groups, external_groups):
+    candidates = {}
+    match = entry.get("match") or {}
+    for source_key in match.get("sources") or []:
+        candidates.update(source_groups.get(source_key) or {})
+    for namespace in ("anidb", "shikimori"):
+        for identifier in match.get(namespace) or []:
+            candidates.update(external_groups.get((namespace, str(identifier))) or {})
+    return list(candidates.values())
+
+
+def select_franchise_catalog_candidate(candidates, entry=None):
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        entry_key = (entry or {}).get("key") or "<unknown>"
+        candidate_ids = ", ".join(str(item.get("id")) for item in candidates)
+        raise franchise_catalog.FranchiseDataError(
+            f"Franchise entry {entry_key} matches multiple canonical catalog groups: "
+            f"{candidate_ids}"
+        )
+    return candidates[0]
+
+
+def franchise_status_from_catalog(value):
+    status = normalize_key(value)
+    if status in ONGOING_TITLE_STATUSES or status in {"releasing", "airing"}:
+        return "releasing"
+    if any(token in status for token in ("вышел", "заверш", "finished", "released")):
+        return "finished"
+    if any(token in status for token in ("анонс", "announced", "not yet released")):
+        return "announced"
+    return None
+
+
+def franchise_entry_payload(entry, catalog_group=None, current_group_id=None):
+    payload = {
+        key: value
+        for key, value in entry.items()
+        if key not in {"key", "match", "story_role"}
+    }
+    payload.update(
+        {
+            "id": entry["key"],
+            "story_role": entry.get("story_role"),
+            "is_main": entry.get("story_role") == "main",
+            "availability": "available" if catalog_group else "not_in_catalog",
+            "is_current": bool(catalog_group and catalog_group["id"] == current_group_id),
+        }
+    )
+    if catalog_group:
+        catalog_item = catalog_api_item(catalog_group)
+        payload["catalog_item"] = catalog_item
+        payload["cover_url"] = catalog_item.get("cover_url") or payload.get("cover_url")
+        payload["release_year"] = payload.get("release_year") or catalog_item.get("year")
+        payload["release_date"] = payload.get("release_date") or catalog_item.get("date_published")
+        payload["status"] = (
+            franchise_status_from_catalog(catalog_item.get("status"))
+            or payload.get("status")
+            or "unknown"
+        )
+    return payload
+
+
+def get_franchise_detail(franchise_ref, db_path=None, user_id=None, current_anime_ref=None):
+    definition = franchise_catalog.get_definition(franchise_ref)
+    if not definition:
+        return None
+
+    items = get_anime_list(db_path, user_id=user_id)
+    source_groups = catalog_groups_by_source(items)
+    con = connect(db_path)
+    try:
+        external_groups = franchise_external_groups(con, items, definition)
+        current_group = (
+            canonical_group_for_anime_ref(con, current_anime_ref, user_id)
+            if current_anime_ref
+            else None
+        )
+    finally:
+        con.close()
+    current_group_id = current_group.get("id") if current_group else None
+
+    entries = []
+    for entry in definition["entries"]:
+        candidates = franchise_entry_catalog_candidates(entry, source_groups, external_groups)
+        catalog_group = select_franchise_catalog_candidate(candidates, entry)
+        payload = franchise_entry_payload(entry, catalog_group, current_group_id)
+        entries.append(payload)
+
+    status_counts = {
+        status: sum(1 for entry in entries if entry.get("status") == status)
+        for status in ("releasing", "finished", "announced", "unknown")
+    }
+    available_entries = [entry for entry in entries if entry.get("catalog_item")]
+    completed_entries = [
+        entry
+        for entry in available_entries
+        if entry["catalog_item"].get("watch_status") == "completed"
+    ]
+    compact = franchise_catalog.compact_summary(definition)
+    hero_entry = next(
+        (
+            entry
+            for entry in entries
+            if entry.get("is_main") and entry.get("catalog_item") and entry.get("cover_url")
+        ),
+        next((entry for entry in entries if entry.get("cover_url")), None),
+    )
+    return {
+        "slug": definition["slug"],
+        "title": definition["title"],
+        "short_title": definition.get("short_title"),
+        "original_title": definition.get("original_title"),
+        "summary": definition["summary"],
+        "guide": definition.get("guide"),
+        "official_url": definition.get("official_url"),
+        "updated_at": definition.get("updated_at"),
+        "source": dict(definition.get("source") or {}),
+        "cover_url": definition.get("cover_url") or (hero_entry or {}).get("cover_url"),
+        "year_range": compact.get("year_range"),
+        "entry_count": len(entries),
+        "main_count": sum(1 for entry in entries if entry.get("is_main")),
+        "available_count": len(available_entries),
+        "status_counts": status_counts,
+        "progress": {
+            "completed_count": len(completed_entries),
+            "available_count": len(available_entries),
+        },
+        "orders": {
+            "release": [entry["id"] for entry in sorted(entries, key=lambda item: item["release_order"])],
+            "watch": [
+                entry["id"]
+                for entry in sorted(
+                    (item for item in entries if item.get("watch_order") is not None),
+                    key=lambda item: item["watch_order"],
+                )
+            ],
+        },
+        "entries": entries,
+        "announcements": [dict(item) for item in definition.get("announcements") or []],
+    }
 
 
 def clone_catalog_items(items, include_search_fields=False, user_state_by_source_id=None):
@@ -4504,6 +4720,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
         ).fetchall()
     )
     state = get_group_state(con, member_ids, user_id)
+    franchise = franchise_teaser_for_group(con, group)
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     title_navigation = get_group_title_navigation(con, member_ids, user_id)
@@ -4584,6 +4801,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["available_episode_count"] = sum(1 for episode in episodes if episode.get("source_count"))
     detail["recent_updates"] = [dict(update) for update in group.get("recent_updates") or []]
     detail["recent_update_summary"] = dict(group["recent_update_summary"]) if group.get("recent_update_summary") else None
+    detail["franchise"] = franchise
     if title_navigation:
         detail["last_opened_episode"] = title_navigation
     if latest_watch_row:
@@ -7340,6 +7558,32 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.send_json(admin_users_payload(self.server.db_path))
             return
 
+        if path == "/api/franchises":
+            self.send_json(
+                {
+                    "items": [
+                        franchise_catalog.compact_summary(definition)
+                        for definition in franchise_catalog.load_definitions()
+                    ]
+                }
+            )
+            return
+
+        franchise_match = re.fullmatch(r"/api/franchises/([a-z0-9]+(?:-[a-z0-9]+)*)", path)
+        if franchise_match:
+            current_ref = parse_qs(parsed.query).get("current", [None])[0]
+            detail = get_franchise_detail(
+                franchise_match.group(1),
+                self.server.db_path,
+                user["id"],
+                current_anime_ref=current_ref,
+            )
+            if detail:
+                self.send_json(detail)
+            else:
+                self.send_json({"error": "not found"}, 404)
+            return
+
         if path == "/api/anime":
             query = parse_qs(parsed.query).get("q", [""])[0].strip()
             items = get_anime_list(self.server.db_path, query or None, user["id"])
@@ -7396,7 +7640,11 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     self.send_json({"error": "not found"}, 404)
                 return
 
-        if path == "/" or re.fullmatch(r"/[A-Za-z0-9][A-Za-z0-9-]*", path):
+        if (
+            path == "/"
+            or re.fullmatch(r"/[A-Za-z0-9][A-Za-z0-9-]*", path)
+            or re.fullmatch(r"/franchises/[a-z0-9]+(?:-[a-z0-9]+)*", path)
+        ):
             if not user:
                 self.redirect_to_login()
                 return

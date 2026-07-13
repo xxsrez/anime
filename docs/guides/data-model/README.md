@@ -199,6 +199,24 @@ The frontend currently relies on `source_count` and `available_episode_count`
 computed by the API, not stored directly on `anime`. Recommendation scores,
 ranks, reasons, and component scores are also computed API fields.
 
+## Curated Franchise Layer
+
+Franchises sit above canonical titles:
+
+`source rows -> canonical release -> franchise`
+
+Checked-in definitions live in `content/franchises/*.json`. They keep editorial
+facts that cannot be derived safely from scraped titles: a franchise summary,
+separate release and recommended-watch orders, release role/type, optionality,
+watch notes, and source-backed official announcements. A definition can also
+include a missing or future release with no playable catalog match.
+
+Playable entries match by stable `(source, source_id)` keys, with AniDB or
+Shikimori IDs as resilient fallbacks. The server resolves those source rows to
+the existing canonical item before exposing the franchise API, so duplicate
+AnimeGO/YummyAnime rows remain one release in the timeline. Similar titles are
+never grouped automatically.
+
 ## External URLs
 
 `url` and `cover_url` point to upstream sites. `embed_url` points to an external

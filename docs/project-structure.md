@@ -22,6 +22,7 @@ can change outside git.
 | Path | Purpose |
 | --- | --- |
 | `server.py` | HTTP server, Google auth, API, canonical catalog, recommendations, logging. |
+| `franchise_catalog.py` | Validates curated franchise cards and matches their releases to canonical catalog titles by stable upstream identity. |
 | `animego_scans.py` | User-powered AnimeGo scan selection, job lifecycle, validation, additive imports, attribution, and extension ZIP packaging. |
 | `scrape_animego.py` | Base SQLite schema and AnimeGO scraper/importer. |
 | `scrape_yummyanime.py` | YummyAnime/YummyAni importer and provider parsing. |
@@ -50,6 +51,12 @@ can change outside git.
 | `static/admin.js` | Admin users/activity UI. |
 | `static/client_errors.js` | Browser error reporting helper. |
 | `static/favicon.svg` | App icon. |
+
+## Curated Product Content
+
+| Path | Purpose |
+| --- | --- |
+| `content/franchises/*.json` | Versioned franchise summaries, release/watch orders, optionality, official announcements, and stable source matchers. Entries may intentionally exist without a playable catalog title. |
 
 ## Browser Extension
 

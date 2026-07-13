@@ -121,6 +121,15 @@ const state = {
   selectedTranslation: null,
   selectedSourceId: null,
   sourceSelectionPreference: null,
+  rightPaneMode: "title",
+  franchise: null,
+  franchiseSlug: null,
+  franchiseLoading: false,
+  franchiseError: null,
+  franchiseOrder: "release",
+  franchiseScope: "all",
+  franchiseRequestId: 0,
+  franchiseRequestController: null,
   viewMode: "all",
   filters: { ...DEFAULT_FILTERS },
   activeFilterIds: [],
@@ -182,11 +191,15 @@ const el = {
   recommendationMeta: document.getElementById("recommendation-meta"),
   list: document.getElementById("anime-list"),
   updatesView: document.getElementById("updates-view"),
+  franchiseDetailView: document.getElementById("franchise-detail-view"),
   titleDetailView: document.getElementById("title-detail-view"),
   poster: document.getElementById("poster"),
   meta: document.getElementById("meta-line"),
   title: document.getElementById("title"),
   subtitle: document.getElementById("subtitle"),
+  franchiseOpen: document.getElementById("franchise-open"),
+  franchiseOpenTitle: document.getElementById("franchise-open-title"),
+  franchiseOpenMeta: document.getElementById("franchise-open-meta"),
   favoriteToggle: document.getElementById("favorite-toggle"),
   watchStatusInputs: document.querySelectorAll('input[name="watch-status"]'),
   recommendationContext: document.getElementById("recommendation-context"),
@@ -584,6 +597,7 @@ function handleAnimeGoScanProgress(event) {
 
 async function refreshCatalogAfterAnimeGoScan() {
   const selectedRef = state.detail?.slug || state.detail?.id || state.selectedAnimeId;
+  const franchiseSlug = state.rightPaneMode === "franchise" ? state.franchiseSlug : null;
   const linkState = {
     episodeId: state.selectedEpisodeId,
     contentSource: state.selectedContentSource,
@@ -599,6 +613,10 @@ async function refreshCatalogAfterAnimeGoScan() {
   if (isUpdatesView()) loadContentUpdatesForView({ force: true });
   if (isRecommendationView()) {
     loadRecommendationsForView({ force: true, selectFirst: false });
+  }
+  if (franchiseSlug) {
+    await openFranchise(franchiseSlug, { updateUrl: false });
+    return;
   }
   if (selectedRef != null) {
     await selectAnime(selectedRef, { linkState, updateUrl: false });
@@ -808,21 +826,40 @@ function normalizeLinkValue(value) {
   return text || null;
 }
 
-function titleRefFromPath() {
-  let value = "";
+function routeFromPath() {
+  const encoded = window.location.pathname.split("/").filter(Boolean);
+  let parts = [];
   try {
-    value = decodeURIComponent(window.location.pathname.replace(/^\/+|\/+$/g, ""));
+    parts = encoded.map(part => decodeURIComponent(part));
   } catch (error) {
-    value = "";
+    return { type: "invalid" };
   }
-  if (!value || value.includes("/") || value === "api" || value === "static") return null;
-  return normalizeLinkValue(value);
+
+  if (parts.length === 2 && parts[0] === "franchises") {
+    const franchiseSlug = normalizeLinkValue(parts[1]);
+    return franchiseSlug ? { type: "franchise", franchiseSlug } : { type: "invalid" };
+  }
+  if (parts.length === 1 && !["api", "static", "franchises"].includes(parts[0])) {
+    const animeId = normalizeLinkValue(parts[0]);
+    return animeId ? { type: "title", animeId } : { type: "root" };
+  }
+  return parts.length ? { type: "invalid" } : { type: "root" };
+}
+
+function titleRefFromPath() {
+  const route = routeFromPath();
+  return route.type === "title" ? route.animeId : null;
 }
 
 function readLinkState() {
   const params = new URLSearchParams(window.location.search);
+  const route = routeFromPath();
+  const queryAnimeId = normalizeLinkValue(params.get("anime"));
+  const animeId = route.type === "title" ? route.animeId : (route.type === "root" ? queryAnimeId : null);
   return {
-    animeId: titleRefFromPath() || normalizeLinkValue(params.get("anime")),
+    routeType: route.type === "franchise" ? "franchise" : (animeId ? "title" : route.type),
+    animeId,
+    franchiseSlug: route.type === "franchise" ? route.franchiseSlug : null,
     episodeId: normalizeLinkValue(params.get("episode")),
     contentSource: normalizeLinkValue(params.get("source")),
     translation: normalizeLinkValue(params.get("translation")),
@@ -863,6 +900,24 @@ function syncUrlFromDetail({ replace = true } = {}) {
   window.history[replace ? "replaceState" : "pushState"](statePayload, "", next);
 }
 
+function syncUrlFromFranchise(slug, { replace = true } = {}) {
+  const normalizedSlug = normalizeLinkValue(slug);
+  if (state.urlSyncSuspended || !normalizedSlug) return;
+
+  const url = new URL(window.location.href);
+  url.pathname = `/franchises/${encodeURIComponent(normalizedSlug)}`;
+  url.searchParams.delete("anime");
+  for (const key of LINK_PARAM_KEYS) url.searchParams.delete(key);
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next === current) return;
+  window.history[replace ? "replaceState" : "pushState"](
+    { franchise: normalizedSlug },
+    "",
+    next,
+  );
+}
+
 function sourcesForEpisode(episodeId) {
   return allSourcesForEpisode(episodeId)
     .filter(source => !state.selectedContentSource || source.source === state.selectedContentSource);
@@ -879,6 +934,20 @@ function activeEpisode() {
 
 function titleRefForItem(item) {
   return item?.slug || item?.internal_id || item?.id;
+}
+
+function titleHref(ref) {
+  const normalizedRef = normalizeLinkValue(ref);
+  return normalizedRef ? `/${encodeURIComponent(normalizedRef)}` : "/";
+}
+
+function shouldHandleSpaNavigation(event) {
+  return !event.defaultPrevented
+    && event.button === 0
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.altKey
+    && !event.shiftKey;
 }
 
 function observeListImage(img, src) {
@@ -1169,6 +1238,49 @@ function russianPlural(count, one, few, many) {
   if (value % 10 === 1 && value % 100 !== 11) return one;
   if (value % 10 >= 2 && value % 10 <= 4 && !(value % 100 >= 12 && value % 100 <= 14)) return few;
   return many;
+}
+
+function franchiseYearRangeText(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  const start = value.start ?? value.from ?? value.min ?? null;
+  const end = value.end ?? value.to ?? value.max ?? null;
+  if (start != null && end != null) return String(start) === String(end) ? String(start) : `${start}—${end}`;
+  if (start != null) return `${start}—сейчас`;
+  return end != null ? `до ${end}` : "";
+}
+
+function franchiseStatusKey(value) {
+  const normalized = searchText(value).replace(/\s+/g, "_");
+  if (["ongoing", "releasing", "airing", "current", "выходит", "онгоинг"].includes(normalized)) return "ongoing";
+  if (["upcoming", "announced", "planned", "анонс", "анонсировано", "скоро"].includes(normalized)) return "upcoming";
+  if (["completed", "finished", "released", "завершено", "вышло"].includes(normalized)) return "completed";
+  return normalized || "unknown";
+}
+
+function franchiseStatusLabel(value) {
+  const labels = {
+    ongoing: "Выходит",
+    upcoming: "Анонсировано",
+    completed: "Завершено",
+    unknown: "Статус не указан",
+  };
+  const key = franchiseStatusKey(value);
+  return labels[key] || text(value, labels.unknown);
+}
+
+function franchiseCompactMeta(franchise) {
+  const count = Number(franchise?.entry_count) || 0;
+  const yearRange = franchiseYearRangeText(franchise?.year_range);
+  const statuses = franchise?.status_counts || {};
+  const ongoing = Number(statuses.ongoing ?? statuses.releasing ?? statuses.airing) || 0;
+  const upcoming = Number(statuses.upcoming ?? statuses.announced ?? statuses.planned) || 0;
+  return [
+    count ? `${count} ${russianPlural(count, "часть", "части", "частей")}` : "",
+    yearRange,
+    ongoing ? `${ongoing} выходит` : "",
+    upcoming ? `${upcoming} анонс.` : "",
+  ].filter(Boolean).join(" · ");
 }
 
 function contentUpdateTypeLabel(type) {
@@ -2298,6 +2410,7 @@ function renderContentUpdateRows(parent, items) {
 }
 
 function renderContentUpdatesView() {
+  el.franchiseDetailView.hidden = true;
   el.titleDetailView.hidden = true;
   el.updatesView.hidden = false;
   if (el.player.getAttribute("src")) clearPlayer("");
@@ -2356,6 +2469,675 @@ function renderContentUpdatesView() {
   renderContentUpdatePagination(el.updatesView);
 }
 
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    if (url.protocol !== "https:" || url.username || url.password) return null;
+    return url.href;
+  } catch (error) {
+    return null;
+  }
+}
+
+function franchiseDateLabel(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "number") return String(value);
+  const raw = String(value).trim();
+  if (/^\d{4}$/.test(raw)) return raw;
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function franchiseEntryId(entry, fallbackIndex = 0) {
+  return String(entry?.id ?? entry?.slug ?? entry?.catalog_item?.id ?? entry?.catalog_item?.slug ?? fallbackIndex);
+}
+
+function franchiseCatalogItem(entry) {
+  const item = entry?.catalog_item || entry?.anime || null;
+  return item && item.available !== false ? item : null;
+}
+
+function franchiseCatalogRef(entry) {
+  const item = franchiseCatalogItem(entry);
+  return item?.anime_ref || item?.slug || item?.internal_id || item?.id || null;
+}
+
+function franchiseEntryTitle(entry) {
+  return text(entry?.title || franchiseCatalogItem(entry)?.title, "Без названия");
+}
+
+function franchiseEntryIsMain(entry) {
+  if (Object.prototype.hasOwnProperty.call(entry || {}, "is_main")) return Boolean(entry.is_main);
+  if (Object.prototype.hasOwnProperty.call(entry || {}, "is_mainline")) return Boolean(entry.is_mainline);
+  if (entry?.relation_type) return ["main", "mainline", "season", "sequel", "prequel"].includes(searchText(entry.relation_type));
+  return true;
+}
+
+function franchiseEntryIsCurrent(entry, franchise) {
+  if (entry?.is_current) return true;
+  const currentIds = new Set([
+    franchise?.current_entry_id,
+    ...(franchise?.current_entry_ids || []),
+  ].filter(value => value != null).map(String));
+  return currentIds.has(franchiseEntryId(entry));
+}
+
+function franchiseEntryReleaseLabel(entry) {
+  return text(
+    entry?.release_label
+      || franchiseDateLabel(entry?.release_date || entry?.date_published || entry?.release_year || entry?.year),
+  );
+}
+
+function franchiseEntryOrderRank(franchise, entry, mode, fallbackIndex) {
+  const id = franchiseEntryId(entry, fallbackIndex);
+  const configuredOrder = franchise?.orders?.[mode] || franchise?.[`${mode}_order`];
+  if (Array.isArray(configuredOrder)) {
+    const configuredIndex = configuredOrder.map(String).indexOf(id);
+    if (configuredIndex >= 0) return configuredIndex;
+  }
+
+  const rawRank = mode === "watch"
+    ? (entry?.watch_order ?? entry?.watch_order_index)
+    : (entry?.release_order ?? entry?.release_order_index);
+  const numericRank = Number(rawRank);
+  if (Number.isFinite(numericRank)) return numericRank;
+
+  if (mode === "release") {
+    const releaseValue = entry?.release_date || entry?.date_published || entry?.release_year || entry?.year;
+    const releaseYear = Number(releaseValue);
+    if (Number.isInteger(releaseYear) && releaseYear >= 1900 && releaseYear <= 3000) {
+      return 100000 + releaseYear * 366;
+    }
+    const releaseTime = new Date(releaseValue).getTime();
+    if (!Number.isNaN(releaseTime)) return 100000 + releaseTime / 86400000;
+  }
+  return 1000000000 + fallbackIndex;
+}
+
+function franchiseEntriesForView(franchise) {
+  const entries = Array.isArray(franchise?.entries) ? franchise.entries : [];
+  return entries
+    .map((entry, index) => ({ entry, index, rank: franchiseEntryOrderRank(franchise, entry, state.franchiseOrder, index) }))
+    .filter(({ entry }) => state.franchiseScope !== "main" || franchiseEntryIsMain(entry))
+    .sort((left, right) => left.rank - right.rank || left.index - right.index)
+    .map(({ entry }) => entry);
+}
+
+function createFranchiseExternalLink(label, value) {
+  const url = safeExternalUrl(value);
+  if (!url) return null;
+  const link = document.createElement("a");
+  link.className = "franchise-external-link";
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = label;
+  return link;
+}
+
+function createFranchiseFact(label, status = "") {
+  const node = document.createElement("span");
+  node.className = "franchise-fact";
+  if (status) node.classList.add(`status-${franchiseStatusKey(status)}`);
+  node.textContent = label;
+  return node;
+}
+
+function createFranchiseSectionHeading(title, meta = "") {
+  const row = document.createElement("div");
+  row.className = "franchise-section-heading";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  row.append(heading);
+  if (meta) {
+    const detail = document.createElement("span");
+    detail.textContent = meta;
+    row.append(detail);
+  }
+  return row;
+}
+
+function showSelectedTitleFromFranchise({ history = "push" } = {}) {
+  if (!state.detail) return;
+  state.franchiseRequestId += 1;
+  state.franchiseRequestController?.abort();
+  state.franchiseRequestController = null;
+  state.franchiseLoading = false;
+  state.franchiseError = null;
+  state.franchiseSlug = null;
+  state.rightPaneMode = "title";
+  const previousUrlSync = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
+  renderDetail();
+  state.urlSyncSuspended = previousUrlSync;
+  syncUrlFromDetail({ replace: history !== "push" });
+}
+
+function renderFranchiseBackButton(label = "К выбранному тайтлу") {
+  if (!state.detail) {
+    const link = document.createElement("a");
+    link.className = "franchise-back";
+    link.href = "/";
+    link.textContent = "← К каталогу";
+    return link;
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "franchise-back";
+  button.textContent = `← ${label}`;
+  button.addEventListener("click", () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      showSelectedTitleFromFranchise({ history: "replace" });
+    }
+  });
+  return button;
+}
+
+function renderFranchiseLoading() {
+  const loading = document.createElement("div");
+  loading.className = "franchise-loading";
+  loading.setAttribute("role", "status");
+  const back = renderFranchiseBackButton();
+  if (back) loading.append(back);
+  const title = document.createElement("strong");
+  title.textContent = "Загружаю франшизу";
+  const message = document.createElement("span");
+  message.textContent = "Собираю порядок частей, статусы и официальные анонсы.";
+  const bar = document.createElement("div");
+  bar.className = "franchise-loading-bar";
+  bar.setAttribute("aria-hidden", "true");
+  loading.append(title, message, bar);
+  el.franchiseDetailView.append(loading);
+}
+
+function renderFranchiseError() {
+  const error = document.createElement("div");
+  error.className = "franchise-error";
+  error.setAttribute("role", "alert");
+  const title = document.createElement("strong");
+  title.textContent = "Не удалось открыть франшизу";
+  const message = document.createElement("span");
+  message.textContent = state.franchiseError?.message || "Попробуйте загрузить карточку ещё раз.";
+  const actions = document.createElement("div");
+  actions.className = "franchise-error-actions";
+  const retry = document.createElement("button");
+  retry.type = "button";
+  retry.className = "franchise-back";
+  retry.textContent = "Повторить";
+  retry.addEventListener("click", () => {
+    openFranchise(state.franchiseSlug, { updateUrl: false }).catch(reportActionError("retry franchise"));
+  });
+  actions.append(retry);
+  const back = renderFranchiseBackButton();
+  if (back) actions.append(back);
+  error.append(title, message, actions);
+  el.franchiseDetailView.append(error);
+}
+
+function renderFranchiseHero(franchise) {
+  const hero = document.createElement("header");
+  hero.className = "franchise-hero";
+  const top = document.createElement("div");
+  top.className = "franchise-hero-top";
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "franchise-eyebrow";
+  eyebrow.textContent = "Франшиза";
+  top.append(eyebrow);
+  const back = renderFranchiseBackButton(state.detail?.title ? `К «${state.detail.title}»` : undefined);
+  if (back) top.append(back);
+
+  const heading = document.createElement("h2");
+  heading.id = "franchise-title";
+  heading.tabIndex = -1;
+  heading.textContent = franchise.title || state.detail?.franchise?.title || "Франшиза";
+  el.franchiseDetailView.setAttribute("aria-labelledby", heading.id);
+  hero.append(top, heading);
+
+  const summaryText = franchise.summary || franchise.description;
+  if (summaryText) {
+    const summary = document.createElement("p");
+    summary.className = "franchise-summary";
+    summary.textContent = summaryText;
+    hero.append(summary);
+  }
+  if (franchise.guide) {
+    const guide = document.createElement("div");
+    guide.className = "franchise-guide";
+    const guideTitle = document.createElement("strong");
+    guideTitle.textContent = "Как смотреть";
+    const guideText = document.createElement("span");
+    guideText.textContent = franchise.guide;
+    guide.append(guideTitle, guideText);
+    hero.append(guide);
+  }
+
+  const facts = document.createElement("div");
+  facts.className = "franchise-facts";
+  const count = Number(franchise.entry_count) || (franchise.entries || []).length;
+  if (count) facts.append(createFranchiseFact(`${count} ${russianPlural(count, "часть", "части", "частей")}`));
+  const years = franchiseYearRangeText(franchise.year_range);
+  if (years) facts.append(createFranchiseFact(years));
+  const availableCount = Number(franchise.available_count) || 0;
+  if (availableCount && count) facts.append(createFranchiseFact(`${availableCount} из ${count} в каталоге`));
+  const completedCount = Number(franchise.progress?.completed_count) || 0;
+  if (completedCount) facts.append(createFranchiseFact(`Просмотрено: ${completedCount}`, "completed"));
+  const counts = franchise.status_counts || {};
+  for (const key of ["ongoing", "upcoming", "completed"]) {
+    const value = Number(counts[key] ?? counts[key === "ongoing" ? "releasing" : key === "upcoming" ? "announced" : "finished"]) || 0;
+    if (value) facts.append(createFranchiseFact(`${franchiseStatusLabel(key)}: ${value}`, key));
+  }
+  if (facts.childElementCount) hero.append(facts);
+
+  const source = franchise.source || {};
+  const sourceTitle = source.title || source.name || franchise.source_title;
+  const sourceUrl = source.url || franchise.source_url;
+  const updatedAt = source.updated_at || franchise.source_updated_at || franchise.updated_at;
+  if (sourceTitle || sourceUrl || updatedAt) {
+    const provenance = document.createElement("div");
+    provenance.className = "franchise-source";
+    provenance.append(document.createTextNode("Источник: "));
+    const link = createFranchiseExternalLink(sourceTitle || "официальная страница", sourceUrl);
+    if (link) provenance.append(link);
+    else if (sourceTitle) provenance.append(document.createTextNode(sourceTitle));
+    if (updatedAt) provenance.append(document.createTextNode(` · обновлено ${franchiseDateLabel(updatedAt)}`));
+    hero.append(provenance);
+  }
+  el.franchiseDetailView.append(hero);
+}
+
+function createFranchiseSegment(value, label, activeValue, onSelect) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "franchise-segment";
+  const active = value === activeValue;
+  button.classList.toggle("active", active);
+  button.setAttribute("aria-pressed", active ? "true" : "false");
+  button.dataset.franchiseSegment = value;
+  button.textContent = label;
+  button.addEventListener("click", () => onSelect(value));
+  return button;
+}
+
+function renderFranchiseToolbar() {
+  const toolbar = document.createElement("div");
+  toolbar.className = "franchise-toolbar";
+
+  const order = document.createElement("div");
+  order.className = "franchise-control";
+  const orderLabel = document.createElement("span");
+  orderLabel.className = "franchise-control-label";
+  orderLabel.textContent = "Порядок";
+  const orderSegments = document.createElement("div");
+  orderSegments.className = "franchise-segments";
+  orderSegments.setAttribute("role", "group");
+  orderSegments.setAttribute("aria-label", "Порядок частей франшизы");
+  const setOrder = value => {
+    if (state.franchiseOrder === value) return;
+    state.franchiseOrder = value;
+    renderFranchiseView();
+    window.requestAnimationFrame(() => {
+      el.franchiseDetailView.querySelector(`[data-franchise-segment="${value}"]`)?.focus();
+    });
+  };
+  orderSegments.append(
+    createFranchiseSegment("release", "По выходу", state.franchiseOrder, setOrder),
+    createFranchiseSegment("watch", "Как смотреть", state.franchiseOrder, setOrder),
+  );
+  order.append(orderLabel, orderSegments);
+
+  const scope = document.createElement("div");
+  scope.className = "franchise-control";
+  const scopeLabel = document.createElement("span");
+  scopeLabel.className = "franchise-control-label";
+  scopeLabel.textContent = "Состав";
+  const scopeSegments = document.createElement("div");
+  scopeSegments.className = "franchise-segments";
+  scopeSegments.setAttribute("role", "group");
+  scopeSegments.setAttribute("aria-label", "Состав франшизы");
+  const setScope = value => {
+    if (state.franchiseScope === value) return;
+    state.franchiseScope = value;
+    renderFranchiseView();
+    window.requestAnimationFrame(() => {
+      el.franchiseDetailView.querySelector(`[data-franchise-segment="${value}"]`)?.focus();
+    });
+  };
+  scopeSegments.append(
+    createFranchiseSegment("all", "Все работы", state.franchiseScope, setScope),
+    createFranchiseSegment("main", "Основная история", state.franchiseScope, setScope),
+  );
+  scope.append(scopeLabel, scopeSegments);
+  toolbar.append(order, scope);
+  el.franchiseDetailView.append(toolbar);
+}
+
+function renderFranchiseCurrent(franchise) {
+  const currentEntries = (franchise.entries || []).filter(entry => (
+    ["ongoing", "upcoming"].includes(franchiseStatusKey(entry.status))
+  ));
+  if (!currentEntries.length) return;
+  const section = document.createElement("section");
+  section.className = "franchise-section";
+  section.append(createFranchiseSectionHeading("Сейчас и дальше", "Выходит или официально анонсировано"));
+  const list = document.createElement("div");
+  list.className = "franchise-current-list";
+  for (const entry of currentEntries) {
+    const card = document.createElement("article");
+    card.className = "franchise-current-card";
+    const title = document.createElement("strong");
+    title.textContent = franchiseEntryTitle(entry);
+    const meta = document.createElement("span");
+    meta.textContent = [franchiseStatusLabel(entry.status), franchiseEntryReleaseLabel(entry), entry.kind].filter(Boolean).join(" · ");
+    card.append(title, meta);
+    if (entry.status_note) {
+      const note = document.createElement("p");
+      note.textContent = entry.status_note;
+      card.append(note);
+    }
+    const actions = document.createElement("div");
+    actions.className = "franchise-entry-actions";
+    const open = createFranchiseTitleLink(entry);
+    if (open) actions.append(open);
+    const officialLink = createFranchiseExternalLink("Официальная страница ↗", entry.official_url || entry.url);
+    if (officialLink) actions.append(officialLink);
+    if (actions.childElementCount) card.append(actions);
+    list.append(card);
+  }
+  section.append(list);
+  el.franchiseDetailView.append(section);
+}
+
+function appendFranchiseBadge(parent, label, className = "") {
+  if (!label) return;
+  const badge = document.createElement("span");
+  badge.className = "franchise-entry-badge";
+  if (className) badge.classList.add(className);
+  badge.textContent = label;
+  parent.append(badge);
+}
+
+function createFranchiseTitleLink(entry, label = "Открыть тайтл") {
+  const catalogRef = franchiseCatalogRef(entry);
+  if (catalogRef == null) return null;
+  const link = document.createElement("a");
+  link.className = "franchise-entry-action";
+  link.href = titleHref(catalogRef);
+  link.textContent = label;
+  link.setAttribute("aria-label", `${label} «${franchiseEntryTitle(entry)}»`);
+  link.addEventListener("click", event => {
+    if (!shouldHandleSpaNavigation(event)) return;
+    event.preventDefault();
+    selectAnime(catalogRef, { scrollDetail: true, history: "push" })
+      .catch(reportActionError("open franchise title"));
+  });
+  return link;
+}
+
+function renderFranchiseTimelineEntry(franchise, entry, index) {
+  const item = document.createElement("li");
+  item.className = "franchise-timeline-item";
+  const isCurrent = franchiseEntryIsCurrent(entry, franchise);
+  item.classList.toggle("is-current", isCurrent);
+
+  const marker = document.createElement("span");
+  marker.className = "franchise-timeline-marker";
+  marker.textContent = String(index + 1);
+  marker.setAttribute("aria-hidden", "true");
+
+  const catalogItem = franchiseCatalogItem(entry);
+  const catalogRef = franchiseCatalogRef(entry);
+  const available = Boolean(catalogItem && catalogRef != null);
+  const card = document.createElement("article");
+  card.className = "franchise-entry-card";
+  card.classList.toggle("is-unavailable", !available);
+
+  const coverUrl = entry.cover_url || catalogItem?.cover_url;
+  if (coverUrl) {
+    const poster = document.createElement("img");
+    poster.className = "franchise-entry-poster";
+    poster.src = coverUrl;
+    poster.alt = "";
+    poster.loading = "lazy";
+    poster.decoding = "async";
+    card.append(poster);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "franchise-entry-poster-placeholder";
+    placeholder.setAttribute("aria-hidden", "true");
+    placeholder.textContent = franchiseEntryTitle(entry).slice(0, 1).toUpperCase();
+    card.append(placeholder);
+  }
+
+  const body = document.createElement("div");
+  body.className = "franchise-entry-body";
+  const heading = document.createElement("div");
+  heading.className = "franchise-entry-heading";
+  const title = document.createElement("h4");
+  title.textContent = franchiseEntryTitle(entry);
+  const order = document.createElement("span");
+  order.className = "franchise-entry-order";
+  order.textContent = `№ ${index + 1} ${state.franchiseOrder === "watch" ? "для просмотра" : "по выходу"}`;
+  heading.append(title, order);
+  body.append(heading);
+
+  const badges = document.createElement("div");
+  badges.className = "franchise-entry-badges";
+  appendFranchiseBadge(badges, entry.kind || catalogItem?.kind);
+  if (entry.status) appendFranchiseBadge(badges, franchiseStatusLabel(entry.status), `status-${franchiseStatusKey(entry.status)}`);
+  const release = franchiseEntryReleaseLabel(entry);
+  appendFranchiseBadge(badges, release);
+  if (entry.episode_count) {
+    const episodeCount = Number(entry.episode_count);
+    appendFranchiseBadge(
+      badges,
+      `${episodeCount} ${russianPlural(episodeCount, "серия", "серии", "серий")}`,
+    );
+  }
+  if (isCurrent) appendFranchiseBadge(badges, "Открытый тайтл", "status-ongoing");
+  const watchStatus = effectiveWatchStatus(catalogItem || {});
+  if (watchStatus === "watching") appendFranchiseBadge(badges, "Смотрю", "status-ongoing");
+  if (watchStatus === "completed") appendFranchiseBadge(badges, "Просмотрено", "status-completed");
+  if (!franchiseEntryIsMain(entry)) appendFranchiseBadge(badges, "Ответвление");
+  if (!available) appendFranchiseBadge(badges, "Нет в каталоге");
+  if (badges.childElementCount) body.append(badges);
+
+  const summaryText = entry.summary || entry.description;
+  if (summaryText) {
+    const summary = document.createElement("p");
+    summary.className = "franchise-entry-summary";
+    summary.textContent = summaryText;
+    body.append(summary);
+  }
+  const noteText = state.franchiseOrder === "watch"
+    ? (entry.watch_note || entry.watch_instructions || entry.placement || entry.subtitle)
+    : (entry.status_note || entry.release_note || entry.relation || entry.placement || entry.subtitle);
+  if (noteText && noteText !== summaryText) {
+    const note = document.createElement("div");
+    note.className = "franchise-entry-note";
+    note.textContent = noteText;
+    body.append(note);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "franchise-entry-actions";
+  if (available) {
+    actions.append(createFranchiseTitleLink(entry));
+  } else {
+    const unavailable = document.createElement("span");
+    unavailable.className = "franchise-unavailable";
+    unavailable.textContent = entry.unavailable_reason || "Карточки этого релиза пока нет в каталоге";
+    actions.append(unavailable);
+  }
+  const officialLink = createFranchiseExternalLink("Официальная страница ↗", entry.official_url || entry.url);
+  if (officialLink) actions.append(officialLink);
+  body.append(actions);
+  card.append(body);
+  item.append(marker, card);
+  return item;
+}
+
+function renderFranchiseTimeline(franchise) {
+  const entries = franchiseEntriesForView(franchise);
+  const section = document.createElement("section");
+  section.className = "franchise-section";
+  const heading = state.franchiseOrder === "watch" ? "Как смотреть" : "Хронология выхода";
+  const meta = entries.length
+    ? `${entries.length} ${russianPlural(entries.length, "работа", "работы", "работ")}`
+    : "Нет работ для выбранного фильтра";
+  section.append(createFranchiseSectionHeading(heading, meta));
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "franchise-empty";
+    const title = document.createElement("strong");
+    title.textContent = "Здесь пока пусто";
+    const message = document.createElement("span");
+    message.textContent = "Переключите состав на «Все работы».";
+    empty.append(title, message);
+    section.append(empty);
+  } else {
+    const timeline = document.createElement("ol");
+    timeline.className = "franchise-timeline";
+    timeline.setAttribute("aria-label", heading);
+    entries.forEach((entry, index) => timeline.append(renderFranchiseTimelineEntry(franchise, entry, index)));
+    section.append(timeline);
+  }
+  el.franchiseDetailView.append(section);
+}
+
+function renderFranchiseAnnouncements(franchise) {
+  const announcements = (franchise.announcements || []).filter(item => item && item.official !== false);
+  const section = document.createElement("section");
+  section.className = "franchise-section";
+  section.append(createFranchiseSectionHeading("Официальные анонсы", announcements.length ? "Только подтвержденные источники" : ""));
+  const list = document.createElement("div");
+  list.className = "franchise-announcement-list";
+
+  if (!announcements.length) {
+    const empty = document.createElement("div");
+    empty.className = "franchise-announcement";
+    const title = document.createElement("strong");
+    title.textContent = "Подтвержденных анонсов пока нет";
+    const message = document.createElement("p");
+    message.textContent = "Неизвестные даты не показываются как прогноз.";
+    empty.append(title, message);
+    list.append(empty);
+  } else {
+    for (const announcement of announcements) {
+      const card = document.createElement("article");
+      card.className = "franchise-announcement";
+      const title = document.createElement("strong");
+      title.textContent = announcement.title || "Анонс";
+      card.append(title);
+      if (announcement.summary || announcement.description) {
+        const summary = document.createElement("p");
+        summary.textContent = announcement.summary || announcement.description;
+        card.append(summary);
+      }
+      const meta = document.createElement("div");
+      meta.className = "franchise-announcement-meta";
+      const published = franchiseDateLabel(announcement.published_at || announcement.date);
+      if (published) meta.append(document.createTextNode(published));
+      const sourceTitle = announcement.source_title || announcement.source?.title || announcement.source?.name || "Источник";
+      const sourceLink = createFranchiseExternalLink(sourceTitle, announcement.url || announcement.source_url || announcement.source?.url);
+      if (sourceLink) meta.append(sourceLink);
+      else if (announcement.source_title) meta.append(document.createTextNode(announcement.source_title));
+      if (meta.childElementCount || meta.textContent) card.append(meta);
+      list.append(card);
+    }
+  }
+  section.append(list);
+  el.franchiseDetailView.append(section);
+}
+
+function renderFranchiseView() {
+  el.updatesView.hidden = true;
+  el.titleDetailView.hidden = true;
+  el.franchiseDetailView.hidden = false;
+  el.franchiseDetailView.replaceChildren();
+  el.franchiseDetailView.removeAttribute("aria-labelledby");
+  el.franchiseDetailView.toggleAttribute("aria-busy", state.franchiseLoading);
+  if (el.player.getAttribute("src")) clearPlayer("");
+
+  if (state.franchiseLoading) {
+    renderFranchiseLoading();
+    return;
+  }
+  if (state.franchiseError) {
+    renderFranchiseError();
+    return;
+  }
+  if (!state.franchise) {
+    renderFranchiseLoading();
+    return;
+  }
+  renderFranchiseHero(state.franchise);
+  renderFranchiseToolbar();
+  renderFranchiseCurrent(state.franchise);
+  renderFranchiseTimeline(state.franchise);
+  renderFranchiseAnnouncements(state.franchise);
+}
+
+async function openFranchise(slug, options = {}) {
+  const normalizedSlug = normalizeLinkValue(slug);
+  if (!normalizedSlug) return false;
+
+  state.detailRequestId += 1;
+  state.detailRequestController?.abort();
+  state.detailRequestController = null;
+  el.titleDetailView.removeAttribute("aria-busy");
+  state.franchiseRequestController?.abort();
+  const requestId = state.franchiseRequestId + 1;
+  state.franchiseRequestId = requestId;
+  const controller = new AbortController();
+  state.franchiseRequestController = controller;
+  const changedFranchise = state.franchiseSlug !== normalizedSlug;
+  state.franchiseSlug = normalizedSlug;
+  state.rightPaneMode = "franchise";
+  state.franchiseLoading = true;
+  state.franchiseError = null;
+  if (changedFranchise) {
+    state.franchise = null;
+    state.franchiseOrder = "release";
+    state.franchiseScope = "all";
+  }
+  if (options.updateUrl !== false) syncUrlFromFranchise(normalizedSlug, { replace: options.history !== "push" });
+  renderDetail();
+  if (options.scrollDetail) scrollDetailIntoViewForMobile();
+
+  try {
+    const currentRef = state.detail?.slug || state.detail?.internal_id || state.selectedAnimeId;
+    const currentQuery = currentRef != null ? `?current=${encodeURIComponent(currentRef)}` : "";
+    const payload = await api(`/api/franchises/${encodeURIComponent(normalizedSlug)}${currentQuery}`, { signal: controller.signal });
+    if (requestId !== state.franchiseRequestId) throw new DOMException("Stale franchise request", "AbortError");
+    const franchise = payload?.franchise || payload?.item || payload;
+    state.franchise = { ...franchise, slug: franchise?.slug || normalizedSlug };
+    state.franchiseLoading = false;
+    renderDetail();
+    if (options.scrollDetail) scrollDetailIntoViewForMobile();
+    window.requestAnimationFrame(() => {
+      document.getElementById("franchise-title")?.focus({ preventScroll: true });
+    });
+    return true;
+  } catch (error) {
+    if (isAbortError(error) || requestId !== state.franchiseRequestId) throw error;
+    state.franchiseLoading = false;
+    state.franchiseError = error;
+    renderDetail();
+    reportClientError(error, { action: "load franchise", franchiseSlug: normalizedSlug });
+    return false;
+  } finally {
+    if (requestId === state.franchiseRequestId) state.franchiseRequestController = null;
+  }
+}
+
 function descriptionIsClampedLayout() {
   return Boolean(window.matchMedia?.("(max-width: 640px)").matches);
 }
@@ -2384,15 +3166,39 @@ function renderDescription(detail) {
   });
 }
 
+function renderFranchiseOpen(detail) {
+  const franchise = detail?.franchise;
+  const available = Boolean(franchise?.slug);
+  el.franchiseOpen.hidden = !available;
+  if (!available) {
+    el.franchiseOpenTitle.textContent = "";
+    el.franchiseOpenMeta.textContent = "";
+    el.franchiseOpen.removeAttribute("aria-label");
+    el.franchiseOpen.removeAttribute("href");
+    return;
+  }
+  const title = franchise.title || detail.title || "Все части";
+  const meta = franchiseCompactMeta(franchise) || "Хронология и порядок просмотра";
+  el.franchiseOpenTitle.textContent = title;
+  el.franchiseOpenMeta.textContent = meta;
+  el.franchiseOpen.href = `/franchises/${encodeURIComponent(franchise.slug)}`;
+  el.franchiseOpen.setAttribute("aria-label", `Открыть франшизу «${title}». ${meta}`);
+}
+
 function renderDetail() {
   if (isUpdatesView()) {
     renderContentUpdatesView();
+    return;
+  }
+  if (state.rightPaneMode === "franchise") {
+    renderFranchiseView();
     return;
   }
 
   const detail = state.detail;
   if (!detail) return;
   el.updatesView.hidden = true;
+  el.franchiseDetailView.hidden = true;
   el.titleDetailView.hidden = false;
 
   el.poster.src = detail.cover_url || "";
@@ -2401,6 +3207,7 @@ function renderDetail() {
   el.meta.textContent = [detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
+  renderFranchiseOpen(detail);
   renderDescription(detail);
   renderWatchState(detail);
   renderRecommendationContext(detail);
@@ -3266,6 +4073,13 @@ async function selectAnime(id, options = {}) {
   try {
     const detail = await api(`/api/anime/${encodeURIComponent(id)}`, { signal: controller.signal });
     if (requestId !== state.detailRequestId) throw new DOMException("Stale detail request", "AbortError");
+    state.franchiseRequestId += 1;
+    state.franchiseRequestController?.abort();
+    state.franchiseRequestController = null;
+    state.franchiseLoading = false;
+    state.franchiseError = null;
+    state.franchiseSlug = null;
+    state.rightPaneMode = "title";
     state.detail = detail;
     state.selectedAnimeId = detail.id;
     state.descriptionExpanded = false;
@@ -3952,6 +4766,13 @@ el.descriptionToggle.addEventListener("click", () => {
   state.descriptionExpanded = !state.descriptionExpanded;
   renderDescription(state.detail);
 });
+el.franchiseOpen.addEventListener("click", event => {
+  if (!shouldHandleSpaNavigation(event)) return;
+  const slug = state.detail?.franchise?.slug;
+  if (!slug) return;
+  event.preventDefault();
+  openFranchise(slug, { history: "push", scrollDetail: true }).catch(reportActionError("open franchise"));
+});
 for (const button of el.viewTabs) {
   button.addEventListener("click", () => {
     activateViewMode(button.dataset.view || "all");
@@ -4102,13 +4923,19 @@ el.list.addEventListener("keydown", event => {
 });
 window.addEventListener("popstate", () => {
   const linkState = readLinkState();
-  if (linkState.animeId) {
+  if (linkState.franchiseSlug) {
+    openFranchise(linkState.franchiseSlug, { updateUrl: false, scrollDetail: true }).catch(reportActionError("popstate franchise"));
+  } else if (linkState.animeId) {
     selectAnime(linkState.animeId, { linkState, updateUrl: false, scrollDetail: true }).catch(reportActionError("popstate anime"));
   }
 });
 
 async function selectInitialAnime() {
   const linkState = readLinkState();
+  if (linkState.franchiseSlug) {
+    await openFranchise(linkState.franchiseSlug, { updateUrl: false, scrollDetail: true });
+    return;
+  }
   if (linkState.animeId) {
     try {
       await selectAnime(linkState.animeId, { linkState, scrollDetail: true });

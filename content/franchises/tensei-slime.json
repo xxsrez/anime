@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "slug": "tensei-slime",
+  "title": "О моём перерождении в слизь",
+  "short_title": "Тенсура",
+  "original_title": "転生したらスライムだった件",
+  "summary": "История Римуру Темпеста — бывшего офисного работника, который переродился слизью и постепенно строит в новом мире страну для людей и монстров. Основной сюжет идёт по сезонам; фильмы, OVA и «Дневники слизи» расширяют мир, но не обязательны для понимания главной линии.",
+  "guide": "Для первого знакомства смотрите основные сезоны по порядку. OVA и «Дневники слизи» лучше включить после первого сезона, фильмы — после второго и третьего сезонов соответственно. Краткие пересказы можно пропустить.",
+  "official_url": "https://www.ten-sura.com/anime/tensura",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Официальный сайт «Тенсуры»",
+    "url": "https://www.ten-sura.com/anime/tensura",
+    "updated_at": "2026-07-13"
+  },
+  "entries": [
+    {
+      "key": "season-1",
+      "title": "О моём перерождении в слизь",
+      "subtitle": "Tensei Shitara Slime Datta Ken",
+      "summary": "Начало истории Римуру, знакомство с новым миром и основание Темпеста.",
+      "kind": "Основной сезон",
+      "status": "finished",
+      "release_date": "2018-10-02",
+      "release_end_date": "2019-03-19",
+      "release_year": 2018,
+      "release_label": "2 октября 2018 — 19 марта 2019",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Начинать отсюда.",
+      "cover_url": "https://cdn.myanimelist.net/images/anime/1069/123309.jpg",
+      "official_url": "https://www.ten-sura.com/anime/tensura",
+      "match": {
+        "anidb": [13871]
+      }
+    },
+    {
+      "key": "veldora-diary-1",
+      "title": "Дневник Вельдоры",
+      "subtitle": "Tensei Shitara Slime Datta Ken: Kanwa - Veldora Nikki",
+      "summary": "Краткий пересказ первого сезона с точки зрения Вельдоры.",
+      "kind": "Краткий пересказ",
+      "status": "finished",
+      "release_date": "2019-03-26",
+      "release_year": 2019,
+      "release_label": "26 марта 2019",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните первый сезон.",
+      "match": {
+        "sources": ["yummyanime:5473"]
+      }
+    },
+    {
+      "key": "oad",
+      "title": "О моём перерождении в слизь OVA",
+      "subtitle": "Tensei Shitara Slime Datta Ken OAD",
+      "summary": "Пять дополнительных историй о героях Темпеста между крупными сюжетными арками.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2019-07-09",
+      "release_end_date": "2020-11-11",
+      "release_year": 2019,
+      "release_label": "2019 — 2020",
+      "episode_count": 5,
+      "release_order": 3,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Лучше после первого сезона; для основной истории не обязательны.",
+      "match": {
+        "anidb": [14526],
+        "sources": ["yummyanime:2384"]
+      }
+    },
+    {
+      "key": "season-2-part-1",
+      "title": "О моём перерождении в слизь 2",
+      "subtitle": "Tensei Shitara Slime Datta Ken 2nd Season",
+      "summary": "Продолжение основной истории: Темпест сталкивается с новыми политическими и военными угрозами.",
+      "kind": "Основной сезон",
+      "status": "finished",
+      "release_date": "2021-01-12",
+      "release_end_date": "2021-03-30",
+      "release_year": 2021,
+      "release_label": "12 января — 30 марта 2021",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Продолжайте после первого сезона и выбранных дополнений.",
+      "match": {
+        "anidb": [14767],
+        "sources": ["yummyanime:262"]
+      }
+    },
+    {
+      "key": "slime-diaries",
+      "title": "Дневники слизи",
+      "subtitle": "Tensura Nikki: Tensei Shitara Slime Datta Ken",
+      "summary": "Повседневный комедийный спин-офф о жизни Римуру и жителей Темпеста.",
+      "kind": "Спин-офф",
+      "status": "finished",
+      "release_date": "2021-04-06",
+      "release_end_date": "2021-06-22",
+      "release_year": 2021,
+      "release_label": "6 апреля — 22 июня 2021",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Можно смотреть сразу после первого сезона; это лёгкая необязательная пауза перед продолжением.",
+      "match": {
+        "anidb": [15457],
+        "sources": ["animego:1747", "yummyanime:301"]
+      }
+    },
+    {
+      "key": "veldora-diary-2",
+      "title": "Дневник Вельдоры 2",
+      "subtitle": "Tensei Shitara Slime Datta Ken 2nd Season: Kanwa - Veldora Nikki 2",
+      "summary": "Краткий пересказ первой половины второго сезона.",
+      "kind": "Краткий пересказ",
+      "status": "finished",
+      "release_date": "2021-06-29",
+      "release_year": 2021,
+      "release_label": "29 июня 2021",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "recap",
+      "watch_note": "Необязательно: освежает события перед второй половиной сезона.",
+      "match": {
+        "sources": ["yummyanime:948"]
+      }
+    },
+    {
+      "key": "hinata-recap",
+      "title": "Хината Сакагучи",
+      "subtitle": "Tensei Shitara Slime Datta Ken: Kanwa - Hinata Sakaguchi",
+      "summary": "Специальный пересказ ключевых событий перед продолжением второго сезона.",
+      "kind": "Краткий пересказ",
+      "status": "finished",
+      "release_date": "2021-07-06",
+      "release_year": 2021,
+      "release_label": "6 июля 2021",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "recap",
+      "watch_note": "Можно пропустить: новых обязательных событий нет.",
+      "match": {
+        "sources": ["yummyanime:918"]
+      }
+    },
+    {
+      "key": "season-2-part-2",
+      "title": "О моём перерождении в слизь 2. Часть 2",
+      "subtitle": "Tensei Shitara Slime Datta Ken 2nd Season Part 2",
+      "summary": "Вторая половина сезона завершает начатую политическую и военную арку.",
+      "kind": "Основной сезон",
+      "status": "finished",
+      "release_date": "2021-07-06",
+      "release_end_date": "2021-09-21",
+      "release_year": 2021,
+      "release_label": "6 июля — 21 сентября 2021",
+      "episode_count": 12,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Смотрите сразу после первой половины второго сезона.",
+      "match": {
+        "anidb": [15456],
+        "sources": ["yummyanime:299"]
+      }
+    },
+    {
+      "key": "ramiris-saved",
+      "title": "Спасённая Рамирис",
+      "subtitle": "Tensei Shitara Slime Datta Ken: Sukuwareru Ramiris",
+      "summary": "Две короткие бонусные истории о Рамирис и героях Темпеста.",
+      "kind": "Короткометражный ONA",
+      "status": "finished",
+      "release_date": "2022-03-19",
+      "release_end_date": "2022-07-21",
+      "release_year": 2022,
+      "release_label": "19 марта — 21 июля 2022",
+      "episode_count": 2,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "optional",
+      "watch_note": "Необязательный короткий бонус после второго сезона.",
+      "match": {
+        "sources": ["animego:3066", "yummyanime:2086"]
+      }
+    },
+    {
+      "key": "scarlet-bond",
+      "title": "О моём перерождении в слизь: Алые узы",
+      "subtitle": "That Time I Got Reincarnated as a Slime the Movie: Scarlet Bond",
+      "summary": "Отдельное приключение Римуру и Темпеста с новой страной и героями.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-11-25",
+      "release_year": 2022,
+      "release_label": "25 ноября 2022",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "optional",
+      "watch_note": "Лучше после второго сезона.",
+      "match": {
+        "anidb": [16776],
+        "sources": ["yummyanime:1204"]
+      }
+    },
+    {
+      "key": "sunshine-in-the-slime",
+      "title": "Римуру из паргелия: Солнечный свет в слизи",
+      "subtitle": "Genjitsu no Rimuru: Sunshine in the Slime",
+      "summary": "Короткий кроссовер с «Ёханэ-паргелием», не связанный с основной сюжетной линией.",
+      "kind": "Кроссовер",
+      "status": "finished",
+      "release_year": 2023,
+      "release_label": "2023",
+      "episode_count": 2,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Полностью необязательный кроссовер; можно смотреть после второго сезона.",
+      "match": {
+        "sources": ["yummyanime:5159"]
+      }
+    },
+    {
+      "key": "visions-of-coleus",
+      "title": "О моём перерождении в слизь: Мечта Колеуса",
+      "subtitle": "Tensei Shitara Slime Datta Ken: Coleus no Yume",
+      "summary": "Трёхсерийная побочная история о тайной миссии Римуру в королевстве Колеус.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2023-11-01",
+      "release_year": 2023,
+      "release_label": "1 ноября 2023",
+      "episode_count": 3,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Хронологически история ранняя, но комфортнее смотреть после второго сезона и фильма.",
+      "match": {
+        "anidb": [17873],
+        "sources": ["yummyanime:2720"]
+      }
+    },
+    {
+      "key": "season-3",
+      "title": "О моём перерождении в слизь 3",
+      "subtitle": "Tensei Shitara Slime Datta Ken 3rd Season",
+      "summary": "Основная история возвращается к отношениям Темпеста с соседними державами и новым испытаниям для Римуру.",
+      "kind": "Основной сезон",
+      "status": "finished",
+      "release_date": "2024-04-05",
+      "release_end_date": "2024-09-27",
+      "release_year": 2024,
+      "release_label": "5 апреля — 27 сентября 2024",
+      "episode_count": 24,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Смотрите после второго сезона; фильм «Алые узы» необязателен.",
+      "match": {
+        "anidb": [17709],
+        "sources": ["animego:2540", "yummyanime:2222"]
+      }
+    },
+    {
+      "key": "tears-of-the-blue-sea",
+      "title": "О моём перерождении в слизь: Слёзы синего моря",
+      "subtitle": "That Time I Got Reincarnated as a Slime the Movie: Tears of the Blue Sea Arc",
+      "summary": "Второй полнометражный фильм — самостоятельное морское приключение под авторским надзором Фусэ.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2026-02-27",
+      "release_year": 2026,
+      "release_label": "27 февраля 2026",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "optional",
+      "watch_note": "Лучше после третьего сезона и до четвёртого.",
+      "official_url": "https://movie02.ten-sura.com/",
+      "match": {
+        "anidb": [18885],
+        "sources": ["animego:3624", "yummyanime:4959"]
+      }
+    },
+    {
+      "key": "season-4",
+      "title": "О моём перерождении в слизь 4",
+      "subtitle": "Tensei Shitara Slime Datta Ken 4th Season",
+      "summary": "Текущее продолжение основной истории. Сезон заявлен как большой проект на пять куров; первые два идут подряд.",
+      "kind": "Основной сезон",
+      "status": "releasing",
+      "release_date": "2026-04-03",
+      "release_year": 2026,
+      "release_label": "с 3 апреля 2026",
+      "episode_count": null,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "main",
+      "watch_note": "Смотрите после третьего сезона; второй фильм — рекомендуемое, но необязательное дополнение.",
+      "status_note": "Выходит; подтверждено пять куров, первые два идут подряд, даты следующих блоков пока не указаны.",
+      "official_url": "https://www.ten-sura.com/anime/tensura",
+      "match": {
+        "anidb": [18884],
+        "sources": ["animego:3220", "yummyanime:4944"]
+      }
+    }
+  ],
+  "announcements": [
+    {
+      "title": "Четвёртый сезон рассчитан на пять куров",
+      "summary": "Официальный анонс подтверждает проект из пяти куров; первые два выходят подряд с апреля 2026 года. Точные даты остальных блоков пока не объявлены.",
+      "published_at": "2025-12-19",
+      "date": "2025-12-19",
+      "url": "https://www.ten-sura.com/news/anime/tensura/news/post/11134",
+      "source_title": "Официальный сайт «Тенсуры»",
+      "official": true
+    },
+    {
+      "title": "«Слёзы синего моря» вышли 27 февраля 2026 года",
+      "summary": "Официальный анонс подтверждает дату японской премьеры второго полнометражного фильма.",
+      "published_at": "2026-02-26",
+      "date": "2026-02-26",
+      "url": "https://www.ten-sura.com/news/anime/tensura/news/post/11231",
+      "source_title": "Официальный сайт «Тенсуры»",
+      "official": true
+    }
+  ]
+}

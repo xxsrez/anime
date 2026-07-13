@@ -17,6 +17,9 @@ choosing a provider/translation, and tracking personal progress.
   availability, or title.
 - Open a title detail view with poster, metadata, description, genres, fields,
   episodes, and player source selectors.
+- Open a franchise hub from a related title, compare release and recommended
+  watch orders, see optional films/OVA/spin-offs, and spot known parts that are
+  not yet in the playable catalog.
 - Add a title to favorites independently of its viewing status.
 - Store current episode progress manually or through automatic watch signals
   around the embedded player.
@@ -38,6 +41,8 @@ The project currently knows about two source families:
 - YummyAnime/YummyAni title metadata imported into the same catalog model.
 - A canonical API layer merges conservative AnimeGO/YummyAnime duplicate
   matches into one visible title with multiple source variants.
+- A curated franchise layer groups those canonical releases without relying on
+  unsafe title similarity and can include missing or future releases.
 
 Catalog counts are intentionally not fixed in documentation. Inspect the
 current dev snapshot with `scripts/check_data_health.py`; production has its own
