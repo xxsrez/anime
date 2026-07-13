@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "slug": "horimiya",
+  "title": "Хоримия",
+  "short_title": "Horimiya",
+  "summary": "Школьная романтическая комедия о двух одноклассниках, которые узнают скрытые стороны друг друга и постепенно впускают в отношения друзей и повседневную жизнь.",
+  "guide": "Сначала смотрите основной сериал 2021 года, затем «Кусочек», который экранизирует пропущенные главы параллельно знакомым событиям. Старые OVA — отдельная адаптация.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/42897/ec5596fbb124d3c92811343e02fb04d6.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/42897",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "horimiya",
+    "primary_shikimori_ids": [
+      42897
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 52,
+  "entries": [
+    {
+      "key": "shikimori-14753",
+      "title": "Хори-сан и Миямура-кун",
+      "subtitle": "Hori-san to Miyamura-kun",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2012-09-26",
+      "release_end_date": "2021-05-25",
+      "release_year": 2012,
+      "release_label": "26 сентября 2012 — 25 мая 2021",
+      "episode_count": 6,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14753/e2b697b15fb6eb106a9a1153f0e2cc39.jpeg",
+      "match": {
+        "shikimori": [
+          14753
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42897",
+      "title": "Хоримия",
+      "subtitle": "Horimiya",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-10",
+      "release_end_date": "2021-04-04",
+      "release_year": 2021,
+      "release_label": "10 января — 4 апреля 2021",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42897/ec5596fbb124d3c92811343e02fb04d6.jpeg",
+      "match": {
+        "shikimori": [
+          42897
+        ],
+        "sources": [
+          "animego:1686",
+          "yummyanime:274"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54856",
+      "title": "Хоримия: Кусочек",
+      "subtitle": "Horimiya: Piece",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-07-01",
+      "release_end_date": "2023-09-23",
+      "release_year": 2023,
+      "release_label": "1 июля — 23 сентября 2023",
+      "episode_count": 13,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54856/22f5dcad671d93212eafd325417c4da9.jpeg",
+      "match": {
+        "shikimori": [
+          54856
+        ],
+        "sources": [
+          "animego:2353",
+          "yummyanime:2743"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

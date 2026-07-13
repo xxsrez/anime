@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "slug": "kingdom",
+  "title": "Царство",
+  "short_title": "Kingdom",
+  "summary": "Военно-историческая сага о сироте Сине и объединении Китая, соединяющая масштабные сражения, политическую борьбу и путь будущего великого полководца.",
+  "guide": "Смотрите номерные сезоны строго по порядку, начиная с первого. Короткие рекламные материалы и итоговые ролики не нужны для продолжения сюжета.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/12031/8146daa53e5b142efd93a944f6202120.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/12031",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "kingdom",
+    "primary_shikimori_ids": [
+      12031
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 48,
+  "entries": [
+    {
+      "key": "shikimori-12031",
+      "title": "Царство",
+      "subtitle": "Kingdom",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-06-04",
+      "release_end_date": "2013-02-25",
+      "release_year": 2012,
+      "release_label": "4 июня 2012 — 25 февраля 2013",
+      "episode_count": 38,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12031/8146daa53e5b142efd93a944f6202120.jpeg",
+      "match": {
+        "shikimori": [
+          12031
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17389",
+      "title": "Царство 2",
+      "subtitle": "Kingdom 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-06-08",
+      "release_end_date": "2014-03-02",
+      "release_year": 2013,
+      "release_label": "8 июня 2013 — 2 марта 2014",
+      "episode_count": 39,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17389/075084f99e55ccd26408bd81e39c7727.jpeg",
+      "match": {
+        "shikimori": [
+          17389
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40682",
+      "title": "Царство 3",
+      "subtitle": "Kingdom 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-04-06",
+      "release_end_date": "2021-10-17",
+      "release_year": 2020,
+      "release_label": "6 апреля 2020 — 17 октября 2021",
+      "episode_count": 26,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40682/44d9f3283d23ef04c080d67cc77ed733.jpeg",
+      "match": {
+        "shikimori": [
+          40682
+        ],
+        "sources": [
+          "yummyanime:15"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50160",
+      "title": "Царство 4",
+      "subtitle": "Kingdom 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-04-10",
+      "release_end_date": "2022-10-02",
+      "release_year": 2022,
+      "release_label": "10 апреля — 2 октября 2022",
+      "episode_count": 26,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50160/9557d42e14e0d38275f5a544649bafd2.jpeg",
+      "match": {
+        "shikimori": [
+          50160
+        ],
+        "sources": [
+          "yummyanime:1291"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53223",
+      "title": "Царство 5",
+      "subtitle": "Kingdom 5th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-14",
+      "release_end_date": "2024-03-31",
+      "release_year": 2024,
+      "release_label": "14 января — 31 марта 2024",
+      "episode_count": 13,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53223/f68c9a9d72f80ad88e4ed74090708cae.jpeg",
+      "match": {
+        "shikimori": [
+          53223
+        ],
+        "sources": [
+          "yummyanime:2152"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61517",
+      "title": "Царство 6",
+      "subtitle": "Kingdom 6th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-10-05",
+      "release_end_date": "2025-12-28",
+      "release_year": 2025,
+      "release_label": "5 октября — 28 декабря 2025",
+      "episode_count": 13,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61517/30b0ff5d8d8e0a68dc4cfff02d1d9317.jpeg",
+      "match": {
+        "shikimori": [
+          61517
+        ],
+        "sources": [
+          "yummyanime:8226"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63185",
+      "title": "Царство 6",
+      "subtitle": "Kingdom 6th Season (Zoku-hen)",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63185/671144924618c8f45c15b9f19583b80d.jpeg",
+      "match": {
+        "shikimori": [
+          63185
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1251,11 +1251,7 @@ function franchiseYearRangeText(value) {
 }
 
 function franchiseStatusKey(value) {
-  const normalized = searchText(value).replace(/\s+/g, "_");
-  if (["ongoing", "releasing", "airing", "current", "выходит", "онгоинг"].includes(normalized)) return "ongoing";
-  if (["upcoming", "announced", "planned", "анонс", "анонсировано", "скоро"].includes(normalized)) return "upcoming";
-  if (["completed", "finished", "released", "завершено", "вышло"].includes(normalized)) return "completed";
-  return normalized || "unknown";
+  return frontendRuntime.franchiseStatusKey(value);
 }
 
 function franchiseStatusLabel(value) {

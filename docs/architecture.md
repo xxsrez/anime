@@ -17,8 +17,10 @@
 - `franchise_catalog.py` validates checked-in franchise cards and connects
   their releases to the canonical catalog using stable upstream IDs.
 - `scripts/generate_franchise_catalog.py` materializes the curated top-franchise
-  manifest as static cards; `scripts/check_franchise_data.py` audits their local
-  coverage and one-to-one canonical ownership.
+  manifest as static cards and supplements missing mainline continuations from
+  the relation graph; `scripts/check_franchise_data.py` audits local coverage,
+  one-to-one canonical ownership, and an editorial inbox of high-rated
+  uncovered titles.
 - `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
   results, applies additive episode/provider changes, records attribution, and
   packages the Chrome extension download.

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "slug": "angel-next-door",
+  "title": "Ангел по соседству",
+  "short_title": "The Angel Next Door",
+  "summary": "Спокойная романтическая история о двух соседях-старшеклассниках, чья взаимная бытовая помощь постепенно превращается в близкие отношения.",
+  "guide": "Начинайте с первого сезона и продолжайте следующими сезонами по порядку. Проморолики и короткие рекламные выпуски для сюжета не нужны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/50739/24f82ddd75e61180619994695586c627.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/50739",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "the_angel_next_door_spoils_me_rotten",
+    "primary_shikimori_ids": [
+      50739
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 60,
+  "entries": [
+    {
+      "key": "shikimori-50739",
+      "title": "Ангел по соседству",
+      "subtitle": "Otonari no Tenshi-sama ni Itsunomanika Dame Ningen ni Sareteita Ken",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-07",
+      "release_end_date": "2023-03-25",
+      "release_year": 2023,
+      "release_label": "7 января — 25 марта 2023",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50739/24f82ddd75e61180619994695586c627.jpeg",
+      "match": {
+        "shikimori": [
+          50739
+        ],
+        "sources": [
+          "animego:2233",
+          "yummyanime:1666"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56876",
+      "title": "Ангел по соседству 2",
+      "subtitle": "Otonari no Tenshi-sama ni Itsunomanika Dame Ningen ni Sareteita Ken 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-04-03",
+      "release_end_date": "2026-06-19",
+      "release_year": 2026,
+      "release_label": "3 апреля — 19 июня 2026",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56876/508291d652efa6a02da7636053cb7f1e.jpeg",
+      "match": {
+        "shikimori": [
+          56876
+        ],
+        "sources": [
+          "animego:3218",
+          "yummyanime:4580"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

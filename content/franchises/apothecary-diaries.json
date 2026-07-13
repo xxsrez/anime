@@ -128,6 +128,54 @@
         "sources": [],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61987",
+      "title": "Монолог фармацевта 3",
+      "subtitle": "Kusuriya no Hitorigoto 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2026-10-01",
+      "release_year": 2026,
+      "release_label": "1 октября 2026",
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61987/5290e1b9c9f939e5547f5b2aa52f3e51.jpeg",
+      "match": {
+        "shikimori": [
+          61987
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62841",
+      "title": "Монолог фармацевта 3. Часть 2",
+      "subtitle": "Kusuriya no Hitorigoto 3rd Season Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-04-01",
+      "release_year": 2027,
+      "release_label": "1 апреля 2027",
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 апреля 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62841/f9d40ec4b74d9d18b42b9717eada34fc.jpeg",
+      "match": {
+        "shikimori": [
+          62841
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

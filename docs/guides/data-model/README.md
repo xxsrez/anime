@@ -217,14 +217,21 @@ the existing canonical item before exposing the franchise API, so duplicate
 AnimeGO/YummyAnime rows remain one release in the timeline. Similar titles are
 never grouped automatically.
 
-The curated top-franchise set is declared in `content/franchise-seeds.json`.
+The curated franchise set is declared in `content/franchise-seeds.json`. It is
+an expanding coverage catalog, not a fixed-size top list.
 `scripts/generate_franchise_catalog.py` turns that manifest and Shikimori's
 franchise metadata into checked-in definitions; production never depends on a
-runtime request to Shikimori. Generated entries keep release order as the safe
-default because one tag may contain several continuities; the manifest's
-editorial guide owns branch-specific viewing advice. Hand-authored cards may
-still define a separate recommended order. Regenerate all cards or one card
-with:
+runtime request to Shikimori. The generator also follows prequel/sequel links
+from the primary title because newly announced continuations can appear in the
+relation graph before Shikimori assigns their franchise tag. Other graph links
+are not unioned, and a graph continuation with a different non-empty franchise
+tag fails generation for manual review, so crossovers cannot silently merge
+unrelated brands.
+
+Generated entries keep release order as the safe default because one tag may
+contain several continuities; the manifest's editorial guide owns
+branch-specific viewing advice. Hand-authored cards may still define a
+separate recommended order. Regenerate all cards or one card with:
 
 ```bash
 .venv/bin/python scripts/generate_franchise_catalog.py --write
@@ -232,7 +239,10 @@ with:
 ```
 
 After generation, verify local catalog coverage and one-to-one ownership of
-canonical titles:
+canonical titles. The report also includes a rating-sorted editorial inbox of
+popular uncovered titles so omissions remain visible. That inbox contains
+individual titles and is intentionally not presented as an automatic franchise
+detector:
 
 ```bash
 .venv/bin/python scripts/check_franchise_data.py --db db/animego.sqlite

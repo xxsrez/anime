@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "slug": "made-in-abyss",
+  "title": "Созданный в Бездне",
+  "short_title": "Made in Abyss",
+  "summary": "Приключенческая драма об исследовании гигантской Бездны, где удивительный мир и детское любопытство сталкиваются с необратимыми последствиями спуска.",
+  "guide": "После первого сезона смотрите фильм «Рассвет глубокой души», затем второй сезон. Первые два полнометражных фильма пересказывают сериал и не обязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/34599/27feaa368ca5e9035310d8d3d972d2cd.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/34599",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "made_in_abyss",
+    "primary_shikimori_ids": [
+      34599
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 46,
+  "entries": [
+    {
+      "key": "shikimori-34599",
+      "title": "Созданный в Бездне",
+      "subtitle": "Made in Abyss",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2017-07-07",
+      "release_end_date": "2017-09-29",
+      "release_year": 2017,
+      "release_label": "7 июля — 29 сентября 2017",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34599/27feaa368ca5e9035310d8d3d972d2cd.jpeg",
+      "match": {
+        "shikimori": [
+          34599
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37514",
+      "title": "Созданный в Бездне: Начало путешествия",
+      "subtitle": "Made in Abyss Movie 1: Tabidachi no Yoake",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-01-04",
+      "release_year": 2019,
+      "release_label": "4 января 2019",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37514/7275ea9b76a1e3a95bce71fe0abc5d9a.jpeg",
+      "match": {
+        "shikimori": [
+          37514
+        ],
+        "sources": [
+          "yummyanime:4429"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37515",
+      "title": "Созданный в Бездне: Блуждающие сумерки",
+      "subtitle": "Made in Abyss Movie 2: Hourou Suru Tasogare",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-01-18",
+      "release_year": 2019,
+      "release_label": "18 января 2019",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37515/ecd34050c80f4bf766e29fe56572d172.jpeg",
+      "match": {
+        "shikimori": [
+          37515
+        ],
+        "sources": [
+          "yummyanime:4432"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36862",
+      "title": "Созданный в Бездне: Рассвет глубокой души",
+      "subtitle": "Made in Abyss Movie 3: Fukaki Tamashii no Reimei",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-01-17",
+      "release_year": 2020,
+      "release_label": "17 января 2020",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36862/92663c1040b9f639f1bc7f7a2ecfb978.jpeg",
+      "match": {
+        "shikimori": [
+          36862
+        ],
+        "sources": [
+          "yummyanime:822"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40897",
+      "title": "Повседневная жизнь Марулк",
+      "subtitle": "Marulk-chan no Nichijou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-01-17",
+      "release_end_date": "2020-02-07",
+      "release_year": 2020,
+      "release_label": "17 января — 7 февраля 2020",
+      "episode_count": 4,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40897/501ae8040a8802279da358d7c779b993.jpeg",
+      "match": {
+        "shikimori": [
+          40897
+        ],
+        "sources": [
+          "yummyanime:3435"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41084",
+      "title": "Созданный в Бездне: Солнце, вспыхнувшее в Золотом городе",
+      "subtitle": "Made in Abyss: Retsujitsu no Ougonkyou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-07-06",
+      "release_end_date": "2022-09-28",
+      "release_year": 2022,
+      "release_label": "6 июля — 28 сентября 2022",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41084/2ab7cd332f93291322afd51b441cea5a.jpeg",
+      "match": {
+        "shikimori": [
+          41084
+        ],
+        "sources": [
+          "yummyanime:880"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52149",
+      "title": "Созданный в Бездне: Солнце, вспыхнувшее в Золотом городе — Вместе с папой",
+      "subtitle": "Made in Abyss: Retsujitsu no Ougonkyou - Papa to Issho",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-10-26",
+      "release_year": 2022,
+      "release_label": "26 октября 2022",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52149/3949abc935f0c23934475dd06a1f9e7a.jpeg",
+      "match": {
+        "shikimori": [
+          52149
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54250",
+      "title": "Созданный в Бездне: Тайна пробуждения",
+      "subtitle": "Made in Abyss: Mezameru Shinpi",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_date": "2026-10-23",
+      "release_year": 2026,
+      "release_label": "23 октября 2026",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 23 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54250/b659b1928c305e0f66112d83e066d277.jpeg",
+      "match": {
+        "shikimori": [
+          54250
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

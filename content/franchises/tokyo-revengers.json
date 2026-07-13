@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "slug": "tokyo-revengers",
+  "title": "Токийские мстители",
+  "short_title": "Tokyo Revengers",
+  "summary": "Криминальная драма о путешествиях во времени, подростковых бандах и попытках изменить трагическое будущее, исправляя решения прошлого.",
+  "guide": "Смотрите сюжетные сезоны и арки по порядку выхода. Комедийные короткометражки Chibi Revenger необязательны и лучше подходят после первого сезона.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/42249/6754c20060bd5d0581974d0bd769db81.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/42249",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "chibi_revenger",
+    "primary_shikimori_ids": [
+      42249
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 57,
+  "entries": [
+    {
+      "key": "shikimori-42249",
+      "title": "Токийские мстители",
+      "subtitle": "Tokyo Revengers",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-04-11",
+      "release_end_date": "2021-09-19",
+      "release_year": 2021,
+      "release_label": "11 апреля — 19 сентября 2021",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42249/6754c20060bd5d0581974d0bd769db81.jpeg",
+      "match": {
+        "shikimori": [
+          42249
+        ],
+        "sources": [
+          "animego:1758",
+          "yummyanime:335"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48735",
+      "title": "Тиби-мститель",
+      "subtitle": "Chibi Revenger",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-04-12",
+      "release_end_date": "2021-09-20",
+      "release_year": 2021,
+      "release_label": "12 апреля — 20 сентября 2021",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48735/3cdaa7394639fd5759a5e6e521da2966.jpeg",
+      "match": {
+        "shikimori": [
+          48735
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50608",
+      "title": "Токийские мстители: Рождественская битва",
+      "subtitle": "Tokyo Revengers: Seiya Kessen-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-08",
+      "release_end_date": "2023-04-02",
+      "release_year": 2023,
+      "release_label": "8 января — 2 апреля 2023",
+      "episode_count": 13,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50608/c062ff6456f6d2f8522e66f716fb3703.jpeg",
+      "match": {
+        "shikimori": [
+          50608
+        ],
+        "sources": [
+          "animego:2206",
+          "yummyanime:1675"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54918",
+      "title": "Токийские мстители: Поднебесье",
+      "subtitle": "Tokyo Revengers: Tenjiku-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-04",
+      "release_end_date": "2023-12-27",
+      "release_year": 2023,
+      "release_label": "4 октября — 27 декабря 2023",
+      "episode_count": 13,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54918/521a5a7cbf2077b245cec041a5623cef.jpeg",
+      "match": {
+        "shikimori": [
+          54918
+        ],
+        "sources": [
+          "animego:2400",
+          "yummyanime:2781"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59091",
+      "title": "Сказочные мстители",
+      "subtitle": "Douwa Revenger",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-10-27",
+      "release_end_date": "2025-08-02",
+      "release_year": 2024,
+      "release_label": "27 октября 2024 — 2 августа 2025",
+      "episode_count": 18,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59091/b30d239d6993ae46297e108d98f0b6b3.jpeg",
+      "match": {
+        "shikimori": [
+          59091
+        ],
+        "sources": [
+          "yummyanime:4851"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59088",
+      "title": "Токийские мстители: Битва трёх небожителей",
+      "subtitle": "Tokyo Revengers: Santen Sensou-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2026-10-03",
+      "release_year": 2026,
+      "release_label": "3 октября 2026",
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 3 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59088/e0f5f944a5a7dbd57313afb765ebeb30.jpeg",
+      "match": {
+        "shikimori": [
+          59088
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

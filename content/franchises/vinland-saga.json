@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "slug": "vinland-saga",
+  "title": "Сага о Винланде",
+  "short_title": "Vinland Saga",
+  "summary": "Историческая драма о мести, войне и поиске земли без насилия, прослеживающая взросление Торфинна на фоне эпохи викингов.",
+  "guide": "Смотрите первый и второй сезоны последовательно, затем переходите к официальным продолжениям. Короткие дополнительные материалы для основной истории не нужны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/37521/7996a14eaf4a52d816f5bab92ea80e79.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/37521",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "vinland_saga",
+    "primary_shikimori_ids": [
+      37521
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 45,
+  "entries": [
+    {
+      "key": "shikimori-37521",
+      "title": "Сага о Винланде",
+      "subtitle": "Vinland Saga",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-07-08",
+      "release_end_date": "2019-12-30",
+      "release_year": 2019,
+      "release_label": "8 июля — 30 декабря 2019",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37521/7996a14eaf4a52d816f5bab92ea80e79.jpeg",
+      "match": {
+        "shikimori": [
+          37521
+        ],
+        "sources": [
+          "animego:1089",
+          "yummyanime:146"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49387",
+      "title": "Сага о Винланде 2",
+      "subtitle": "Vinland Saga Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-10",
+      "release_end_date": "2023-06-20",
+      "release_year": 2023,
+      "release_label": "10 января — 20 июня 2023",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49387/1770e442cbce434da85f7c9a0cb9b33e.jpeg",
+      "match": {
+        "shikimori": [
+          49387
+        ],
+        "sources": [
+          "animego:2194",
+          "yummyanime:1207"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54463",
+      "title": "Сага о Винланде 2: Утопающий в тени",
+      "subtitle": "Vinland Saga Season 2: Drowning in the Shadow",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-02-14",
+      "release_year": 2023,
+      "release_label": "14 февраля 2023",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54463/3316a73fccd7a529ae80b73c8b8a9369.jpeg",
+      "match": {
+        "shikimori": [
+          54463
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55272",
+      "title": "Сага о Винланде 2: Всё та же история",
+      "subtitle": "Vinland Saga Season 2: Same Old Story",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-05-12",
+      "release_year": 2023,
+      "release_label": "12 мая 2023",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55272/f5f633dacf82ad31bc762450d4758091.jpeg",
+      "match": {
+        "shikimori": [
+          55272
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

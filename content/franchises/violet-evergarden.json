@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "slug": "violet-evergarden",
+  "title": "Вайолет Эвергарден",
+  "short_title": "Violet Evergarden",
+  "summary": "Послевоенная драма о бывшей солдатке, которая учится понимать чувства людей, записывая их письма и постепенно осмысливая собственное прошлое.",
+  "guide": "Начните с сериала, затем посмотрите OVA, фильм «Вечность и призрак пера» и завершающий полнометражный фильм 2020 года. Короткие спецвыпуски необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/33352/ca7dab80729f41d67712d5a1f0f95a43.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/33352",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "violet_evergarden",
+    "primary_shikimori_ids": [
+      33352
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 49,
+  "entries": [
+    {
+      "key": "shikimori-33352",
+      "title": "Вайолет Эвергарден",
+      "subtitle": "Violet Evergarden",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-01-11",
+      "release_end_date": "2018-04-05",
+      "release_year": 2018,
+      "release_label": "11 января — 5 апреля 2018",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33352/ca7dab80729f41d67712d5a1f0f95a43.jpeg",
+      "match": {
+        "shikimori": [
+          33352
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37095",
+      "title": "Вайолет Эвергарден: День, когда ты поймёшь, что я люблю тебя, обязательно наступит",
+      "subtitle": "Violet Evergarden: Kitto \"Ai\" wo Shiru Hi ga Kuru no Darou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-07-04",
+      "release_year": 2018,
+      "release_label": "4 июля 2018",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37095/fd62ecc1b780878cea3a38867f00df4a.jpeg",
+      "match": {
+        "shikimori": [
+          37095
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39741",
+      "title": "Вайолет Эвергарден: Вечность и призрак пера",
+      "subtitle": "Violet Evergarden Gaiden: Eien to Jidou Shuki Ningyou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-09-06",
+      "release_year": 2019,
+      "release_label": "6 сентября 2019",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39741/1b33ff3a2d2cb790575eeeecd2be075e.jpeg",
+      "match": {
+        "shikimori": [
+          39741
+        ],
+        "sources": [
+          "animego:1257",
+          "yummyanime:1948"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37987",
+      "title": "Вайолет Эвергарден. Фильм",
+      "subtitle": "Violet Evergarden Movie",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-09-18",
+      "release_year": 2020,
+      "release_label": "18 сентября 2020",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37987/56162d8986e2eb203031bb25c821b5c7.jpeg",
+      "match": {
+        "shikimori": [
+          37987
+        ],
+        "sources": [
+          "animego:1778",
+          "yummyanime:1779"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53672",
+      "title": "Вайолет Эвергарден: Воспоминания",
+      "subtitle": "Violet Evergarden: Recollections",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-10-29",
+      "release_year": 2021,
+      "release_label": "29 октября 2021",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53672/8c5e6e89fe940302317d6a1e3228a7a5.jpeg",
+      "match": {
+        "shikimori": [
+          53672
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

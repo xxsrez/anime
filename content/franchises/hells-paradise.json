@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "slug": "hells-paradise",
+  "title": "Адский рай",
+  "short_title": "Hell's Paradise",
+  "summary": "Мрачное приключение о приговорённых преступниках и палачах, отправленных на загадочный остров за эликсиром бессмертия.",
+  "guide": "Смотрите сезоны по порядку с первого: продолжения развивают ту же экспедицию. Рекламные и итоговые материалы можно пропустить.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/46569/e789d12c26ccb940c694398aa3bfb05f.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/46569",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "jigokuraku",
+    "primary_shikimori_ids": [
+      46569
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 54,
+  "entries": [
+    {
+      "key": "shikimori-46569",
+      "title": "Адский рай",
+      "subtitle": "Jigokuraku",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-01",
+      "release_end_date": "2023-07-01",
+      "release_year": 2023,
+      "release_label": "1 апреля — 1 июля 2023",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/46569/e789d12c26ccb940c694398aa3bfb05f.jpeg",
+      "match": {
+        "shikimori": [
+          46569
+        ],
+        "sources": [
+          "yummyanime:1246"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55825",
+      "title": "Адский рай 2",
+      "subtitle": "Jigokuraku 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-11",
+      "release_end_date": "2026-03-29",
+      "release_year": 2026,
+      "release_label": "11 января — 29 марта 2026",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55825/8a760311c209124e5d08da7acdf026f9.jpeg",
+      "match": {
+        "shikimori": [
+          55825
+        ],
+        "sources": [
+          "animego:2900",
+          "yummyanime:4554"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

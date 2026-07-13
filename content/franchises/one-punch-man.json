@@ -205,6 +205,30 @@
       }
     },
     {
+      "key": "shikimori-62653",
+      "title": "Ванпанчмен 2: Мгновенно понятно! Серьёзный разбор полётов!",
+      "subtitle": "One Punch Man 2nd Season: Ichigeki de Wakaru! Maji Furikaeri!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-10-05",
+      "release_year": 2025,
+      "release_label": "5 октября 2025",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62653/0d555fa84b096521f9a71ecf5999b5df.jpeg",
+      "match": {
+        "shikimori": [
+          62653
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
       "key": "shikimori-52807",
       "title": "Ванпанчмен 3",
       "subtitle": "One Punch Man 3",
@@ -216,8 +240,8 @@
       "release_year": 2025,
       "release_label": "12 октября — 28 декабря 2025",
       "episode_count": 12,
-      "release_order": 8,
-      "watch_order": 8,
+      "release_order": 9,
+      "watch_order": 9,
       "story_role": "main",
       "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
       "cover_url": "https://shikimori.io/uploads/poster/animes/52807/949f565d1f8f799a0ad4ceef2db75b0c.jpeg",
@@ -229,6 +253,30 @@
           "animego:2854",
           "yummyanime:2061"
         ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63193",
+      "title": "Ванпанчмен 3. Часть 2",
+      "subtitle": "One Punch Man 3 Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63193/16c9856139a685814d9db3c4220c6268.jpeg",
+      "match": {
+        "shikimori": [
+          63193
+        ],
+        "sources": [],
         "anidb": []
       }
     }

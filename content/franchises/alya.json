@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "slug": "alya",
+  "title": "Аля иногда кокетничает со мной по-русски",
+  "short_title": "Alya Sometimes Hides Her Feelings in Russian",
+  "summary": "Школьная романтическая комедия о безупречной с виду Але, которая скрывает искренние чувства за русскими фразами, не подозревая, что её одноклассник всё понимает.",
+  "guide": "Смотрите сезоны последовательно с первого. Короткие рекламные ролики и музыкальные материалы не являются продолжением истории.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/54744/de6fc036f101d94a4f738be3f0415d2c.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/54744",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "alya_sometimes_hides_her_feelings_in_russian",
+    "primary_shikimori_ids": [
+      54744
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 61,
+  "entries": [
+    {
+      "key": "shikimori-54744",
+      "title": "Аля иногда кокетничает со мной по-русски",
+      "subtitle": "Tokidoki Bosotto Russia-go de Dereru Tonari no Alya-san",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-07-03",
+      "release_end_date": "2024-09-18",
+      "release_year": 2024,
+      "release_label": "3 июля — 18 сентября 2024",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54744/de6fc036f101d94a4f738be3f0415d2c.jpeg",
+      "match": {
+        "shikimori": [
+          54744
+        ],
+        "sources": [
+          "yummyanime:2741"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59873",
+      "title": "Аля иногда кокетничает со мной по-русски 2",
+      "subtitle": "Tokidoki Bosotto Russia-go de Dereru Tonari no Alya-san Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59873/e32e78ede257257d59cbb82710fc03a9.jpeg",
+      "match": {
+        "shikimori": [
+          59873
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

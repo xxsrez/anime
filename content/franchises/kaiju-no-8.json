@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "slug": "kaiju-no-8",
+  "title": "Кайдзю номер восемь",
+  "short_title": "Kaiju No. 8",
+  "summary": "Фантастический боевик о взрослом уборщике последствий атак кайдзю, который получает опасную силу и второй шанс попасть в Силы обороны.",
+  "guide": "Начинайте с первого сезона, затем переходите ко второму и дальнейшим продолжениям. Фильм-компиляция и короткий спецвыпуск необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52588/c30b9cf86423b311af2abe673ccbcdd0.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52588",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "kaiju_no",
+    "primary_shikimori_ids": [
+      52588
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 55,
+  "entries": [
+    {
+      "key": "shikimori-52588",
+      "title": "Кайдзю номер восемь",
+      "subtitle": "Kaijuu 8-gou",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-04-13",
+      "release_end_date": "2024-06-29",
+      "release_year": 2024,
+      "release_label": "13 апреля — 29 июня 2024",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52588/c30b9cf86423b311af2abe673ccbcdd0.jpeg",
+      "match": {
+        "shikimori": [
+          52588
+        ],
+        "sources": [
+          "animego:2534",
+          "yummyanime:2664"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60480",
+      "title": "Минута! Кайдзю номер восемь",
+      "subtitle": "Minute! Kaijuu 8-gou",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-12-06",
+      "release_end_date": "2025-07-04",
+      "release_year": 2024,
+      "release_label": "6 декабря 2024 — 4 июля 2025",
+      "episode_count": 31,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60480/7ec528977197bab5e7059c1e8bf74462.jpeg",
+      "match": {
+        "shikimori": [
+          60480
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59489",
+      "title": "Кайдзю номер восемь. Фильм",
+      "subtitle": "Kaijuu 8-gou Movie",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-03-28",
+      "release_year": 2025,
+      "release_label": "28 марта 2025",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59489/58212cf803dc977a0ef9ae7cfabd1740.jpeg",
+      "match": {
+        "shikimori": [
+          59489
+        ],
+        "sources": [
+          "yummyanime:4965"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59490",
+      "title": "Кайдзю номер восемь: Выходной Хосины",
+      "subtitle": "Kaijuu 8-gou: Hoshina no Kyuujitsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-03-28",
+      "release_year": 2025,
+      "release_label": "28 марта 2025",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59490/c88af4ad35f800b2b9a6196720c688ed.jpeg",
+      "match": {
+        "shikimori": [
+          59490
+        ],
+        "sources": [
+          "yummyanime:8253"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59177",
+      "title": "Кайдзю номер восемь 2",
+      "subtitle": "Kaijuu 8-gou 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-19",
+      "release_end_date": "2025-09-27",
+      "release_year": 2025,
+      "release_label": "19 июля — 27 сентября 2025",
+      "episode_count": 11,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59177/41c689f37372becd2d19cf50b3c9cb31.jpeg",
+      "match": {
+        "shikimori": [
+          59177
+        ],
+        "sources": [
+          "animego:2830",
+          "yummyanime:4939"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63136",
+      "title": "Кайдзю номер восемь: Заключительная глава",
+      "subtitle": "Kaijuu 8-gou: Kanketsu-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63136/30b76247b309f310d77da7526b40764b.jpeg",
+      "match": {
+        "shikimori": [
+          63136
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

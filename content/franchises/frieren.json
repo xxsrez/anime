@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "slug": "frieren",
+  "title": "Провожающая в последний путь Фрирен",
+  "short_title": "Фрирен",
+  "original_title": "葬送のフリーレン",
+  "summary": "Созерцательное фэнтези о бессмертной эльфийке, которая после победы над Королём демонов заново осмысляет время, память и близость с людьми.",
+  "guide": "Смотрите первый сезон, затем второй и продолжение «Золотая земля». Короткие выпуски «Магия ●●» — необязательные дополнения, которые удобнее смотреть после знакомства с первым сезоном.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52991/dc841cc9fce2aa1e9907a4b61c5d1d92.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52991",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "frieren",
+    "primary_shikimori_ids": [
+      52991
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 41,
+  "entries": [
+    {
+      "key": "shikimori-52991",
+      "title": "Провожающая в последний путь Фрирен",
+      "subtitle": "Sousou no Frieren",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-09-29",
+      "release_end_date": "2024-03-22",
+      "release_year": 2023,
+      "release_label": "29 сентября 2023 — 22 марта 2024",
+      "episode_count": 28,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52991/dc841cc9fce2aa1e9907a4b61c5d1d92.jpeg",
+      "match": {
+        "shikimori": [
+          52991
+        ],
+        "sources": [
+          "animego:2430",
+          "yummyanime:2573"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56885",
+      "title": "Провожающая в последний путь Фрирен: Магия ●●",
+      "subtitle": "Sousou no Frieren: ●● no Mahou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-11",
+      "release_end_date": "2026-05-22",
+      "release_year": 2023,
+      "release_label": "11 октября 2023 — 22 мая 2026",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56885/e91ea1cc0a97d131a60efe2243d45281.jpeg",
+      "match": {
+        "shikimori": [
+          56885
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59978",
+      "title": "Провожающая в последний путь Фрирен 2",
+      "subtitle": "Sousou no Frieren 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-16",
+      "release_end_date": "2026-03-27",
+      "release_year": 2026,
+      "release_label": "16 января — 27 марта 2026",
+      "episode_count": 10,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59978/ec1e1af737f29073a6ecd9c8e3085e25.jpeg",
+      "match": {
+        "shikimori": [
+          59978
+        ],
+        "sources": [
+          "animego:2911",
+          "yummyanime:4935"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63816",
+      "title": "Провожающая в последний путь Фрирен: Золотая земля",
+      "subtitle": "Sousou no Frieren: Ougonkyou-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-10-01",
+      "release_year": 2027,
+      "release_label": "1 октября 2027",
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 октября 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63816/00e8f6f4724f86bb565e84fabd38c0fa.jpeg",
+      "match": {
+        "shikimori": [
+          63816
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

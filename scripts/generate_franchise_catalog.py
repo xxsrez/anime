@@ -37,6 +37,21 @@ DEFAULT_DB = ROOT / "db" / "animego.sqlite"
 PAGE_SIZE = 50
 EXCLUDED_KINDS = {"cm", "music", "pv"}
 MAIN_RELATIONS = {"prequel", "sequel"}
+ANIME_FIELDS = """
+  id
+  name
+  russian
+  franchise
+  kind
+  status
+  episodes
+  episodesAired
+  airedOn { date }
+  releasedOn { date }
+  nextEpisodeAt
+  url
+  poster { originalUrl }
+"""
 KIND_LABELS = {
     "tv": "Сериал",
     "movie": "Фильм",
@@ -126,19 +141,7 @@ class ShikimoriClient:
                     page: {page},
                     order: aired_on
                   ) {{
-                    id
-                    name
-                    russian
-                    franchise
-                    kind
-                    status
-                    episodes
-                    episodesAired
-                    airedOn {{ date }}
-                    releasedOn {{ date }}
-                    nextEpisodeAt
-                    url
-                    poster {{ originalUrl }}
+                    {ANIME_FIELDS}
                   }}
                 }}
             """
@@ -150,6 +153,31 @@ class ShikimoriClient:
             page += 1
             if page > 20:
                 raise GenerationError(f"Franchise {franchise} exceeded 1000 entries")
+        return list(entries.values())
+
+    def anime_entries(self, anime_ids):
+        requested = sorted({int(value) for value in anime_ids})
+        entries = {}
+        for offset in range(0, len(requested), PAGE_SIZE):
+            batch = requested[offset : offset + PAGE_SIZE]
+            query = f"""
+                query {{
+                  animes(
+                    ids: {json.dumps(",".join(str(value) for value in batch))},
+                    limit: {PAGE_SIZE}
+                  ) {{
+                    {ANIME_FIELDS}
+                  }}
+                }}
+            """
+            for row in self.graphql(query).get("animes") or []:
+                entries[int(row["id"])] = row
+        missing = set(requested) - set(entries)
+        if missing:
+            raise GenerationError(
+                "Shikimori did not return graph anime IDs: "
+                + ", ".join(str(value) for value in sorted(missing))
+            )
         return list(entries.values())
 
     def franchise_graph(self, anime_id):
@@ -164,11 +192,14 @@ def load_manifest(path):
     if manifest.get("schema_version") != 1:
         raise GenerationError("Manifest must use schema_version 1")
     items = manifest.get("items")
-    if not isinstance(items, list) or len(items) != 40:
-        raise GenerationError("Manifest must contain exactly 40 franchise items")
+    if not isinstance(items, list) or not items:
+        raise GenerationError("Manifest must contain at least one franchise item")
     ranks = [item.get("rank") for item in items]
-    if sorted(ranks) != list(range(1, 41)):
-        raise GenerationError("Manifest ranks must be exactly 1..40")
+    if any(type(rank) is not int for rank in ranks):
+        raise GenerationError("Manifest ranks must be integers")
+    expected_ranks = list(range(1, len(items) + 1))
+    if sorted(ranks) != expected_ranks:
+        raise GenerationError(f"Manifest ranks must be exactly 1..{len(items)}")
     slugs = [item.get("slug") for item in items]
     if len(slugs) != len(set(slugs)):
         raise GenerationError("Manifest contains duplicate slugs")
@@ -404,24 +435,48 @@ def exact_source_match(item, by_name, *, claimed_group_ids):
 
 
 def build_definition(seed, manifest, client, by_name):
-    source_entries = client.franchise_entries(seed["shikimori_franchise"])
+    primary_ids = [
+        int(value)
+        for value in seed.get("primary_shikimori_ids") or [seed["primary_shikimori_id"]]
+    ]
+    graph = client.franchise_graph(seed["primary_shikimori_id"])
+    roles = graph_roles(graph, primary_ids)
+    source_entries = {
+        int(item["id"]): item
+        for item in client.franchise_entries(seed["shikimori_franchise"])
+    }
+    # Shikimori can link a newly announced/airing sequel in the franchise graph
+    # before assigning its franchise tag.  Add only prequel/sequel-connected
+    # mainline nodes: unioning the whole graph would pull crossover titles from
+    # other brands into this card.
+    missing_main_ids = roles["main"] - set(source_entries)
+    if missing_main_ids:
+        graph_entries = client.anime_entries(missing_main_ids)
+        foreign_tags = {
+            int(item["id"]): normalize_text(item.get("franchise"))
+            for item in graph_entries
+            if normalize_text(item.get("franchise"))
+            and normalize_text(item.get("franchise")) != seed["shikimori_franchise"]
+        }
+        if foreign_tags:
+            details = ", ".join(
+                f"{anime_id}={tag}" for anime_id, tag in sorted(foreign_tags.items())
+            )
+            raise GenerationError(
+                f"{seed['slug']} graph mainline has foreign franchise tags: {details}"
+            )
+        source_entries.update((int(item["id"]), item) for item in graph_entries)
     entries = [
         item
-        for item in source_entries
+        for item in source_entries.values()
         if normalize_text(item.get("kind")).casefold() not in EXCLUDED_KINDS
         and int(item["id"]) not in {int(value) for value in seed.get("exclude_shikimori_ids") or []}
     ]
     if len(entries) < 2:
         raise GenerationError(f"{seed['slug']} has fewer than two usable releases")
     entry_ids = {int(item["id"]) for item in entries}
-    primary_ids = [
-        int(value)
-        for value in seed.get("primary_shikimori_ids") or [seed["primary_shikimori_id"]]
-    ]
     if not any(value in entry_ids for value in primary_ids):
         raise GenerationError(f"{seed['slug']} primary ID is outside its franchise tag")
-    graph = client.franchise_graph(seed["primary_shikimori_id"])
-    roles = graph_roles(graph, primary_ids)
     entries.sort(key=entry_sort_key)
 
     role_by_id = {int(item["id"]): story_role(item, roles) for item in entries}

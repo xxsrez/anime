@@ -214,6 +214,62 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61322",
+      "title": "Доктор Стоун: Научное будущее. Часть 2",
+      "subtitle": "Dr. Stone: Science Future Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-10",
+      "release_end_date": "2025-09-25",
+      "release_year": 2025,
+      "release_label": "10 июля — 25 сентября 2025",
+      "episode_count": 12,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61322/ba230b58c7f0acac3b2013db77b826fa.jpeg",
+      "match": {
+        "shikimori": [
+          61322
+        ],
+        "sources": [
+          "animego:2852",
+          "yummyanime:7551"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62568",
+      "title": "Доктор Стоун: Научное будущее. Часть 3",
+      "subtitle": "Dr. Stone: Science Future Part 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-04-02",
+      "release_end_date": "2026-06-25",
+      "release_year": 2026,
+      "release_label": "2 апреля — 25 июня 2026",
+      "episode_count": 13,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62568/38e70a8639d8a01d217afe27205df48f.jpeg",
+      "match": {
+        "shikimori": [
+          62568
+        ],
+        "sources": [
+          "animego:3311",
+          "yummyanime:8535"
+        ],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

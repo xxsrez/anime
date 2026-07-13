@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "slug": "dandadan",
+  "title": "Дандадан",
+  "short_title": "Dandadan",
+  "summary": "Сверхъестественный экшен о двух подростках, чьи споры об инопланетянах и призраках превращаются в стремительную череду странных столкновений и личных открытий.",
+  "guide": "Смотрите сезоны последовательно с первого. Короткие промо- и итоговые материалы не являются отдельными главами истории.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/57334/17926e9e162dcf37b3e4533561ff712d.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/57334",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "dandadan",
+    "primary_shikimori_ids": [
+      57334
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 56,
+  "entries": [
+    {
+      "key": "shikimori-57334",
+      "title": "Дандадан",
+      "subtitle": "Dandadan",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-10-04",
+      "release_end_date": "2024-12-20",
+      "release_year": 2024,
+      "release_label": "4 октября — 20 декабря 2024",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57334/17926e9e162dcf37b3e4533561ff712d.jpeg",
+      "match": {
+        "shikimori": [
+          57334
+        ],
+        "sources": [
+          "yummyanime:4662"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60543",
+      "title": "Дандадан 2",
+      "subtitle": "Dandadan 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-04",
+      "release_end_date": "2025-09-19",
+      "release_year": 2025,
+      "release_label": "4 июля — 19 сентября 2025",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60543/3a43204e424cfba2f1d29df67940cccd.jpeg",
+      "match": {
+        "shikimori": [
+          60543
+        ],
+        "sources": [
+          "yummyanime:7545"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62516",
+      "title": "Дандадан 3",
+      "subtitle": "Dandadan 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62516/7908552767e9f8f3a64bc94c8e56e8fe.jpeg",
+      "match": {
+        "shikimori": [
+          62516
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

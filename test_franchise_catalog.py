@@ -9,6 +9,7 @@ import unittest
 import franchise_catalog
 import scrape_animego
 import server
+from scripts import generate_franchise_catalog
 
 
 class FranchiseCatalogTest(unittest.TestCase):
@@ -164,18 +165,23 @@ class FranchiseCatalogTest(unittest.TestCase):
             if (definition.get("data_origin") or {}).get("provider") == "shikimori"
         ]
 
-        self.assertEqual(len(manifest["items"]), 40)
-        self.assertEqual([item["rank"] for item in manifest["items"]], list(range(1, 41)))
-        self.assertEqual(len(generated), 40)
-        self.assertGreaterEqual(len(definitions), 41)
+        manifest_count = len(manifest["items"])
+        self.assertGreaterEqual(manifest_count, 1)
+        self.assertEqual(
+            [item["rank"] for item in manifest["items"]],
+            list(range(1, manifest_count + 1)),
+        )
+        self.assertEqual(len(generated), manifest_count)
+        self.assertGreaterEqual(len(definitions), manifest_count + 1)
         self.assertEqual(
             {item["slug"] for item in manifest["items"]},
             {definition["slug"] for definition in generated},
         )
         self.assertEqual(
             {definition["selection_rank"] for definition in generated},
-            set(range(1, 41)),
+            set(range(1, manifest_count + 1)),
         )
+        self.assertIn("frieren", {definition["slug"] for definition in generated})
         for definition in generated:
             self.assertGreaterEqual(len(definition["entries"]), 2)
             self.assertTrue(definition.get("guide"))
@@ -185,6 +191,133 @@ class FranchiseCatalogTest(unittest.TestCase):
                 self.assertEqual(entry["watch_order"], entry["release_order"])
                 self.assertTrue(entry.get("summary"))
                 self.assertTrue(entry.get("watch_note"))
+
+    def test_graph_mainline_closure_includes_untagged_sequel_only(self):
+        graph = {
+            "links": [
+                {"source_id": 10, "target_id": 11, "relation": "sequel"},
+                {"source_id": 10, "target_id": 20, "relation": "side_story"},
+                {"source_id": 10, "target_id": 30, "relation": "other"},
+            ]
+        }
+
+        roles = generate_franchise_catalog.graph_roles(graph, [10])
+
+        self.assertEqual(roles["main"], {10, 11})
+        self.assertNotIn(20, roles["main"])
+        self.assertNotIn(30, roles["main"])
+
+    def test_generator_fetches_untagged_sequel_without_unioning_side_story(self):
+        def anime(anime_id, title, aired_on):
+            return {
+                "id": str(anime_id),
+                "name": title,
+                "russian": title,
+                "franchise": "fixture",
+                "kind": "tv",
+                "status": "released",
+                "episodes": 12,
+                "episodesAired": 12,
+                "airedOn": {"date": aired_on},
+                "releasedOn": {"date": aired_on},
+                "nextEpisodeAt": None,
+                "url": f"/animes/{anime_id}",
+                "poster": {"originalUrl": f"https://example.test/{anime_id}.jpg"},
+            }
+
+        primary = anime(10, "Fixture", "2024-01-01")
+        sequel = anime(11, "Fixture 2", "2025-01-01")
+        sequel["franchise"] = None
+
+        class FakeClient:
+            def franchise_graph(self, anime_id):
+                self_outer.assertEqual(anime_id, 10)
+                return {
+                    "links": [
+                        {"source_id": 10, "target_id": 11, "relation": "sequel"},
+                        {"source_id": 10, "target_id": 20, "relation": "side_story"},
+                    ]
+                }
+
+            def franchise_entries(self, franchise):
+                self_outer.assertEqual(franchise, "fixture")
+                return [primary]
+
+            def anime_entries(self, anime_ids):
+                self_outer.assertEqual(set(anime_ids), {11})
+                return [sequel]
+
+        self_outer = self
+        definition = generate_franchise_catalog.build_definition(
+            {
+                "rank": 1,
+                "slug": "fixture",
+                "shikimori_franchise": "fixture",
+                "primary_shikimori_id": 10,
+                "title": "Fixture",
+                "summary": "Fixture summary",
+                "guide": "Fixture guide",
+            },
+            {"updated_at": "2026-07-13"},
+            FakeClient(),
+            {},
+        )
+
+        self.assertEqual(
+            [entry["match"]["shikimori"][0] for entry in definition["entries"]],
+            [10, 11],
+        )
+
+    def test_generator_rejects_graph_sequel_owned_by_another_franchise(self):
+        primary = {
+            "id": "10",
+            "name": "Fixture",
+            "russian": "Fixture",
+            "franchise": "fixture",
+            "kind": "tv",
+            "status": "released",
+            "episodes": 12,
+            "episodesAired": 12,
+            "airedOn": {"date": "2024-01-01"},
+            "releasedOn": {"date": "2024-01-01"},
+            "nextEpisodeAt": None,
+            "url": "/animes/10",
+            "poster": {"originalUrl": "https://example.test/10.jpg"},
+        }
+        foreign_sequel = {**primary, "id": "11", "franchise": "another_fixture"}
+
+        class FakeClient:
+            def franchise_graph(self, anime_id):
+                return {
+                    "links": [
+                        {"source_id": 10, "target_id": 11, "relation": "sequel"},
+                    ]
+                }
+
+            def franchise_entries(self, franchise):
+                return [primary]
+
+            def anime_entries(self, anime_ids):
+                return [foreign_sequel]
+
+        with self.assertRaisesRegex(
+            generate_franchise_catalog.GenerationError,
+            "graph mainline has foreign franchise tags: 11=another_fixture",
+        ):
+            generate_franchise_catalog.build_definition(
+                {
+                    "rank": 1,
+                    "slug": "fixture",
+                    "shikimori_franchise": "fixture",
+                    "primary_shikimori_id": 10,
+                    "title": "Fixture",
+                    "summary": "Fixture summary",
+                    "guide": "Fixture guide",
+                },
+                {"updated_at": "2026-07-13"},
+                FakeClient(),
+                {},
+            )
 
     def test_definition_set_rejects_matcher_owned_by_two_entries(self):
         first = franchise_catalog.validate_definition(

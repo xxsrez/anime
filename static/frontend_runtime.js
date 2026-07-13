@@ -406,6 +406,17 @@
     }[status] || "";
   }
 
+  function franchiseStatusKey(value) {
+    const normalized = String(value ?? "")
+      .trim()
+      .toLocaleLowerCase("ru-RU")
+      .replace(/\s+/g, "_");
+    if (["ongoing", "releasing", "airing", "current", "выходит", "онгоинг"].includes(normalized)) return "ongoing";
+    if (["upcoming", "announced", "planned", "анонс", "анонсировано", "скоро"].includes(normalized)) return "upcoming";
+    if (["completed", "finished", "released", "завершено", "вышло"].includes(normalized)) return "completed";
+    return normalized || "unknown";
+  }
+
   function patchChanges(target, patch, fields = null) {
     const keys = fields || Object.keys(patch || {});
     return keys.some(key => (
@@ -481,6 +492,7 @@
     hasPlaybackEvidence,
     effectiveWatchStatus,
     watchStatusLabel,
+    franchiseStatusKey,
     patchChanges,
     createKeyedSerialQueue,
   };

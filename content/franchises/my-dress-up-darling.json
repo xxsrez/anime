@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "slug": "my-dress-up-darling",
+  "title": "Эта фарфоровая кукла влюбилась",
+  "short_title": "My Dress-Up Darling",
+  "summary": "Романтическая история о замкнутом мастере традиционных кукол и энергичной косплеерше, которых сближает совместная творческая работа.",
+  "guide": "Начинайте с первого сезона и продолжайте вторым и следующими сезонами по порядку. Короткие специальные ролики для основной истории необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/48736/536021070760d16f823b485bc5b021a6.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/48736",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "my_dress_up_darling",
+    "primary_shikimori_ids": [
+      48736
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 51,
+  "entries": [
+    {
+      "key": "shikimori-48736",
+      "title": "Эта фарфоровая кукла влюбилась",
+      "subtitle": "Sono Bisque Doll wa Koi wo Suru",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-01-09",
+      "release_end_date": "2022-03-27",
+      "release_year": 2022,
+      "release_label": "9 января — 27 марта 2022",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48736/536021070760d16f823b485bc5b021a6.jpeg",
+      "match": {
+        "shikimori": [
+          48736
+        ],
+        "sources": [
+          "animego:1937",
+          "yummyanime:1217"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53065",
+      "title": "Эта фарфоровая кукла влюбилась 2",
+      "subtitle": "Sono Bisque Doll wa Koi wo Suru Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-06",
+      "release_end_date": "2025-09-21",
+      "release_year": 2025,
+      "release_label": "6 июля — 21 сентября 2025",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53065/3f2a736b3aa5edf34fa93ff7e6d468c1.jpeg",
+      "match": {
+        "shikimori": [
+          53065
+        ],
+        "sources": [
+          "animego:2818",
+          "yummyanime:7544"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

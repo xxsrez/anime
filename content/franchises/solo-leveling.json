@@ -130,6 +130,29 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-64546",
+      "title": "Поднятие уровня в одиночку: За гранью системы",
+      "subtitle": "Ore dake Level Up na Ken: Beyond the System",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/64546/ca49dddaaef1abe8a65cb3e8742d5c94.jpeg",
+      "match": {
+        "shikimori": [
+          64546
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

@@ -257,6 +257,28 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-63850",
+      "title": "Золотое божество: Неуправляемый поезд",
+      "subtitle": "Golden Kamuy: Bousou Ressha-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63850/b37dedc996e9608eabe328391d856c2f.jpeg",
+      "match": {
+        "shikimori": [
+          63850
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

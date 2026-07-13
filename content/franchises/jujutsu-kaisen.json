@@ -182,6 +182,28 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-63824",
+      "title": "Магическая битва: Смертельная миграция. Часть 2",
+      "subtitle": "Jujutsu Kaisen: Shimetsu Kaiyuu - Kouhen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63824/1f0f48b7aea5b8e4b10cecb95e615a61.jpeg",
+      "match": {
+        "shikimori": [
+          63824
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

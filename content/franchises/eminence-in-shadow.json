@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "slug": "eminence-in-shadow",
+  "title": "Восхождение в тени!",
+  "short_title": "The Eminence in Shadow",
+  "summary": "Исекай-комедия о герое, который мечтает тайно управлять событиями из-за кулис, не замечая, что его импровизированный заговор оказался реальностью.",
+  "guide": "Смотрите первый и второй сезоны последовательно, затем полнометражное продолжение. Короткие выпуски Kage-jitsu — необязательные комедийные дополнения.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/48316/76c65443591c0013a4adbfd3a6d6248e.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/48316",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "kagejitsu",
+    "primary_shikimori_ids": [
+      48316
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 50,
+  "entries": [
+    {
+      "key": "shikimori-48316",
+      "title": "Восхождение в тени!",
+      "subtitle": "Kage no Jitsuryokusha ni Naritakute!",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-05",
+      "release_end_date": "2023-02-15",
+      "release_year": 2022,
+      "release_label": "5 октября 2022 — 15 февраля 2023",
+      "episode_count": 20,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48316/76c65443591c0013a4adbfd3a6d6248e.jpeg",
+      "match": {
+        "shikimori": [
+          48316
+        ],
+        "sources": [
+          "yummyanime:1236"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53406",
+      "title": "Восхождение в тени: Мини-аниме!",
+      "subtitle": "Kagejitsu!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-10-26",
+      "release_end_date": "2023-02-15",
+      "release_year": 2022,
+      "release_label": "26 октября 2022 — 15 февраля 2023",
+      "episode_count": 17,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53406/746af95807d91d7968ee52a1887b18c3.jpeg",
+      "match": {
+        "shikimori": [
+          53406
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54595",
+      "title": "Восхождение в тени! 2",
+      "subtitle": "Kage no Jitsuryokusha ni Naritakute! 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-04",
+      "release_end_date": "2023-12-20",
+      "release_year": 2023,
+      "release_label": "4 октября — 20 декабря 2023",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54595/1c1982e9510cae080afdadf848820a68.jpeg",
+      "match": {
+        "shikimori": [
+          54595
+        ],
+        "sources": [
+          "yummyanime:2721"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56842",
+      "title": "Восхождение в тени: Мини-аниме! 2",
+      "subtitle": "Kagejitsu! Second",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-04",
+      "release_end_date": "2023-12-20",
+      "release_year": 2023,
+      "release_label": "4 октября — 20 декабря 2023",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56842/c5c846caf881c79b040d6053b107444a.jpeg",
+      "match": {
+        "shikimori": [
+          56842
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57034",
+      "title": "Пле-пле-плеяды × Восхождение в тени!",
+      "subtitle": "Ple Ple Pleiades x Kagejitsu!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-31",
+      "release_year": 2023,
+      "release_label": "31 октября 2023",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57034/2bbfa652cbc768cb8a9e1df9712e1f97.jpeg",
+      "match": {
+        "shikimori": [
+          57034
+        ],
+        "sources": [
+          "yummyanime:5125"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57584",
+      "title": "Восхождение в тени! Реверберация",
+      "subtitle": "Kage no Jitsuryokusha ni Naritakute! Movie: Zankyou-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57584/5509201ef72fdc7f3e1e7d59101d695a.jpeg",
+      "match": {
+        "shikimori": [
+          57584
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

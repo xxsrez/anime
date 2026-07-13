@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "slug": "oshi-no-ko",
+  "title": "Ребёнок идола",
+  "short_title": "Oshi no Ko",
+  "summary": "Драма о внутренней стороне индустрии развлечений, где яркая сцена соседствует с конкуренцией, семейными тайнами и высокой ценой публичности.",
+  "guide": "Смотрите сезоны последовательно с первого: каждый продолжает расследование и карьерные линии героев. Итоговые и рекламные выпуски можно пропустить.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52034/6fe706b9a72df0c81da4c769d0e4ec1d.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52034",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "[oshi_no_ko]",
+    "primary_shikimori_ids": [
+      52034
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 43,
+  "entries": [
+    {
+      "key": "shikimori-52034",
+      "title": "Ребёнок идола",
+      "subtitle": "[Oshi no Ko]",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-12",
+      "release_end_date": "2023-06-28",
+      "release_year": 2023,
+      "release_label": "12 апреля — 28 июня 2023",
+      "episode_count": 11,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52034/6fe706b9a72df0c81da4c769d0e4ec1d.jpeg",
+      "match": {
+        "shikimori": [
+          52034
+        ],
+        "sources": [
+          "yummyanime:1766"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55791",
+      "title": "Ребёнок идола 2",
+      "subtitle": "[Oshi no Ko] 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-07-03",
+      "release_end_date": "2024-10-06",
+      "release_year": 2024,
+      "release_label": "3 июля — 6 октября 2024",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55791/fc34eec8ecaa9b537acc08d092db2d87.jpeg",
+      "match": {
+        "shikimori": [
+          55791
+        ],
+        "sources": [
+          "yummyanime:4453"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60058",
+      "title": "Ребёнок идола 3",
+      "subtitle": "[Oshi no Ko] 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-14",
+      "release_end_date": "2026-03-25",
+      "release_year": 2026,
+      "release_label": "14 января — 25 марта 2026",
+      "episode_count": 11,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60058/30ba171a4c19b8ff5066c3df63e0e31a.jpeg",
+      "match": {
+        "shikimori": [
+          60058
+        ],
+        "sources": [
+          "yummyanime:4937"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63794",
+      "title": "Ребёнок идола 4",
+      "subtitle": "[Oshi no Ko] 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63794/d863e3d2b3636686e88a49647f60346e.jpeg",
+      "match": {
+        "shikimori": [
+          63794
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

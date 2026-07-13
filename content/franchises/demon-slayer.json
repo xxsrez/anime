@@ -265,6 +265,52 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-62546",
+      "title": "Клинок, рассекающий демонов: Бесконечный замок 2",
+      "subtitle": "Kimetsu no Yaiba Movie 2: Mugenjou-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62546/b5e3f013c05a810d90e15f9d40a89658.jpeg",
+      "match": {
+        "shikimori": [
+          62546
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62547",
+      "title": "Клинок, рассекающий демонов: Бесконечный замок 3",
+      "subtitle": "Kimetsu no Yaiba Movie 3: Mugenjou-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62547/7dd3274678f368cf0c6fb871b463b401.jpeg",
+      "match": {
+        "shikimori": [
+          62547
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

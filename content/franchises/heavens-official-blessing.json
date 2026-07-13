@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "slug": "heavens-official-blessing",
+  "title": "Благословение небожителей",
+  "short_title": "Heaven Official's Blessing",
+  "summary": "Китайское фэнтези о божестве Се Ляне, его третьем вознесении и встрече с таинственным правителем призраков Хуа Чэном.",
+  "guide": "Смотрите сезоны по порядку, начиная с первого. Специальный выпуск первого сезона относится к той же линии и удобнее всего смотрится перед вторым сезоном.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/40730/727346aa264eb37b528ba09bd14b68bb.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/40730",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "tian_guan_cifu",
+    "primary_shikimori_ids": [
+      40730
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 59,
+  "entries": [
+    {
+      "key": "shikimori-40730",
+      "title": "Благословение небожителей",
+      "subtitle": "Tian Guan Cifu",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-10-31",
+      "release_end_date": "2021-01-02",
+      "release_year": 2020,
+      "release_label": "31 октября 2020 — 2 января 2021",
+      "episode_count": 11,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40730/727346aa264eb37b528ba09bd14b68bb.jpeg",
+      "match": {
+        "shikimori": [
+          40730
+        ],
+        "sources": [
+          "yummyanime:260"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-44070",
+      "title": "Благословение небожителей: Спецвыпуск",
+      "subtitle": "Tian Guan Cifu Special",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-02-16",
+      "release_year": 2021,
+      "release_label": "16 февраля 2021",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44070/55fe9d5123e8234745d9727a769df2a8.jpeg",
+      "match": {
+        "shikimori": [
+          44070
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50399",
+      "title": "Благословение небожителей 2",
+      "subtitle": "Tian Guan Cifu Er",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-18",
+      "release_end_date": "2024-01-17",
+      "release_year": 2023,
+      "release_label": "18 октября 2023 — 17 января 2024",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50399/5204c052636273b9869027be3b0ed72b.jpeg",
+      "match": {
+        "shikimori": [
+          50399
+        ],
+        "sources": [
+          "yummyanime:1302"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60988",
+      "title": "Благословение небожителей: Короткометражки",
+      "subtitle": "Tian Guan Cifu Short Films",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2025-02-12",
+      "release_year": 2025,
+      "release_label": "12 февраля 2025",
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60988/cc88eb7dfb20617d829762a40e4de38a.jpeg",
+      "match": {
+        "shikimori": [
+          60988
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "slug": "call-of-the-night",
+  "title": "Песнь ночных сов",
+  "short_title": "Call of the Night",
+  "summary": "Ночная романтическая история о школьнике, который перестаёт спать, знакомится с вампиршей и открывает другую сторону города и самого себя.",
+  "guide": "Смотрите первый и второй сезоны последовательно, затем официальные продолжения. Музыкальные и рекламные ролики не обязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/50346/f59ff5ec10555c7498e9e6598e928c78.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/50346",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "yofukashi_no_uta",
+    "primary_shikimori_ids": [
+      50346
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 58,
+  "entries": [
+    {
+      "key": "shikimori-52015",
+      "title": "Песнь ночных сов: Мини-аниме",
+      "subtitle": "Yofukashi no Uta Mini",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-06-07",
+      "release_end_date": "2022-10-02",
+      "release_year": 2022,
+      "release_label": "7 июня — 2 октября 2022",
+      "episode_count": 22,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52015/e469db86450b0fcbf80a0d09294fc229.jpeg",
+      "match": {
+        "shikimori": [
+          52015
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50346",
+      "title": "Песнь ночных сов",
+      "subtitle": "Yofukashi no Uta",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-07-08",
+      "release_end_date": "2022-09-30",
+      "release_year": 2022,
+      "release_label": "8 июля — 30 сентября 2022",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50346/f59ff5ec10555c7498e9e6598e928c78.jpeg",
+      "match": {
+        "shikimori": [
+          50346
+        ],
+        "sources": [
+          "animego:2080",
+          "yummyanime:1275"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58390",
+      "title": "Песнь ночных сов 2",
+      "subtitle": "Yofukashi no Uta Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-04",
+      "release_end_date": "2025-09-19",
+      "release_year": 2025,
+      "release_label": "4 июля — 19 сентября 2025",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58390/7a27fe0b2dad019421801edb2f2881e1.jpeg",
+      "match": {
+        "shikimori": [
+          58390
+        ],
+        "sources": [
+          "animego:2810",
+          "yummyanime:4941"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

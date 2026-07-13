@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "slug": "fruits-basket",
+  "title": "Корзинка фруктов",
+  "short_title": "Fruits Basket",
+  "summary": "Семейная драма о Тору Хонде и проклятом клане Сома, постепенно раскрывающая травмы, привязанности и возможность разорвать унаследованный круг боли.",
+  "guide": "Для цельной истории выбирайте адаптацию 2019 года и смотрите три сезона по порядку, затем «Прелюдию». Версия 2001 года — отдельная ранняя адаптация.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/38680/6172619442a010015da8967f59d3692e.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/38680",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "fruits_basket",
+    "primary_shikimori_ids": [
+      38680
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 47,
+  "entries": [
+    {
+      "key": "shikimori-120",
+      "title": "Корзинка фруктов",
+      "subtitle": "Fruits Basket",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2001-07-05",
+      "release_end_date": "2001-12-27",
+      "release_year": 2001,
+      "release_label": "5 июля — 27 декабря 2001",
+      "episode_count": 26,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/120/28837e523bb5bdb9fdafeed4286d52c5.jpeg",
+      "match": {
+        "shikimori": [
+          120
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38680",
+      "title": "Корзинка фруктов (2019)",
+      "subtitle": "Fruits Basket 1st Season",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-04-06",
+      "release_end_date": "2019-09-21",
+      "release_year": 2019,
+      "release_label": "6 апреля — 21 сентября 2019",
+      "episode_count": 25,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38680/6172619442a010015da8967f59d3692e.jpeg",
+      "match": {
+        "shikimori": [
+          38680
+        ],
+        "sources": [
+          "animego:939",
+          "yummyanime:153"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40417",
+      "title": "Корзинка фруктов 2",
+      "subtitle": "Fruits Basket 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-04-07",
+      "release_end_date": "2020-09-22",
+      "release_year": 2020,
+      "release_label": "7 апреля — 22 сентября 2020",
+      "episode_count": 25,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40417/58f832d696e4d95eaecf0cdc40285846.jpeg",
+      "match": {
+        "shikimori": [
+          40417
+        ],
+        "sources": [
+          "animego:1522",
+          "yummyanime:867"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42938",
+      "title": "Корзинка фруктов: Финал",
+      "subtitle": "Fruits Basket: The Final",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-04-06",
+      "release_end_date": "2021-06-29",
+      "release_year": 2021,
+      "release_label": "6 апреля — 29 июня 2021",
+      "episode_count": 13,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42938/4dd182ba89f9fa394aa3193e7963583e.jpeg",
+      "match": {
+        "shikimori": [
+          42938
+        ],
+        "sources": [
+          "animego:1746",
+          "yummyanime:309"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49310",
+      "title": "Корзинка фруктов: Прелюдия",
+      "subtitle": "Fruits Basket: Prelude",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-02-18",
+      "release_year": 2022,
+      "release_label": "18 февраля 2022",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49310/52ee0c9a14788801969224da11e9c8df.jpeg",
+      "match": {
+        "shikimori": [
+          49310
+        ],
+        "sources": [
+          "animego:2157",
+          "yummyanime:1220"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -226,6 +226,28 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61203",
+      "title": "Этот замечательный мир! 4",
+      "subtitle": "Kono Subarashii Sekai ni Shukufuku wo! 4",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61203/87bbb75aa416937d37adb0a68d7db818.jpeg",
+      "match": {
+        "shikimori": [
+          61203
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

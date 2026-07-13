@@ -364,6 +364,28 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-63442",
+      "title": "Может, я встречу тебя в подземелье? 6",
+      "subtitle": "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka 6th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63442/80c164a6eda78a2f1f2dc7e704fc3f24.jpeg",
+      "match": {
+        "shikimori": [
+          63442
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

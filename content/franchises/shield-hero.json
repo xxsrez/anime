@@ -134,6 +134,30 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-62564",
+      "title": "Восхождение героя щита 5",
+      "subtitle": "Tate no Yuusha no Nariagari Season 5",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62564/4e8d3e23e8a7a203ff68211dbf556f51.jpeg",
+      "match": {
+        "shikimori": [
+          62564
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

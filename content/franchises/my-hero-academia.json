@@ -627,6 +627,33 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-63130",
+      "title": "Моя геройская академия: Больше",
+      "subtitle": "Boku no Hero Academia: More",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2026-05-02",
+      "release_year": 2026,
+      "release_label": "2 мая 2026",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63130/ec49a80d5b96bf2617336cae041234a7.jpeg",
+      "match": {
+        "shikimori": [
+          63130
+        ],
+        "sources": [
+          "animego:3434",
+          "yummyanime:8985"
+        ],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

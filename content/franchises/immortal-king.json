@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "slug": "immortal-king",
+  "title": "Повседневная жизнь бессмертного короля",
+  "short_title": "The Daily Life of the Immortal King",
+  "summary": "Китайская школьная комедия о почти непобедимом юноше, который пытается жить тихо, пока его сила и окружающие угрозы постоянно нарушают обычный распорядок.",
+  "guide": "Смотрите номерные сезоны по порядку выхода. Короткие дополнительные ролики и рекламные материалы необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/41094/71643801468eade0ca7cf00b8e61036b.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/41094",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "xian_wang_de_richang_shenghuo",
+    "primary_shikimori_ids": [
+      41094
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 62,
+  "entries": [
+    {
+      "key": "shikimori-41094",
+      "title": "Повседневная жизнь бессмертного короля",
+      "subtitle": "Xian Wang de Richang Shenghuo",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-01-18",
+      "release_end_date": "2020-03-28",
+      "release_year": 2020,
+      "release_label": "18 января — 28 марта 2020",
+      "episode_count": 15,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41094/71643801468eade0ca7cf00b8e61036b.jpeg",
+      "match": {
+        "shikimori": [
+          41094
+        ],
+        "sources": [
+          "animego:1484",
+          "yummyanime:395"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-44069",
+      "title": "Повседневная жизнь бессмертного короля 2",
+      "subtitle": "Xian Wang de Richang Shenghuo 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-10-30",
+      "release_end_date": "2022-01-08",
+      "release_year": 2021,
+      "release_label": "30 октября 2021 — 8 января 2022",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44069/b6e971785d84fd05634572aab24c0990.jpeg",
+      "match": {
+        "shikimori": [
+          44069
+        ],
+        "sources": [
+          "animego:1920",
+          "yummyanime:394"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50404",
+      "title": "Повседневная жизнь бессмертного короля 3",
+      "subtitle": "Xian Wang de Richang Shenghuo 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-09-30",
+      "release_end_date": "2022-12-11",
+      "release_year": 2022,
+      "release_label": "30 сентября — 11 декабря 2022",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50404/dfbcef0b01150ae7ada19ecfc32af381.jpeg",
+      "match": {
+        "shikimori": [
+          50404
+        ],
+        "sources": [
+          "animego:2151",
+          "yummyanime:1281"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53450",
+      "title": "Повседневная жизнь бессмертного короля 4",
+      "subtitle": "Xian Wang de Richang Shenghuo 4",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-12-17",
+      "release_end_date": "2024-02-25",
+      "release_year": 2023,
+      "release_label": "17 декабря 2023 — 25 февраля 2024",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53450/21241644b9ed775cc9dff69fe69b6906.jpeg",
+      "match": {
+        "shikimori": [
+          53450
+        ],
+        "sources": [
+          "animego:2524",
+          "yummyanime:2668"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60560",
+      "title": "Повседневная жизнь бессмертного короля 5",
+      "subtitle": "Xian Wang de Richang Shenghuo 5",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-12-14",
+      "release_end_date": "2026-02-22",
+      "release_year": 2025,
+      "release_label": "14 декабря 2025 — 22 февраля 2026",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60560/6d9fc9f6619bd65a3023040f55a8c569.jpeg",
+      "match": {
+        "shikimori": [
+          60560
+        ],
+        "sources": [
+          "animego:3026",
+          "yummyanime:7563"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

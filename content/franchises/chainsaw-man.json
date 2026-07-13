@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "slug": "chainsaw-man",
+  "title": "Человек-бензопила",
+  "short_title": "Chainsaw Man",
+  "summary": "Мрачный экшен о Денджи, который становится гибридом человека и демона и попадает в мир охотников, опасных контрактов и чужих манипуляций.",
+  "guide": "Начинайте с первого сезона, затем смотрите фильм об арке Резе и последующие продолжения. Проморолики и музыкальные материалы для истории не обязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/44511/db3ef8443dc7c7d489ed3659e7a94d85.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/44511",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "chainsaw_man",
+    "primary_shikimori_ids": [
+      44511
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 42,
+  "entries": [
+    {
+      "key": "shikimori-44511",
+      "title": "Человек-бензопила",
+      "subtitle": "Chainsaw Man",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-12",
+      "release_end_date": "2022-12-28",
+      "release_year": 2022,
+      "release_label": "12 октября — 28 декабря 2022",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44511/db3ef8443dc7c7d489ed3659e7a94d85.jpeg",
+      "match": {
+        "shikimori": [
+          44511
+        ],
+        "sources": [
+          "yummyanime:328"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57555",
+      "title": "Человек-бензопила: Резе",
+      "subtitle": "Chainsaw Man Movie: Reze-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-09-19",
+      "release_year": 2025,
+      "release_label": "19 сентября 2025",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57555/11d2b0b46572fede24aad44932a539a7.jpeg",
+      "match": {
+        "shikimori": [
+          57555
+        ],
+        "sources": [
+          "yummyanime:4660"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63143",
+      "title": "Человек-бензопила: Наёмные убийцы",
+      "subtitle": "Chainsaw Man: Shikaku-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63143/e7bb0b0566585c5fbe98bd509ad6ed5d.jpeg",
+      "match": {
+        "shikimori": [
+          63143
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

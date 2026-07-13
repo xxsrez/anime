@@ -175,6 +175,30 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61967",
+      "title": "Чёрный клевер 2",
+      "subtitle": "Black Clover 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2026-10-01",
+      "release_year": 2026,
+      "release_label": "1 октября 2026",
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61967/b7f00835a629577b64a6771791ced4d6.jpeg",
+      "match": {
+        "shikimori": [
+          61967
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

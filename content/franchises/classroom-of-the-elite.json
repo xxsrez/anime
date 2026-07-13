@@ -131,6 +131,28 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-64463",
+      "title": "Добро пожаловать в класс превосходства 5",
+      "subtitle": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 5th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/64463/6cbc640712516647264541049dda2c4d.jpeg",
+      "match": {
+        "shikimori": [
+          64463
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

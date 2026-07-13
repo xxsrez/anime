@@ -160,6 +160,56 @@
         ],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61903",
+      "title": "Госпожа Кагуя: в любви как на войне — Лестница во взрослую жизнь",
+      "subtitle": "Kaguya-sama wa Kokurasetai: Otona e no Kaidan",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-12-31",
+      "release_year": 2025,
+      "release_label": "31 декабря 2025",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61903/af8e3639ec559fe97507ccdbc17c0034.jpeg",
+      "match": {
+        "shikimori": [
+          61903
+        ],
+        "sources": [
+          "animego:3032",
+          "yummyanime:8653"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63212",
+      "title": "Госпожа Кагуя: в любви как на войне. Фильм",
+      "subtitle": "Kaguya-sama wa Kokurasetai Movie",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63212/a3b97e04288e9793fdc374aebac1aef3.jpeg",
+      "match": {
+        "shikimori": [
+          63212
+        ],
+        "sources": [],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

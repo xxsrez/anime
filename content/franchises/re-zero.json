@@ -330,6 +330,34 @@
         "sources": [],
         "anidb": []
       }
+    },
+    {
+      "key": "shikimori-61316",
+      "title": "Re:Zero. Жизнь с нуля в альтернативном мире 4",
+      "subtitle": "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "2026-04-08",
+      "release_year": 2026,
+      "release_label": "8 апреля 2026",
+      "episode_count": 19,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 15 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61316/79e6a0c31589176e3244c6117dab2500.jpeg",
+      "match": {
+        "shikimori": [
+          61316
+        ],
+        "sources": [
+          "animego:3279",
+          "yummyanime:8521"
+        ],
+        "anidb": []
+      }
     }
   ],
   "announcements": [],

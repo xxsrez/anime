@@ -238,6 +238,10 @@ assert.equal(runtime.findKodikEpisodeTarget({
 
 assert.equal(runtime.normalizeTranslationKey("Dreamcast"), "dream cast");
 assert.equal(runtime.normalizeTranslationKey("Dream Cast"), "dream cast");
+assert.equal(runtime.franchiseStatusKey("announced"), "upcoming");
+assert.equal(runtime.franchiseStatusKey("RELEASING"), "ongoing");
+assert.equal(runtime.franchiseStatusKey("Завершено"), "completed");
+assert.equal(runtime.franchiseStatusKey(null), "unknown");
 assert.equal(runtime.normalizeTranslationKey("Озвучка Dream Cast"), "dream cast");
 
 const previousDreamCast = {
