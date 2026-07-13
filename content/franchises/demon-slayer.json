@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "slug": "demon-slayer",
+  "title": "Клинок, рассекающий демонов",
+  "short_title": "Demon Slayer",
+  "original_title": "鬼滅の刃",
+  "summary": "Историческое фэнтези о семье, сострадании и борьбе с демонами, построенное как последовательность крупных сюжетных арок.",
+  "guide": "После первого сезона выберите одну версию «Бесконечного поезда» — фильм или расширенную телевизионную арку — и продолжайте последующими сезонами по порядку. Короткие спецвыпуски можно пропустить, а фильмы финальных арок являются прямым продолжением.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/38000/eb6c9a5d46fa9b5a33a0e5960e329e2d.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/38000",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "demon_slayer",
+    "primary_shikimori_ids": [
+      38000
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 14,
+  "entries": [
+    {
+      "key": "shikimori-38000",
+      "title": "Клинок, рассекающий демонов",
+      "subtitle": "Kimetsu no Yaiba",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-04-06",
+      "release_end_date": "2019-09-28",
+      "release_year": 2019,
+      "release_label": "6 апреля — 28 сентября 2019",
+      "episode_count": 26,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38000/eb6c9a5d46fa9b5a33a0e5960e329e2d.jpeg",
+      "match": {
+        "shikimori": [
+          38000
+        ],
+        "sources": [
+          "yummyanime:105"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48861",
+      "title": "Академия клинка: Банкет демона",
+      "subtitle": "Chuukou Ikkan!! Kimetsu Gakuen Monogatari: Kimetsu no Utage Tokubetsu-hen",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2020-08-26",
+      "release_year": 2020,
+      "release_label": "26 августа 2020",
+      "episode_count": 3,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48861/efaa732e92503db3a3ed814db41cf006.jpeg",
+      "match": {
+        "shikimori": [
+          48861
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40456",
+      "title": "Клинок, рассекающий демонов: Бесконечный поезд. Фильм",
+      "subtitle": "Kimetsu no Yaiba Movie: Mugen Ressha-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-10-16",
+      "release_year": 2020,
+      "release_label": "16 октября 2020",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40456/a7e4b07face11a916fdc81ed7841080e.jpeg",
+      "match": {
+        "shikimori": [
+          40456
+        ],
+        "sources": [
+          "animego:1771",
+          "yummyanime:115"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-47398",
+      "title": "Академия клинка: День святого Валентина",
+      "subtitle": "Chuukou Ikkan!! Kimetsu Gakuen Monogatari: Valentine-hen",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-02-14",
+      "release_year": 2021,
+      "release_label": "14 февраля 2021",
+      "episode_count": 4,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/47398/e00dc41f5fa21dcf0bc576548e7de4b4.jpeg",
+      "match": {
+        "shikimori": [
+          47398
+        ],
+        "sources": [
+          "yummyanime:925"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49926",
+      "title": "Клинок, рассекающий демонов: Бесконечный поезд",
+      "subtitle": "Kimetsu no Yaiba: Mugen Ressha-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-10-10",
+      "release_end_date": "2021-11-28",
+      "release_year": 2021,
+      "release_label": "10 октября — 28 ноября 2021",
+      "episode_count": 7,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49926/5fe9ff96325deceecb9026cdeb27bcf2.jpeg",
+      "match": {
+        "shikimori": [
+          49926
+        ],
+        "sources": [
+          "animego:1906",
+          "yummyanime:941"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-47778",
+      "title": "Клинок, рассекающий демонов: Квартал красных фонарей",
+      "subtitle": "Kimetsu no Yaiba: Yuukaku-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-12-05",
+      "release_end_date": "2022-02-13",
+      "release_year": 2021,
+      "release_label": "5 декабря 2021 — 13 февраля 2022",
+      "episode_count": 11,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/47778/689f69ee3fcc8ec4a3794d7815eb307e.jpeg",
+      "match": {
+        "shikimori": [
+          47778
+        ],
+        "sources": [
+          "animego:1876",
+          "yummyanime:302"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51019",
+      "title": "Клинок, рассекающий демонов: Деревня кузнецов",
+      "subtitle": "Kimetsu no Yaiba: Katanakaji no Sato-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-09",
+      "release_end_date": "2023-06-18",
+      "release_year": 2023,
+      "release_label": "9 апреля — 18 июня 2023",
+      "episode_count": 11,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51019/c2c17e7c2349dbdced88ac2c63a19b7a.jpeg",
+      "match": {
+        "shikimori": [
+          51019
+        ],
+        "sources": [
+          "animego:2280",
+          "yummyanime:1705"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55701",
+      "title": "Клинок, рассекающий демонов: Тренировка столпов",
+      "subtitle": "Kimetsu no Yaiba: Hashira Geiko-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-05-12",
+      "release_end_date": "2024-06-30",
+      "release_year": 2024,
+      "release_label": "12 мая — 30 июня 2024",
+      "episode_count": 8,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55701/ae49a77a71a301cf6e5def81cfc95900.jpeg",
+      "match": {
+        "shikimori": [
+          55701
+        ],
+        "sources": [
+          "animego:2544",
+          "yummyanime:4452"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59192",
+      "title": "Клинок, рассекающий демонов: Бесконечный замок — Возвращение Акадзы",
+      "subtitle": "Kimetsu no Yaiba Movie 1: Mugenjou-hen - Akaza Sairai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-07-18",
+      "release_year": 2025,
+      "release_label": "18 июля 2025",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59192/36c9a5ae5f3804919ca26a0f8f60c5d9.jpeg",
+      "match": {
+        "shikimori": [
+          59192
+        ],
+        "sources": [
+          "animego:2963",
+          "yummyanime:4932"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -16,6 +16,9 @@
 - `server.py` serves static assets and JSON API endpoints from SQLite.
 - `franchise_catalog.py` validates checked-in franchise cards and connects
   their releases to the canonical catalog using stable upstream IDs.
+- `scripts/generate_franchise_catalog.py` materializes the curated top-franchise
+  manifest as static cards; `scripts/check_franchise_data.py` audits their local
+  coverage and one-to-one canonical ownership.
 - `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
   results, applies additive episode/provider changes, records attribution, and
   packages the Chrome extension download.

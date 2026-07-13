@@ -1,0 +1,1865 @@
+{
+  "schema_version": 1,
+  "slug": "one-piece",
+  "title": "Ван-Пис",
+  "short_title": "One Piece",
+  "original_title": "ONE PIECE",
+  "summary": "Масштабное морское приключение о свободе, дружбе и поиске легендарного сокровища, объединяющее десятки островов и самостоятельных сюжетных арок.",
+  "guide": "Начинайте с основного сериала 1999 года и смотрите арки последовательно. Большинство фильмов и спецвыпусков необязательны; их лучше включать после ближайшей по дате арки, чтобы не встретить героев раньше времени.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/21/75a07947be55983ce14917f57e96555f.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/21",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "one_piece",
+    "primary_shikimori_ids": [
+      21
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 3,
+  "entries": [
+    {
+      "key": "shikimori-466",
+      "title": "Ван-Пис: Победить пирата Ганзака!",
+      "subtitle": "One Piece: Taose! Kaizoku Ganzack",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1998-07-26",
+      "release_year": 1998,
+      "release_label": "26 июля 1998",
+      "episode_count": 1,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/466/d0d02c50a62b10ae2da73bcf61f8362a.jpeg",
+      "match": {
+        "shikimori": [
+          466
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21",
+      "title": "Ван-Пис",
+      "subtitle": "One Piece",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "1999-10-20",
+      "release_year": 1999,
+      "release_label": "20 октября 1999",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 19 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21/75a07947be55983ce14917f57e96555f.jpeg",
+      "match": {
+        "shikimori": [
+          21
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16143",
+      "title": "Ван-Пис: Запасной план. Идеальный метод захвата Ван-Пис",
+      "subtitle": "One Piece: Kinkyuu Kikaku One Piece Kanzen Kouryakuhou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1999-12-22",
+      "release_year": 1999,
+      "release_label": "22 декабря 1999",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16143/3ccfd7a46213afe249fe98ecaf87299c.jpeg",
+      "match": {
+        "shikimori": [
+          16143
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-459",
+      "title": "Ван-Пис. Фильм",
+      "subtitle": "One Piece Movie 01",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2000-03-04",
+      "release_year": 2000,
+      "release_label": "4 марта 2000",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/459/b8bbbdba346dabb43c2ee878b4224ff6.jpeg",
+      "match": {
+        "shikimori": [
+          459
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1094",
+      "title": "Ван-Пис: Приключение в глуби океана",
+      "subtitle": "One Piece: Umi no Heso no Daibouken-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2000-12-20",
+      "release_year": 2000,
+      "release_label": "20 декабря 2000",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1094/d1d9ff39fca1ff47a3630d126ef12637.jpeg",
+      "match": {
+        "shikimori": [
+          1094
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-460",
+      "title": "Ван-Пис: Приключение на Заводном Острове",
+      "subtitle": "One Piece Movie 02: Nejimaki-jima no Daibouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2001-03-03",
+      "release_year": 2001,
+      "release_label": "3 марта 2001",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/460/920ee945fce876715902efad2872b454.jpeg",
+      "match": {
+        "shikimori": [
+          460
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2385",
+      "title": "Ван-Пис: Танцевальный марафон Джанго",
+      "subtitle": "One Piece: Jango no Dance Carnival",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2001-03-03",
+      "release_year": 2001,
+      "release_label": "3 марта 2001",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2385/6354d12edeeaff162a311e5cca78e6bd.jpeg",
+      "match": {
+        "shikimori": [
+          2385
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-461",
+      "title": "Ван-Пис: Королевство Чоппера на Острове Необычных Животных",
+      "subtitle": "One Piece Movie 03: Chinjuu-jima no Chopper Oukoku",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-03-02",
+      "release_year": 2002,
+      "release_label": "2 марта 2002",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/461/387fa027b8170f51b0eb58e0ad3c279c.jpeg",
+      "match": {
+        "shikimori": [
+          461
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2386",
+      "title": "Ван-Пис: Футбольный король мечты",
+      "subtitle": "One Piece: Yume no Soccer Ou!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-03-02",
+      "release_year": 2002,
+      "release_label": "2 марта 2002",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2386/2254e8961db50242756cb6f08b18d773.jpeg",
+      "match": {
+        "shikimori": [
+          2386
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-462",
+      "title": "Ван-Пис: Путешествие в один конец",
+      "subtitle": "One Piece Movie 04: Dead End no Bouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2003-03-01",
+      "release_year": 2003,
+      "release_label": "1 марта 2003",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/462/71afe79fb4b46276e70b965586b09f1a.jpeg",
+      "match": {
+        "shikimori": [
+          462
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1237",
+      "title": "Ван-Пис: Открытие в большом море! Большая мечта отца!",
+      "subtitle": "One Piece: Oounabara ni Hirake! Dekkai Dekkai Chichi no Yume!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2003-04-06",
+      "release_year": 2003,
+      "release_label": "6 апреля 2003",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1237/e794bc62a79ad6386f7c268e046c3584.jpeg",
+      "match": {
+        "shikimori": [
+          1237
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1238",
+      "title": "Ван-Пис: Защитить! Последнее великое представление!",
+      "subtitle": "One Piece: Mamore! Saigo no Oobutai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2003-12-14",
+      "release_year": 2003,
+      "release_label": "14 декабря 2003",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1238/a0ede925eedf0539a73997e669f38859.jpeg",
+      "match": {
+        "shikimori": [
+          1238
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-463",
+      "title": "Ван-Пис: Проклятие Святого Меча",
+      "subtitle": "One Piece Movie 05: Norowareta Seiken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-03-06",
+      "release_year": 2004,
+      "release_label": "6 марта 2004",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/463/1ad0e7d3f1239c8f0b6b53357939ac10.jpeg",
+      "match": {
+        "shikimori": [
+          463
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2490",
+      "title": "Ван-Пис: Цельсь! Пиратские короли бейсбола",
+      "subtitle": "One Piece: Mezase! Kaizoku Yakyuu Ou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-03-06",
+      "release_year": 2004,
+      "release_label": "6 марта 2004",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2490/ac79e4d94a2cc9dbb8f169c597c77a80.jpeg",
+      "match": {
+        "shikimori": [
+          2490
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-464",
+      "title": "Ван-Пис: Барон Омацури и Секретный Остров",
+      "subtitle": "One Piece Movie 06: Omatsuri Danshaku to Himitsu no Shima",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-03-05",
+      "release_year": 2005,
+      "release_label": "5 марта 2005",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/464/f15dc9787e344865fc748c85217de3a0.jpeg",
+      "match": {
+        "shikimori": [
+          464
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2020",
+      "title": "Ван-Пис: Воспоминания детектива в соломенной шляпе",
+      "subtitle": "One Piece: Nenmatsu Tokubetsu Kikaku! Mugiwara no Luffy Oyabun Torimonochou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-12-18",
+      "release_year": 2005,
+      "release_label": "18 декабря 2005",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2020/4df5de94fe9d8dedadb53373e4d6c495.jpeg",
+      "match": {
+        "shikimori": [
+          2020
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51162",
+      "title": "Ван-Пис: Тайна пиратов Соломенной Шляпы!",
+      "subtitle": "One Piece: Otoshidama Special - Tokubetsu Hou Mugiwara Kaizokudan no Himitsu!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-01-03",
+      "release_year": 2006,
+      "release_label": "3 января 2006",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51162/8eabd45a9f75554a550389adeeff2481.jpeg",
+      "match": {
+        "shikimori": [
+          51162
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-465",
+      "title": "Ван-Пис: Гигантский механический солдат замка Каракури",
+      "subtitle": "One Piece Movie 07: Karakuri-jou no Mecha Kyohei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-03-04",
+      "release_year": 2006,
+      "release_label": "4 марта 2006",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/465/45226087d30a47eca42c0e80131e23d8.jpeg",
+      "match": {
+        "shikimori": [
+          465
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2107",
+      "title": "Ван-Пис: Приключение в Алабасте — Принцесса пустыни и пираты",
+      "subtitle": "One Piece Movie 08: Episode of Alabasta - Sabaku no Oujo to Kaizoku-tachi",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-03-03",
+      "release_year": 2007,
+      "release_label": "3 марта 2007",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2107/83029ef40864d78cc87b7b887fe1c3b7.jpeg",
+      "match": {
+        "shikimori": [
+          2107
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53878",
+      "title": "Ван-Пис: Космос — это весело! Остров звёздного неба",
+      "subtitle": "One Piece: Uchuu tte Omoshiree! Hoshizora Jima-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-04-21",
+      "release_year": 2007,
+      "release_label": "21 апреля 2007",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53878/458b32c2153fae04e317bc5912d27ec3.jpeg",
+      "match": {
+        "shikimori": [
+          53878
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3848",
+      "title": "Ван-Пис: Эпизод Чоппера Плюс — Зимнее цветение, чудесная сакура",
+      "subtitle": "One Piece Movie 09: Episode of Chopper Plus - Fuyu ni Saku, Kiseki no Sakura",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-03-01",
+      "release_year": 2008,
+      "release_label": "1 марта 2008",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3848/610e27d4bf7fea9cd0c8d26a44165e5a.jpeg",
+      "match": {
+        "shikimori": [
+          3848
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5252",
+      "title": "Ван-Пис: Начало приключений",
+      "subtitle": "One Piece: Romance Dawn Story",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-11-24",
+      "release_year": 2008,
+      "release_label": "24 ноября 2008",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5252/5c2a23dfc04c11a9b1cb75dab3147956.jpeg",
+      "match": {
+        "shikimori": [
+          5252
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4155",
+      "title": "Ван-Пис: Жестокий мир",
+      "subtitle": "One Piece Film: Strong World",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2009-12-12",
+      "release_year": 2009,
+      "release_label": "12 декабря 2009",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4155/4b79639ae7327d8380fda1cfa8554cf0.jpeg",
+      "match": {
+        "shikimori": [
+          4155
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8171",
+      "title": "Ван-Пис: Рекап",
+      "subtitle": "One Piece Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-03-17",
+      "release_year": 2010,
+      "release_label": "17 марта 2010",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8171/66e8e76c05be0e1f25cf653ae6959c38.jpeg",
+      "match": {
+        "shikimori": [
+          8171
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8740",
+      "title": "Ван-Пис: Жестокий мир — Эпизод 0",
+      "subtitle": "One Piece Film: Strong World Episode 0",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-04-16",
+      "release_year": 2010,
+      "release_label": "16 апреля 2010",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8740/2d9f63ce7b8644c9c4f1e2ad93dc2eaa.jpeg",
+      "match": {
+        "shikimori": [
+          8740
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9999",
+      "title": "Ван-Пис 3D: Погоня за соломенной шляпой",
+      "subtitle": "One Piece 3D: Mugiwara Chase",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-03-19",
+      "release_year": 2011,
+      "release_label": "19 марта 2011",
+      "episode_count": 1,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9999/5056fe9463ab629a54d63076207919d7.jpeg",
+      "match": {
+        "shikimori": [
+          9999
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28683",
+      "title": "Ван-Пис: Приключения в Алабасте — Пролог",
+      "subtitle": "One Piece: Episode of Alabasta - Prologue",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-08-20",
+      "release_year": 2011,
+      "release_label": "20 августа 2011",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28683/8d38365c2b4efc802b3db0b12c19efd2.jpeg",
+      "match": {
+        "shikimori": [
+          28683
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12001",
+      "title": "Ван-Пис 3D",
+      "subtitle": "One Piece 3D: Gekisou! Trap Coaster",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-12-01",
+      "release_year": 2011,
+      "release_label": "1 декабря 2011",
+      "episode_count": 1,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12001/1409e38a04c6fa269fac98968ce0ae90.jpeg",
+      "match": {
+        "shikimori": [
+          12001
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15323",
+      "title": "Ван-Пис: Эпизод Нами — Слёзы навигатора и узы друзей",
+      "subtitle": "One Piece: Episode of Nami - Koukaishi no Namida to Nakama no Kizuna",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-08-25",
+      "release_year": 2012,
+      "release_label": "25 августа 2012",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15323/7edc827b1aafb7de055b6e777c544c78.jpeg",
+      "match": {
+        "shikimori": [
+          15323
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12859",
+      "title": "Ван-Пис: Z",
+      "subtitle": "One Piece Film: Z",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-12-15",
+      "release_year": 2012,
+      "release_label": "15 декабря 2012",
+      "episode_count": 1,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12859/f17ce4e29d5ca9a6dc4f7e67c52fdbd2.jpeg",
+      "match": {
+        "shikimori": [
+          12859
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16239",
+      "title": "Ван-Пис: Эпизод Луффи — Приключения на Ладоневом острове",
+      "subtitle": "One Piece: Episode of Luffy - Hand Island no Bouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-12-15",
+      "release_year": 2012,
+      "release_label": "15 декабря 2012",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16239/e13899bcb07677fdb8fd26d688d90e49.jpeg",
+      "match": {
+        "shikimori": [
+          16239
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16468",
+      "title": "Ван-Пис: Остров мечты",
+      "subtitle": "One Piece: Glorious Island",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2012-12-23",
+      "release_end_date": "2012-12-30",
+      "release_year": 2012,
+      "release_label": "23 декабря — 30 декабря 2012",
+      "episode_count": 2,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16468/95dac692912ce4f2e954c6933bf91634.jpeg",
+      "match": {
+        "shikimori": [
+          16468
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53880",
+      "title": "Ван-Пис: Планетарий",
+      "subtitle": "One Piece The Planetarium",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-07-13",
+      "release_year": 2013,
+      "release_label": "13 июля 2013",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53880/d3106c7a902966e7c5e820d7bdaafafd.jpeg",
+      "match": {
+        "shikimori": [
+          53880
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19123",
+      "title": "Ван-Пис: Эпизод Мерри — История об ещё одном накаме",
+      "subtitle": "One Piece: Episode of Merry - Mou Hitori no Nakama no Monogatari",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-08-24",
+      "release_year": 2013,
+      "release_label": "24 августа 2013",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19123/4b741eeccac89f4d37742818aa36b1a2.jpeg",
+      "match": {
+        "shikimori": [
+          19123
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22661",
+      "title": "Ван-Пис: Крик сердца",
+      "subtitle": "One Piece: Cry Heart",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-01-19",
+      "release_end_date": "2015-04-22",
+      "release_year": 2014,
+      "release_label": "19 января 2014 — 22 апреля 2015",
+      "episode_count": 3,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22661/ae77624a6e81bbca74961508cb85f0ed.jpeg",
+      "match": {
+        "shikimori": [
+          22661
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25161",
+      "title": "Ван-Пис 3D2Y: Пережить смерть Эйса! Обещание Луффи своим накама",
+      "subtitle": "One Piece 3D2Y: Ace no Shi wo Koete! Luffy Nakama to no Chikai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-08-30",
+      "release_year": 2014,
+      "release_label": "30 августа 2014",
+      "episode_count": 1,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25161/3ac9593df0bb953d25ad40a2230cf96b.jpeg",
+      "match": {
+        "shikimori": [
+          25161
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54196",
+      "title": "Ван-Пис 4D",
+      "subtitle": "One Piece 4D",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-03-13",
+      "release_end_date": "2020-01-01",
+      "release_year": 2015,
+      "release_label": "13 марта 2015 — 1 января 2020",
+      "episode_count": 1,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54196/c80ea8473b04352d009d22abdc2a4a8b.jpeg",
+      "match": {
+        "shikimori": [
+          54196
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31289",
+      "title": "Ван-Пис: Эпизод Сабо — Узы трёх братьев, чудесное воссоединение и унаследованная воля",
+      "subtitle": "One Piece: Episode of Sabo - 3 Kyoudai no Kizuna Kiseki no Saikai to Uketsugareru Ishi",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-08-22",
+      "release_year": 2015,
+      "release_label": "22 августа 2015",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31289/47e04715fb8341780499bb402c7f36c6.jpeg",
+      "match": {
+        "shikimori": [
+          31289
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32437",
+      "title": "Ван-Пис: Приключение на длинно-круглой земле",
+      "subtitle": "One Piece: Long Ring Long Land-hen",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-12-11",
+      "release_year": 2015,
+      "release_label": "11 декабря 2015",
+      "episode_count": 1,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32437/f66d54448352b8542f4ef607ebffee54.jpeg",
+      "match": {
+        "shikimori": [
+          32437
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32051",
+      "title": "Ван-Пис: Приключение в Небуландии",
+      "subtitle": "One Piece: Adventure of Nebulandia",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-12-19",
+      "release_year": 2015,
+      "release_label": "19 декабря 2015",
+      "episode_count": 1,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32051/adc63bc6953a68684554a2c4a1b30025.jpeg",
+      "match": {
+        "shikimori": [
+          32051
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50385",
+      "title": "Ван-Пис: Записи о персонажах",
+      "subtitle": "One Piece Characters Log",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-06-20",
+      "release_end_date": "2016-09-12",
+      "release_year": 2016,
+      "release_label": "20 июня — 12 сентября 2016",
+      "episode_count": 9,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50385/326a8541c77acb2f2de6ed32972d595a.jpeg",
+      "match": {
+        "shikimori": [
+          50385
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33606",
+      "title": "Ван-Пис: Золото — Эпизод 0",
+      "subtitle": "One Piece Film: Gold Episode 0 - 711 ver.",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2016-07-02",
+      "release_year": 2016,
+      "release_label": "2 июля 2016",
+      "episode_count": 1,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33606/e68cd75dafa911da1b99076e833dd0d0.jpeg",
+      "match": {
+        "shikimori": [
+          33606
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33338",
+      "title": "Ван-Пис: Золотое сердце",
+      "subtitle": "One Piece: Heart of Gold",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-07-16",
+      "release_year": 2016,
+      "release_label": "16 июля 2016",
+      "episode_count": 1,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33338/84b440f9131f01c2e1aa3799ac5357be.jpeg",
+      "match": {
+        "shikimori": [
+          33338
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31490",
+      "title": "Ван-Пис: Золото",
+      "subtitle": "One Piece Film: Gold",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-07-23",
+      "release_year": 2016,
+      "release_label": "23 июля 2016",
+      "episode_count": 1,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31490/a63f1fb56f9fe80f6260a2f2d979d0bc.jpeg",
+      "match": {
+        "shikimori": [
+          31490
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38419",
+      "title": "Ван-Пис на токийской телебашне: Сокровище острова Тонгари",
+      "subtitle": "Tokyo One Piece Tower: Tongari Shima no Dai Hihou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-11-01",
+      "release_year": 2016,
+      "release_label": "1 ноября 2016",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38419/3411dfca0be223621d047f9190c2ad30.jpeg",
+      "match": {
+        "shikimori": [
+          38419
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36215",
+      "title": "Ван-Пис: Эпизод Ист Блю — Большое приключение Луффи и его команды",
+      "subtitle": "One Piece: Episode of East Blue - Luffy to 4-nin no Nakama no Daibouken",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-08-26",
+      "release_year": 2017,
+      "release_label": "26 августа 2017",
+      "episode_count": 1,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36215/46d305a24cb7752d5bf9173008738f24.jpeg",
+      "match": {
+        "shikimori": [
+          36215
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37902",
+      "title": "Ван-Пис: Эпизод Небесного Острова",
+      "subtitle": "One Piece: Episode of Sorajima",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-08-25",
+      "release_year": 2018,
+      "release_label": "25 августа 2018",
+      "episode_count": 1,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37902/74868205d74fc538029f7aba4598559d.jpeg",
+      "match": {
+        "shikimori": [
+          37902
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38234",
+      "title": "Ван-Пис: Бегство",
+      "subtitle": "One Piece Movie 14: Stampede",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-08-09",
+      "release_year": 2019,
+      "release_label": "9 августа 2019",
+      "episode_count": 1,
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38234/04484b0161b38df7d4f818697d59a41c.jpeg",
+      "match": {
+        "shikimori": [
+          38234
+        ],
+        "sources": [
+          "yummyanime:2560"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50696",
+      "title": "Ван-Пис: План помощи Луффи! Секретная комната Бартоломео!",
+      "subtitle": "One Piece: Barto no Himitsu no Heya!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-12-26",
+      "release_end_date": "2023-10-08",
+      "release_year": 2021,
+      "release_label": "26 декабря 2021 — 8 октября 2023",
+      "episode_count": 4,
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50696/3c0a73bc693089aabba737c92cbc58a6.jpeg",
+      "match": {
+        "shikimori": [
+          50696
+        ],
+        "sources": [
+          "yummyanime:5224"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52199",
+      "title": "Ван-Пис: Легенда об Одэне Кодзуки",
+      "subtitle": "One Piece: Dai Tettei Kaibou! Kouzuki Oden Densetsu!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-06-26",
+      "release_year": 2022,
+      "release_label": "26 июня 2022",
+      "episode_count": 1,
+      "release_order": 50,
+      "watch_order": 50,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52199/5e033befbd79f0a6961b1a4529626beb.jpeg",
+      "match": {
+        "shikimori": [
+          52199
+        ],
+        "sources": [
+          "yummyanime:1800"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50410",
+      "title": "Ван-Пис: Красный",
+      "subtitle": "One Piece Film: Red",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-08-06",
+      "release_year": 2022,
+      "release_label": "6 августа 2022",
+      "episode_count": 1,
+      "release_order": 51,
+      "watch_order": 51,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50410/aa5642f78d6d708d66b8fb5b5e31583b.jpeg",
+      "match": {
+        "shikimori": [
+          50410
+        ],
+        "sources": [
+          "yummyanime:1271"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52921",
+      "title": "Ван Пис: Легендарные записи — Рыжеволосый Шанкс!",
+      "subtitle": "One Piece: Densetsu no Log! Akagami no Shanks!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-08-28",
+      "release_year": 2022,
+      "release_label": "28 августа 2022",
+      "episode_count": 1,
+      "release_order": 52,
+      "watch_order": 52,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52921/a58dd358ab6c46ea348919b0af619d6a.jpeg",
+      "match": {
+        "shikimori": [
+          52921
+        ],
+        "sources": [
+          "yummyanime:5183"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53235",
+      "title": "Ван-Пис: Жестокая битва! Пятёрка нового поколения",
+      "subtitle": "One Piece: Dai Tettei Kaibou! Gekitou! 5-nin no Shin Sedai",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-10-09",
+      "release_year": 2022,
+      "release_label": "9 октября 2022",
+      "episode_count": 1,
+      "release_order": 53,
+      "watch_order": 53,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53235/32f2d7aa338abef5ac6cd50e32a7d1a7.jpeg",
+      "match": {
+        "shikimori": [
+          53235
+        ],
+        "sources": [
+          "yummyanime:5182"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53890",
+      "title": "Ван Пис: Жестокий бой! Соломенная шляпа против Тобироппо",
+      "subtitle": "One Piece: Dai Gekisen Tokushuu! Mugiwara no Ichimi vs. Tobi Roppou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-12-25",
+      "release_year": 2022,
+      "release_label": "25 декабря 2022",
+      "episode_count": 1,
+      "release_order": 54,
+      "watch_order": 54,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53890/f401d54c8b634e90cb447341e8524b7b.jpeg",
+      "match": {
+        "shikimori": [
+          53890
+        ],
+        "sources": [
+          "yummyanime:5181"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55289",
+      "title": "Ван-Пис: Обзор жестокой битвы! Зоро против суперзвезды!",
+      "subtitle": "One Piece: Dai Gekisen Tokushuu! Zoro vs. Ookanban!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-05-14",
+      "release_year": 2023,
+      "release_label": "14 мая 2023",
+      "episode_count": 1,
+      "release_order": 55,
+      "watch_order": 55,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55289/363f5b10d2d4f9e9a85dda728ae37d75.jpeg",
+      "match": {
+        "shikimori": [
+          55289
+        ],
+        "sources": [
+          "yummyanime:4488"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55647",
+      "title": "Ван-Пис: Обзор жестокой битвы! Альянс против Большой Мамочки",
+      "subtitle": "One Piece: Dai Gekisen Tokushuu! Hangeki Doumei vs. Big Mom",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-06-18",
+      "release_year": 2023,
+      "release_label": "18 июня 2023",
+      "episode_count": 1,
+      "release_order": 56,
+      "watch_order": 56,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55647/de1f14c54db29d3d3ddbf113bf9152ed.jpeg",
+      "match": {
+        "shikimori": [
+          55647
+        ],
+        "sources": [
+          "yummyanime:4492"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57556",
+      "title": "Ван-Пис: Путь Момоносукэ к становлению великим сёгуном",
+      "subtitle": "One Piece: Dai Tokushuu! Momonosuke no Mei Shougun e no Michi",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-12-24",
+      "release_year": 2023,
+      "release_label": "24 декабря 2023",
+      "episode_count": 1,
+      "release_order": 57,
+      "watch_order": 57,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57556/a58a467c9495e24aad45e84d624c7369.jpeg",
+      "match": {
+        "shikimori": [
+          57556
+        ],
+        "sources": [
+          "yummyanime:5139"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56055",
+      "title": "Монстры: Сто три милости — Проклятие дракона",
+      "subtitle": "Monsters: Ippyaku Sanjou Hiryuu Jigoku",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-01-22",
+      "release_year": 2024,
+      "release_label": "22 января 2024",
+      "episode_count": 1,
+      "release_order": 58,
+      "watch_order": 58,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56055/12f4f37ba94cd1d34ada8dce9b8465e2.jpeg",
+      "match": {
+        "shikimori": [
+          56055
+        ],
+        "sources": [
+          "animego:3377",
+          "yummyanime:4755"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58015",
+      "title": "Ван-Пис: Кампания по прославлению! Хирург Смерти Трафальгар Ло",
+      "subtitle": "One Piece: Dai Tannou Kikaku! \"Shi no Gekai\" Trafalgar Law",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-02-04",
+      "release_year": 2024,
+      "release_label": "4 февраля 2024",
+      "episode_count": 1,
+      "release_order": 59,
+      "watch_order": 59,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58015/baf6022f3075fb1485963dad9b0caa3e.jpeg",
+      "match": {
+        "shikimori": [
+          58015
+        ],
+        "sources": [
+          "yummyanime:4761"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58663",
+      "title": "Ван-Пис: Дневник вражды! Соломенные шляпы против Сайфер Пола",
+      "subtitle": "One Piece: Innen no Log! Mugiwara no Ichimi to Cipher Pol",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-04-14",
+      "release_year": 2024,
+      "release_label": "14 апреля 2024",
+      "episode_count": 1,
+      "release_order": 60,
+      "watch_order": 60,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58663/b8ecf03f1006d52b002064c15a0b6376.jpeg",
+      "match": {
+        "shikimori": [
+          58663
+        ],
+        "sources": [
+          "yummyanime:4846"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59029",
+      "title": "Ван-Пис: История, высеченная в камне! Старые и новые императоры моря!",
+      "subtitle": "One Piece: Kizamareru Rekishi! Gekidou no Shinkyuu Yonkou!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-06-16",
+      "release_year": 2024,
+      "release_label": "16 июня 2024",
+      "episode_count": 1,
+      "release_order": 61,
+      "watch_order": 61,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59029/b58ec65f8d05de26848c4cada773d2aa.jpeg",
+      "match": {
+        "shikimori": [
+          59029
+        ],
+        "sources": [
+          "yummyanime:4878"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59596",
+      "title": "Ван-Пис: Хроника бурных перемен! Закулисная деятельность революционеров!",
+      "subtitle": "One Piece: Araburu Henkaku no Log: Anyaku Suru Kakumeigun!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-08-25",
+      "release_year": 2024,
+      "release_label": "25 августа 2024",
+      "episode_count": 1,
+      "release_order": 62,
+      "watch_order": 62,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59596/eec9ed071ac6d5bc72274fc1d0d0527f.jpeg",
+      "match": {
+        "shikimori": [
+          59596
+        ],
+        "sources": [
+          "yummyanime:4880"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59908",
+      "title": "Ван-Пис: Незыблемое правосудие! Хроника морского дозора!",
+      "subtitle": "One Piece: Yuruganu Seigi! Kaigun no Hokoritakaki Log!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-09-29",
+      "release_year": 2024,
+      "release_label": "29 сентября 2024",
+      "episode_count": 1,
+      "release_order": 63,
+      "watch_order": 63,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59908/e20271e72a4a97693e2703b11499319e.jpeg",
+      "match": {
+        "shikimori": [
+          59908
+        ],
+        "sources": [
+          "yummyanime:4867"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60022",
+      "title": "Ван-Пис: Письмо от поклонника",
+      "subtitle": "One Piece Fan Letter",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-10-20",
+      "release_year": 2024,
+      "release_label": "20 октября 2024",
+      "episode_count": 1,
+      "release_order": 64,
+      "watch_order": 64,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60022/dcf90d09dcf677650f0335eb37cc3b78.jpeg",
+      "match": {
+        "shikimori": [
+          60022
+        ],
+        "sources": [
+          "yummyanime:4816"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60108",
+      "title": "Ван-Пис: Остров Рыболюдей",
+      "subtitle": "One Piece: Gyojin Tou-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-11-03",
+      "release_end_date": "2025-03-30",
+      "release_year": 2024,
+      "release_label": "3 ноября 2024 — 30 марта 2025",
+      "episode_count": 21,
+      "release_order": 65,
+      "watch_order": 65,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60108/b099100056e87cd6e774b43d9582dd22.jpeg",
+      "match": {
+        "shikimori": [
+          60108
+        ],
+        "sources": [
+          "animego:2698",
+          "yummyanime:4821"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60790",
+      "title": "Луффи, Ло",
+      "subtitle": "Luffy, Law",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-01-19",
+      "release_year": 2025,
+      "release_label": "19 января 2025",
+      "episode_count": 1,
+      "release_order": 66,
+      "watch_order": 66,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60790/3413b8b89ec0906e959ebdfc47506d9f.jpeg",
+      "match": {
+        "shikimori": [
+          60790
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61393",
+      "title": "Ван-Пис: Остров Яичная Голова",
+      "subtitle": "One Piece Egghead Arc Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-04-05",
+      "release_year": 2025,
+      "release_label": "5 апреля 2025",
+      "episode_count": 1,
+      "release_order": 67,
+      "watch_order": 67,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61393/7d8ec858744680db0b6cf88e552df4b4.jpeg",
+      "match": {
+        "shikimori": [
+          61393
+        ],
+        "sources": [
+          "yummyanime:8349"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61674",
+      "title": "Ван-Пис: Запись приключений доктора Чоппера — Баллада отца и дочери",
+      "subtitle": "One Piece: Dr. Chopper no Bouken Karte - Chichi to Musume no Ballad",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-05-11",
+      "release_year": 2025,
+      "release_label": "11 мая 2025",
+      "episode_count": 1,
+      "release_order": 68,
+      "watch_order": 68,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61674/bcca3ad98580009d0bb1e24456e754f7.jpeg",
+      "match": {
+        "shikimori": [
+          61674
+        ],
+        "sources": [
+          "yummyanime:8354"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61892",
+      "title": "Ван-Пис: Запись приключений доктора Чоппера — Друзья на перепутье!",
+      "subtitle": "One Piece: Dr. Chopper no Bouken Karte - Shinyuu-tachi no Crossroad",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-06-22",
+      "release_year": 2025,
+      "release_label": "22 июня 2025",
+      "episode_count": 1,
+      "release_order": 69,
+      "watch_order": 69,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61892/f689c82e910507695a5b0803cbf3b949.jpeg",
+      "match": {
+        "shikimori": [
+          61892
+        ],
+        "sources": [
+          "yummyanime:8364"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62394",
+      "title": "Ван-Пис: Приключения доктора Чоппера — Гордая мечта гиганта",
+      "subtitle": "One Piece: Dr. Chopper no Bouken Karte - Hokoritakaki Gigant Dream",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-08-31",
+      "release_year": 2025,
+      "release_label": "31 августа 2025",
+      "episode_count": 1,
+      "release_order": 70,
+      "watch_order": 70,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62394/88651d26672df91f03012c1fdb53c6de.jpeg",
+      "match": {
+        "shikimori": [
+          62394
+        ],
+        "sources": [
+          "yummyanime:8434"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62593",
+      "title": "Ван-Пис: Приключения доктора Чоппера — Маскарад предателей",
+      "subtitle": "One Piece: Dr. Chopper no Bouken Karte - Uragirimono-tachi no Masquerade",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-10-12",
+      "release_year": 2025,
+      "release_label": "12 октября 2025",
+      "episode_count": 1,
+      "release_order": 71,
+      "watch_order": 71,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62593/b039ecd09dcb4c113d0cc71ddca822c8.jpeg",
+      "match": {
+        "shikimori": [
+          62593
+        ],
+        "sources": [
+          "yummyanime:8427"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62969",
+      "title": "Ван-Пис: Приключения доктора Чоппера — Последняя всемирная трансляция гения",
+      "subtitle": "One Piece: Dr. Chopper no Bouken Karte - Tensai ga Nokoshita \"Last Records\"",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2025-11-23",
+      "release_year": 2025,
+      "release_label": "23 ноября 2025",
+      "episode_count": 1,
+      "release_order": 72,
+      "watch_order": 72,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62969/450177b77f64f41a785b7e42f5c18aea.jpeg",
+      "match": {
+        "shikimori": [
+          62969
+        ],
+        "sources": [
+          "yummyanime:8437"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62233",
+      "title": "Ван-Пис: Героини",
+      "subtitle": "One Piece: Heroines",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2026-07-05",
+      "release_year": 2026,
+      "release_label": "5 июля 2026",
+      "episode_count": 1,
+      "release_order": 73,
+      "watch_order": 73,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62233/59662cdefa92ed922b7b14d6f68f1b3a.jpeg",
+      "match": {
+        "shikimori": [
+          62233
+        ],
+        "sources": [
+          "animego:3627",
+          "yummyanime:8681"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57557",
+      "title": "Ван-Пис",
+      "subtitle": "The One Piece",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "announced",
+      "release_date": "2027-02-01",
+      "release_year": 2027,
+      "release_label": "1 февраля 2027",
+      "episode_count": 7,
+      "release_order": 74,
+      "watch_order": 74,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 февраля 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57557/50d904281e3da2a9ab8ff40811453ce0.jpeg",
+      "match": {
+        "shikimori": [
+          57557
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

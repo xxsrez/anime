@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "slug": "dr-stone",
+  "title": "Доктор Стоун",
+  "short_title": "Dr. Stone",
+  "original_title": "Dr.STONE",
+  "summary": "Приключенческая научная фантастика о восстановлении цивилизации с нуля с помощью экспериментов, инженерии и командной работы.",
+  "guide": "Смотрите сезоны по порядку; специальный выпуск Ryusui расположен между Stone Wars и New World. Короткие дополнительные материалы для основной истории необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/38691/238869641ac122f79b65d82375e7bbcd.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/38691",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "dr_stone",
+    "primary_shikimori_ids": [
+      38691
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 31,
+  "entries": [
+    {
+      "key": "shikimori-38691",
+      "title": "Доктор Стоун",
+      "subtitle": "Dr. Stone",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-07-05",
+      "release_end_date": "2019-12-13",
+      "release_year": 2019,
+      "release_label": "5 июля — 13 декабря 2019",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38691/238869641ac122f79b65d82375e7bbcd.jpeg",
+      "match": {
+        "shikimori": [
+          38691
+        ],
+        "sources": [
+          "animego:1105"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-43555",
+      "title": "Доктор Стоун: Каменные войны — Эпизод 0",
+      "subtitle": "Dr. Stone: Stone Wars - Kaisen Zenya Special Eizou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2020-10-11",
+      "release_year": 2020,
+      "release_label": "11 октября 2020",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43555/fecefd192b1fae9c2101603e8c76fd9e.jpeg",
+      "match": {
+        "shikimori": [
+          43555
+        ],
+        "sources": [
+          "yummyanime:5403"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40852",
+      "title": "Доктор Стоун: Каменные войны",
+      "subtitle": "Dr. Stone: Stone Wars",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-14",
+      "release_end_date": "2021-03-25",
+      "release_year": 2021,
+      "release_label": "14 января — 25 марта 2021",
+      "episode_count": 11,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40852/ea6eb0ded95a4a2b412547581da8f809.jpeg",
+      "match": {
+        "shikimori": [
+          40852
+        ],
+        "sources": [
+          "animego:1698",
+          "yummyanime:261"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50612",
+      "title": "Доктор Стоун: Рюсуй",
+      "subtitle": "Dr. Stone: Ryuusui",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-07-10",
+      "release_year": 2022,
+      "release_label": "10 июля 2022",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50612/50c6282eed61a0e5c52a5b068d665fd8.jpeg",
+      "match": {
+        "shikimori": [
+          50612
+        ],
+        "sources": [
+          "animego:2092",
+          "yummyanime:1461"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48549",
+      "title": "Доктор Стоун: Новый мир",
+      "subtitle": "Dr. Stone: New World",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-06",
+      "release_end_date": "2023-06-15",
+      "release_year": 2023,
+      "release_label": "6 апреля — 15 июня 2023",
+      "episode_count": 11,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48549/c23d4111f11b3c36efd0567eb17cdad6.jpeg",
+      "match": {
+        "shikimori": [
+          48549
+        ],
+        "sources": [
+          "animego:2261",
+          "yummyanime:1268"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55644",
+      "title": "Доктор Стоун: Новый мир. Часть 2",
+      "subtitle": "Dr. Stone: New World Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-12",
+      "release_end_date": "2023-12-21",
+      "release_year": 2023,
+      "release_label": "12 октября — 21 декабря 2023",
+      "episode_count": 11,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55644/5e1b53f5249106747d23f1e2ea1ac3c7.jpeg",
+      "match": {
+        "shikimori": [
+          55644
+        ],
+        "sources": [
+          "animego:2388",
+          "yummyanime:4454"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57592",
+      "title": "Доктор Стоун: Научное будущее",
+      "subtitle": "Dr. Stone: Science Future",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-01-09",
+      "release_end_date": "2025-03-27",
+      "release_year": 2025,
+      "release_label": "9 января — 27 марта 2025",
+      "episode_count": 12,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57592/6cd9f5b55daa0b1cc945f448cc4e19ed.jpeg",
+      "match": {
+        "shikimori": [
+          57592
+        ],
+        "sources": [
+          "animego:2714",
+          "yummyanime:4658"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "slug": "apothecary-diaries",
+  "title": "Монолог фармацевта",
+  "short_title": "The Apothecary Diaries",
+  "original_title": "薬屋のひとりごと",
+  "summary": "Историческая детективная драма о наблюдательной аптекарше Маомао, которая распутывает медицинские и придворные загадки императорского дворца.",
+  "guide": "Начинайте с первого сезона и переходите ко второму и последующим сезонам по порядку. Короткие рекламные и итоговые выпуски можно пропустить.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/54492/283fbef180e72bacfadc5a3d64ca4c2e.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/54492",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "maomao_no_hitorigoto",
+    "primary_shikimori_ids": [
+      54492
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 38,
+  "entries": [
+    {
+      "key": "shikimori-54492",
+      "title": "Монолог фармацевта",
+      "subtitle": "Kusuriya no Hitorigoto",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-22",
+      "release_end_date": "2024-03-24",
+      "release_year": 2023,
+      "release_label": "22 октября 2023 — 24 марта 2024",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54492/283fbef180e72bacfadc5a3d64ca4c2e.jpeg",
+      "match": {
+        "shikimori": [
+          54492
+        ],
+        "sources": [
+          "animego:2422",
+          "yummyanime:2719"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56975",
+      "title": "Монолог Маомао",
+      "subtitle": "Maomao no Hitorigoto",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-23",
+      "release_end_date": "2024-03-25",
+      "release_year": 2023,
+      "release_label": "23 октября 2023 — 25 марта 2024",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56975/fef740e399fde89f1fb4db172bcbcf8e.jpeg",
+      "match": {
+        "shikimori": [
+          56975
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58514",
+      "title": "Монолог фармацевта 2",
+      "subtitle": "Kusuriya no Hitorigoto 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-01-10",
+      "release_end_date": "2025-07-04",
+      "release_year": 2025,
+      "release_label": "10 января — 4 июля 2025",
+      "episode_count": 24,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58514/44699bb8ea46d3d807beb5c78da4d873.jpeg",
+      "match": {
+        "shikimori": [
+          58514
+        ],
+        "sources": [
+          "animego:2727",
+          "yummyanime:4936"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60749",
+      "title": "Монолог Маомао 2",
+      "subtitle": "Maomao no Hitorigoto 2nd Season",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-01-13",
+      "release_end_date": "2025-07-07",
+      "release_year": 2025,
+      "release_label": "13 января — 7 июля 2025",
+      "episode_count": 24,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60749/af6c72a43bcd0eab32c672c6c5719b7e.jpeg",
+      "match": {
+        "shikimori": [
+          60749
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

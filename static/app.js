@@ -2766,6 +2766,8 @@ function createFranchiseSegment(value, label, activeValue, onSelect) {
 }
 
 function renderFranchiseToolbar() {
+  const entries = Array.isArray(state.franchise?.entries) ? state.franchise.entries : [];
+  const mainCount = entries.filter(franchiseEntryIsMain).length;
   const toolbar = document.createElement("div");
   toolbar.className = "franchise-toolbar";
 
@@ -2810,8 +2812,8 @@ function renderFranchiseToolbar() {
     });
   };
   scopeSegments.append(
-    createFranchiseSegment("all", "Все работы", state.franchiseScope, setScope),
-    createFranchiseSegment("main", "Основная история", state.franchiseScope, setScope),
+    createFranchiseSegment("all", `Все работы (${entries.length})`, state.franchiseScope, setScope),
+    createFranchiseSegment("main", `Основная история (${mainCount})`, state.franchiseScope, setScope),
   );
   scope.append(scopeLabel, scopeSegments);
   toolbar.append(order, scope);
@@ -3119,6 +3121,12 @@ async function openFranchise(slug, options = {}) {
     if (requestId !== state.franchiseRequestId) throw new DOMException("Stale franchise request", "AbortError");
     const franchise = payload?.franchise || payload?.item || payload;
     state.franchise = { ...franchise, slug: franchise?.slug || normalizedSlug };
+    if (changedFranchise) {
+      const entries = Array.isArray(state.franchise.entries) ? state.franchise.entries : [];
+      const currentEntries = entries.filter(entry => franchiseEntryIsCurrent(entry, state.franchise));
+      const currentOutsideMain = currentEntries.some(entry => !franchiseEntryIsMain(entry));
+      state.franchiseScope = entries.length > 40 && !currentOutsideMain ? "main" : "all";
+    }
     state.franchiseLoading = false;
     renderDetail();
     if (options.scrollDetail) scrollDetailIntoViewForMobile();

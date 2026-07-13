@@ -1,0 +1,816 @@
+{
+  "schema_version": 1,
+  "slug": "ghost-in-the-shell",
+  "title": "Призрак в доспехах",
+  "short_title": "Ghost in the Shell",
+  "original_title": "攻殻機動隊",
+  "summary": "Киберпанковая франшиза об идентичности, технологиях и работе спецподразделений в обществе, где человеческое сознание тесно связано с сетью.",
+  "guide": "Это несколько самостоятельных непрерывностей. Можно начать с фильма 1995 года или с сериала Stand Alone Complex; Arise и SAC_2045 относятся к другим этапам и лучше смотреть отдельными ветками.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/43/e2475d6735ae6c4bee4b2d164bbef57c.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/43",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "ghost_in_the_shell",
+    "primary_shikimori_ids": [
+      43
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 26,
+  "entries": [
+    {
+      "key": "shikimori-43",
+      "title": "Призрак в доспехах",
+      "subtitle": "Koukaku Kidoutai",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1995-11-18",
+      "release_year": 1995,
+      "release_label": "18 ноября 1995",
+      "episode_count": 1,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43/e2475d6735ae6c4bee4b2d164bbef57c.jpeg",
+      "match": {
+        "shikimori": [
+          43
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-467",
+      "title": "Призрак в доспехах: Синдром одиночки",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2002-10-01",
+      "release_end_date": "2003-10-01",
+      "release_year": 2002,
+      "release_label": "1 октября 2002 — 1 октября 2003",
+      "episode_count": 26,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/467/8380a4ba7fcad7f22bbfbd617fc6fe95.jpeg",
+      "match": {
+        "shikimori": [
+          467
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1335",
+      "title": "Призрак в доспехах: Синдром одиночки — Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Tachikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2002-10-01",
+      "release_end_date": "2003-03-25",
+      "release_year": 2002,
+      "release_label": "1 октября 2002 — 25 марта 2003",
+      "episode_count": 26,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1335/0d04ede3c29d9c8cae6bf792a9d3980b.jpeg",
+      "match": {
+        "shikimori": [
+          1335
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-801",
+      "title": "Призрак в доспехах: Синдром одиночки 2",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex 2nd GIG",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2004-01-01",
+      "release_end_date": "2005-01-08",
+      "release_year": 2004,
+      "release_label": "1 января 2004 — 8 января 2005",
+      "episode_count": 26,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/801/e15ee6f88aa60a5f1e7340720cc3238f.jpeg",
+      "match": {
+        "shikimori": [
+          801
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10949",
+      "title": "Призрак в доспехах: Синдром одиночки — Дни татиком. Фан-диск",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Tachikoma na Hibi - Interval",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-02-25",
+      "release_year": 2004,
+      "release_label": "25 февраля 2004",
+      "episode_count": 3,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10949/cd8b839c82a5d656c058e85949340280.jpeg",
+      "match": {
+        "shikimori": [
+          10949
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-468",
+      "title": "Призрак в доспехах 2: Невинность",
+      "subtitle": "Innocence",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-03-06",
+      "release_year": 2004,
+      "release_label": "6 марта 2004",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/468/b8c3efe0c6eddd3c134d84753d322d54.jpeg",
+      "match": {
+        "shikimori": [
+          468
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3485",
+      "title": "Призрак в доспехах: Синдром одиночки 2 — Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex 2nd GIG - Tachikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-09-10",
+      "release_end_date": "2006-09-27",
+      "release_year": 2004,
+      "release_label": "10 сентября 2004 — 27 сентября 2006",
+      "episode_count": 26,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3485/96fc50ab07187e17b5ec53d57f550655.jpeg",
+      "match": {
+        "shikimori": [
+          3485
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2449",
+      "title": "Призрак в доспехах: Синдром одиночки — Смеющийся человек",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - The Laughing Man",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2005-09-23",
+      "release_year": 2005,
+      "release_label": "23 сентября 2005",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2449/4f34fa32bb520e9d6d263980e1e00693.jpeg",
+      "match": {
+        "shikimori": [
+          2449
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10947",
+      "title": "Призрак в доспехах: Синдром одиночки — Смеющийся человек. Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - The Laughing Man - Tachikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-09-23",
+      "release_year": 2005,
+      "release_label": "23 сентября 2005",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10947/1a73c1ad56f18aeb73e60f19d2eece59.jpeg",
+      "match": {
+        "shikimori": [
+          10947
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2448",
+      "title": "Призрак в доспехах: Синдром одиночки 2 — Одиннадцать индивидуалистов",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex 2nd GIG - Individual Eleven",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2006-01-27",
+      "release_year": 2006,
+      "release_label": "27 января 2006",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2448/565aef98619368f8d8455811960d1c0f.jpeg",
+      "match": {
+        "shikimori": [
+          2448
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10948",
+      "title": "Призрак в доспехах: Синдром одиночки 2 — Одиннадцать индивидуалистов. Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex 2nd GIG - Individual Eleven - Tachikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-01-27",
+      "release_year": 2006,
+      "release_label": "27 января 2006",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10948/b19d0f6df75a41629fb8548c7c7320ae.jpeg",
+      "match": {
+        "shikimori": [
+          10948
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1566",
+      "title": "Призрак в доспехах: Синдром одиночки — Сообщество стабильной государственности",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Solid State Society",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-09-01",
+      "release_year": 2006,
+      "release_label": "1 сентября 2006",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1566/7663bb83e528082fa9e9126141222bdf.jpeg",
+      "match": {
+        "shikimori": [
+          1566
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10870",
+      "title": "Призрак в доспехах: Синдром одиночки — Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Tachikoma na Hibi (TV)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2007-05-02",
+      "release_end_date": "2008-04-13",
+      "release_year": 2007,
+      "release_label": "2 мая 2007 — 13 апреля 2008",
+      "episode_count": 12,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10870/e64db1954271957653dd3806a2dc3291.jpeg",
+      "match": {
+        "shikimori": [
+          10870
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3447",
+      "title": "Призрак в доспехах: Синдром одиночки — Сообщество стабильной государственности. Дни утиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Solid State Society - Uchikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-07-24",
+      "release_year": 2007,
+      "release_label": "24 июля 2007",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3447/c077d75b4ce88ddb62ee49d637fbb0bb.jpeg",
+      "match": {
+        "shikimori": [
+          3447
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4672",
+      "title": "Призрак в доспехах 2.0",
+      "subtitle": "Koukaku Kidoutai 2.0",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-07-12",
+      "release_year": 2008,
+      "release_label": "12 июля 2008",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4672/85416aeed8a9cf845c00824e96a6b453.jpeg",
+      "match": {
+        "shikimori": [
+          4672
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10090",
+      "title": "Призрак в доспехах: Синдром одиночки — Сообщество стабильной государственности 3D",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Solid State Society 3D",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-03-26",
+      "release_year": 2011,
+      "release_label": "26 марта 2011",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10090/71d0050cbd5867bb9d25f6bfc967d882.jpeg",
+      "match": {
+        "shikimori": [
+          10090
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10950",
+      "title": "Призрак в доспехах: Синдром одиночки — Сообщество стабильной государственности 3D. Дни татиком",
+      "subtitle": "Koukaku Kidoutai: Stand Alone Complex - Solid State Society 3D - Tachikoma na Hibi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-07-22",
+      "release_year": 2011,
+      "release_label": "22 июля 2011",
+      "episode_count": 3,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10950/34e5810ebcfa892da653e50ca716a20c.jpeg",
+      "match": {
+        "shikimori": [
+          10950
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18989",
+      "title": "Призрак в доспехах: Вознесение — Другая миссия",
+      "subtitle": "Koukaku Kidoutai Arise: Another Mission",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-06-04",
+      "release_year": 2013,
+      "release_label": "4 июня 2013",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18989/828d5a7ee9f4519f77184179d067f337.jpeg",
+      "match": {
+        "shikimori": [
+          18989
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17187",
+      "title": "Призрак в доспехах: Вознесение — Призрачная боль",
+      "subtitle": "Koukaku Kidoutai Arise: Ghost in the Shell - Border:1 Ghost Pain",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-06-22",
+      "release_year": 2013,
+      "release_label": "22 июня 2013",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17187/3e40cb44c2d16a4f9f59965aff5e8d97.jpeg",
+      "match": {
+        "shikimori": [
+          17187
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21575",
+      "title": "Призрак в доспехах: Вознесение — Спецвыпуски логиком",
+      "subtitle": "Koukaku Kidoutai Arise: Ghost in the Shell - Logicoma Specials",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-07-26",
+      "release_end_date": "2014-09-24",
+      "release_year": 2013,
+      "release_label": "26 июля 2013 — 24 сентября 2014",
+      "episode_count": 4,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21575/ea9d92b309e76207c0dbbd25a87451c4.jpeg",
+      "match": {
+        "shikimori": [
+          21575
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29255",
+      "title": "Призрак в доспехах: Вознесение — Эпизод [.jp]",
+      "subtitle": "Koukaku Kidoutai Arise [.jp]",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-11-14",
+      "release_year": 2013,
+      "release_label": "14 ноября 2013",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29255/84a97529adf756b1f321de845b2a209d.jpeg",
+      "match": {
+        "shikimori": [
+          29255
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19191",
+      "title": "Призрак в доспехах: Вознесение — Говорящая с призраками",
+      "subtitle": "Koukaku Kidoutai Arise: Ghost in the Shell - Border:2 Ghost Whispers",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-11-30",
+      "release_year": 2013,
+      "release_label": "30 ноября 2013",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19191/adceed1514cab0c86c0da23fbdee0f93.jpeg",
+      "match": {
+        "shikimori": [
+          19191
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22013",
+      "title": "Призрак в доспехах: Вознесение — Вступление",
+      "subtitle": "Koukaku Kidoutai Nyuumon Arise",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-01-07",
+      "release_end_date": "2014-07-01",
+      "release_year": 2014,
+      "release_label": "7 января — 1 июля 2014",
+      "episode_count": 26,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22013/d2af0b5d6931eacfce6b867584cbea99.jpeg",
+      "match": {
+        "shikimori": [
+          22013
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19193",
+      "title": "Призрак в доспехах: Вознесение — Призрачные слёзы",
+      "subtitle": "Koukaku Kidoutai Arise: Ghost in the Shell - Border:3 Ghost Tears",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-06-28",
+      "release_year": 2014,
+      "release_label": "28 июня 2014",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19193/f530c47aab1d7d85e4377cb3fdd8c805.jpeg",
+      "match": {
+        "shikimori": [
+          19193
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19195",
+      "title": "Призрак в доспехах: Вознесение — Призрак-одиночка",
+      "subtitle": "Koukaku Kidoutai Arise: Ghost in the Shell - Border:4 Ghost Stands Alone",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-09-06",
+      "release_year": 2014,
+      "release_label": "6 сентября 2014",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19195/764642f7342c13a9eb05642bf87f0155.jpeg",
+      "match": {
+        "shikimori": [
+          19195
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29325",
+      "title": "Призрак в доспехах: Вознесение — Альтернативное построение",
+      "subtitle": "Koukaku Kidoutai Arise: Alternative Architecture",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-04-05",
+      "release_end_date": "2015-06-14",
+      "release_year": 2015,
+      "release_label": "5 апреля — 14 июня 2015",
+      "episode_count": 10,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29325/a5e10b07e43195ced502c8143bbbba49.jpeg",
+      "match": {
+        "shikimori": [
+          29325
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-27411",
+      "title": "Призрак в доспехах (2015)",
+      "subtitle": "Koukaku Kidoutai: Shin Movie",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-06-20",
+      "release_year": 2015,
+      "release_label": "20 июня 2015",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/27411/3474a3878f6b5595a4327f2488ed767b.jpeg",
+      "match": {
+        "shikimori": [
+          27411
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38799",
+      "title": "Призрак в доспехах: Синдром одиночки 2045",
+      "subtitle": "Koukaku Kidoutai: SAC_2045",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-04-23",
+      "release_year": 2020,
+      "release_label": "23 апреля 2020",
+      "episode_count": 12,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38799/222dc2ebaa29342c5e1c0fe6c02146b4.jpeg",
+      "match": {
+        "shikimori": [
+          38799
+        ],
+        "sources": [
+          "animego:3464",
+          "yummyanime:5368"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49402",
+      "title": "Призрак в доспехах: Синдром одиночки 2045 — Стабильная война",
+      "subtitle": "Koukaku Kidoutai: SAC_2045 - Jizoku Kanou Sensou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-11-12",
+      "release_year": 2021,
+      "release_label": "12 ноября 2021",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49402/48e2b9452a8f2e4ffd10985b6283d24d.jpeg",
+      "match": {
+        "shikimori": [
+          49402
+        ],
+        "sources": [
+          "animego:3467",
+          "yummyanime:1001"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41750",
+      "title": "Призрак в доспехах: Синдром одиночки 2045 2",
+      "subtitle": "Koukaku Kidoutai: SAC_2045 Season 2",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-05-23",
+      "release_year": 2022,
+      "release_label": "23 мая 2022",
+      "episode_count": 12,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41750/0a12804b4aab5e2f263075a1c8c55834.jpeg",
+      "match": {
+        "shikimori": [
+          41750
+        ],
+        "sources": [
+          "animego:3466",
+          "yummyanime:1342"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54860",
+      "title": "Призрак в доспехах: Синдром одиночки 2045. Фильм",
+      "subtitle": "Koukaku Kidoutai: SAC_2045 - Saigo no Ningen",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-11-23",
+      "release_year": 2023,
+      "release_label": "23 ноября 2023",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54860/0b8db2fd4576e5ee20621c1ffbfd9a94.jpeg",
+      "match": {
+        "shikimori": [
+          54860
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58929",
+      "title": "Призрак в доспехах (2026)",
+      "subtitle": "Koukaku Kidoutai (TV)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "2026-07-07",
+      "release_year": 2026,
+      "release_label": "7 июля 2026",
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 14 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58929/debdf9093639fce8f0a72fcfd1fdf04f.jpeg",
+      "match": {
+        "shikimori": [
+          58929
+        ],
+        "sources": [
+          "yummyanime:yummyani:26358"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

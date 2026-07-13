@@ -176,6 +176,7 @@ For database/catalog changes, also run:
 
 ```bash
 .venv/bin/python scripts/check_data_health.py
+.venv/bin/python scripts/check_franchise_data.py --db db/animego.sqlite
 ```
 
 After frontend or route changes, restart the already-running dev server. Static

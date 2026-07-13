@@ -1,0 +1,458 @@
+{
+  "schema_version": 1,
+  "slug": "bleach",
+  "title": "Блич",
+  "short_title": "Bleach",
+  "original_title": "BLEACH",
+  "summary": "Сверхъестественный боевик о проводниках душ, противостоянии разных миров и героях, которым приходится принимать всё более сложные обязанности.",
+  "guide": "Начинайте с оригинального сериала, затем переходите к Thousand-Year Blood War. Филлерные арки, фильмы и большинство спецвыпусков не обязательны для основной истории.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/269/9cfa24e177619cf3c0f39a6098cf47de.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/269",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "bleach",
+    "primary_shikimori_ids": [
+      269
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 11,
+  "entries": [
+    {
+      "key": "shikimori-762",
+      "title": "Блич: Воспоминания под дождём",
+      "subtitle": "Bleach: Memories in the Rain",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-09-23",
+      "release_year": 2004,
+      "release_label": "23 сентября 2004",
+      "episode_count": 1,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/762/fa47476bc334a20be2f69e826f3dea8b.jpeg",
+      "match": {
+        "shikimori": [
+          762
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-269",
+      "title": "Блич",
+      "subtitle": "Bleach",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2004-10-05",
+      "release_end_date": "2012-03-27",
+      "release_year": 2004,
+      "release_label": "5 октября 2004 — 27 марта 2012",
+      "episode_count": 366,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/269/9cfa24e177619cf3c0f39a6098cf47de.jpeg",
+      "match": {
+        "shikimori": [
+          269
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38810",
+      "title": "Блич: Джамп Феста 2004",
+      "subtitle": "Bleach: Gotei 13 Omake",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-06-12",
+      "release_year": 2005,
+      "release_label": "12 июня 2005",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38810/c3481d84902ed38cc1351243dc9c231e.jpeg",
+      "match": {
+        "shikimori": [
+          38810
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54171",
+      "title": "Блич: Ура, Рукия спасена! Избранное! Десятка лучших битв синигами! Мы покажем ваших самых любимых синигами!",
+      "subtitle": "Bleach: Shuku! Rukia Dakkan! Kagayaku! Shinigami Juuban Shoubu! Mitai Shinigami Doon to Misemasu Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-01-10",
+      "release_year": 2006,
+      "release_label": "10 января 2006",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54171/3779092da10623f7d561bcf06d7587c1.jpeg",
+      "match": {
+        "shikimori": [
+          54171
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-834",
+      "title": "Блич: Неистовство заточённого меча",
+      "subtitle": "Bleach: The Sealed Sword Frenzy",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-03-23",
+      "release_year": 2006,
+      "release_label": "23 марта 2006",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/834/19be9a482b6acfeb6c97ae825163bccc.jpeg",
+      "match": {
+        "shikimori": [
+          834
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1686",
+      "title": "Блич: Воспоминания ни о ком",
+      "subtitle": "Bleach Movie 1: Memories of Nobody",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-12-16",
+      "release_year": 2006,
+      "release_label": "16 декабря 2006",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1686/048c28232eb4a6182a85c05c4ec48049.jpeg",
+      "match": {
+        "shikimori": [
+          1686
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2889",
+      "title": "Блич: Восстание алмазной пыли",
+      "subtitle": "Bleach Movie 2: The DiamondDust Rebellion - Mou Hitotsu no Hyourinmaru",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-12-22",
+      "release_year": 2007,
+      "release_label": "22 декабря 2007",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2889/0f623204044937abf092e4b17e1a2b59.jpeg",
+      "match": {
+        "shikimori": [
+          2889
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35118",
+      "title": "Блич: Джамп Феста 2008",
+      "subtitle": "Bleach KaraBuri!: Gotei Juusan Yatai Daisakusen!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-09-21",
+      "release_year": 2008,
+      "release_label": "21 сентября 2008",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35118/4698cdcb507d3e94158bf6fdde5002e6.jpeg",
+      "match": {
+        "shikimori": [
+          35118
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4835",
+      "title": "Блич: Уходя в пустоту — я зову тебя по имени",
+      "subtitle": "Bleach Movie 3: Fade to Black - Kimi no Na wo Yobu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-12-13",
+      "release_year": 2008,
+      "release_label": "13 декабря 2008",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4835/512f9a849b93d13b0274c8c0f1f0fe84.jpeg",
+      "match": {
+        "shikimori": [
+          4835
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8247",
+      "title": "Блич: Глава из Ада",
+      "subtitle": "Bleach Movie 4: Jigoku-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-12-04",
+      "release_year": 2010,
+      "release_label": "4 декабря 2010",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8247/41d195d3e75a99c30f51eed1dfadf080.jpeg",
+      "match": {
+        "shikimori": [
+          8247
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41468",
+      "title": "Сжечь ведьму",
+      "subtitle": "Burn the Witch",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-10-02",
+      "release_year": 2020,
+      "release_label": "2 октября 2020",
+      "episode_count": 3,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41468/6d8a9e2f364b565b761245c601bb8f62.jpeg",
+      "match": {
+        "shikimori": [
+          41468
+        ],
+        "sources": [
+          "animego:1637",
+          "yummyanime:2385"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41467",
+      "title": "Блич: Тысячелетняя кровавая война",
+      "subtitle": "Bleach: Sennen Kessen-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-11",
+      "release_end_date": "2022-12-27",
+      "release_year": 2022,
+      "release_label": "11 октября — 27 декабря 2022",
+      "episode_count": 13,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41467/1623d51618ebb272e4f0c1d6d9a33078.jpeg",
+      "match": {
+        "shikimori": [
+          41467
+        ],
+        "sources": [
+          "animego:2129",
+          "yummyanime:1266"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53998",
+      "title": "Блич: Тысячелетняя кровавая война — Прощание",
+      "subtitle": "Bleach: Sennen Kessen-hen - Ketsubetsu-tan",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-07-08",
+      "release_end_date": "2023-09-30",
+      "release_year": 2023,
+      "release_label": "8 июля — 30 сентября 2023",
+      "episode_count": 13,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53998/c401c0c012981dfd01ee1ab1f6c6bc61.jpeg",
+      "match": {
+        "shikimori": [
+          53998
+        ],
+        "sources": [
+          "animego:2679",
+          "yummyanime:2580"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56442",
+      "title": "Блич: Тысячелетняя кровавая война — Прощание. Рекап",
+      "subtitle": "Bleach: Sennen Kessen-hen - Ketsubetsu-tan Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-09-02",
+      "release_year": 2023,
+      "release_label": "2 сентября 2023",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56442/2bf46eb4567db9011ead8f1958e3d8bc.jpeg",
+      "match": {
+        "shikimori": [
+          56442
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56671",
+      "title": "Сжечь ведьму #0.8",
+      "subtitle": "Burn the Witch #0.8",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-12-29",
+      "release_year": 2023,
+      "release_label": "29 декабря 2023",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56671/d4b310bd4d6314f316344ec02d01c5cd.jpeg",
+      "match": {
+        "shikimori": [
+          56671
+        ],
+        "sources": [
+          "yummyanime:5114"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56784",
+      "title": "Блич: Тысячелетняя кровавая война — Конфликт",
+      "subtitle": "Bleach: Sennen Kessen-hen - Soukoku-tan",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-10-05",
+      "release_end_date": "2024-12-28",
+      "release_year": 2024,
+      "release_label": "5 октября — 28 декабря 2024",
+      "episode_count": 14,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56784/648cc266689c756f5f72095b7bd86cf0.jpeg",
+      "match": {
+        "shikimori": [
+          56784
+        ],
+        "sources": [
+          "animego:2689",
+          "yummyanime:4572"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60636",
+      "title": "Блич: Тысячелетняя кровавая война — Бедствие",
+      "subtitle": "Bleach: Sennen Kessen-hen - Kashin-tan",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2026-07-25",
+      "release_year": 2026,
+      "release_label": "25 июля 2026",
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 25 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60636/d155567a5040597064e73fa18394dc37.jpeg",
+      "match": {
+        "shikimori": [
+          60636
+        ],
+        "sources": [
+          "animego:3590",
+          "yummyanime:8533"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

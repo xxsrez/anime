@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "slug": "overlord",
+  "title": "Повелитель",
+  "short_title": "Overlord",
+  "original_title": "オーバーロード",
+  "summary": "Тёмное фэнтези о могущественном правителе и его подданных, исследующее новый мир одновременно через стратегию, политику и чёрную комедию.",
+  "guide": "Основные четыре сезона смотрите последовательно, а фильм о Священном королевстве — после четвёртого сезона. Ранние полнометражные фильмы являются пересказами и могут быть пропущены.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/29803/47d499fb0059f65350666013e235616e.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/29803",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "overlord",
+    "primary_shikimori_ids": [
+      29803
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 19,
+  "entries": [
+    {
+      "key": "shikimori-37264",
+      "title": "Повелитель: Чаепитие служанок",
+      "subtitle": "Overlord: Oukoku no Kan-tachi - Drama CD-tsuki Tokusou-ban",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-01-28",
+      "release_year": 2014,
+      "release_label": "28 января 2014",
+      "episode_count": 1,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37264/103d4a35107b33ed2083eba0aa8a177f.jpeg",
+      "match": {
+        "shikimori": [
+          37264
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29803",
+      "title": "Повелитель",
+      "subtitle": "Overlord",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-07-07",
+      "release_end_date": "2015-09-29",
+      "release_year": 2015,
+      "release_label": "7 июля — 29 сентября 2015",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29803/47d499fb0059f65350666013e235616e.jpeg",
+      "match": {
+        "shikimori": [
+          29803
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31138",
+      "title": "Повелитель: Пле-пле-плеяды",
+      "subtitle": "Overlord: Ple Ple Pleiades",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-09-25",
+      "release_end_date": "2016-02-24",
+      "release_year": 2015,
+      "release_label": "25 сентября 2015 — 24 февраля 2016",
+      "episode_count": 8,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31138/f7222df5a492eb017bb63d923b684fa5.jpeg",
+      "match": {
+        "shikimori": [
+          31138
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51168",
+      "title": "Пле-пле-плеяды: Спецвыпуск",
+      "subtitle": "Ple Ple Pleiades Special Edition",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2015-09-30",
+      "release_year": 2015,
+      "release_label": "30 сентября 2015",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51168/d8e40f84c2a34b042a396df77a59c5aa.jpeg",
+      "match": {
+        "shikimori": [
+          51168
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33372",
+      "title": "Повелитель: Пле-пле-плеяды OVA",
+      "subtitle": "Overlord: Ple Ple Pleiades - Nazarick Saidai no Kiki",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2016-09-30",
+      "release_year": 2016,
+      "release_label": "30 сентября 2016",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33372/996587909adf9ba9fbccd813f1233771.jpeg",
+      "match": {
+        "shikimori": [
+          33372
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34161",
+      "title": "Повелитель: Бессмертный король",
+      "subtitle": "Overlord Movie 1: Fushisha no Ou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-02-25",
+      "release_year": 2017,
+      "release_label": "25 февраля 2017",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34161/02b49eb4e8075b2f756a826749fa91e8.jpeg",
+      "match": {
+        "shikimori": [
+          34161
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36497",
+      "title": "Повелитель: Пле-пле-плеяды — Театральная версия",
+      "subtitle": "Overlord Movie: Ple Ple Pleiades",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-02-25",
+      "release_end_date": "2017-03-11",
+      "release_year": 2017,
+      "release_label": "25 февраля — 11 марта 2017",
+      "episode_count": 2,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36497/9b8b020cf4ff4b51844e8cbb4076df54.jpeg",
+      "match": {
+        "shikimori": [
+          36497
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36683",
+      "title": "Повелитель: Урок хороших манер",
+      "subtitle": "Overlord Movie: Manner Movie",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-02-25",
+      "release_year": 2017,
+      "release_label": "25 февраля 2017",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36683/b9088494243665809d7049fca2558125.jpeg",
+      "match": {
+        "shikimori": [
+          36683
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34428",
+      "title": "Повелитель: Тёмный воитель",
+      "subtitle": "Overlord Movie 2: Shikkoku no Eiyuu",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-03-11",
+      "release_year": 2017,
+      "release_label": "11 марта 2017",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34428/f281522ee2041fd2b02273abd4260f10.jpeg",
+      "match": {
+        "shikimori": [
+          34428
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35073",
+      "title": "Повелитель 2",
+      "subtitle": "Overlord II",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-01-09",
+      "release_end_date": "2018-04-03",
+      "release_year": 2018,
+      "release_label": "9 января — 3 апреля 2018",
+      "episode_count": 13,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35073/10dbd76f60f79e06533f5f4fa5c72a71.jpeg",
+      "match": {
+        "shikimori": [
+          35073
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37087",
+      "title": "Повелитель: Пле-пле-плеяды 2",
+      "subtitle": "Overlord: Ple Ple Pleiades 2",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-01-09",
+      "release_end_date": "2018-04-03",
+      "release_year": 2018,
+      "release_label": "9 января — 3 апреля 2018",
+      "episode_count": 13,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37087/d3bb22b80f0a74b0ed15dcd536be1e91.jpeg",
+      "match": {
+        "shikimori": [
+          37087
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37675",
+      "title": "Повелитель 3",
+      "subtitle": "Overlord III",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-07-10",
+      "release_end_date": "2018-10-02",
+      "release_year": 2018,
+      "release_label": "10 июля — 2 октября 2018",
+      "episode_count": 13,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37675/d11ae90d8208a306a2fa161039c03f04.jpeg",
+      "match": {
+        "shikimori": [
+          37675
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37781",
+      "title": "Повелитель: Пле-пле-плеяды 3",
+      "subtitle": "Overlord: Ple Ple Pleiades 3",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-07-10",
+      "release_end_date": "2018-10-02",
+      "release_year": 2018,
+      "release_label": "10 июля — 2 октября 2018",
+      "episode_count": 13,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37781/fed59c704da642879d8ba84f28784001.jpeg",
+      "match": {
+        "shikimori": [
+          37781
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38693",
+      "title": "Повелитель: Пле-пле-плеяды — Побег Клементины",
+      "subtitle": "Overlord: Ple Ple Pleiades - Clementine Toubou-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-11-23",
+      "release_year": 2018,
+      "release_label": "23 ноября 2018",
+      "episode_count": 3,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38693/8f92a67a856923ed4cf1393e79d8667a.jpeg",
+      "match": {
+        "shikimori": [
+          38693
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48895",
+      "title": "Повелитель 4",
+      "subtitle": "Overlord IV",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-07-05",
+      "release_end_date": "2022-09-27",
+      "release_year": 2022,
+      "release_label": "5 июля — 27 сентября 2022",
+      "episode_count": 13,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48895/393bafc23ee878f9ad6198f99c0601a5.jpeg",
+      "match": {
+        "shikimori": [
+          48895
+        ],
+        "sources": [
+          "animego:2057",
+          "yummyanime:1197"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48897",
+      "title": "Повелитель: Пле-пле-плеяды 4",
+      "subtitle": "Overlord: Ple Ple Pleiades 4",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-07-05",
+      "release_end_date": "2022-09-27",
+      "release_year": 2022,
+      "release_label": "5 июля — 27 сентября 2022",
+      "episode_count": 13,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48897/307b5f1f7f3e76f226cd2b298dd1beb6.jpeg",
+      "match": {
+        "shikimori": [
+          48897
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48896",
+      "title": "Повелитель: Святое королевство",
+      "subtitle": "Overlord Movie 3: Sei Oukoku-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-09-20",
+      "release_year": 2024,
+      "release_label": "20 сентября 2024",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48896/26cce41e79bb89d6da1c308827dfbe3d.jpeg",
+      "match": {
+        "shikimori": [
+          48896
+        ],
+        "sources": [
+          "yummyanime:1259"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

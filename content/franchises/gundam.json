@@ -1,0 +1,3757 @@
+{
+  "schema_version": 1,
+  "slug": "gundam",
+  "title": "Гандам",
+  "short_title": "Gundam",
+  "original_title": "機動戦士ガンダム",
+  "summary": "Большая научно-фантастическая франшиза о войне, политике и людях по обе стороны конфликта, где мобильные доспехи служат не только оружием, но и символами своей эпохи.",
+  "guide": "Это несколько независимых вселенных: для короткого входа подойдут «Ведьма с Меркурия», Iron-Blooded Orphans или Gundam 00. Основную Universal Century лучше начинать с Mobile Suit Gundam 1979 года; фильмы-пересказы можно смотреть вместо соответствующих сериалов.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/80/a848a95677ecb63e5a0dc9e35fd3ad09.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/80",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "gundam",
+    "primary_shikimori_ids": [
+      80
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 2,
+  "entries": [
+    {
+      "key": "shikimori-80",
+      "title": "Мобильный воин Гандам",
+      "subtitle": "Kidou Senshi Gundam",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1979-04-07",
+      "release_end_date": "1980-01-26",
+      "release_year": 1979,
+      "release_label": "7 апреля 1979 — 26 января 1980",
+      "episode_count": 43,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/80/a848a95677ecb63e5a0dc9e35fd3ad09.jpeg",
+      "match": {
+        "shikimori": [
+          80
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1090",
+      "title": "Мобильный воин Гандам I",
+      "subtitle": "Kidou Senshi Gundam I",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1981-03-14",
+      "release_year": 1981,
+      "release_label": "14 марта 1981",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1090/fb683621f2539325a21b6801ad978e37.jpeg",
+      "match": {
+        "shikimori": [
+          1090
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1091",
+      "title": "Мобильный воин Гандам II: Солдаты скорби",
+      "subtitle": "Kidou Senshi Gundam II: Ai Senshi-hen",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1981-07-11",
+      "release_year": 1981,
+      "release_label": "11 июля 1981",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1091/43f1313b295538a4183ed5af5b5da730.jpeg",
+      "match": {
+        "shikimori": [
+          1091
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1092",
+      "title": "Мобильный воин Гандам III: Столкновение в космосе",
+      "subtitle": "Kidou Senshi Gundam III: Meguriai Sora-hen",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1982-03-13",
+      "release_year": 1982,
+      "release_label": "13 марта 1982",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1092/06b597d7b42f253e077aa358de9d55bc.jpeg",
+      "match": {
+        "shikimori": [
+          1092
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-85",
+      "title": "Мобильный воин Гандам Зета",
+      "subtitle": "Kidou Senshi Zeta Gundam",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1985-03-02",
+      "release_end_date": "1986-02-22",
+      "release_year": 1985,
+      "release_label": "2 марта 1985 — 22 февраля 1986",
+      "episode_count": 50,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/85/6698b2d4ec56ad5a71b1ed649ab712ac.jpeg",
+      "match": {
+        "shikimori": [
+          85
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-86",
+      "title": "Мобильный воин Гандам Зета Два",
+      "subtitle": "Kidou Senshi Gundam ZZ",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1986-03-01",
+      "release_end_date": "1987-01-31",
+      "release_year": 1986,
+      "release_label": "1 марта 1986 — 31 января 1987",
+      "episode_count": 47,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/86/a8c69e65b1edd29739582854b3b28a8b.jpeg",
+      "match": {
+        "shikimori": [
+          86
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-87",
+      "title": "Мобильный воин Гандам: Ответный удар Чара",
+      "subtitle": "Kidou Senshi Gundam: Gyakushuu no Char",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1988-03-12",
+      "release_year": 1988,
+      "release_label": "12 марта 1988",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/87/36bbe746432f768cfed699e73108ec11.jpeg",
+      "match": {
+        "shikimori": [
+          87
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2302",
+      "title": "Мобильный воин СД Гандам",
+      "subtitle": "Kidou Senshi SD Gundam Mk-I",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1988-03-12",
+      "release_end_date": "1988-05-25",
+      "release_year": 1988,
+      "release_label": "12 марта — 25 мая 1988",
+      "episode_count": 3,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2302/be033739fae2420fe8e064144a3a7f84.jpeg",
+      "match": {
+        "shikimori": [
+          2302
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5270",
+      "title": "Весь этот Гандам",
+      "subtitle": "All That Gundam",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1989-01-01",
+      "release_year": 1989,
+      "release_label": "1 января 1989",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5270/10db2b059de39faf34e91c27dcac9a2d.jpeg",
+      "match": {
+        "shikimori": [
+          5270
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-82",
+      "title": "Мобильный воин Гандам 0080: Карманная война",
+      "subtitle": "Kidou Senshi Gundam 0080: Pocket no Naka no Sensou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1989-03-25",
+      "release_end_date": "1989-08-25",
+      "release_year": 1989,
+      "release_label": "25 марта — 25 августа 1989",
+      "episode_count": 6,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/82/1797058ef135f5b61f01cea04a8b616a.jpeg",
+      "match": {
+        "shikimori": [
+          82
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2303",
+      "title": "Мобильный воин СД Гандам 2",
+      "subtitle": "Kidou Senshi SD Gundam Mk-II",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1989-06-25",
+      "release_year": 1989,
+      "release_label": "25 июня 1989",
+      "episode_count": 3,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2303/ac8aa2a1ed4082b47e480017d7fc39dc.jpeg",
+      "match": {
+        "shikimori": [
+          2303
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2306",
+      "title": "Мобильный воин СД Гандам: Контрнаступление",
+      "subtitle": "Kidou Senshi SD Gundam no Gyakushuu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1989-07-15",
+      "release_year": 1989,
+      "release_label": "15 июля 1989",
+      "episode_count": 2,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2306/a834953c4bbf69c921b353b4335041c3.jpeg",
+      "match": {
+        "shikimori": [
+          2306
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2305",
+      "title": "Мобильный воин СД Гандам 3",
+      "subtitle": "Kidou Senshi SD Gundam Mk-III",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1990-03-23",
+      "release_year": 1990,
+      "release_label": "23 марта 1990",
+      "episode_count": 6,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2305/9bd4ceaeb48a5ed6814b7894b4db9716.jpeg",
+      "match": {
+        "shikimori": [
+          2305
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1939",
+      "title": "Мобильный воин СД Гандам: Продолжение",
+      "subtitle": "SD Gundam Gaiden",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1990-04-25",
+      "release_end_date": "1991-04-21",
+      "release_year": 1990,
+      "release_label": "25 апреля 1990 — 21 апреля 1991",
+      "episode_count": 4,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1939/19c28647ac8d59f3a80ba4873533835f.jpeg",
+      "match": {
+        "shikimori": [
+          1939
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2304",
+      "title": "Мобильный воин СД Гандам 4",
+      "subtitle": "Kidou Senshi SD Gundam Mk-IV",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1990-09-25",
+      "release_year": 1990,
+      "release_label": "25 сентября 1990",
+      "episode_count": 2,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2304/e71a99121c55387f2cf96a4b9a6dfa62.jpeg",
+      "match": {
+        "shikimori": [
+          2304
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52389",
+      "title": "Мобильный воин СД Гандам 4: Спецвыпуск",
+      "subtitle": "Kidou Senshi SD Gundam Mk-IV Special",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1990-09-25",
+      "release_year": 1990,
+      "release_label": "25 сентября 1990",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52389/0269a417a79084d6902f805f4a9ce508.jpeg",
+      "match": {
+        "shikimori": [
+          52389
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6792",
+      "title": "Мобильный воин СД Гандам 5",
+      "subtitle": "Kidou Senshi SD Gundam Mk-V",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1990-10-25",
+      "release_year": 1990,
+      "release_label": "25 октября 1990",
+      "episode_count": 3,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6792/95da9bf7b1ec7557846f635ead82cd95.jpeg",
+      "match": {
+        "shikimori": [
+          6792
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-88",
+      "title": "Мобильный воин Гандам Эф-91",
+      "subtitle": "Kidou Senshi Gundam F91",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1991-03-16",
+      "release_year": 1991,
+      "release_label": "16 марта 1991",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/88/e6f89092702bf4e9fe7cc1987fb24e28.jpeg",
+      "match": {
+        "shikimori": [
+          88
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9087",
+      "title": "Мобильный воин СД Гандам: Чрезвычайная ситуация",
+      "subtitle": "Musha Knight Commando: SD Gundam Scramble",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1991-03-16",
+      "release_end_date": "1991-08-22",
+      "release_year": 1991,
+      "release_label": "16 марта — 22 августа 1991",
+      "episode_count": 2,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9087/f9b1b2e9fb2c0124a8b1d0618d9f4d69.jpeg",
+      "match": {
+        "shikimori": [
+          9087
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-84",
+      "title": "Мобильный воин Гандам 0083: Память о Звёздной пыли",
+      "subtitle": "Kidou Senshi Gundam 0083: Stardust Memory",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1991-05-23",
+      "release_end_date": "1992-09-24",
+      "release_year": 1991,
+      "release_label": "23 мая 1991 — 24 сентября 1992",
+      "episode_count": 13,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/84/d9a8df5186ed4628a40ed4cbc206e35a.jpeg",
+      "match": {
+        "shikimori": [
+          84
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10581",
+      "title": "Мобильный воин Гандам 0083: Память о Звёздной пыли — Космическая бабочка",
+      "subtitle": "Kidou Senshi Gundam 0083: Stardust Memory - Uchuu no Kagerou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1992-01-01",
+      "release_year": 1992,
+      "release_label": "1 января 1992",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10581/d95598b0858989d1a5bea198be1a4b62.jpeg",
+      "match": {
+        "shikimori": [
+          10581
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2695",
+      "title": "Мобильный воин Гандам 0083: Последний блиц Зеона",
+      "subtitle": "Kidou Senshi Gundam 0083: Zeon no Zankou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1992-08-29",
+      "release_year": 1992,
+      "release_label": "29 августа 1992",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2695/62c77152fe7e57363e2d9e29b7287bee.jpeg",
+      "match": {
+        "shikimori": [
+          2695
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9098",
+      "title": "Мобильный воин СД Гандам: Фестиваль",
+      "subtitle": "Kidou Senshi SD Gundam Matsuri",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1993-03-13",
+      "release_year": 1993,
+      "release_label": "13 марта 1993",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9098/3fc00b5274185f222aad12f7bcdc45d0.jpeg",
+      "match": {
+        "shikimori": [
+          9098
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-89",
+      "title": "Мобильный воин Гандам Виктория",
+      "subtitle": "Kidou Senshi Victory Gundam",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1993-04-02",
+      "release_end_date": "1994-03-25",
+      "release_year": 1993,
+      "release_label": "2 апреля 1993 — 25 марта 1994",
+      "episode_count": 51,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/89/c9facd618905ecf264aa4c9be7b44096.jpeg",
+      "match": {
+        "shikimori": [
+          89
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-96",
+      "title": "Мобильный боец Джи-Гандам",
+      "subtitle": "Kidou Butouden G Gundam",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1994-04-01",
+      "release_end_date": "1995-03-31",
+      "release_year": 1994,
+      "release_label": "1 апреля 1994 — 31 марта 1995",
+      "episode_count": 49,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/96/c1a4117a3880e4a13a69cd069222d41a.jpeg",
+      "match": {
+        "shikimori": [
+          96
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-90",
+      "title": "Новый мобильный воин Гандам: Дубль-вэ",
+      "subtitle": "Shin Kidou Senki Gundam Wing",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1995-04-07",
+      "release_end_date": "1996-03-29",
+      "release_year": 1995,
+      "release_label": "7 апреля 1995 — 29 марта 1996",
+      "episode_count": 49,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/90/b9747c4fdbc4ec4089e091107da2c4df.jpeg",
+      "match": {
+        "shikimori": [
+          90
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-81",
+      "title": "Мобильный воин Гандам: Восьмой взвод МС",
+      "subtitle": "Kidou Senshi Gundam: Dai 08 MS Shoutai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1996-01-25",
+      "release_end_date": "1999-07-25",
+      "release_year": 1996,
+      "release_label": "25 января 1996 — 25 июля 1999",
+      "episode_count": 12,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/81/e9d700b1534d4dcfe849e5904802ced1.jpeg",
+      "match": {
+        "shikimori": [
+          81
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-92",
+      "title": "Мобильный воин Гандам Икс: После войны",
+      "subtitle": "Kidou Shinseiki Gundam X",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1996-04-05",
+      "release_end_date": "1996-12-28",
+      "release_year": 1996,
+      "release_label": "5 апреля — 28 декабря 1996",
+      "episode_count": 39,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/92/050435278b0b4f70bc246d7bd804aa26.jpeg",
+      "match": {
+        "shikimori": [
+          92
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3626",
+      "title": "Новый мобильный воин Гандам: Дубль-вэ — Операция «Метеор»",
+      "subtitle": "Shin Kidou Senki Gundam Wing: Operation Meteor",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1996-04-25",
+      "release_end_date": "1996-10-25",
+      "release_year": 1996,
+      "release_label": "25 апреля — 25 октября 1996",
+      "episode_count": 4,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3626/fe6d72513aa67eba87f061f51a9d7a3e.jpeg",
+      "match": {
+        "shikimori": [
+          3626
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5723",
+      "title": "Мобильный воин Гандам: Дополнительная информация по Вселенскому Веку",
+      "subtitle": "Kidou Senshi Gundam: Uchuu Seiki Yowa",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1996-10-25",
+      "release_end_date": "1999-07-25",
+      "release_year": 1996,
+      "release_label": "25 октября 1996 — 25 июля 1999",
+      "episode_count": 10,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5723/7ed23e35cfd5a393060c799295405d13.jpeg",
+      "match": {
+        "shikimori": [
+          5723
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-91",
+      "title": "Новый мобильный воин Гандам: Дубль-вэ — Бесконечный вальс",
+      "subtitle": "Shin Kidou Senki Gundam Wing: Endless Waltz",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1997-01-25",
+      "release_end_date": "1997-07-25",
+      "release_year": 1997,
+      "release_label": "25 января — 25 июля 1997",
+      "episode_count": 3,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/91/333cebc09b63a6e65af78e56a61258a0.jpeg",
+      "match": {
+        "shikimori": [
+          91
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-83",
+      "title": "Мобильный воин Гандам: Восьмой взвод МС — Отчёт Миллер",
+      "subtitle": "Kidou Senshi Gundam: Dai 08 MS Shoutai - Miller's Report",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-08-01",
+      "release_year": 1998,
+      "release_label": "1 августа 1998",
+      "episode_count": 1,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/83/f49013d8d1105b32aa499a1fbbcd3400.jpeg",
+      "match": {
+        "shikimori": [
+          83
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2273",
+      "title": "Новый мобильный воин Гандам: Дубль-вэ — Бесконечный вальс",
+      "subtitle": "Shin Kidou Senki Gundam Wing: Endless Waltz Tokubetsu-hen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-08-01",
+      "release_year": 1998,
+      "release_label": "1 августа 1998",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2273/4a69b26ab60cf2612baec36a387dd8a0.jpeg",
+      "match": {
+        "shikimori": [
+          2273
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4540",
+      "title": "Мобильный воин Гандам: Миссия Рост",
+      "subtitle": "Gundam: Mission to the Rise",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1998-08-01",
+      "release_year": 1998,
+      "release_label": "1 августа 1998",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4540/a5934d9c7c2e7fd750bfbce225fe7c00.jpeg",
+      "match": {
+        "shikimori": [
+          4540
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19977",
+      "title": "Впечатление от первого Гандама",
+      "subtitle": "The Impression of First Gundam",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1998-08-01",
+      "release_year": 1998,
+      "release_label": "1 августа 1998",
+      "episode_count": 1,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19977/348358d16737e5f9f1584af4d739de21.jpeg",
+      "match": {
+        "shikimori": [
+          19977
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-95",
+      "title": "Гандам: Объединение",
+      "subtitle": "Turn A Gundam",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1999-04-09",
+      "release_end_date": "2000-04-14",
+      "release_year": 1999,
+      "release_label": "9 апреля 1999 — 14 апреля 2000",
+      "episode_count": 50,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/95/63646ec970fee8c8118a2f46f34bfb30.jpeg",
+      "match": {
+        "shikimori": [
+          95
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3288",
+      "title": "Мобильный воин Гандам: Эволюция",
+      "subtitle": "Gundam Evolve",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2001-05-17",
+      "release_end_date": "2007-01-26",
+      "release_year": 2001,
+      "release_label": "17 мая 2001 — 26 января 2007",
+      "episode_count": 15,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3288/d82ad8d2e98bd59b0c1ecf68b4cefe51.jpeg",
+      "match": {
+        "shikimori": [
+          3288
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8839",
+      "title": "Мобильный воин Гандам: Новый опыт 0087 — Зелёные дайверы",
+      "subtitle": "Gundam Neo Experience 0087: Green Divers",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2001-08-10",
+      "release_year": 2001,
+      "release_label": "10 августа 2001",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8839/df9eeb1fd4008058a0d78db8599c04db.jpeg",
+      "match": {
+        "shikimori": [
+          8839
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20667",
+      "title": "Мобильный воин Гандам: Фронт Зеона",
+      "subtitle": "Zeonic Front: Kidou Senshi Gundam 0079 - Zeon no Hifun",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2001-09-06",
+      "release_year": 2001,
+      "release_label": "6 сентября 2001",
+      "episode_count": 1,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20667/035c1a0162003ae7925f77df4fe7338b.jpeg",
+      "match": {
+        "shikimori": [
+          20667
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3963",
+      "title": "Гандам: Объединение I — Свет Земли",
+      "subtitle": "Turn A Gundam I: Chikyuukou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-02-09",
+      "release_year": 2002,
+      "release_label": "9 февраля 2002",
+      "episode_count": 1,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3963/f893c55097a4ffe2b119bfe12e97aa84.jpeg",
+      "match": {
+        "shikimori": [
+          3963
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3964",
+      "title": "Гандам: Объединение II — Лунная бабочка",
+      "subtitle": "Turn A Gundam II: Gekkou Chou",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-02-10",
+      "release_year": 2002,
+      "release_label": "10 февраля 2002",
+      "episode_count": 1,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3964/8f5b258e83d1b009b36cf7654d8a5731.jpeg",
+      "match": {
+        "shikimori": [
+          3964
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-93",
+      "title": "Мобильный воин Гандам: Поколение",
+      "subtitle": "Kidou Senshi Gundam SEED",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2002-10-05",
+      "release_end_date": "2003-09-27",
+      "release_year": 2002,
+      "release_label": "5 октября 2002 — 27 сентября 2003",
+      "episode_count": 50,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/93/c70d373f543f0c664b789fa8e18c9612.jpeg",
+      "match": {
+        "shikimori": [
+          93
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2391",
+      "title": "СД Гандам Форс",
+      "subtitle": "SD Gundam Force",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2004-01-07",
+      "release_end_date": "2004-12-29",
+      "release_year": 2004,
+      "release_label": "7 января — 29 декабря 2004",
+      "episode_count": 52,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2391/2aa6dd687425cfc9a841b0a4d0ae09f8.jpeg",
+      "match": {
+        "shikimori": [
+          2391
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-864",
+      "title": "Мобильный воин Гандам: Поколение — Вариации",
+      "subtitle": "Kidou Senshi Gundam SEED MSV Astray",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2004-03-01",
+      "release_end_date": "2004-07-01",
+      "release_year": 2004,
+      "release_label": "1 марта — 1 июля 2004",
+      "episode_count": 2,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/864/1d3139ce26985ae780d854a486acf27c.jpeg",
+      "match": {
+        "shikimori": [
+          864
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2298",
+      "title": "Мобильный воин Гандам: Поколение — Последняя фаза меж звёзд",
+      "subtitle": "Kidou Senshi Gundam SEED: Hoshi no Hazama de",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-03-26",
+      "release_year": 2004,
+      "release_label": "26 марта 2004",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2298/ddfb5b633ef4050b1a3bb11461ca9097.jpeg",
+      "match": {
+        "shikimori": [
+          2298
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1917",
+      "title": "Мобильный воин Гандам МС: Скрытая Однолетняя война",
+      "subtitle": "Kidou Senshi Gundam MS IGLOO: 1-nen Sensou Hiroku",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2004-07-19",
+      "release_end_date": "2004-11-03",
+      "release_year": 2004,
+      "release_label": "19 июля — 3 ноября 2004",
+      "episode_count": 3,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1917/827a5b583e60eb4b5d07620223f4944d.jpeg",
+      "match": {
+        "shikimori": [
+          1917
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2269",
+      "title": "Мобильный воин Гандам: Поколение — Специальное издание",
+      "subtitle": "Kidou Senshi Gundam SEED Special Edition",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-08-27",
+      "release_end_date": "2004-10-22",
+      "release_year": 2004,
+      "release_label": "27 августа — 22 октября 2004",
+      "episode_count": 3,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2269/0c8e22b1f9bbb619b405310c7ce238d2.jpeg",
+      "match": {
+        "shikimori": [
+          2269
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-94",
+      "title": "Мобильный воин Гандам: Судьба поколения",
+      "subtitle": "Kidou Senshi Gundam SEED Destiny",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2004-10-09",
+      "release_end_date": "2005-10-01",
+      "release_year": 2004,
+      "release_label": "9 октября 2004 — 1 октября 2005",
+      "episode_count": 50,
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/94/fea2ce4700e1dabfa02c868374e37dc1.jpeg",
+      "match": {
+        "shikimori": [
+          94
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1967",
+      "title": "Мобильный воин Гандам Зета: Новый перевод — Наследник звёзд",
+      "subtitle": "Kidou Senshi Z Gundam I: Hoshi wo Tsugu Mono",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-05-28",
+      "release_year": 2005,
+      "release_label": "28 мая 2005",
+      "episode_count": 1,
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1967/7782750447ac81782f5f9eac44da7fa5.jpeg",
+      "match": {
+        "shikimori": [
+          1967
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1968",
+      "title": "Мобильный воин Гандам Зета: Новый перевод II — Влюблённые",
+      "subtitle": "Kidou Senshi Z Gundam II: Koibito-tachi",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-10-29",
+      "release_year": 2005,
+      "release_label": "29 октября 2005",
+      "episode_count": 1,
+      "release_order": 50,
+      "watch_order": 50,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1968/40cd42f14b4b3cfbd31b44c1abcf5776.jpeg",
+      "match": {
+        "shikimori": [
+          1968
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1241",
+      "title": "Мобильный воин Гандам: Судьба поколения Плюс — Избранное будущее",
+      "subtitle": "Kidou Senshi Gundam SEED Destiny Final Plus: Erabareta Mirai",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-12-26",
+      "release_year": 2005,
+      "release_label": "26 декабря 2005",
+      "episode_count": 1,
+      "release_order": 51,
+      "watch_order": 51,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1241/12c08707d8a8b42137fbd109e259961b.jpeg",
+      "match": {
+        "shikimori": [
+          1241
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1969",
+      "title": "Мобильный воин Гандам Зета: Новый перевод III — Любовь под пульсацией звёзд",
+      "subtitle": "Kidou Senshi Z Gundam III: Hoshi no Kodou wa Ai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-03-04",
+      "release_year": 2006,
+      "release_label": "4 марта 2006",
+      "episode_count": 1,
+      "release_order": 52,
+      "watch_order": 52,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1969/1cf8fb48165c4500a0d73bd454be55a5.jpeg",
+      "match": {
+        "shikimori": [
+          1969
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1916",
+      "title": "Мобильный воин Гандам: Апокалипсис 0079",
+      "subtitle": "Kidou Senshi Gundam MS IGLOO: Mokushiroku 0079",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2006-04-26",
+      "release_end_date": "2006-08-25",
+      "release_year": 2006,
+      "release_label": "26 апреля — 25 августа 2006",
+      "episode_count": 3,
+      "release_order": 53,
+      "watch_order": 53,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1916/3782397267e168b01654f465494df225.jpeg",
+      "match": {
+        "shikimori": [
+          1916
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2294",
+      "title": "Мобильный воин Гандам: Судьба поколения — Специальное издание",
+      "subtitle": "Kidou Senshi Gundam SEED Destiny Special Edition",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-05-02",
+      "release_year": 2006,
+      "release_label": "2 мая 2006",
+      "episode_count": 4,
+      "release_order": 54,
+      "watch_order": 54,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2294/cd4d15d6186d21b4365adad5e12c3ccd.jpeg",
+      "match": {
+        "shikimori": [
+          2294
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1215",
+      "title": "Мобильный воин Гандам: Старгэйзер",
+      "subtitle": "Kidou Senshi Gundam SEED C.E. 73: Stargazer",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2006-07-14",
+      "release_end_date": "2006-09-29",
+      "release_year": 2006,
+      "release_label": "14 июля — 29 сентября 2006",
+      "episode_count": 3,
+      "release_order": 55,
+      "watch_order": 55,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1215/3e7ea74a78264eb909bb1f2e9281b2ed.jpeg",
+      "match": {
+        "shikimori": [
+          1215
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2743",
+      "title": "Мобильный воин Гандам: Поколение — Театр",
+      "subtitle": "Kidou Senshi Gundam SEED: SEED Supernova - Tanekyara Gekijou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-06-22",
+      "release_year": 2007,
+      "release_label": "22 июня 2007",
+      "episode_count": 4,
+      "release_order": 56,
+      "watch_order": 56,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2743/cd48b54d4df71f9e0e9f66f5d31bcb5f.jpeg",
+      "match": {
+        "shikimori": [
+          2743
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2581",
+      "title": "Мобильный воин Гандам 00",
+      "subtitle": "Kidou Senshi Gundam 00",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2007-10-06",
+      "release_end_date": "2008-03-29",
+      "release_year": 2007,
+      "release_label": "6 октября 2007 — 29 марта 2008",
+      "episode_count": 25,
+      "release_order": 57,
+      "watch_order": 57,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2581/69023444423c5215ecd86a6d0a496366.jpeg",
+      "match": {
+        "shikimori": [
+          2581
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50473",
+      "title": "Мобильный воин Гандам 00: Спецвыпуски",
+      "subtitle": "Kidou Senshi Gundam 00 CB Chara",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-07-25",
+      "release_end_date": "2009-08-25",
+      "release_year": 2008,
+      "release_label": "25 июля 2008 — 25 августа 2009",
+      "episode_count": 2,
+      "release_order": 58,
+      "watch_order": 58,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50473/4934bb64497abe0d89485292a35a581d.jpeg",
+      "match": {
+        "shikimori": [
+          50473
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5351",
+      "title": "Мобильный воин Гандам 00: Спецвыпуск",
+      "subtitle": "Kidou Senshi Gundam 00: Tenshi-tachi no Kiseki",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-09-25",
+      "release_year": 2008,
+      "release_label": "25 сентября 2008",
+      "episode_count": 1,
+      "release_order": 59,
+      "watch_order": 59,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5351/fdcb1512508418d64c93e68dda63d197.jpeg",
+      "match": {
+        "shikimori": [
+          5351
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3927",
+      "title": "Мобильный воин Гандам 00 2",
+      "subtitle": "Kidou Senshi Gundam 00 Second Season",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2008-10-05",
+      "release_end_date": "2009-03-29",
+      "release_year": 2008,
+      "release_label": "5 октября 2008 — 29 марта 2009",
+      "episode_count": 25,
+      "release_order": 60,
+      "watch_order": 60,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3927/b3b6306afeb500e27db62f5123c589e5.jpeg",
+      "match": {
+        "shikimori": [
+          3927
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4232",
+      "title": "Мобильный воин Гандам МС 2: Гравитационный фронт",
+      "subtitle": "Kidou Senshi Gundam MS IGLOO 2: Juuryoku Sensen",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-10-24",
+      "release_end_date": "2009-04-24",
+      "release_year": 2008,
+      "release_label": "24 октября 2008 — 24 апреля 2009",
+      "episode_count": 3,
+      "release_order": 61,
+      "watch_order": 61,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4232/d0071acecdb2550cef6be589d7a90178.jpeg",
+      "match": {
+        "shikimori": [
+          4232
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7113",
+      "title": "Гандам: Идеальная миссия",
+      "subtitle": "30th Gundam Perfect Mission",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-08-25",
+      "release_year": 2009,
+      "release_label": "25 августа 2009",
+      "episode_count": 1,
+      "release_order": 62,
+      "watch_order": 62,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7113/69161a2bfde3f00bbc9a986d7e87f273.jpeg",
+      "match": {
+        "shikimori": [
+          7113
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7060",
+      "title": "Кольцо Гандама",
+      "subtitle": "Ring of Gundam",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2009-08-29",
+      "release_year": 2009,
+      "release_label": "29 августа 2009",
+      "episode_count": 1,
+      "release_order": 63,
+      "watch_order": 63,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7060/19e9d090542ba9750cacaa47e1b87c3a.jpeg",
+      "match": {
+        "shikimori": [
+          7060
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18449",
+      "title": "Мобильный воин Гандам: Запись с поля боя",
+      "subtitle": "Kidou Senshi Gundam Senki: Avant Title",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2009-09-03",
+      "release_year": 2009,
+      "release_label": "3 сентября 2009",
+      "episode_count": 1,
+      "release_order": 64,
+      "watch_order": 64,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18449/08acce5b0f15e7ee215e785b4965b503.jpeg",
+      "match": {
+        "shikimori": [
+          18449
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9708",
+      "title": "Мобильный воин Гандам: Зета Два OVA",
+      "subtitle": "Kidou Senshi Gundam ZZ: Gundam Frag.",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-09-25",
+      "release_end_date": "2009-11-25",
+      "release_year": 2009,
+      "release_label": "25 сентября — 25 ноября 2009",
+      "episode_count": 2,
+      "release_order": 65,
+      "watch_order": 65,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9708/eae4b0769d59985a92034de9181482a6.jpeg",
+      "match": {
+        "shikimori": [
+          9708
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7270",
+      "title": "Мобильный воин Гандам 00: Специальное издание",
+      "subtitle": "Kidou Senshi Gundam 00 Special Edition",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-10-27",
+      "release_end_date": "2010-02-23",
+      "release_year": 2009,
+      "release_label": "27 октября 2009 — 23 февраля 2010",
+      "episode_count": 3,
+      "release_order": 66,
+      "watch_order": 66,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7270/6e2b0ed2647e69c93759c5498c6b0791.jpeg",
+      "match": {
+        "shikimori": [
+          7270
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8132",
+      "title": "Мобильный воин СД Гандам",
+      "subtitle": "Chou Deneiban SD Gundam Sangokuden Brave Battle Warriors",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-02-27",
+      "release_year": 2010,
+      "release_label": "27 февраля 2010",
+      "episode_count": 1,
+      "release_order": 67,
+      "watch_order": 67,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8132/a721bcd3510097d20961d49b770be89a.jpeg",
+      "match": {
+        "shikimori": [
+          8132
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6336",
+      "title": "Мобильный воин Гандам: Единорог",
+      "subtitle": "Kidou Senshi Gundam Unicorn",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-03-12",
+      "release_end_date": "2014-06-06",
+      "release_year": 2010,
+      "release_label": "12 марта 2010 — 6 июня 2014",
+      "episode_count": 7,
+      "release_order": 68,
+      "watch_order": 68,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6336/570fa0ebc7f351a8727f2d724095a4ba.jpeg",
+      "match": {
+        "shikimori": [
+          6336
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8287",
+      "title": "Мобильный воин СД Гандам: Битва храбрых воинов",
+      "subtitle": "SD Gundam Sangokuden Brave Battle Warriors",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2010-04-03",
+      "release_end_date": "2011-03-19",
+      "release_year": 2010,
+      "release_label": "3 апреля 2010 — 19 марта 2011",
+      "episode_count": 51,
+      "release_order": 69,
+      "watch_order": 69,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8287/3273fed492bf44ec704a5b73eecfb6b9.jpeg",
+      "match": {
+        "shikimori": [
+          8287
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14007",
+      "title": "Красный портрет",
+      "subtitle": "Akai Shouzou: Char, Soshite Frontal e",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-08-13",
+      "release_year": 2010,
+      "release_label": "13 августа 2010",
+      "episode_count": 1,
+      "release_order": 70,
+      "watch_order": 70,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14007/c4ea0129c8794f0452af1f6347a15494.jpeg",
+      "match": {
+        "shikimori": [
+          14007
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9040",
+      "title": "Строители Ганпла! Начало",
+      "subtitle": "Mokei Senshi Gunpla Builders Beginning G",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-08-15",
+      "release_end_date": "2010-12-19",
+      "release_year": 2010,
+      "release_label": "15 августа — 19 декабря 2010",
+      "episode_count": 3,
+      "release_order": 71,
+      "watch_order": 71,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9040/56de5d7c35394e5059018cdaebee0b69.jpeg",
+      "match": {
+        "shikimori": [
+          9040
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6288",
+      "title": "Мобильный воин Гандам 00: Пробуждение Инноватора",
+      "subtitle": "Kidou Senshi Gundam 00 Movie: A Wakening of the Trailblazer",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-09-18",
+      "release_year": 2010,
+      "release_label": "18 сентября 2010",
+      "episode_count": 1,
+      "release_order": 72,
+      "watch_order": 72,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6288/1a05832c7c02c8da81abd2039c0d930f.jpeg",
+      "match": {
+        "shikimori": [
+          6288
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30840",
+      "title": "Энциклопедия СД Гандам",
+      "subtitle": "Many Things SD Gundam",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-01-01",
+      "release_end_date": "2011-07-22",
+      "release_year": 2011,
+      "release_label": "1 января — 22 июля 2011",
+      "episode_count": 2,
+      "release_order": 73,
+      "watch_order": 73,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30840/9b727f13818b178ce6fd69a042cb5407.jpeg",
+      "match": {
+        "shikimori": [
+          30840
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10808",
+      "title": "Мобильный воин Гандам Age",
+      "subtitle": "Kidou Senshi Gundam AGE",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2011-10-09",
+      "release_end_date": "2012-09-23",
+      "release_year": 2011,
+      "release_label": "9 октября 2011 — 23 сентября 2012",
+      "episode_count": 49,
+      "release_order": 74,
+      "watch_order": 74,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10808/62ef4f3962a4d3a3fe148698e398c340.jpeg",
+      "match": {
+        "shikimori": [
+          10808
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17717",
+      "title": "Мобильный воин Гандам: Восьмой взвод МС — Битва с третьим измерением",
+      "subtitle": "Kidou Senshi Gundam: Dai 08 MS Shoutai - Sanjigen to no Tatakai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-02-22",
+      "release_year": 2013,
+      "release_label": "22 февраля 2013",
+      "episode_count": 1,
+      "release_order": 75,
+      "watch_order": 75,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17717/a9d894530b75bd9ffd54d547b59f5396.jpeg",
+      "match": {
+        "shikimori": [
+          17717
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17655",
+      "title": "Мобильный воин Гандам Age: Воспоминания об Эдеме",
+      "subtitle": "Kidou Senshi Gundam AGE: Memory of Eden",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2013-07-26",
+      "release_year": 2013,
+      "release_label": "26 июля 2013",
+      "episode_count": 2,
+      "release_order": 76,
+      "watch_order": 76,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17655/12547614697024bcd4287b39423e38e2.jpeg",
+      "match": {
+        "shikimori": [
+          17655
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23943",
+      "title": "Мобильный воин Гандам: Единорог — Один из семидесяти двух",
+      "subtitle": "Kidou Senshi Gundam UC: One of Seventy Two",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-08-03",
+      "release_year": 2013,
+      "release_label": "3 августа 2013",
+      "episode_count": 1,
+      "release_order": 77,
+      "watch_order": 77,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23943/6bbf4bd456196be30ef39d09f390640e.jpeg",
+      "match": {
+        "shikimori": [
+          23943
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19319",
+      "title": "Гандам: Сконструированные бойцы",
+      "subtitle": "Gundam Build Fighters",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-10-07",
+      "release_end_date": "2014-03-31",
+      "release_year": 2013,
+      "release_label": "7 октября 2013 — 31 марта 2014",
+      "episode_count": 25,
+      "release_order": 78,
+      "watch_order": 78,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19319/4239b7e11545661f9c1e9130538edf80.jpeg",
+      "match": {
+        "shikimori": [
+          19319
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22435",
+      "title": "Новый мобильный воин Гандам: Дубль-вэ — Замёрзшая слеза. Новая битва: Спецвыпуск",
+      "subtitle": "Shin Kidou Senki Gundam Wing: Frozen Teardrop Picture Drama - Aratanaru Tatakai",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-01-29",
+      "release_year": 2014,
+      "release_label": "29 января 2014",
+      "episode_count": 1,
+      "release_order": 79,
+      "watch_order": 79,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22435/8aa0f8bb46f5227e92f5642d03d2b96d.jpeg",
+      "match": {
+        "shikimori": [
+          22435
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-27907",
+      "title": "Гандам: Сконструированные бойцы — Спецвыпуски",
+      "subtitle": "Gundam Build Fighters Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-03-26",
+      "release_end_date": "2014-06-20",
+      "release_year": 2014,
+      "release_label": "26 марта — 20 июня 2014",
+      "episode_count": 3,
+      "release_order": 80,
+      "watch_order": 80,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/27907/20197c7193934b7b065c6ca02be2238f.jpeg",
+      "match": {
+        "shikimori": [
+          27907
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-24371",
+      "title": "Мобильный воин Гандам: Единорог — 100 лет одиночества",
+      "subtitle": "Kidou Senshi Gundam Unicorn: Episode EX - Hyakunen no Kodoku",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-05-17",
+      "release_year": 2014,
+      "release_label": "17 мая 2014",
+      "episode_count": 1,
+      "release_order": 81,
+      "watch_order": 81,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/24371/6313d1fd101854cca3674450fc13c5a9.jpeg",
+      "match": {
+        "shikimori": [
+          24371
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51432",
+      "title": "Тёгокин Китти",
+      "subtitle": "Chogokin Hello Kitty",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-06-21",
+      "release_year": 2014,
+      "release_label": "21 июня 2014",
+      "episode_count": 1,
+      "release_order": 82,
+      "watch_order": 82,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51432/0ea1af94bc0268e050e379fa0114cf2e.jpeg",
+      "match": {
+        "shikimori": [
+          51432
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-24835",
+      "title": "Мобильный воин Гандам-сан",
+      "subtitle": "Kidou Senshi Gundam-san",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-07-06",
+      "release_end_date": "2014-09-28",
+      "release_year": 2014,
+      "release_label": "6 июля — 28 сентября 2014",
+      "episode_count": 13,
+      "release_order": 83,
+      "watch_order": 83,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/24835/6716cd27a2148606d279c6e0d0a0139b.jpeg",
+      "match": {
+        "shikimori": [
+          24835
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52390",
+      "title": "Поговорки Гандама",
+      "subtitle": "Kotowaza Gundam-san",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-07-08",
+      "release_end_date": "2014-09-30",
+      "release_year": 2014,
+      "release_label": "8 июля — 30 сентября 2014",
+      "episode_count": 13,
+      "release_order": 84,
+      "watch_order": 84,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52390/f8d8c0a2e91a0dbef80ea41d51dcb29a.jpeg",
+      "match": {
+        "shikimori": [
+          52390
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33225",
+      "title": "Мобильный воин Гандам-сан ONA",
+      "subtitle": "Kidou Senshi Gundam-san (ONA)",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-09-17",
+      "release_end_date": "2014-12-24",
+      "release_year": 2014,
+      "release_label": "17 сентября — 24 декабря 2014",
+      "episode_count": 15,
+      "release_order": 85,
+      "watch_order": 85,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33225/3ee9e12c0a59d2cb034ef0288b0c1f8d.jpeg",
+      "match": {
+        "shikimori": [
+          33225
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23259",
+      "title": "Гандам: Возвращение на G",
+      "subtitle": "Gundam: G no Reconguista",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-10-03",
+      "release_end_date": "2015-03-27",
+      "release_year": 2014,
+      "release_label": "3 октября 2014 — 27 марта 2015",
+      "episode_count": 26,
+      "release_order": 86,
+      "watch_order": 86,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23259/7d4c0d6f113f967de9ba068b326a1586.jpeg",
+      "match": {
+        "shikimori": [
+          23259
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-24625",
+      "title": "Гандам: Сконструированные бойцы 2",
+      "subtitle": "Gundam Build Fighters Try",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-10-08",
+      "release_end_date": "2015-04-01",
+      "release_year": 2014,
+      "release_label": "8 октября 2014 — 1 апреля 2015",
+      "episode_count": 25,
+      "release_order": 87,
+      "watch_order": 87,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/24625/cb1251bbc44485cf44309eeb8fe2e87d.jpeg",
+      "match": {
+        "shikimori": [
+          24625
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34519",
+      "title": "Академия мобильных воинов: Возвращение на G — Косиэн",
+      "subtitle": "Kidou Senshi Gakuen: G-Reco Koushien",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-12-25",
+      "release_end_date": "2015-08-26",
+      "release_year": 2014,
+      "release_label": "25 декабря 2014 — 26 августа 2015",
+      "episode_count": 9,
+      "release_order": 88,
+      "watch_order": 88,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34519/b2154af626d6df294cc3b5695ec89cc7.jpeg",
+      "match": {
+        "shikimori": [
+          34519
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52520",
+      "title": "Мобильный воин Гандам-сан: Урок хороших манер",
+      "subtitle": "Kidou Senshi Gundam-san: Gekijou Manner CM",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-02-07",
+      "release_end_date": "2015-10-10",
+      "release_year": 2015,
+      "release_label": "7 февраля — 10 октября 2015",
+      "episode_count": 2,
+      "release_order": 89,
+      "watch_order": 89,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52520/9fde51ccef129ca5706a8280c38ed705.jpeg",
+      "match": {
+        "shikimori": [
+          52520
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33226",
+      "title": "Поговорки Гандама ONA",
+      "subtitle": "Kotowaza Gundam-san (ONA)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2015-02-18",
+      "release_end_date": "2015-04-10",
+      "release_year": 2015,
+      "release_label": "18 февраля — 10 апреля 2015",
+      "episode_count": 17,
+      "release_order": 90,
+      "watch_order": 90,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33226/feb5cc6eb4aa9f3add057276da3c6c10.jpeg",
+      "match": {
+        "shikimori": [
+          33226
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10937",
+      "title": "Мобильный воин Гандам: Происхождение",
+      "subtitle": "Kidou Senshi Gundam: The Origin",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2015-02-28",
+      "release_end_date": "2018-05-05",
+      "release_year": 2015,
+      "release_label": "28 февраля 2015 — 5 мая 2018",
+      "episode_count": 6,
+      "release_order": 91,
+      "watch_order": 91,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10937/86f89bb81fda6c2078a84ff89273d3ff.jpeg",
+      "match": {
+        "shikimori": [
+          10937
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31454",
+      "title": "Гандам: Возвращение на G — Из прошлого в будущее",
+      "subtitle": "Gundam: G no Reconguista - From the Past to the Future",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-03-21",
+      "release_year": 2015,
+      "release_label": "21 марта 2015",
+      "episode_count": 1,
+      "release_order": 92,
+      "watch_order": 92,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31454/02ddd874361d6fc235dc114ca2434f76.jpeg",
+      "match": {
+        "shikimori": [
+          31454
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31251",
+      "title": "Мобильный воин Гандам: Железнокровные сироты",
+      "subtitle": "Kidou Senshi Gundam: Tekketsu no Orphans",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-10-04",
+      "release_end_date": "2016-03-27",
+      "release_year": 2015,
+      "release_label": "4 октября 2015 — 27 марта 2016",
+      "episode_count": 25,
+      "release_order": 93,
+      "watch_order": 93,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31251/ae372d0d29b89dac2eaccd1910838803.jpeg",
+      "match": {
+        "shikimori": [
+          31251
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32158",
+      "title": "Мобильный воин Гандам: Потому что я — мальчик!",
+      "subtitle": "Kidou Senshi Gundam-san (Movie)",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-12-05",
+      "release_end_date": "2016-11-03",
+      "release_year": 2015,
+      "release_label": "5 декабря 2015 — 3 ноября 2016",
+      "episode_count": 10,
+      "release_order": 94,
+      "watch_order": 94,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32158/d9b2e3c8cec01d2ec786772e9ed73b0d.jpeg",
+      "match": {
+        "shikimori": [
+          32158
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31973",
+      "title": "Мобильный воин Гандам: Удар молнии",
+      "subtitle": "Kidou Senshi Gundam Thunderbolt",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2015-12-25",
+      "release_end_date": "2016-04-22",
+      "release_year": 2015,
+      "release_label": "25 декабря 2015 — 22 апреля 2016",
+      "episode_count": 4,
+      "release_order": 95,
+      "watch_order": 95,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31973/0a9ef0bf9155037df05f5c8cf9a9eb37.jpeg",
+      "match": {
+        "shikimori": [
+          31973
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32898",
+      "title": "Мобильный воин Гандам 0083: Память о Звёздной пыли — Космическая бабочка 2",
+      "subtitle": "Kidou Senshi Gundam 0083: Stardust Memory Picture Drama - Uchuu no Kagerou 2",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-01-29",
+      "release_year": 2016,
+      "release_label": "29 января 2016",
+      "episode_count": 1,
+      "release_order": 96,
+      "watch_order": 96,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32898/d7112c92776035f4695ac43748fcf0cd.jpeg",
+      "match": {
+        "shikimori": [
+          32898
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32927",
+      "title": "Мобильный воин Гандам: Единорог — Призрачный мир",
+      "subtitle": "Kidou Senshi Gundam Unicorn: A Phantom World",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-03-26",
+      "release_year": 2016,
+      "release_label": "26 марта 2016",
+      "episode_count": 1,
+      "release_order": 97,
+      "watch_order": 97,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32927/0ae9accd29907b47762a2ba5afc79556.jpeg",
+      "match": {
+        "shikimori": [
+          32927
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32792",
+      "title": "Мобильный воин Гандам: Единорог — RE:0096",
+      "subtitle": "Kidou Senshi Gundam Unicorn RE:0096",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-04-03",
+      "release_end_date": "2016-09-11",
+      "release_year": 2016,
+      "release_label": "3 апреля — 11 сентября 2016",
+      "episode_count": 22,
+      "release_order": 98,
+      "watch_order": 98,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32792/88a2a8b9a5b8276d3f0e8c41f53a204a.jpeg",
+      "match": {
+        "shikimori": [
+          32792
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33228",
+      "title": "Мобильный воин Гандам-сан: Спецвыпуск",
+      "subtitle": "Kidou Senshi Gundam-san: Hiyoko Days ― Suisei Hiyoko to Fushigi na Ofuda",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-04-22",
+      "release_year": 2016,
+      "release_label": "22 апреля 2016",
+      "episode_count": 1,
+      "release_order": 99,
+      "watch_order": 99,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33228/73659ae2f1158e922865e0916b3948f4.jpeg",
+      "match": {
+        "shikimori": [
+          33228
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33221",
+      "title": "Мобильный воин Гандам: Удар молнии — Декабрьское небо",
+      "subtitle": "Kidou Senshi Gundam Thunderbolt: December Sky",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-06-25",
+      "release_year": 2016,
+      "release_label": "25 июня 2016",
+      "episode_count": 1,
+      "release_order": 100,
+      "watch_order": 100,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33221/b70ce826e0191e7321e339f161a61cba.jpeg",
+      "match": {
+        "shikimori": [
+          33221
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30533",
+      "title": "Гандам: Сконструированные бойцы 2: Островные войны",
+      "subtitle": "Gundam Build Fighters Try: Island Wars",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-08-21",
+      "release_year": 2016,
+      "release_label": "21 августа 2016",
+      "episode_count": 1,
+      "release_order": 101,
+      "watch_order": 101,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30533/3917d836e9d281424f062cb3a24d2064.jpeg",
+      "match": {
+        "shikimori": [
+          30533
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33051",
+      "title": "Мобильный воин Гандам: Железнокровные сироты 2",
+      "subtitle": "Kidou Senshi Gundam: Tekketsu no Orphans 2nd Season",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-10-02",
+      "release_end_date": "2017-04-02",
+      "release_year": 2016,
+      "release_label": "2 октября 2016 — 2 апреля 2017",
+      "episode_count": 25,
+      "release_order": 102,
+      "watch_order": 102,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33051/d096808f2e4b37b2f0ef526cb556ba8e.jpeg",
+      "match": {
+        "shikimori": [
+          33051
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34391",
+      "title": "Мобильный воин Гандам: Удар молнии 2",
+      "subtitle": "Kidou Senshi Gundam Thunderbolt 2nd Season",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2017-03-24",
+      "release_end_date": "2017-07-14",
+      "release_year": 2017,
+      "release_label": "24 марта — 14 июля 2017",
+      "episode_count": 4,
+      "release_order": 103,
+      "watch_order": 103,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34391/1a0b989f5a979dde9f47e5c9c64e96bc.jpeg",
+      "match": {
+        "shikimori": [
+          34391
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35224",
+      "title": "Мобильный воин Гандам: Сумеречный Аксис",
+      "subtitle": "Kidou Senshi Gundam: Twilight Axis",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2017-06-23",
+      "release_end_date": "2017-09-01",
+      "release_year": 2017,
+      "release_label": "23 июня — 1 сентября 2017",
+      "episode_count": 6,
+      "release_order": 104,
+      "watch_order": 104,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35224/c24e1cf70139bd031a2fdaf60d228b92.jpeg",
+      "match": {
+        "shikimori": [
+          35224
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35567",
+      "title": "Гандам: Сконструированные бойцы — Дневник битвы",
+      "subtitle": "Gundam Build Fighters: Battlogue",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2017-08-04",
+      "release_end_date": "2017-12-08",
+      "release_year": 2017,
+      "release_label": "4 августа — 8 декабря 2017",
+      "episode_count": 5,
+      "release_order": 105,
+      "watch_order": 105,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35567/ebb8178b4c8318e6acdad2f6db4446ad.jpeg",
+      "match": {
+        "shikimori": [
+          35567
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35982",
+      "title": "Гандам: Сконструированные бойцы — Ответный удар",
+      "subtitle": "Gundam Build Fighters: GM no Gyakushuu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2017-08-25",
+      "release_year": 2017,
+      "release_label": "25 августа 2017",
+      "episode_count": 1,
+      "release_order": 106,
+      "watch_order": 106,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35982/82c57b127bb61ee7625ca3a25e7ecd72.jpeg",
+      "match": {
+        "shikimori": [
+          35982
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35949",
+      "title": "Мобильный воин Гандам: Удар молнии — Бандитский цветок",
+      "subtitle": "Kidou Senshi Gundam Thunderbolt: Bandit Flower",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-11-18",
+      "release_year": 2017,
+      "release_label": "18 ноября 2017",
+      "episode_count": 1,
+      "release_order": 107,
+      "watch_order": 107,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35949/9c702c10eb840a85dacbb0e6c40ce23e.jpeg",
+      "match": {
+        "shikimori": [
+          35949
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36436",
+      "title": "Мобильный воин Гандам: Сумеречный Аксис — Красное пятно",
+      "subtitle": "Kidou Senshi Gundam: Twilight Axis - Akaki Zanei",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-11-18",
+      "release_year": 2017,
+      "release_label": "18 ноября 2017",
+      "episode_count": 1,
+      "release_order": 108,
+      "watch_order": 108,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36436/5b08c9aadc9f532611db082be998b2ec.jpeg",
+      "match": {
+        "shikimori": [
+          36436
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37247",
+      "title": "Гандам: Сконструированные дайверы — Пролог",
+      "subtitle": "Gundam Build Divers Prologue",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-02-02",
+      "release_year": 2018,
+      "release_label": "2 февраля 2018",
+      "episode_count": 1,
+      "release_order": 109,
+      "watch_order": 109,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37247/706c14a832eb531a8e1b29459b323a3e.jpeg",
+      "match": {
+        "shikimori": [
+          37247
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37245",
+      "title": "Гандам: Сконструированные дайверы",
+      "subtitle": "Gundam Build Divers",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-04-03",
+      "release_end_date": "2018-09-25",
+      "release_year": 2018,
+      "release_label": "3 апреля — 25 сентября 2018",
+      "episode_count": 25,
+      "release_order": 110,
+      "watch_order": 110,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37245/390d4d20a81303b219cc88810e2d48ae.jpeg",
+      "match": {
+        "shikimori": [
+          37245
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38739",
+      "title": "Мобильный воин Гандам: Единорог — Совершенство",
+      "subtitle": "Kidou Senshi Gundam UC Perfectibility",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-09-30",
+      "release_year": 2018,
+      "release_label": "30 сентября 2018",
+      "episode_count": 1,
+      "release_order": 111,
+      "watch_order": 111,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38739/a054e2585297e4ca24c0c8359642d28f.jpeg",
+      "match": {
+        "shikimori": [
+          38739
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37764",
+      "title": "Мобильный воин Гандам: Нарратив",
+      "subtitle": "Kidou Senshi Gundam NT",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-11-30",
+      "release_year": 2018,
+      "release_label": "30 ноября 2018",
+      "episode_count": 1,
+      "release_order": 112,
+      "watch_order": 112,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37764/ed089a51b50c2a8cf884169bc65eb9c9.jpeg",
+      "match": {
+        "shikimori": [
+          37764
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50084",
+      "title": "Мобильный воин Гандам: Единорог — Путешествие Банаджера",
+      "subtitle": "Kidou Senshi Gundam UC: Zenwa Digest - Banagher no Tabiji",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-02-26",
+      "release_year": 2019,
+      "release_label": "26 февраля 2019",
+      "episode_count": 1,
+      "release_order": 113,
+      "watch_order": 113,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50084/f74561a88632d5537d332ab2b79c2a3c.jpeg",
+      "match": {
+        "shikimori": [
+          50084
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39674",
+      "title": "Гандам против Китти",
+      "subtitle": "Gundam vs Hello Kitty",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-03-29",
+      "release_end_date": "2020-01-15",
+      "release_year": 2019,
+      "release_label": "29 марта 2019 — 15 января 2020",
+      "episode_count": 3,
+      "release_order": 114,
+      "watch_order": 114,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39674/81d829d157541bd568c0aa9881ed3c8c.jpeg",
+      "match": {
+        "shikimori": [
+          39674
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39592",
+      "title": "Мобильный воин Гандам: Происхождение — Прибытие Красной кометы",
+      "subtitle": "Kidou Senshi Gundam: The Origin - Zenya Akai Suisei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-04-29",
+      "release_end_date": "2019-08-12",
+      "release_year": 2019,
+      "release_label": "29 апреля — 12 августа 2019",
+      "episode_count": 13,
+      "release_order": 115,
+      "watch_order": 115,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39592/631f549724e9dc2288fa314c22b8f925.jpeg",
+      "match": {
+        "shikimori": [
+          39592
+        ],
+        "sources": [
+          "yummyanime:5492"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38715",
+      "title": "Мир СД Гандам: Троецарствие",
+      "subtitle": "SD Gundam World: Sangoku Souketsuden",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-07-26",
+      "release_end_date": "2021-03-25",
+      "release_year": 2019,
+      "release_label": "26 июля 2019 — 25 марта 2021",
+      "episode_count": 10,
+      "release_order": 116,
+      "watch_order": 116,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38715/a04ab9f40f719585c73f93a809e7f395.jpeg",
+      "match": {
+        "shikimori": [
+          38715
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40464",
+      "title": "Мобильный воин Гандам: Хроника света жизни U.C.",
+      "subtitle": "Kidou Senshi Gundam: Hikaru Inochi Chronicle U.C.",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-09-26",
+      "release_year": 2019,
+      "release_label": "26 сентября 2019",
+      "episode_count": 1,
+      "release_order": 117,
+      "watch_order": 117,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40464/d15ac5a236d10d940740da482069601e.jpeg",
+      "match": {
+        "shikimori": [
+          40464
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40192",
+      "title": "Гандам: Сконструированные дайверы — Подъём",
+      "subtitle": "Gundam Build Divers Re:Rise",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-10-10",
+      "release_end_date": "2019-12-26",
+      "release_year": 2019,
+      "release_label": "10 октября — 26 декабря 2019",
+      "episode_count": 13,
+      "release_order": 118,
+      "watch_order": 118,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40192/295f16b4fae0ffa167ee24ff0130d1a9.jpeg",
+      "match": {
+        "shikimori": [
+          40192
+        ],
+        "sources": [
+          "yummyanime:5467"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38714",
+      "title": "Гандам: Возвращение на G — Вперёд, главный боец!",
+      "subtitle": "Gundam: G no Reconguista Movie I - Ike! Core Fighter",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-11-29",
+      "release_year": 2019,
+      "release_label": "29 ноября 2019",
+      "episode_count": 1,
+      "release_order": 119,
+      "watch_order": 119,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38714/851f62fdbea44cf8566ef870b796cf49.jpeg",
+      "match": {
+        "shikimori": [
+          38714
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41063",
+      "title": "Мобильный воин Гандам G40",
+      "subtitle": "Kidou Senshi Gundam G40",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-01-01",
+      "release_year": 2020,
+      "release_label": "1 января 2020",
+      "episode_count": 1,
+      "release_order": 120,
+      "watch_order": 120,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41063/9773060e8bf74ba2e900ae8c0cb019ab.jpeg",
+      "match": {
+        "shikimori": [
+          41063
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40888",
+      "title": "Академия мобильных воинов: Возвращение на G — Косиэн. Спецвыпуск",
+      "subtitle": "Kidou Senshi Gakuen: Kaettekita G-Reco Koushien",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2020-01-17",
+      "release_end_date": "2023-03-24",
+      "release_year": 2020,
+      "release_label": "17 января 2020 — 24 марта 2023",
+      "episode_count": 15,
+      "release_order": 121,
+      "watch_order": 121,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40888/88e06d26a86d552892d3b9dfad7b51e8.jpeg",
+      "match": {
+        "shikimori": [
+          40888
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59572",
+      "title": "Тёгокин Гандам и Китти",
+      "subtitle": "Chogokin Gundam★Hello Kitty",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-01-30",
+      "release_year": 2020,
+      "release_label": "30 января 2020",
+      "episode_count": 1,
+      "release_order": 122,
+      "watch_order": 122,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59572/7f4bc065389a64a22c738fed2c47febc.jpeg",
+      "match": {
+        "shikimori": [
+          59572
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40890",
+      "title": "Гандам: Возвращение на G — Наступление Беллри",
+      "subtitle": "Gundam: G no Reconguista Movie II - Bellri Gekishin",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-02-21",
+      "release_year": 2020,
+      "release_label": "21 февраля 2020",
+      "episode_count": 1,
+      "release_order": 123,
+      "watch_order": 123,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40890/47c8e2d4dce47db9197f1e09f4c0fdab.jpeg",
+      "match": {
+        "shikimori": [
+          40890
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40942",
+      "title": "Гандам: Сконструированные дайверы — Подъём 2",
+      "subtitle": "Gundam Build Divers Re:Rise 2nd Season",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-04-09",
+      "release_end_date": "2020-08-27",
+      "release_year": 2020,
+      "release_label": "9 апреля — 27 августа 2020",
+      "episode_count": 13,
+      "release_order": 124,
+      "watch_order": 124,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40942/dee7d72ae6ec17a22afcc05e1505c944.jpeg",
+      "match": {
+        "shikimori": [
+          40942
+        ],
+        "sources": [
+          "yummyanime:5317"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-44050",
+      "title": "Гандам: Сконструированные дайверы — Дневник битвы",
+      "subtitle": "Gundam Build Divers: Battlogue",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-11-13",
+      "release_year": 2020,
+      "release_label": "13 ноября 2020",
+      "episode_count": 1,
+      "release_order": 125,
+      "watch_order": 125,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44050/a4b9e62dd9578c4343ceed3e0cda22b4.jpeg",
+      "match": {
+        "shikimori": [
+          44050
+        ],
+        "sources": [
+          "yummyanime:5316"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-44041",
+      "title": "Мир героев СД Гандам",
+      "subtitle": "SD Gundam World Heroes",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-04-08",
+      "release_end_date": "2021-09-16",
+      "release_year": 2021,
+      "release_label": "8 апреля — 16 сентября 2021",
+      "episode_count": 24,
+      "release_order": 126,
+      "watch_order": 126,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44041/fc9b99cb89ba17d4e3a3c9c8185d300d.jpeg",
+      "match": {
+        "shikimori": [
+          44041
+        ],
+        "sources": [
+          "animego:1753",
+          "yummyanime:1168"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37765",
+      "title": "Мобильный воин Гандам: Вспышка Хэтэуэй",
+      "subtitle": "Kidou Senshi Gundam: Senkou no Hathaway",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-06-11",
+      "release_year": 2021,
+      "release_label": "11 июня 2021",
+      "episode_count": 1,
+      "release_order": 127,
+      "watch_order": 127,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37765/f1e02582d46cb2ec935aa8761f1e3fbb.jpeg",
+      "match": {
+        "shikimori": [
+          37765
+        ],
+        "sources": [
+          "yummyanime:421"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-43204",
+      "title": "Гандам: Возвращение на G — Наследие из космоса",
+      "subtitle": "Gundam: G no Reconguista Movie III - Uchuu kara no Isan",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-07-22",
+      "release_year": 2021,
+      "release_label": "22 июля 2021",
+      "episode_count": 1,
+      "release_order": 128,
+      "watch_order": 128,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43204/b1915f51b83440fb162f9be3772c3f67.jpeg",
+      "match": {
+        "shikimori": [
+          43204
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49211",
+      "title": "Гандам Разрушитель: Дневник битвы",
+      "subtitle": "Gundam Breaker: Battlogue",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-10-19",
+      "release_end_date": "2021-11-23",
+      "release_year": 2021,
+      "release_label": "19 октября — 23 ноября 2021",
+      "episode_count": 6,
+      "release_order": 129,
+      "watch_order": 129,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49211/c607b9c6828c276ff619ea0ba22e588d.jpeg",
+      "match": {
+        "shikimori": [
+          49211
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51554",
+      "title": "Мобильный воин Гандам 00: Открытая хроника",
+      "subtitle": "Kidou Senshi Gundam 00: Revealed Chronicle",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-04-04",
+      "release_end_date": "2023-05-28",
+      "release_year": 2022,
+      "release_label": "4 апреля 2022 — 28 мая 2023",
+      "episode_count": 3,
+      "release_order": 130,
+      "watch_order": 130,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51554/928c65daef3dfd2ed345642dbe0e243b.jpeg",
+      "match": {
+        "shikimori": [
+          51554
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51569",
+      "title": "Мобильный воин Гандам: Железнокровные сироты — Специальное издание",
+      "subtitle": "Kidou Senshi Gundam: Tekketsu no Orphans - Tokubetsu-hen",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-04-05",
+      "release_end_date": "2022-05-31",
+      "release_year": 2022,
+      "release_label": "5 апреля — 31 мая 2022",
+      "episode_count": 9,
+      "release_order": 131,
+      "watch_order": 131,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51569/3dc74bb5b6d5d428553c0d34c4d81e29.jpeg",
+      "match": {
+        "shikimori": [
+          51569
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49827",
+      "title": "Мобильный воин Гандам: Остров Кукуруз Доана",
+      "subtitle": "Kidou Senshi Gundam: Cucuruz Doan no Shima",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-06-03",
+      "release_year": 2022,
+      "release_label": "3 июня 2022",
+      "episode_count": 1,
+      "release_order": 132,
+      "watch_order": 132,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49827/d8d10d071012b8242aa30e4938bc357d.jpeg",
+      "match": {
+        "shikimori": [
+          49827
+        ],
+        "sources": [
+          "yummyanime:1418"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52168",
+      "title": "Мобильный воин Гандам: Ведьма с Меркурия — Пролог",
+      "subtitle": "Kidou Senshi Gundam: Suisei no Majo - Prologue",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-07-14",
+      "release_year": 2022,
+      "release_label": "14 июля 2022",
+      "episode_count": 1,
+      "release_order": 133,
+      "watch_order": 133,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52168/6548c655478e1f42d91c950cfdf2aa07.jpeg",
+      "match": {
+        "shikimori": [
+          52168
+        ],
+        "sources": [
+          "animego:2142"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-43205",
+      "title": "Гандам: Возвращение на G — Любовь, кричащая в яростной схватке",
+      "subtitle": "Gundam: G no Reconguista Movie IV - Gekitou ni Sakebu Ai",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-07-22",
+      "release_year": 2022,
+      "release_label": "22 июля 2022",
+      "episode_count": 1,
+      "release_order": 134,
+      "watch_order": 134,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43205/0b2a5dc95c40df0cc01c8127c123f0bb.jpeg",
+      "match": {
+        "shikimori": [
+          43205
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-43206",
+      "title": "Гандам: Возвращение на G — Пересекая черту смерти",
+      "subtitle": "Gundam: G no Reconguista Movie V - Shisen wo Koete",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-08-05",
+      "release_year": 2022,
+      "release_label": "5 августа 2022",
+      "episode_count": 1,
+      "release_order": 135,
+      "watch_order": 135,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43206/c93926960517e54be35ab1986e69daa4.jpeg",
+      "match": {
+        "shikimori": [
+          43206
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49828",
+      "title": "Мобильный воин Гандам: Ведьма с Меркурия",
+      "subtitle": "Kidou Senshi Gundam: Suisei no Majo",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-02",
+      "release_end_date": "2023-01-08",
+      "release_year": 2022,
+      "release_label": "2 октября 2022 — 8 января 2023",
+      "episode_count": 12,
+      "release_order": 136,
+      "watch_order": 136,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49828/8bda95fddf46aca9569c70b1c86e881d.jpeg",
+      "match": {
+        "shikimori": [
+          49828
+        ],
+        "sources": [
+          "animego:2143",
+          "yummyanime:1443"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53603",
+      "title": "Мобильный воин Гандам: Ведьма с Меркурия — Рекап",
+      "subtitle": "Kidou Senshi Gundam: Suisei no Majo Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-11-13",
+      "release_year": 2022,
+      "release_label": "13 ноября 2022",
+      "episode_count": 1,
+      "release_order": 137,
+      "watch_order": 137,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53603/8d194901645f452fc0deb0a7180b91d3.jpeg",
+      "match": {
+        "shikimori": [
+          53603
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53199",
+      "title": "Мобильный воин Гандам: Ведьма с Меркурия 2",
+      "subtitle": "Kidou Senshi Gundam: Suisei no Majo Season 2",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-09",
+      "release_end_date": "2023-07-02",
+      "release_year": 2023,
+      "release_label": "9 апреля — 2 июля 2023",
+      "episode_count": 12,
+      "release_order": 138,
+      "watch_order": 138,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53199/0e2e94acbe4366e3850a231408fe8857.jpeg",
+      "match": {
+        "shikimori": [
+          53199
+        ],
+        "sources": [
+          "animego:2305",
+          "yummyanime:2187"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55283",
+      "title": "Мобильный воин Гандам: Ведьма с Меркурия 2 — Рекап",
+      "subtitle": "Kidou Senshi Gundam: Suisei no Majo Season 2 Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-05-14",
+      "release_year": 2023,
+      "release_label": "14 мая 2023",
+      "episode_count": 1,
+      "release_order": 139,
+      "watch_order": 139,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55283/cc3ccfc7e59adf3007510fa7f9525be7.jpeg",
+      "match": {
+        "shikimori": [
+          55283
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54902",
+      "title": "Гандам: Сконструированная метавселенная",
+      "subtitle": "Gundam Build Metaverse",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-06",
+      "release_end_date": "2023-10-20",
+      "release_year": 2023,
+      "release_label": "6 октября — 20 октября 2023",
+      "episode_count": 3,
+      "release_order": 140,
+      "watch_order": 140,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54902/4c1890d8581d1500374683122f75b040.jpeg",
+      "match": {
+        "shikimori": [
+          54902
+        ],
+        "sources": [
+          "yummyanime:2789"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49073",
+      "title": "Мобильный воин Гандам: Поколение. Фильм",
+      "subtitle": "Kidou Senshi Gundam SEED Freedom",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-01-26",
+      "release_year": 2024,
+      "release_label": "26 января 2024",
+      "episode_count": 1,
+      "release_order": 141,
+      "watch_order": 141,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49073/41f62ee783f91b1577a5a28ec73e6b6b.jpeg",
+      "match": {
+        "shikimori": [
+          49073
+        ],
+        "sources": [
+          "yummyanime:1583"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59718",
+      "title": "Мобильный воин Гандам: Происхождение. Фильмы",
+      "subtitle": "Kidou Senshi Gundam: The Origin - Movie Edition",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-09-13",
+      "release_end_date": "2024-10-11",
+      "release_year": 2024,
+      "release_label": "13 сентября — 11 октября 2024",
+      "episode_count": 3,
+      "release_order": 142,
+      "watch_order": 142,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59718/2ff433c7f4a2a2014da9f3ec650396ea.jpeg",
+      "match": {
+        "shikimori": [
+          59718
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55845",
+      "title": "Мобильный воин Гандам: Реквием возмездия",
+      "subtitle": "Kidou Senshi Gundam: Fukushuu no Requiem",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-10-17",
+      "release_year": 2024,
+      "release_label": "17 октября 2024",
+      "episode_count": 6,
+      "release_order": 143,
+      "watch_order": 143,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55845/668c7f34e428b9de94b92d2a4ea955d5.jpeg",
+      "match": {
+        "shikimori": [
+          55845
+        ],
+        "sources": [
+          "yummyanime:4602"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60478",
+      "title": "Мобильный воин Гандам: Столкновение ALC",
+      "subtitle": "Kidou Senshi Gundam: ALC Encounter",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-11-24",
+      "release_year": 2024,
+      "release_label": "24 ноября 2024",
+      "episode_count": 1,
+      "release_order": 144,
+      "watch_order": 144,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60478/f2baf5fd20f8dd71525527d8ccdd3607.jpeg",
+      "match": {
+        "shikimori": [
+          60478
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61295",
+      "title": "Мобильный воин Гандам: GQuuuuuuX — Начало",
+      "subtitle": "Kidou Senshi Gundam: GQuuuuuuX - Beginning",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-01-17",
+      "release_year": 2025,
+      "release_label": "17 января 2025",
+      "episode_count": 1,
+      "release_order": 145,
+      "watch_order": 145,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61295/37adfbceab95dbc773e2232a19e59f72.jpeg",
+      "match": {
+        "shikimori": [
+          61295
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60449",
+      "title": "Мобильный воин Гандам: GQuuuuuuX",
+      "subtitle": "Kidou Senshi Gundam: GQuuuuuuX",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-04-09",
+      "release_end_date": "2025-06-25",
+      "release_year": 2025,
+      "release_label": "9 апреля — 25 июня 2025",
+      "episode_count": 12,
+      "release_order": 146,
+      "watch_order": 146,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60449/27bbff4bfd10972c9baa6caa4e615a6c.jpeg",
+      "match": {
+        "shikimori": [
+          60449
+        ],
+        "sources": [
+          "animego:2805",
+          "yummyanime:7582"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62264",
+      "title": "Мобильный воин Гандам: Железнокровные сироты — Клин антракта",
+      "subtitle": "Kidou Senshi Gundam: Tekketsu no Orphans - Makuai no Kusabi",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-10-31",
+      "release_year": 2025,
+      "release_label": "31 октября 2025",
+      "episode_count": 1,
+      "release_order": 147,
+      "watch_order": 147,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62264/da3d87c8ff8998d33bdb59b4a96768f9.jpeg",
+      "match": {
+        "shikimori": [
+          62264
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62805",
+      "title": "Мобильный воин Гандам: Железнокровные сироты — Охота Урд. Путь маленького претендента",
+      "subtitle": "Kidou Senshi Gundam: Tekketsu no Orphans - Urdr Hunt: Chiisana Chousensha no Kiseki",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-10-31",
+      "release_year": 2025,
+      "release_label": "31 октября 2025",
+      "episode_count": 1,
+      "release_order": 148,
+      "watch_order": 148,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62805/9d6fc8f0a16ed20344b823465eef2685.jpeg",
+      "match": {
+        "shikimori": [
+          62805
+        ],
+        "sources": [
+          "yummyanime:8456"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38716",
+      "title": "Мобильный воин Гандам: Вспышка Хэтэуэй — Колдунья Кирка",
+      "subtitle": "Kidou Senshi Gundam: Senkou no Hathaway - Circe no Majo",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2026-01-30",
+      "release_year": 2026,
+      "release_label": "30 января 2026",
+      "episode_count": 1,
+      "release_order": 149,
+      "watch_order": 149,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38716/68299cc232bd1e805ec76244db6c1844.jpeg",
+      "match": {
+        "shikimori": [
+          38716
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38717",
+      "title": "Мобильный воин Гандам: Вспышка Хэтэуэй 3",
+      "subtitle": "Kidou Senshi Gundam: Senkou no Hathaway 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 150,
+      "watch_order": 150,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38717/42d7845661aceac5f3a8d1af66ce0e8c.jpeg",
+      "match": {
+        "shikimori": [
+          38717
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60230",
+      "title": "Мобильный воин Гандам: Поколение ноль",
+      "subtitle": "Kidou Senshi Gundam SEED Freedom Zero",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "episode_count": 1,
+      "release_order": 151,
+      "watch_order": 151,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60230/3e9caeda89f02c3e7facadc17dd3a7ab.jpeg",
+      "match": {
+        "shikimori": [
+          60230
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

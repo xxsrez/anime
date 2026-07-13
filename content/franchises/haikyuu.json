@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "slug": "haikyuu",
+  "title": "Волейбол!!",
+  "short_title": "Haikyuu!!",
+  "original_title": "ハイキュー!!",
+  "summary": "Спортивная история о школьной волейбольной команде, соперничестве и постепенном росте каждого игрока через совместную работу.",
+  "guide": "Смотрите сезоны последовательно, затем переходите к финальным фильмам. OVA о соперничающих школах удобнее вставлять между соответствующими сезонами, а пересказы можно пропустить.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/20583/8f8ff40dd441832e6c1eede432171df8.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/20583",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "haikyuu",
+    "primary_shikimori_ids": [
+      20583
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 28,
+  "entries": [
+    {
+      "key": "shikimori-20583",
+      "title": "Волейбол!!",
+      "subtitle": "Haikyuu!!",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-04-06",
+      "release_end_date": "2014-09-21",
+      "release_year": 2014,
+      "release_label": "6 апреля — 21 сентября 2014",
+      "episode_count": 25,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20583/8f8ff40dd441832e6c1eede432171df8.jpeg",
+      "match": {
+        "shikimori": [
+          20583
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31675",
+      "title": "Волейбол!! Мультипликационная квест-история",
+      "subtitle": "Haikyuu!! Quest Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2014-09-25",
+      "release_year": 2014,
+      "release_label": "25 сентября 2014",
+      "episode_count": 3,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31675/43847ff6aa6968c7650092dbb17be562.jpeg",
+      "match": {
+        "shikimori": [
+          31675
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25303",
+      "title": "Волейбол!! Прибытие Льва Хайбы",
+      "subtitle": "Haikyuu!! Lev Genzan!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2015-03-04",
+      "release_year": 2015,
+      "release_label": "4 марта 2015",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25303/0be355c6135016b9bbce04e95938029c.jpeg",
+      "match": {
+        "shikimori": [
+          25303
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29755",
+      "title": "Волейбол!! Начало и конец",
+      "subtitle": "Haikyuu!! Movie 1: Owari to Hajimari",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-07-03",
+      "release_year": 2015,
+      "release_label": "3 июля 2015",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29755/8817356d8e603a815347556b883811b6.jpeg",
+      "match": {
+        "shikimori": [
+          29755
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30364",
+      "title": "Волейбол!! Победители и проигравшие",
+      "subtitle": "Haikyuu!! Movie 2: Shousha to Haisha",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-09-18",
+      "release_year": 2015,
+      "release_label": "18 сентября 2015",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30364/ed57921f00b9534756a20ad97d6c674d.jpeg",
+      "match": {
+        "shikimori": [
+          30364
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28891",
+      "title": "Волейбол!! 2",
+      "subtitle": "Haikyuu!! Second Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-10-04",
+      "release_end_date": "2016-03-27",
+      "release_year": 2015,
+      "release_label": "4 октября 2015 — 27 марта 2016",
+      "episode_count": 25,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28891/0aef2e97db5ced169fc4593d893cc3b2.jpeg",
+      "match": {
+        "shikimori": [
+          28891
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35806",
+      "title": "Волейбол против «Неудачников»!!",
+      "subtitle": "Haikyuu!! vs. \"Akaten\"",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2016-05-02",
+      "release_year": 2016,
+      "release_label": "2 мая 2016",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35806/42e76c12802b6879df0246ecb4620fb9.jpeg",
+      "match": {
+        "shikimori": [
+          35806
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32935",
+      "title": "Волейбол!! 3",
+      "subtitle": "Haikyuu!! Karasuno Koukou vs. Shiratorizawa Gakuen Koukou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-10-08",
+      "release_end_date": "2016-12-10",
+      "release_year": 2016,
+      "release_label": "8 октября — 10 декабря 2016",
+      "episode_count": 10,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32935/24a437dd2247c71e8de9e0a3ce28b30c.jpeg",
+      "match": {
+        "shikimori": [
+          32935
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35321",
+      "title": "Волейбол!! 3 OVA",
+      "subtitle": "Haikyuu!! Tokushuu! Haru-kou Volley ni Kaketa Seishun",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2017-08-04",
+      "release_year": 2017,
+      "release_label": "4 августа 2017",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35321/0f7343e1fee31b8beb30f66a4e193fa6.jpeg",
+      "match": {
+        "shikimori": [
+          35321
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35110",
+      "title": "Волейбол!! Гений и чувство",
+      "subtitle": "Haikyuu!! Movie 3: Sainou to Sense",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-09-15",
+      "release_year": 2017,
+      "release_label": "15 сентября 2017",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35110/9208ce89e1543960b14cc537a7cab567.jpeg",
+      "match": {
+        "shikimori": [
+          35110
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35111",
+      "title": "Волейбол!! Битва концепций",
+      "subtitle": "Haikyuu!! Movie 4: Concept no Tatakai",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-09-29",
+      "release_year": 2017,
+      "release_label": "29 сентября 2017",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35111/6a63979b46a20411f468e2d7ecf99b85.jpeg",
+      "match": {
+        "shikimori": [
+          35111
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38883",
+      "title": "Волейбол!! К вершине",
+      "subtitle": "Haikyuu!! To the Top",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-01-11",
+      "release_end_date": "2020-04-04",
+      "release_year": 2020,
+      "release_label": "11 января — 4 апреля 2020",
+      "episode_count": 13,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38883/1ae7a73cd63cfedea20294969bedce76.jpeg",
+      "match": {
+        "shikimori": [
+          38883
+        ],
+        "sources": [
+          "animego:1448",
+          "yummyanime:110"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40262",
+      "title": "Волейбол!! Земля против воздуха",
+      "subtitle": "Haikyuu!! Riku vs. Kuu",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2020-01-22",
+      "release_year": 2020,
+      "release_label": "22 января 2020",
+      "episode_count": 2,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40262/8d4ba09745998787e14e85dc058f1d4b.jpeg",
+      "match": {
+        "shikimori": [
+          40262
+        ],
+        "sources": [
+          "animego:1449",
+          "yummyanime:2259"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40372",
+      "title": "Волейбол!! Кукольный театр",
+      "subtitle": "Haikyuu!! (OVA)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2020-03-04",
+      "release_year": 2020,
+      "release_label": "4 марта 2020",
+      "episode_count": 10,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40372/867f422901c24d69d8763170f851edad.jpeg",
+      "match": {
+        "shikimori": [
+          40372
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40776",
+      "title": "Волейбол!! К вершине 2",
+      "subtitle": "Haikyuu!! To the Top Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-10-03",
+      "release_end_date": "2020-12-19",
+      "release_year": 2020,
+      "release_label": "3 октября — 19 декабря 2020",
+      "episode_count": 12,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40776/8c573f738158df2726398d72b989c48e.jpeg",
+      "match": {
+        "shikimori": [
+          40776
+        ],
+        "sources": [
+          "animego:1600",
+          "yummyanime:3"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52742",
+      "title": "Волейбол!! Решающая игра на свалке",
+      "subtitle": "Haikyuu!! Movie: Gomisuteba no Kessen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-02-16",
+      "release_year": 2024,
+      "release_label": "16 февраля 2024",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52742/0e8d11918e8bac51d9d03b89f200c4c7.jpeg",
+      "match": {
+        "shikimori": [
+          52742
+        ],
+        "sources": [
+          "animego:2697",
+          "yummyanime:2194"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58967",
+      "title": "Волейбол!! Против Маленького Гиганта",
+      "subtitle": "Haikyuu!! Movie: vs. Chiisana Kyojin",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58967/803e3298b24a5f1d92de9059f0bc1e02.jpeg",
+      "match": {
+        "shikimori": [
+          58967
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

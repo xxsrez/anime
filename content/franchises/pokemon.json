@@ -1,0 +1,4169 @@
+{
+  "schema_version": 1,
+  "slug": "pokemon",
+  "title": "Покемон",
+  "short_title": "Pokémon",
+  "original_title": "ポケットモンスター",
+  "summary": "Приключенческая франшиза о путешествиях тренеров, дружбе с покемонами и исследовании постоянно расширяющегося мира.",
+  "guide": "Можно начать с классической «Лиги Индиго» либо с более современной самостоятельной точки входа «Покемон: Горизонты». Сериалы разных поколений лучше не перемешивать, а фильмы смотреть как необязательные истории соответствующей эпохи.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/527/7edfc6d24a5f2a0f4fe916f85c1050fd.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/527",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "pokemon",
+    "primary_shikimori_ids": [
+      527
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 4,
+  "entries": [
+    {
+      "key": "shikimori-527",
+      "title": "Покемон",
+      "subtitle": "Pokemon",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1997-04-01",
+      "release_end_date": "2002-11-14",
+      "release_year": 1997,
+      "release_label": "1 апреля 1997 — 14 ноября 2002",
+      "episode_count": 276,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/527/7edfc6d24a5f2a0f4fe916f85c1050fd.jpeg",
+      "match": {
+        "shikimori": [
+          527
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37865",
+      "title": "Покемон: Рекап",
+      "subtitle": "Pokemon: Aki no Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1997-10-07",
+      "release_year": 1997,
+      "release_label": "7 октября 1997",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37865/aa491049c6031c7d74fd491d2721d621.jpeg",
+      "match": {
+        "shikimori": [
+          37865
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-528",
+      "title": "Покемон: Мьюту наносит ответный удар",
+      "subtitle": "Pokemon Movie 01: Mewtwo no Gyakushuu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-07-18",
+      "release_year": 1998,
+      "release_label": "18 июля 1998",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/528/c36c888c8ab48448fb0448dbbfec93e1.jpeg",
+      "match": {
+        "shikimori": [
+          528
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5526",
+      "title": "Покемон: Летние каникулы Пикачу",
+      "subtitle": "Pokemon: Pikachu no Natsuyasumi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-07-18",
+      "release_year": 1998,
+      "release_label": "18 июля 1998",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5526/7e8ca885b8af1b28b92ba40268929634.jpeg",
+      "match": {
+        "shikimori": [
+          5526
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11073",
+      "title": "Покемон: Путешествие Эша",
+      "subtitle": "Pokemon Introductory Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-07-18",
+      "release_year": 1998,
+      "release_label": "18 июля 1998",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11073/b327155e184744ad486037bd8ae7d54c.jpeg",
+      "match": {
+        "shikimori": [
+          11073
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4874",
+      "title": "Покемон: Пикачу зимой",
+      "subtitle": "Pokemon: Pikachu no Fuyuyasumi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1998-12-22",
+      "release_year": 1998,
+      "release_label": "22 декабря 1998",
+      "episode_count": 2,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4874/0dcf6b1f06319ed05391bac1cdc70304.jpeg",
+      "match": {
+        "shikimori": [
+          4874
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41612",
+      "title": "Покемон: С Новым годом!",
+      "subtitle": "Oshougatsuda yo! Pokemon Special!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1999-01-01",
+      "release_year": 1999,
+      "release_label": "1 января 1999",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41612/ad0d7e425a2667764e50ad7800a2c6c2.jpeg",
+      "match": {
+        "shikimori": [
+          41612
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1117",
+      "title": "Покемон: Появление призрачного покемона Лугии",
+      "subtitle": "Pokemon Movie 02: Maboroshi no Pokemon Lugia Bakutan",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1999-07-17",
+      "release_year": 1999,
+      "release_label": "17 июля 1999",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1117/8386d8e77cd6c8795122d67ffdc5dd35.jpeg",
+      "match": {
+        "shikimori": [
+          1117
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4792",
+      "title": "Покемон: Спасательная миссия Пикачу",
+      "subtitle": "Pokemon: Pikachu Tankentai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1999-07-17",
+      "release_year": 1999,
+      "release_label": "17 июля 1999",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4792/cf1bba9d43bbe697edce030368969e8e.jpeg",
+      "match": {
+        "shikimori": [
+          4792
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10916",
+      "title": "Покемон: Пикачу зимой (2000)",
+      "subtitle": "Pokemon: Pikachu no Fuyuyasumi (2000)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1999-12-22",
+      "release_year": 1999,
+      "release_label": "22 декабря 1999",
+      "episode_count": 2,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10916/f4f8981f6720ce5884c8a2c57d1d9ac0.jpeg",
+      "match": {
+        "shikimori": [
+          10916
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6385",
+      "title": "Покемон: Один день Слоукинга",
+      "subtitle": "Pokemon: Yadoking no Ichinichi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2000-01-01",
+      "release_year": 2000,
+      "release_label": "1 января 2000",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6385/a38d464acbac95802c2ae67e6fd7d3f1.jpeg",
+      "match": {
+        "shikimori": [
+          6385
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50878",
+      "title": "Pokemon Anime Chou Hyakka: Pokemon Kingin Zukan Super Select",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-01-01",
+      "release_year": 2000,
+      "release_label": "1 января 2000",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50878/bf859919d2403f6f8b5b9e456487cdd2.jpeg",
+      "match": {
+        "shikimori": [
+          50878
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1118",
+      "title": "Покемон: Император хрустальной башни — Энтэй",
+      "subtitle": "Pokemon Movie 03: Kesshoutou no Teiou Entei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2000-07-08",
+      "release_year": 2000,
+      "release_label": "8 июля 2000",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1118/9e77ecb1ecab365d869383db0f47697e.jpeg",
+      "match": {
+        "shikimori": [
+          1118
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4793",
+      "title": "Покемон: Пичу и Пикачу",
+      "subtitle": "Pokemon: Pichu to Pikachu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2000-07-08",
+      "release_year": 2000,
+      "release_label": "8 июля 2000",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4793/4297f394790ab7c8ada35a27071ec51c.jpeg",
+      "match": {
+        "shikimori": [
+          4793
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31750",
+      "title": "Покемон: Рекапы",
+      "subtitle": "TV-ban Pokemon Special Masara Town-hen Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-09-29",
+      "release_year": 2000,
+      "release_label": "29 сентября 2000",
+      "episode_count": 3,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31750/13a54e9cdd0966c19c456b86b4ff5907.jpeg",
+      "match": {
+        "shikimori": [
+          31750
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10917",
+      "title": "Покемон: Пикачу зимой (2001)",
+      "subtitle": "Pokemon: Pikachu no Fuyuyasumi (2001)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-12-22",
+      "release_year": 2000,
+      "release_label": "22 декабря 2000",
+      "episode_count": 3,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10917/d398b240668e91ae0b3bda16e3e92dfe.jpeg",
+      "match": {
+        "shikimori": [
+          10917
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1709",
+      "title": "Покемон: Мьюту! Я существую!",
+      "subtitle": "Pokemon: Mewtwo! Ware wa Koko ni Ari",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2000-12-30",
+      "release_year": 2000,
+      "release_label": "30 декабря 2000",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1709/c64a49eb07c2b5985eb8bf0b7ac6f26a.jpeg",
+      "match": {
+        "shikimori": [
+          1709
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1119",
+      "title": "Покемон: Селеби, голос леса",
+      "subtitle": "Pokemon Movie 04: Celebi Toki wo Koeta Deai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2001-07-07",
+      "release_year": 2001,
+      "release_label": "7 июля 2001",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1119/1ec3a387044ce319fdab2a77f27ee700.jpeg",
+      "match": {
+        "shikimori": [
+          1119
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4794",
+      "title": "Покемон: Захватывающие прятки Пикачу",
+      "subtitle": "Pokemon: Pikachu no Dokidoki Kakurenbo",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2001-07-07",
+      "release_year": 2001,
+      "release_label": "7 июля 2001",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4794/07daeac9437c40ab0e7499fc4f49aa15.jpeg",
+      "match": {
+        "shikimori": [
+          4794
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1525",
+      "title": "Покемон: Райко — легенда грома",
+      "subtitle": "Pokemon Crystal: Raikou Ikazuchi no Densetsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2001-12-30",
+      "release_year": 2001,
+      "release_label": "30 декабря 2001",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1525/825d7380bf04b6f785329c25a3a6ec4d.jpeg",
+      "match": {
+        "shikimori": [
+          1525
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1120",
+      "title": "Покемон: Хранители водной столицы — Латиас и Латиос",
+      "subtitle": "Pokemon Movie 05: Mizu no Miyako no Mamorigami Latias to Latios",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-07-13",
+      "release_year": 2002,
+      "release_label": "13 июля 2002",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1120/0b48faa1b59e22676785aaa94d2f270c.jpeg",
+      "match": {
+        "shikimori": [
+          1120
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4795",
+      "title": "Покемон: Лагерь Пикачу",
+      "subtitle": "Pokemon: Pikapika Hoshizora Camp",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-07-13",
+      "release_year": 2002,
+      "release_label": "13 июля 2002",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4795/a68b62bffe49876f70d40757dfc3606b.jpeg",
+      "match": {
+        "shikimori": [
+          4795
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1564",
+      "title": "Покемон: Современное поколение",
+      "subtitle": "Pokemon Advanced Generation",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2002-11-21",
+      "release_end_date": "2006-09-14",
+      "release_year": 2002,
+      "release_label": "21 ноября 2002 — 14 сентября 2006",
+      "episode_count": 192,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1564/9931db34bfd2fa5aad991e3c9d8677e0.jpeg",
+      "match": {
+        "shikimori": [
+          1564
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2363",
+      "title": "Покемон: Хроники приключений",
+      "subtitle": "Pokemon Side Stories",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2002-12-03",
+      "release_end_date": "2004-09-28",
+      "release_year": 2002,
+      "release_label": "3 декабря 2002 — 28 сентября 2004",
+      "episode_count": 16,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2363/1d3dc099901a04039448bb55dcf2acb5.jpeg",
+      "match": {
+        "shikimori": [
+          2363
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6877",
+      "title": "Покемон: Братья Пичу — Дикое приключение",
+      "subtitle": "Pokemon: Bokutachi Pichu Brothers - Party wa Oosawagi! no Maki",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2003-07-18",
+      "release_year": 2003,
+      "release_label": "18 июля 2003",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6877/042d374214322811701412548db814ca.jpeg",
+      "match": {
+        "shikimori": [
+          6877
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1121",
+      "title": "Покемон: Современное поколение — Джирачи исполнитель желаний",
+      "subtitle": "Pokemon Movie 06: Nanayo no Negaiboshi Jirachi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2003-07-19",
+      "release_year": 2003,
+      "release_label": "19 июля 2003",
+      "episode_count": 1,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1121/21d686f594ba89cb84c4915d51078ec6.jpeg",
+      "match": {
+        "shikimori": [
+          1121
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5529",
+      "title": "Покемон: Секретная база пляшущих покемонов",
+      "subtitle": "Pokemon: Odoru Pokemon Himitsu Kichi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2003-07-19",
+      "release_year": 2003,
+      "release_label": "19 июля 2003",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5529/0521684d77fcd9e3b02aa3761c7b8b1b.jpeg",
+      "match": {
+        "shikimori": [
+          5529
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1122",
+      "title": "Покемон: Судьба Деоксиса",
+      "subtitle": "Pokemon Movie 07: Rekkuu no Houmonsha Deoxys",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-07-17",
+      "release_year": 2004,
+      "release_label": "17 июля 2004",
+      "episode_count": 1,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1122/d7b57a285a2ac359fa1c39229a013a5a.jpeg",
+      "match": {
+        "shikimori": [
+          1122
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42135",
+      "title": "Покемон: Современное поколение. Планетарий — Вызов с неба",
+      "subtitle": "Pokemon Advanced Generation Planetarium: Tenkuu Kara no Chousen",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-07-17",
+      "release_year": 2004,
+      "release_label": "17 июля 2004",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42135/b7cb8c7a103fdd25eb89c9c409b60d51.jpeg",
+      "match": {
+        "shikimori": [
+          42135
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5845",
+      "title": "Покемон: Летний фестиваль Пикачу",
+      "subtitle": "Pokemon: Pikachu no Natsumatsuri",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-08-01",
+      "release_year": 2004,
+      "release_label": "1 августа 2004",
+      "episode_count": 1,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5845/98c6b48aa9580f95208412a2e64a7c96.jpeg",
+      "match": {
+        "shikimori": [
+          5845
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11019",
+      "title": "Покемон 3D: Няйти Мяута",
+      "subtitle": "Pokemon 3D Adventure: Mew wo Sagase!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-03-18",
+      "release_year": 2005,
+      "release_label": "18 марта 2005",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11019/d21795a5b09cd2f46dd2d4ef948e7c75.jpeg",
+      "match": {
+        "shikimori": [
+          11019
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1526",
+      "title": "Покемон: Современное поколение — Лукарио и загадка Мью",
+      "subtitle": "Pokemon Movie 08: Mew to Hadou no Yuusha Lucario",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-07-16",
+      "release_year": 2005,
+      "release_label": "16 июля 2005",
+      "episode_count": 1,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1526/9b422c3ba2c90f6a74ee7f1362038512.jpeg",
+      "match": {
+        "shikimori": [
+          1526
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5844",
+      "title": "Покемон: Фестиваль привидений Пикачу",
+      "subtitle": "Pokemon: Pikachu no Obake Carnival",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-08-01",
+      "release_year": 2005,
+      "release_label": "1 августа 2005",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5844/2c44d4ed548bb5c99874da814d523c9b.jpeg",
+      "match": {
+        "shikimori": [
+          5844
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11009",
+      "title": "Покемон 4D: Морское приключение Пикачу",
+      "subtitle": "Pokemon 3D Adventure 2: Pikachu no Kaitei Daibouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-05-20",
+      "release_year": 2006,
+      "release_label": "20 мая 2006",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11009/76f89720dc28eb55944dd824d90a354a.jpeg",
+      "match": {
+        "shikimori": [
+          11009
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42136",
+      "title": "Покемон: Алмаз и жемчуг — Соберёмся вместе! Центр планеты покемонов",
+      "subtitle": "Pokemon Diamond & Pearl Atsumare! Pokemon Planet Center",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-07-02",
+      "release_year": 2006,
+      "release_label": "2 июля 2006",
+      "episode_count": 1,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42136/3441d5a24c680b0801c3f07fb994a754.jpeg",
+      "match": {
+        "shikimori": [
+          42136
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2201",
+      "title": "Покемон: Рейнджер и Храм моря",
+      "subtitle": "Pokemon Movie 09: Pokemon Ranger to Umi no Ouji Manaphy",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-07-15",
+      "release_year": 2006,
+      "release_label": "15 июля 2006",
+      "episode_count": 1,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2201/915534efee37d7c2615582239e3263a7.jpeg",
+      "match": {
+        "shikimori": [
+          2201
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4910",
+      "title": "Покемон: Приключение Пикачу на острове",
+      "subtitle": "Pokemon: Pikachu no Wanpaku Island",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-08-01",
+      "release_year": 2006,
+      "release_label": "1 августа 2006",
+      "episode_count": 1,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4910/4c915d597c41c36761b624378382f673.jpeg",
+      "match": {
+        "shikimori": [
+          4910
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2842",
+      "title": "Покемон: Таинственное подземелье — Команда Go-Getters за пределами ворот!",
+      "subtitle": "Pokemon Fushigi no Dungeon: Shutsudou Pokemon Kyuujotai Ganbaruzu!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-09-08",
+      "release_year": 2006,
+      "release_label": "8 сентября 2006",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2842/f5a69d7690b132219d3a6404dc9351cf.jpeg",
+      "match": {
+        "shikimori": [
+          2842
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1565",
+      "title": "Покемон: Алмаз и жемчуг",
+      "subtitle": "Pokemon Diamond & Pearl",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2006-09-28",
+      "release_end_date": "2010-09-09",
+      "release_year": 2006,
+      "release_label": "28 сентября 2006 — 9 сентября 2010",
+      "episode_count": 191,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1565/ab5bb7c79231807ed48bde1b8e463ddf.jpeg",
+      "match": {
+        "shikimori": [
+          1565
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36825",
+      "title": "Покемон: Алмаз и жемчуг — Клип",
+      "subtitle": "Pokemon Diamond & Pearl: Clip Show",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-09-28",
+      "release_year": 2006,
+      "release_label": "28 сентября 2006",
+      "episode_count": 1,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36825/6e1c5d12c3b0c9dbb2faedfc9e4e90e3.jpeg",
+      "match": {
+        "shikimori": [
+          36825
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1527",
+      "title": "Покемон: Тайный властитель миражных покемонов",
+      "subtitle": "Pokemon: Senritsu no Mirage Pokemon",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2006-10-13",
+      "release_year": 2006,
+      "release_label": "13 октября 2006",
+      "episode_count": 1,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1527/a487d56318fe7fa201d038123e617877.jpeg",
+      "match": {
+        "shikimori": [
+          1527
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2847",
+      "title": "Покемон: Алмаз и жемчуг — Диалга, Палкия и Даркрай",
+      "subtitle": "Pokemon Movie 10: Dialga vs. Palkia vs. Darkrai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-07-15",
+      "release_year": 2007,
+      "release_label": "15 июля 2007",
+      "episode_count": 1,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2847/26c380895af764d05cb7504063acce02.jpeg",
+      "match": {
+        "shikimori": [
+          2847
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7550",
+      "title": "Покемон: Клуб исследований Пикачу",
+      "subtitle": "Pokemon: Pikachu Tanken Club",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-08-01",
+      "release_year": 2007,
+      "release_label": "1 августа 2007",
+      "episode_count": 1,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7550/77f801e7502046e2b3de909ad6cd848f.jpeg",
+      "match": {
+        "shikimori": [
+          7550
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5256",
+      "title": "Покемон: Таинственное подземелье — Исследователи времени и темноты",
+      "subtitle": "Pokemon Fushigi no Dungeon: Toki no Tankentai, Yami no Tankentai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-09-09",
+      "release_year": 2007,
+      "release_label": "9 сентября 2007",
+      "episode_count": 1,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5256/0a388b98799b1979738700ebc669de54.jpeg",
+      "match": {
+        "shikimori": [
+          5256
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42137",
+      "title": "Покемон: Алмаз и Жемчуг — Общий сбор! Звёздный фестиваль покемонов",
+      "subtitle": "Pokemon Diamond & Pearl Atsumare! Pokemon Hoshi Matsuri",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-05-31",
+      "release_year": 2008,
+      "release_label": "31 мая 2008",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42137/02aef691f49780f5c46a658ff7efd0f5.jpeg",
+      "match": {
+        "shikimori": [
+          42137
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4026",
+      "title": "Покемон: Алмаз и жемчуг — Гиратина и небесный букет Шейми",
+      "subtitle": "Pokemon Movie 11: Giratina to Sora no Hanataba Sheimi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-07-19",
+      "release_year": 2008,
+      "release_label": "19 июля 2008",
+      "episode_count": 1,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4026/66390f8f9975b35726b0d98dced6fb07.jpeg",
+      "match": {
+        "shikimori": [
+          4026
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8709",
+      "title": "Покемон: Большое ледяное приключение Пикачу",
+      "subtitle": "Pokemon: Pikachu Koori no Daibouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-08-01",
+      "release_year": 2008,
+      "release_label": "1 августа 2008",
+      "episode_count": 1,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8709/19fba89894ee5534dbe109c0fdaeaea2.jpeg",
+      "match": {
+        "shikimori": [
+          8709
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6275",
+      "title": "Покемон: Таинственное подземелье — Финальное приключение сквозь время и темноту",
+      "subtitle": "Pokemon Fushigi no Dungeon: Sora no Tankentai - Toki to Yami wo Meguru Saigo no Bouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2009-04-12",
+      "release_year": 2009,
+      "release_label": "12 апреля 2009",
+      "episode_count": 1,
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6275/c02f2237d9c950e72e2bdbf89240cc78.jpeg",
+      "match": {
+        "shikimori": [
+          6275
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6178",
+      "title": "Покемон. Алмаз и жемчуг — Аркеус: К покорению времени и пространства",
+      "subtitle": "Pokemon Movie 12: Arceus Choukoku no Jikuu e",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2009-07-18",
+      "release_year": 2009,
+      "release_label": "18 июля 2009",
+      "episode_count": 1,
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6178/aa868d23d58829ea204285f8c542f32c.jpeg",
+      "match": {
+        "shikimori": [
+          6178
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6555",
+      "title": "Покемон: Пикачу в поисках сокровищ!",
+      "subtitle": "Pokemon: Pikachu no Kirakira Daisousaku!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2009-08-01",
+      "release_year": 2009,
+      "release_label": "1 августа 2009",
+      "episode_count": 1,
+      "release_order": 50,
+      "watch_order": 50,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6555/1d450af19ca47a579da289140e962c07.jpeg",
+      "match": {
+        "shikimori": [
+          6555
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8438",
+      "title": "Рейнджер-покемон: Путь света",
+      "subtitle": "Pokemon Ranger: Hikari no Kiseki",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-02-28",
+      "release_end_date": "2010-03-07",
+      "release_year": 2010,
+      "release_label": "28 февраля — 7 марта 2010",
+      "episode_count": 2,
+      "release_order": 51,
+      "watch_order": 51,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8438/6544f53145bb527be03ddee62e6dbfd1.jpeg",
+      "match": {
+        "shikimori": [
+          8438
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7695",
+      "title": "Покемон: Алмаз и жемчуг — Мастер иллюзий Зороарк",
+      "subtitle": "Pokemon Movie 13: Genei no Hasha Zoroark",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-07-10",
+      "release_year": 2010,
+      "release_label": "10 июля 2010",
+      "episode_count": 1,
+      "release_order": 52,
+      "watch_order": 52,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7695/9d4c6951029327b1c8c290268c985b76.jpeg",
+      "match": {
+        "shikimori": [
+          7695
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11069",
+      "title": "Покемон: Загадочное приключение Пикачу",
+      "subtitle": "Pokemon: Pikachu no Fushigi na Fushigi na Daibouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-08-01",
+      "release_year": 2010,
+      "release_label": "1 августа 2010",
+      "episode_count": 1,
+      "release_order": 53,
+      "watch_order": 53,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11069/8c4488970fec5a975b6a4a8c908a78e4.jpeg",
+      "match": {
+        "shikimori": [
+          11069
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9107",
+      "title": "Покемон: Наилучших благ!",
+      "subtitle": "Pokemon Best Wishes!",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2010-09-23",
+      "release_end_date": "2012-06-14",
+      "release_year": 2010,
+      "release_label": "23 сентября 2010 — 14 июня 2012",
+      "episode_count": 84,
+      "release_order": 54,
+      "watch_order": 54,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9107/4f48d5cdcb4ccb95886ea4373bf9283a.jpeg",
+      "match": {
+        "shikimori": [
+          9107
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10302",
+      "title": "Покемон: Алмаз и жемчуг — Спецвыпуски",
+      "subtitle": "Pokemon Diamond & Pearl Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-02-03",
+      "release_year": 2011,
+      "release_label": "3 февраля 2011",
+      "episode_count": 2,
+      "release_order": 55,
+      "watch_order": 55,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10302/b308501a816f27c2c1287fd637d9a973.jpeg",
+      "match": {
+        "shikimori": [
+          10302
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9917",
+      "title": "Покемон: Наилучших благ! Виктини и чёрный герой Зекром",
+      "subtitle": "Pokemon Movie 14 White: Victini to Kuroki Eiyuu Zekrom",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-07-16",
+      "release_year": 2011,
+      "release_label": "16 июля 2011",
+      "episode_count": 1,
+      "release_order": 56,
+      "watch_order": 56,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9917/e08ad682b799b9fff4335d092d354c18.jpeg",
+      "match": {
+        "shikimori": [
+          9917
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10740",
+      "title": "Покемон: Наилучших благ! Виктини и белый герой Реширам",
+      "subtitle": "Pokemon Movie 14 Black: Victini to Shiroki Eiyuu Reshiram",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-07-16",
+      "release_year": 2011,
+      "release_label": "16 июля 2011",
+      "episode_count": 1,
+      "release_order": 57,
+      "watch_order": 57,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10740/be3a9607b4108b32e7e8203671c1d2d5.jpeg",
+      "match": {
+        "shikimori": [
+          10740
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42138",
+      "title": "Покемон: Наилучших благ! Звёздный глобус света и тени",
+      "subtitle": "Pokemon Best Wishes! Hikari to Kage no Tenkyuugi",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-07-16",
+      "release_year": 2011,
+      "release_label": "16 июля 2011",
+      "episode_count": 1,
+      "release_order": 58,
+      "watch_order": 58,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42138/53755de6d0a5af38d7599cbc5297d508.jpeg",
+      "match": {
+        "shikimori": [
+          42138
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11853",
+      "title": "Покемон: Пикачу и летняя история на мосту",
+      "subtitle": "Pokemon: Pikachu no Summer Bridge Story",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-08-01",
+      "release_year": 2011,
+      "release_label": "1 августа 2011",
+      "episode_count": 1,
+      "release_order": 59,
+      "watch_order": 59,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11853/1e2fd1f545ec159d67289042ae12c2f8.jpeg",
+      "match": {
+        "shikimori": [
+          11853
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14093",
+      "title": "Покемон: Наилучших благ! 2",
+      "subtitle": "Pokemon Best Wishes! Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-06-21",
+      "release_end_date": "2013-01-10",
+      "release_year": 2012,
+      "release_label": "21 июня 2012 — 10 января 2013",
+      "episode_count": 24,
+      "release_order": 60,
+      "watch_order": 60,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14093/ba84d8a1f03d7ed85aa5dfd7d0dda3dc.jpeg",
+      "match": {
+        "shikimori": [
+          14093
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14935",
+      "title": "Покемон: Песнь Мелоэтты — Поиск рыночных ягод",
+      "subtitle": "Pokemon: Utae Meloetta - Rinka no Mi wo Sagase!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2012-07-03",
+      "release_year": 2012,
+      "release_label": "3 июля 2012",
+      "episode_count": 1,
+      "release_order": 61,
+      "watch_order": 61,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14935/bfb3c90b4452b3c7ea03052bb261c6cd.jpeg",
+      "match": {
+        "shikimori": [
+          14935
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12671",
+      "title": "Покемон: Наилучших благ! 2 — Кюрэм против священного мечника Кельдео",
+      "subtitle": "Pokemon Movie 15: Kyurem vs. Seikenshi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-07-14",
+      "release_year": 2012,
+      "release_label": "14 июля 2012",
+      "episode_count": 1,
+      "release_order": 62,
+      "watch_order": 62,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12671/ef56d1ed4ce147e2ba0b303830bb652b.jpeg",
+      "match": {
+        "shikimori": [
+          12671
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13799",
+      "title": "Покемон: Серенада Мелоэтты",
+      "subtitle": "Pokemon: Meloetta no Kirakira Recital",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-07-14",
+      "release_year": 2012,
+      "release_label": "14 июля 2012",
+      "episode_count": 1,
+      "release_order": 63,
+      "watch_order": 63,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13799/ce88607e9ed2ad11e60f375440f273ca.jpeg",
+      "match": {
+        "shikimori": [
+          13799
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31911",
+      "title": "Покемон: Таинственное подземелье — Врата в бесконечность",
+      "subtitle": "Pokemon Fushigi no Dungeon: Magnagate to Mugendai Meikyuu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2012-11-01",
+      "release_year": 2012,
+      "release_label": "1 ноября 2012",
+      "episode_count": 2,
+      "release_order": 64,
+      "watch_order": 64,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31911/b1d674c449fb33a388ecfa01251c61db.jpeg",
+      "match": {
+        "shikimori": [
+          31911
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17115",
+      "title": "Покемон: Наилучших благ! 2 — Эпизод N",
+      "subtitle": "Pokemon Best Wishes! Season 2: Episode N",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-01-17",
+      "release_end_date": "2013-04-18",
+      "release_year": 2013,
+      "release_label": "17 января — 18 апреля 2013",
+      "episode_count": 14,
+      "release_order": 65,
+      "watch_order": 65,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17115/8bb605c8f90c3a14af952fd9c149a3bf.jpeg",
+      "match": {
+        "shikimori": [
+          17115
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17873",
+      "title": "Покемон: Наилучших благ! 2 — Приключения на островах Деколора",
+      "subtitle": "Pokemon Best Wishes! Season 2: Decolora Adventure",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-04-25",
+      "release_end_date": "2013-09-26",
+      "release_year": 2013,
+      "release_label": "25 апреля — 26 сентября 2013",
+      "episode_count": 20,
+      "release_order": 66,
+      "watch_order": 66,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17873/4f13191978c526ac5c08b2c41864af0f.jpeg",
+      "match": {
+        "shikimori": [
+          17873
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19099",
+      "title": "Покемон: Мьюту — Пролог к пробуждению",
+      "subtitle": "Pokemon: Mewtwo - Kakusei e no Prologue",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-07-11",
+      "release_year": 2013,
+      "release_label": "11 июля 2013",
+      "episode_count": 1,
+      "release_order": 67,
+      "watch_order": 67,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19099/fc8328293e9ba7a0a846adae323bd082.jpeg",
+      "match": {
+        "shikimori": [
+          19099
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16678",
+      "title": "Покемон: Друзья Пикачу и Иви",
+      "subtitle": "Pokemon: Pikachu to Eevee Friends",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-07-13",
+      "release_year": 2013,
+      "release_label": "13 июля 2013",
+      "episode_count": 1,
+      "release_order": 68,
+      "watch_order": 68,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16678/c2f06e58e3f6f6c528de6029c42278b6.jpeg",
+      "match": {
+        "shikimori": [
+          16678
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16680",
+      "title": "Покемон: Наилучших благ! 2 — Сверхскоростной Генесект. Пробуждение Мьюту",
+      "subtitle": "Pokemon Movie 16: Shinsoku no Genosect - Mewtwo Kakusei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-07-13",
+      "release_year": 2013,
+      "release_label": "13 июля 2013",
+      "episode_count": 1,
+      "release_order": 69,
+      "watch_order": 69,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16680/20d59cf15d104c74c0550c401d6a8ab0.jpeg",
+      "match": {
+        "shikimori": [
+          16680
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20159",
+      "title": "Покемон: Начало",
+      "subtitle": "Pokemon: The Origin",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-10-02",
+      "release_year": 2013,
+      "release_label": "2 октября 2013",
+      "episode_count": 4,
+      "release_order": 70,
+      "watch_order": 70,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20159/7966cdfcc6e351263f261d574c8e93cd.jpeg",
+      "match": {
+        "shikimori": [
+          20159
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20743",
+      "title": "Покемон: Наилучших благ! 2 — Приключения Деколоры. Спецвыпуск",
+      "subtitle": "Pokemon Best Wishes! Season 2: Decolora Adventure - Dent to Takeshi! Gyarados no Gekirin!!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-10-03",
+      "release_year": 2013,
+      "release_label": "3 октября 2013",
+      "episode_count": 1,
+      "release_order": 71,
+      "watch_order": 71,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20743/cb0c805568f20c7d6d59b2f6b685a8fa.jpeg",
+      "match": {
+        "shikimori": [
+          20743
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21695",
+      "title": "Покемон XY SP: Дорога в Калос",
+      "subtitle": "Pokemon XY SP: Road to Kalos",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-10-10",
+      "release_year": 2013,
+      "release_label": "10 октября 2013",
+      "episode_count": 1,
+      "release_order": 72,
+      "watch_order": 72,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21695/8e5a99b65d11ca1cefbcead7a53cdbac.jpeg",
+      "match": {
+        "shikimori": [
+          21695
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19291",
+      "title": "Покемон XY",
+      "subtitle": "Pokemon XY",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-10-17",
+      "release_end_date": "2015-10-22",
+      "release_year": 2013,
+      "release_label": "17 октября 2013 — 22 октября 2015",
+      "episode_count": 93,
+      "release_order": 73,
+      "watch_order": 73,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19291/536a30458194496b39e4344888a8d6ba.jpeg",
+      "match": {
+        "shikimori": [
+          19291
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21703",
+      "title": "Покемон XY: Новогодний спецвыпуск",
+      "subtitle": "Pokemon XY: New Year Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-12-31",
+      "release_year": 2013,
+      "release_label": "31 декабря 2013",
+      "episode_count": 1,
+      "release_order": 74,
+      "watch_order": 74,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21703/f283073b3fec677a2d60f6f319e9fe4f.jpeg",
+      "match": {
+        "shikimori": [
+          21703
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23299",
+      "title": "Покемон: Наилучших благ! 2 — Приключения Деколоры. Айрис против Ибуки",
+      "subtitle": "Pokemon Best Wishes! Season 2: Decolora Adventure - Iris vs. Ibuki! Dragon Master e no Michi!!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-03-27",
+      "release_year": 2014,
+      "release_label": "27 марта 2014",
+      "episode_count": 1,
+      "release_order": 75,
+      "watch_order": 75,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23299/bb34b9e1638a38397e630430866c5ecf.jpeg",
+      "match": {
+        "shikimori": [
+          23299
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23301",
+      "title": "Покемон XY: Мега-эволюция",
+      "subtitle": "Pokemon XY: Mega Evolution",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-04-03",
+      "release_end_date": "2015-10-29",
+      "release_year": 2014,
+      "release_label": "3 апреля 2014 — 29 октября 2015",
+      "episode_count": 4,
+      "release_order": 76,
+      "watch_order": 76,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23301/ffedde8f9e82a7c19a95cde19aed62e8.jpeg",
+      "match": {
+        "shikimori": [
+          23301
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23849",
+      "title": "Покемон XY: Фрагменты небес",
+      "subtitle": "Pokemon XY: Sora no Hahen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-07-12",
+      "release_year": 2014,
+      "release_label": "12 июля 2014",
+      "episode_count": 1,
+      "release_order": 77,
+      "watch_order": 77,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23849/75b46eae48d08ef1dac4b7c2e0d87bd6.jpeg",
+      "match": {
+        "shikimori": [
+          23849
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25365",
+      "title": "Покемон XY: Дианси, принцесса Рудной страны",
+      "subtitle": "Pokemon XY: Koukoku no Princess Diancie",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-07-17",
+      "release_year": 2014,
+      "release_label": "17 июля 2014",
+      "episode_count": 1,
+      "release_order": 78,
+      "watch_order": 78,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25365/57b0e98cb0b059e9a5a72f53514a9ba9.jpeg",
+      "match": {
+        "shikimori": [
+          25365
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21569",
+      "title": "Покемон XY: Дианси и кокон разрушения",
+      "subtitle": "Pokemon Movie 17: Hakai no Mayu to Diancie",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-07-19",
+      "release_year": 2014,
+      "release_label": "19 июля 2014",
+      "episode_count": 1,
+      "release_order": 79,
+      "watch_order": 79,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21569/3f3aa6367204c60086a9de455f6a3b8f.jpeg",
+      "match": {
+        "shikimori": [
+          21569
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21571",
+      "title": "Покемон: Пикачу, от чего этот ключ?",
+      "subtitle": "Pokemon: Pikachu, Kore Nan no Kagi?",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-07-19",
+      "release_year": 2014,
+      "release_label": "19 июля 2014",
+      "episode_count": 1,
+      "release_order": 80,
+      "watch_order": 80,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21571/56e83222bb198dda4c4bc83b8b465b1a.jpeg",
+      "match": {
+        "shikimori": [
+          21571
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28431",
+      "title": "Покемон: Омега Руби и Альфа Сапфир",
+      "subtitle": "Pokemon Omega Ruby & Alpha Sapphire: Mega Special Animation",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-11-16",
+      "release_year": 2014,
+      "release_label": "16 ноября 2014",
+      "episode_count": 1,
+      "release_order": 81,
+      "watch_order": 81,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28431/ddfca70567a70657d8005c58c9c60e27.jpeg",
+      "match": {
+        "shikimori": [
+          28431
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29419",
+      "title": "Покемон XY: Новогодний спецвыпуск 2014",
+      "subtitle": "Pokemon XY: New Year's Eve 2014 Super Mega Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-12-31",
+      "release_year": 2014,
+      "release_label": "31 декабря 2014",
+      "episode_count": 1,
+      "release_order": 82,
+      "watch_order": 82,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29419/78377f552ec04c655779dec66e1c03ff.jpeg",
+      "match": {
+        "shikimori": [
+          29419
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30686",
+      "title": "Покемон XY: Спецвыпуски",
+      "subtitle": "Pokemon XY: Hoopa no Odemashi Daisakusen!!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-04-23",
+      "release_end_date": "2015-05-28",
+      "release_year": 2015,
+      "release_label": "23 апреля — 28 мая 2015",
+      "episode_count": 6,
+      "release_order": 83,
+      "watch_order": 83,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30686/8fb49153bf17d20e4bedb906a2e0fab6.jpeg",
+      "match": {
+        "shikimori": [
+          30686
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31168",
+      "title": "Покемон XY: Хупа, беда покемонов",
+      "subtitle": "Pokemon XY: Odemashi Ko Majin Hoopa",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2015-06-19",
+      "release_year": 2015,
+      "release_label": "19 июня 2015",
+      "episode_count": 1,
+      "release_order": 84,
+      "watch_order": 84,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31168/e78fd9378925fcaa4133c5fe1bb086c0.jpeg",
+      "match": {
+        "shikimori": [
+          31168
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25805",
+      "title": "Покемон XY: Хупа и столкновение веков",
+      "subtitle": "Pokemon Movie 18: Ring no Choumajin Hoopa",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-07-18",
+      "release_year": 2015,
+      "release_label": "18 июля 2015",
+      "episode_count": 1,
+      "release_order": 85,
+      "watch_order": 85,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25805/ffa74293b15843e726fadcdd23113d9e.jpeg",
+      "match": {
+        "shikimori": [
+          25805
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28853",
+      "title": "Покемон: Пикачу и оркестр покемонов",
+      "subtitle": "Pokemon: Pikachu to Pokemon Ongakutai",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-07-18",
+      "release_year": 2015,
+      "release_label": "18 июля 2015",
+      "episode_count": 1,
+      "release_order": 86,
+      "watch_order": 86,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28853/e699b5ad929dc35a49d94584968f5819.jpeg",
+      "match": {
+        "shikimori": [
+          28853
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31592",
+      "title": "Покемон XY&Z",
+      "subtitle": "Pokemon XY&Z",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-10-29",
+      "release_end_date": "2016-10-27",
+      "release_year": 2015,
+      "release_label": "29 октября 2015 — 27 октября 2016",
+      "episode_count": 47,
+      "release_order": 87,
+      "watch_order": 87,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31592/93bfed8f8994e1ca7f4ae668312ceee5.jpeg",
+      "match": {
+        "shikimori": [
+          31592
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32359",
+      "title": "Покемон XY&Z: Все волшебные вещи случаются!",
+      "subtitle": "Pokemon XY&Z: Subete no Nazo wo Tokiakase!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-12-31",
+      "release_year": 2015,
+      "release_label": "31 декабря 2015",
+      "episode_count": 1,
+      "release_order": 88,
+      "watch_order": 88,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32359/fff1f11fd51d46071a967a48e894fcb4.jpeg",
+      "match": {
+        "shikimori": [
+          32359
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31231",
+      "title": "Покемон XY&Z: Вулканион и механическая Магиана",
+      "subtitle": "Pokemon Movie 19: Volcanion to Karakuri no Magearna",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-07-16",
+      "release_year": 2016,
+      "release_label": "16 июля 2016",
+      "episode_count": 1,
+      "release_order": 89,
+      "watch_order": 89,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31231/2cfddbd217f626cb9835da8c39cf008a.jpeg",
+      "match": {
+        "shikimori": [
+          31231
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34325",
+      "title": "Покемон XY&Z: Спецвыпуски",
+      "subtitle": "Pokemon XY&Z Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-11-03",
+      "release_end_date": "2016-11-10",
+      "release_year": 2016,
+      "release_label": "3 ноября — 10 ноября 2016",
+      "episode_count": 2,
+      "release_order": 90,
+      "watch_order": 90,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34325/d757d515cdea4f48157466407c07e0fa.jpeg",
+      "match": {
+        "shikimori": [
+          34325
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34034",
+      "title": "Покемон: Солнце и Луна",
+      "subtitle": "Pokemon Sun & Moon",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-11-17",
+      "release_end_date": "2019-11-03",
+      "release_year": 2016,
+      "release_label": "17 ноября 2016 — 3 ноября 2019",
+      "episode_count": 146,
+      "release_order": 91,
+      "watch_order": 91,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34034/c1bec37317db0d82cdd00b32438e28de.jpeg",
+      "match": {
+        "shikimori": [
+          34034
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34514",
+      "title": "Покемон: Поколения",
+      "subtitle": "Pokemon Generations",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2016-12-09",
+      "release_end_date": "2017-02-02",
+      "release_year": 2016,
+      "release_label": "9 декабря 2016 — 2 февраля 2017",
+      "episode_count": 18,
+      "release_order": 92,
+      "watch_order": 92,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34514/4a1035f0975ad504c68db6558609849d.jpeg",
+      "match": {
+        "shikimori": [
+          34514
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35551",
+      "title": "Иви и красочные друзья",
+      "subtitle": "Eevee to Colorful Friends",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2017-05-08",
+      "release_year": 2017,
+      "release_label": "8 мая 2017",
+      "episode_count": 1,
+      "release_order": 93,
+      "watch_order": 93,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35551/f54c7a197e4bf45875bfcadec43ba07b.jpeg",
+      "match": {
+        "shikimori": [
+          35551
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34540",
+      "title": "Покемон: Я выбираю тебя!",
+      "subtitle": "Pokemon Movie 20: Kimi ni Kimeta!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-07-15",
+      "release_year": 2017,
+      "release_label": "15 июля 2017",
+      "episode_count": 1,
+      "release_order": 94,
+      "watch_order": 94,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34540/848dfa671951fbc393370d289e7c6287.jpeg",
+      "match": {
+        "shikimori": [
+          34540
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42139",
+      "title": "Покемон: Солнце и Луна — Планетарий",
+      "subtitle": "Pokemon Sun & Moon Planetarium",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-09-10",
+      "release_year": 2017,
+      "release_label": "10 сентября 2017",
+      "episode_count": 1,
+      "release_order": 95,
+      "watch_order": 95,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42139/84994ac23ed1ae3c1b471306ecc19419.jpeg",
+      "match": {
+        "shikimori": [
+          42139
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51955",
+      "title": "Покемон: История Moncolle",
+      "subtitle": "Pokemon Moncolle Story",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-03-30",
+      "release_end_date": "2018-06-15",
+      "release_year": 2018,
+      "release_label": "30 марта — 15 июня 2018",
+      "episode_count": 8,
+      "release_order": 96,
+      "watch_order": 96,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51955/faeb24745bfea434d66153afcb6c2c93.jpeg",
+      "match": {
+        "shikimori": [
+          51955
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36927",
+      "title": "Покемон: Наша сила",
+      "subtitle": "Pokemon Movie 21: Minna no Monogatari",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-07-13",
+      "release_year": 2018,
+      "release_label": "13 июля 2018",
+      "episode_count": 1,
+      "release_order": 97,
+      "watch_order": 97,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36927/2ecabe80d7dd91eb8ac27c9473aaac0b.jpeg",
+      "match": {
+        "shikimori": [
+          36927
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54276",
+      "title": "Два профессора",
+      "subtitle": "W Professors",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-09-25",
+      "release_end_date": "2018-10-24",
+      "release_year": 2018,
+      "release_label": "25 сентября — 24 октября 2018",
+      "episode_count": 3,
+      "release_order": 98,
+      "watch_order": 98,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54276/a6bf633d752993dbaf81c8ed1dbd2c50.jpeg",
+      "match": {
+        "shikimori": [
+          54276
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42174",
+      "title": "Покемоны периода Хэйсэй: Со вторника по четверг и в воскресенье",
+      "subtitle": "Pokemon no Heisei-shi: Kayou Kara Mokuyou, Soshite Nichiyou e",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-01-04",
+      "release_year": 2019,
+      "release_label": "4 января 2019",
+      "episode_count": 1,
+      "release_order": 99,
+      "watch_order": 99,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42174/2bb447ce6baf738ca99b6532543dbac4.jpeg",
+      "match": {
+        "shikimori": [
+          42174
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51865",
+      "title": "Грандиозный марш покемонов!",
+      "subtitle": "Pokemon Dai Koushin!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-01-31",
+      "release_end_date": "2024-08-18",
+      "release_year": 2019,
+      "release_label": "31 января 2019 — 18 августа 2024",
+      "episode_count": 2,
+      "release_order": 100,
+      "watch_order": 100,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51865/d9646d9cd94ccd3480db38a55a3eade8.jpeg",
+      "match": {
+        "shikimori": [
+          51865
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51866",
+      "title": "Покатушки покеболов",
+      "subtitle": "CoroCoro Monster Ball",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2019-02-22",
+      "release_year": 2019,
+      "release_label": "22 февраля 2019",
+      "release_order": 101,
+      "watch_order": 101,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51866/ce6904f8694ef69c574c1ee1c6db388e.jpeg",
+      "match": {
+        "shikimori": [
+          51866
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51867",
+      "title": "Покемон: Играем в прятки!",
+      "subtitle": "Pokemon Inai Inai Baa!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-03-15",
+      "release_year": 2019,
+      "release_label": "15 марта 2019",
+      "episode_count": 1,
+      "release_order": 102,
+      "watch_order": 102,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51867/2493b2a70fd047dcbc6bb1f9bf7d66b9.jpeg",
+      "match": {
+        "shikimori": [
+          51867
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51870",
+      "title": "Учимся и играем вместе с покемонами",
+      "subtitle": "Pokemon de Manabi Asobu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2019-06-12",
+      "release_year": 2019,
+      "release_label": "12 июня 2019",
+      "release_order": 103,
+      "watch_order": 103,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51870/8e6b85b2e78433b62478225b3d91186a.jpeg",
+      "match": {
+        "shikimori": [
+          51870
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37966",
+      "title": "Покемон: Мьюту наносит ответный удар — Эволюция",
+      "subtitle": "Pokemon Movie 22: Mewtwo no Gyakushuu Evolution",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-07-12",
+      "release_year": 2019,
+      "release_label": "12 июля 2019",
+      "episode_count": 1,
+      "release_order": 104,
+      "watch_order": 104,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37966/4857ba3ee2d7e42ce0ed18ff3c144afe.jpeg",
+      "match": {
+        "shikimori": [
+          37966
+        ],
+        "sources": [
+          "animego:3114",
+          "yummyanime:4202"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51868",
+      "title": "Таинственный особняк с призраками",
+      "subtitle": "Dokidoki Ghost Mansion",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-09-20",
+      "release_year": 2019,
+      "release_label": "20 сентября 2019",
+      "episode_count": 1,
+      "release_order": 105,
+      "watch_order": 105,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51868/e76f0cdd532485afdfb013a5d94b4404.jpeg",
+      "match": {
+        "shikimori": [
+          51868
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40351",
+      "title": "Покемон (2019)",
+      "subtitle": "Pokemon (2019)",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-11-17",
+      "release_end_date": "2022-12-16",
+      "release_year": 2019,
+      "release_label": "17 ноября 2019 — 16 декабря 2022",
+      "episode_count": 136,
+      "release_order": 106,
+      "watch_order": 106,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40351/e0231a711b45aaac04558560aa6ac8bb.jpeg",
+      "match": {
+        "shikimori": [
+          40351
+        ],
+        "sources": [
+          "animego:3110",
+          "yummyanime:338"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40861",
+      "title": "Сумеречные крылья",
+      "subtitle": "Hakumei no Tsubasa",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-01-15",
+      "release_end_date": "2020-08-06",
+      "release_year": 2020,
+      "release_label": "15 января — 6 августа 2020",
+      "episode_count": 7,
+      "release_order": 107,
+      "watch_order": 107,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40861/06ea439051932697de91d941f1d413b7.jpeg",
+      "match": {
+        "shikimori": [
+          40861
+        ],
+        "sources": [
+          "yummyanime:5314"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52576",
+      "title": "Покемон ASMR",
+      "subtitle": "Pokemon x ASMR",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-01-16",
+      "release_end_date": "2022-02-11",
+      "release_year": 2020,
+      "release_label": "16 января 2020 — 11 февраля 2022",
+      "episode_count": 7,
+      "release_order": 108,
+      "watch_order": 108,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52576/8c4971777e3c4da460a2be7be088b0bd.jpeg",
+      "match": {
+        "shikimori": [
+          52576
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42161",
+      "title": "Покетун",
+      "subtitle": "Poketoon",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-06-04",
+      "release_end_date": "2021-12-28",
+      "release_year": 2020,
+      "release_label": "4 июня 2020 — 28 декабря 2021",
+      "episode_count": 8,
+      "release_order": 109,
+      "watch_order": 109,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42161/efbea9cd9ecfa507b4a43f84ba6a2b82.jpeg",
+      "match": {
+        "shikimori": [
+          42161
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51883",
+      "title": "Утренняя рутина Пикачу",
+      "subtitle": "Pikachu no Asa no Nikka",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-07-10",
+      "release_year": 2020,
+      "release_label": "10 июля 2020",
+      "episode_count": 1,
+      "release_order": 110,
+      "watch_order": 110,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51883/ff96e07b0697affb20e62fd61a41ef17.jpeg",
+      "match": {
+        "shikimori": [
+          51883
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42914",
+      "title": "Покемон: Планетарий — Сообщение от Авроры",
+      "subtitle": "Planetarium Pokemon: Aurora kara no Message",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-08-29",
+      "release_year": 2020,
+      "release_label": "29 августа 2020",
+      "episode_count": 1,
+      "release_order": 111,
+      "watch_order": 111,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42914/3a682828f263742df1dc7e91e3a8cdf3.jpeg",
+      "match": {
+        "shikimori": [
+          42914
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51888",
+      "title": "Покемон: Наблюдение! Энциклопедия покемонов",
+      "subtitle": "Kansatsu! Pokemon Zukan",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-10-23",
+      "release_end_date": "2020-12-04",
+      "release_year": 2020,
+      "release_label": "23 октября — 4 декабря 2020",
+      "episode_count": 2,
+      "release_order": 112,
+      "watch_order": 112,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51888/8e4ae97956dee49b4f591ffa5fd4fb79.jpeg",
+      "match": {
+        "shikimori": [
+          51888
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51884",
+      "title": "Покемон: День спорта",
+      "subtitle": "Pokemon Daiundoukai",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-10-30",
+      "release_year": 2020,
+      "release_label": "30 октября 2020",
+      "episode_count": 1,
+      "release_order": 113,
+      "watch_order": 113,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51884/90c2780eba5ccacde45f855e4f2d1a7c.jpeg",
+      "match": {
+        "shikimori": [
+          51884
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-43568",
+      "title": "Сумеречные крылья: Фестиваль звёзд",
+      "subtitle": "Hakumei no Tsubasa: Expansion - Hoshi no Matsuri",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-11-05",
+      "release_year": 2020,
+      "release_label": "5 ноября 2020",
+      "episode_count": 1,
+      "release_order": 114,
+      "watch_order": 114,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43568/f11d3ce74169953e5a638503897a795c.jpeg",
+      "match": {
+        "shikimori": [
+          43568
+        ],
+        "sources": [
+          "yummyanime:5315"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40881",
+      "title": "Покемон: Коко",
+      "subtitle": "Pokemon Movie 23: Koko",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-12-25",
+      "release_year": 2020,
+      "release_label": "25 декабря 2020",
+      "episode_count": 1,
+      "release_order": 115,
+      "watch_order": 115,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40881/e8d02eee2686862e0d37bb5211fa8a2a.jpeg",
+      "match": {
+        "shikimori": [
+          40881
+        ],
+        "sources": [
+          "animego:1904",
+          "yummyanime:4221"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49321",
+      "title": "Покемон: Часовой спецвыпуск перед летними каникулами!",
+      "subtitle": "Pokemon (2019): Natsuyasumi Chokuzen 1-jikan Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-07-02",
+      "release_year": 2021,
+      "release_label": "2 июля 2021",
+      "episode_count": 1,
+      "release_order": 116,
+      "watch_order": 116,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49321/c9ada866b1eade0454188505a170d609.jpeg",
+      "match": {
+        "shikimori": [
+          49321
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51018",
+      "title": "Сладости Почамы",
+      "subtitle": "Pochama Sweets",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-08-05",
+      "release_year": 2021,
+      "release_label": "5 августа 2021",
+      "episode_count": 1,
+      "release_order": 117,
+      "watch_order": 117,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51018/4c384f22db91ff9d35006af34111f31f.jpeg",
+      "match": {
+        "shikimori": [
+          51018
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49730",
+      "title": "Покемон: Эволюции",
+      "subtitle": "Pokemon Evolutions",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-09-09",
+      "release_end_date": "2021-12-23",
+      "release_year": 2021,
+      "release_label": "9 сентября — 23 декабря 2021",
+      "episode_count": 8,
+      "release_order": 118,
+      "watch_order": 118,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49730/7c2521a52280d01420dc34a11cc88747.jpeg",
+      "match": {
+        "shikimori": [
+          49730
+        ],
+        "sources": [
+          "yummyanime:1027"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54655",
+      "title": "Покемон: Архивная видеозапись региона Хисуи",
+      "subtitle": "Hisui Chihou no Kiroku Eizou",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-10-19",
+      "release_year": 2021,
+      "release_label": "19 октября 2021",
+      "episode_count": 1,
+      "release_order": 119,
+      "watch_order": 119,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54655/cbb3b6aa6b1607d13bbf02afeb01a504.jpeg",
+      "match": {
+        "shikimori": [
+          54655
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51871",
+      "title": "Небольшая история Хисуи",
+      "subtitle": "Hisui Kobanashi",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-12-10",
+      "release_end_date": "2021-12-14",
+      "release_year": 2021,
+      "release_label": "10 декабря — 14 декабря 2021",
+      "episode_count": 2,
+      "release_order": 120,
+      "watch_order": 120,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51871/f07542b03881be902f55a84dfe288cff.jpeg",
+      "match": {
+        "shikimori": [
+          51871
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51885",
+      "title": "Пикачу, Почама и загадочная глина",
+      "subtitle": "Pikachu, Pochama to Fushigi na Nendo!?",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-01-07",
+      "release_year": 2022,
+      "release_label": "7 января 2022",
+      "episode_count": 1,
+      "release_order": 121,
+      "watch_order": 121,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51885/cc1af55e040fe6120ee4aec1e7156840.jpeg",
+      "match": {
+        "shikimori": [
+          51885
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50840",
+      "title": "Вместе с Метамоном! Спокойной ночи, Мокуро",
+      "subtitle": "Metamon to!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-01-14",
+      "release_end_date": "2022-03-26",
+      "release_year": 2022,
+      "release_label": "14 января — 26 марта 2022",
+      "episode_count": 3,
+      "release_order": 122,
+      "watch_order": 122,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50840/ed0f61703d251732853f768f233e12b1.jpeg",
+      "match": {
+        "shikimori": [
+          50840
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50673",
+      "title": "Покемон: Аркеус, названный богом",
+      "subtitle": "Pokemon (2019): Kami to Yobareshi Arceus",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-01-21",
+      "release_end_date": "2022-01-28",
+      "release_year": 2022,
+      "release_label": "21 января — 28 января 2022",
+      "episode_count": 4,
+      "release_order": 123,
+      "watch_order": 123,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50673/2473a7ca50cd6bf0a1af415d58ca1c5c.jpeg",
+      "match": {
+        "shikimori": [
+          50673
+        ],
+        "sources": [
+          "yummyanime:1496"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51013",
+      "title": "Колебание во времени",
+      "subtitle": "A Ripple in Time",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-02-12",
+      "release_year": 2022,
+      "release_label": "12 февраля 2022",
+      "episode_count": 1,
+      "release_order": 124,
+      "watch_order": 124,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51013/d4ac21a7d42cbb69cfdc5a44933a2b04.jpeg",
+      "match": {
+        "shikimori": [
+          51013
+        ],
+        "sources": [
+          "yummyanime:1518"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51145",
+      "title": "Покемон: Хисуйский снег",
+      "subtitle": "Pokemon Legends Arceus: Yuki Hodo Kishi Futaai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-05-18",
+      "release_end_date": "2022-06-22",
+      "release_year": 2022,
+      "release_label": "18 мая — 22 июня 2022",
+      "episode_count": 3,
+      "release_order": 125,
+      "watch_order": 125,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51145/dd324c4d655d61aa60431eff3b56ad03.jpeg",
+      "match": {
+        "shikimori": [
+          51145
+        ],
+        "sources": [
+          "yummyanime:1476"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52553",
+      "title": "Покемон: Мирное место",
+      "subtitle": "Pokepeace",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2022-07-29",
+      "release_year": 2022,
+      "release_label": "29 июля 2022",
+      "release_order": 126,
+      "watch_order": 126,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52553/7abd7007cbf064d6b5430fd0655042a8.jpeg",
+      "match": {
+        "shikimori": [
+          52553
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52942",
+      "title": "Покемон: Скарлет и Вайолет",
+      "subtitle": "Pokemon Scarlet Violet",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-09-01",
+      "release_end_date": "2022-10-25",
+      "release_year": 2022,
+      "release_label": "1 сентября — 25 октября 2022",
+      "episode_count": 3,
+      "release_order": 127,
+      "watch_order": 127,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52942/23e9ed71e7f5c7318d72de85a05fe9ef.jpeg",
+      "match": {
+        "shikimori": [
+          52942
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53327",
+      "title": "Кто же напарник Нанджамо?!",
+      "subtitle": "Nanjyamo no Aibou wa Nanimono nanja!? (Donna Monja TV)",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-10-12",
+      "release_end_date": "2022-10-14",
+      "release_year": 2022,
+      "release_label": "12 октября — 14 октября 2022",
+      "episode_count": 2,
+      "release_order": 128,
+      "watch_order": 128,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53327/920ffd995bb7c99d23a51812f44cc503.jpeg",
+      "match": {
+        "shikimori": [
+          53327
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53873",
+      "title": "Покемон: Далёкое синее небо",
+      "subtitle": "Pokemon (2019): Harukanaru Aoi Sora",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-12-23",
+      "release_year": 2022,
+      "release_label": "23 декабря 2022",
+      "episode_count": 1,
+      "release_order": 129,
+      "watch_order": 129,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53873/15ee107e7787208dfd2e001c9daebe96.jpeg",
+      "match": {
+        "shikimori": [
+          53873
+        ],
+        "sources": [
+          "yummyanime:5188"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53874",
+      "title": "Покемон: Стремление стать мастером покемонов",
+      "subtitle": "Pokemon: Mezase Pokemon Master",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-13",
+      "release_end_date": "2023-03-24",
+      "release_year": 2023,
+      "release_label": "13 января — 24 марта 2023",
+      "episode_count": 11,
+      "release_order": 130,
+      "watch_order": 130,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53874/9b684daf2dc52d31298b4c93cb8278a3.jpeg",
+      "match": {
+        "shikimori": [
+          53874
+        ],
+        "sources": [
+          "yummyanime:2569"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54434",
+      "title": "Канал испытаний Чанчихо",
+      "subtitle": "Chan Chiho Challenge Channel",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2023-02-10",
+      "release_year": 2023,
+      "release_label": "10 февраля 2023",
+      "release_order": 131,
+      "watch_order": 131,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54434/af81c8b6462e24d0f7a54ac6ab900eaf.jpeg",
+      "match": {
+        "shikimori": [
+          54434
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54646",
+      "title": "Путешествие мечты",
+      "subtitle": "Tong Meng Zhi Lu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-02-28",
+      "release_year": 2023,
+      "release_label": "28 февраля 2023",
+      "episode_count": 1,
+      "release_order": 132,
+      "watch_order": 132,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54646/7f9b8d6d092d51bed3fc47e01aa8486b.jpeg",
+      "match": {
+        "shikimori": [
+          54646
+        ],
+        "sources": [
+          "yummyanime:2830"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54648",
+      "title": "Квадратный покемон на некруглом острове",
+      "subtitle": "Fangkemeng: Bu Yuan Zhi Dao de Fangxing Baokemeng?!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-02-28",
+      "release_end_date": "2023-09-29",
+      "release_year": 2023,
+      "release_label": "28 февраля — 29 сентября 2023",
+      "episode_count": 5,
+      "release_order": 133,
+      "watch_order": 133,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54648/7cf10b14d30fb11400fe53474853c905.jpeg",
+      "match": {
+        "shikimori": [
+          54648
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53876",
+      "title": "Покемон (2023)",
+      "subtitle": "Pokemon (2023)",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "2023-04-14",
+      "release_year": 2023,
+      "release_label": "14 апреля 2023",
+      "release_order": 134,
+      "watch_order": 134,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Выходит; следующая серия ожидается 17 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53876/1f3ca7f8e6542e4c8058f240fc0c9c5c.jpeg",
+      "match": {
+        "shikimori": [
+          53876
+        ],
+        "sources": [
+          "yummyanime:2568"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60616",
+      "title": "Загадочная история маття-покемона Чейдса",
+      "subtitle": "Matcha Pokemon \"Chades\" no Kimyou na Monogatari",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-08-22",
+      "release_year": 2023,
+      "release_label": "22 августа 2023",
+      "episode_count": 1,
+      "release_order": 135,
+      "watch_order": 135,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60616/4e6793177014a831ee3bcdca3e46d62b.jpeg",
+      "match": {
+        "shikimori": [
+          60616
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56218",
+      "title": "Покемон: Палдейские ветры",
+      "subtitle": "Houkago no Breath",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-09-06",
+      "release_end_date": "2023-12-13",
+      "release_year": 2023,
+      "release_label": "6 сентября — 13 декабря 2023",
+      "episode_count": 4,
+      "release_order": 136,
+      "watch_order": 136,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56218/75d02978a94947e8b4373d3260d5f99f.jpeg",
+      "match": {
+        "shikimori": [
+          56218
+        ],
+        "sources": [
+          "yummyanime:5145"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56861",
+      "title": "Покемон: Игровая площадка",
+      "subtitle": "Pokemon Yuenchi",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-09-15",
+      "release_year": 2023,
+      "release_label": "15 сентября 2023",
+      "episode_count": 1,
+      "release_order": 137,
+      "watch_order": 137,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56861/4d21450ae7212206fcb314a476d0d8b5.jpeg",
+      "match": {
+        "shikimori": [
+          56861
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59622",
+      "title": "Как ты проведёшь досуг вместе с Кабигоном?",
+      "subtitle": "Kabigon to Nani Shite Kutsurogu?",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-09-28",
+      "release_end_date": "2024-03-19",
+      "release_year": 2023,
+      "release_label": "28 сентября 2023 — 19 марта 2024",
+      "episode_count": 6,
+      "release_order": 138,
+      "watch_order": 138,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59622/ab5ab2c27451d05dfc36c3e37df30484.jpeg",
+      "match": {
+        "shikimori": [
+          59622
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62373",
+      "title": "Проект «Кабигон»",
+      "subtitle": "Project Kabigon",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2023-10-05",
+      "release_year": 2023,
+      "release_label": "5 октября 2023",
+      "release_order": 139,
+      "watch_order": 139,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62373/bdf0a1ab8f6d09c4c63a6e0baf3c93b0.jpeg",
+      "match": {
+        "shikimori": [
+          62373
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57003",
+      "title": "Детектив Пикачу: Великолепная утренняя рутина",
+      "subtitle": "Meitantei Pikachu: Kareinaru Morning Routine",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-10-25",
+      "release_year": 2023,
+      "release_label": "25 октября 2023",
+      "episode_count": 1,
+      "release_order": 140,
+      "watch_order": 140,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57003/531e78940543aab23aa5b81fba77bc1b.jpeg",
+      "match": {
+        "shikimori": [
+          57003
+        ],
+        "sources": [
+          "yummyanime:5148"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62200",
+      "title": "Будни Кабигона",
+      "subtitle": "Toaru Hi no Kabigon",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-11-03",
+      "release_end_date": "2023-12-26",
+      "release_year": 2023,
+      "release_label": "3 ноября — 26 декабря 2023",
+      "episode_count": 8,
+      "release_order": 141,
+      "watch_order": 141,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62200/1c5c18cdd82ec0bd94a3117d2e6c545e.jpeg",
+      "match": {
+        "shikimori": [
+          62200
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57488",
+      "title": "Кабигон и Каракара",
+      "subtitle": "Kabigon to Karakara",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-12-08",
+      "release_end_date": "2023-12-29",
+      "release_year": 2023,
+      "release_label": "8 декабря — 29 декабря 2023",
+      "episode_count": 4,
+      "release_order": 142,
+      "watch_order": 142,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57488/91dc1b0d56a11d239411006b99341dcf.jpeg",
+      "match": {
+        "shikimori": [
+          57488
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54633",
+      "title": "Покемон: Консьерж",
+      "subtitle": "Pokemon Concierge",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-12-28",
+      "release_year": 2023,
+      "release_label": "28 декабря 2023",
+      "episode_count": 4,
+      "release_order": 143,
+      "watch_order": 143,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54633/651abd8f7315669651c8c49b5a34cc0e.jpeg",
+      "match": {
+        "shikimori": [
+          54633
+        ],
+        "sources": [
+          "yummyanime:2717"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57858",
+      "title": "Повесть о Момоваро",
+      "subtitle": "Shirarezaru \"Momowarou Monogatari\"",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-01-11",
+      "release_end_date": "2024-01-15",
+      "release_year": 2024,
+      "release_label": "11 января — 15 января 2024",
+      "episode_count": 2,
+      "release_order": 144,
+      "watch_order": 144,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57858/102dfee29f96840567fc54fb2056bf8d.jpeg",
+      "match": {
+        "shikimori": [
+          57858
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58012",
+      "title": "Хороший день для мечты",
+      "subtitle": "Liang Chen You Meng",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-02-02",
+      "release_year": 2024,
+      "release_label": "2 февраля 2024",
+      "episode_count": 1,
+      "release_order": 145,
+      "watch_order": 145,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58012/2d338386e5085cedfe3bc1d54bde2fb4.jpeg",
+      "match": {
+        "shikimori": [
+          58012
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62266",
+      "title": "Pokemon Pose Awase Quiz",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-02-23",
+      "release_end_date": "2025-08-12",
+      "release_year": 2024,
+      "release_label": "23 февраля 2024 — 12 августа 2025",
+      "episode_count": 2,
+      "release_order": 146,
+      "watch_order": 146,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62266/175750b41af29a07dcefa834e1071e4e.jpeg",
+      "match": {
+        "shikimori": [
+          62266
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59621",
+      "title": "Покемон: Мини-энциклопедия — Иви",
+      "subtitle": "Bao Ke Meng Donghua Tujian: Yi Bu Pian",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-04-28",
+      "release_year": 2024,
+      "release_label": "28 апреля 2024",
+      "episode_count": 1,
+      "release_order": 147,
+      "watch_order": 147,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59621/7f9c0eb2610c0d0eb88c18c057775bbd.jpeg",
+      "match": {
+        "shikimori": [
+          59621
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59013",
+      "title": "Луч пузырей, ягодный взрыв",
+      "subtitle": "Bubble Beam Berry Blast",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-06-07",
+      "release_year": 2024,
+      "release_label": "7 июня 2024",
+      "episode_count": 1,
+      "release_order": 148,
+      "watch_order": 148,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59013/41c0041ff88066067824667bfb4e1901.jpeg",
+      "match": {
+        "shikimori": [
+          59013
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59357",
+      "title": "Turning the Tera Tide",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-07-15",
+      "release_year": 2024,
+      "release_label": "15 июля 2024",
+      "episode_count": 1,
+      "release_order": 149,
+      "watch_order": 149,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59357/a87da7cd6963c912ce742d2a8e09c9a0.jpeg",
+      "match": {
+        "shikimori": [
+          59357
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59616",
+      "title": "Минутки покемонов",
+      "subtitle": "PokeMinutes",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2024-07-19",
+      "release_year": 2024,
+      "release_label": "19 июля 2024",
+      "release_order": 150,
+      "watch_order": 150,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59616/18cd5abe7568a3052d3846c83c34fcc6.jpeg",
+      "match": {
+        "shikimori": [
+          59616
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59620",
+      "title": "Покемон: Мини-энциклопедия — Отдых на острове",
+      "subtitle": "Bao Ke Meng Donghua Tujian: Xiaoqi Dao Zhong",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-08-05",
+      "release_end_date": "2024-08-26",
+      "release_year": 2024,
+      "release_label": "5 августа — 26 августа 2024",
+      "episode_count": 10,
+      "release_order": 151,
+      "watch_order": 151,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59620/54d6fd7bcbd67094b26f3bd4c7abf321.jpeg",
+      "match": {
+        "shikimori": [
+          59620
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59875",
+      "title": "Пусть сон длится вечно",
+      "subtitle": "Dan Yuan Meng Changjiu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-09-14",
+      "release_year": 2024,
+      "release_label": "14 сентября 2024",
+      "episode_count": 1,
+      "release_order": 152,
+      "watch_order": 152,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59875/af4f13658f145a08b8998d52c4b223f6.jpeg",
+      "match": {
+        "shikimori": [
+          59875
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59944",
+      "title": "Покетун (2024)",
+      "subtitle": "Poketoon (2024)",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-09-18",
+      "release_end_date": "2025-02-14",
+      "release_year": 2024,
+      "release_label": "18 сентября 2024 — 14 февраля 2025",
+      "episode_count": 9,
+      "release_order": 153,
+      "watch_order": 153,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59944/aaa85b1abf3a3c984f4fc3da6191cc69.jpeg",
+      "match": {
+        "shikimori": [
+          59944
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60554",
+      "title": "Покемон: Мини-энциклопедия — Ловкость и смекалка",
+      "subtitle": "Bao Ke Meng Donghua Tujian: Qian Ling Bai Li",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-11-27",
+      "release_end_date": "2024-12-16",
+      "release_year": 2024,
+      "release_label": "27 ноября — 16 декабря 2024",
+      "episode_count": 9,
+      "release_order": 154,
+      "watch_order": 154,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60554/e379499f548d762b2af087bee6034f60.jpeg",
+      "match": {
+        "shikimori": [
+          60554
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60799",
+      "title": "Открытие Палдеи",
+      "subtitle": "Discover Paldea",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-01-17",
+      "release_year": 2025,
+      "release_label": "17 января 2025",
+      "episode_count": 3,
+      "release_order": 155,
+      "watch_order": 155,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60799/7760ea9eaba1a97225d49f64f14c61b4.jpeg",
+      "match": {
+        "shikimori": [
+          60799
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60848",
+      "title": "Поймай свою удачу в год Змеи",
+      "subtitle": "Buzhuo Ni de She Nian Hao Yun",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-01-22",
+      "release_year": 2025,
+      "release_label": "22 января 2025",
+      "episode_count": 1,
+      "release_order": 156,
+      "watch_order": 156,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60848/b3cad982dfef1e041db55b37ea2e65a0.jpeg",
+      "match": {
+        "shikimori": [
+          60848
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60537",
+      "title": "Монпоке",
+      "subtitle": "Monpoke",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-02-19",
+      "release_end_date": "2025-04-16",
+      "release_year": 2025,
+      "release_label": "19 февраля — 16 апреля 2025",
+      "episode_count": 10,
+      "release_order": 157,
+      "watch_order": 157,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60537/d033a1a8a8b3717a9098889db76d34de.jpeg",
+      "match": {
+        "shikimori": [
+          60537
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62013",
+      "title": "Ожидание покемонов",
+      "subtitle": "Poke Taiki",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-02-21",
+      "release_end_date": "2025-02-27",
+      "release_year": 2025,
+      "release_label": "21 февраля — 27 февраля 2025",
+      "episode_count": 5,
+      "release_order": 158,
+      "watch_order": 158,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62013/5d6c5671ee9b6e83a59739404a060312.jpeg",
+      "match": {
+        "shikimori": [
+          62013
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60946",
+      "title": "Кайрю и почтальон",
+      "subtitle": "Kairyuu to Yuubinyasan",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-02-27",
+      "release_year": 2025,
+      "release_label": "27 февраля 2025",
+      "episode_count": 1,
+      "release_order": 159,
+      "watch_order": 159,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60946/98c3a933c1626fdd5eb352dd5e7812a5.jpeg",
+      "match": {
+        "shikimori": [
+          60946
+        ],
+        "sources": [
+          "yummyanime:5032"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61180",
+      "title": "Доброе утро с покемонами, спокойной ночи с покемонами",
+      "subtitle": "Pokemon to Ohayou Pokemon to Oyasumi",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-03-06",
+      "release_end_date": "2025-04-03",
+      "release_year": 2025,
+      "release_label": "6 марта — 3 апреля 2025",
+      "episode_count": 5,
+      "release_order": 160,
+      "watch_order": 160,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61180/66e0a7e24a183b733514c1726016a2b4.jpeg",
+      "match": {
+        "shikimori": [
+          61180
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62345",
+      "title": "Pokemon ga Ippiki",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-04-09",
+      "release_end_date": "2025-04-30",
+      "release_year": 2025,
+      "release_label": "9 апреля — 30 апреля 2025",
+      "episode_count": 4,
+      "release_order": 161,
+      "watch_order": 161,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62345/59f2c7df07cd82c2030d82dc78943db2.jpeg",
+      "match": {
+        "shikimori": [
+          62345
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61963",
+      "title": "Экологический дневник покемонов",
+      "subtitle": "Bao Ke Meng Shengtai Yi Riji",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-04-22",
+      "release_year": 2025,
+      "release_label": "22 апреля 2025",
+      "episode_count": 1,
+      "release_order": 162,
+      "watch_order": 162,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61963/3978486696f666a1d206a4f1a9c942f2.jpeg",
+      "match": {
+        "shikimori": [
+          61963
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62004",
+      "title": "Встреча покемонов на пляжном фестивале",
+      "subtitle": "Baokemeng Qiyu Shatanjie",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-06-01",
+      "release_year": 2025,
+      "release_label": "1 июня 2025",
+      "episode_count": 1,
+      "release_order": 163,
+      "watch_order": 163,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62004/d9f934e75508d8c5f7b06c4f885952f3.jpeg",
+      "match": {
+        "shikimori": [
+          62004
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62265",
+      "title": "Покемон: Мини-энциклопедия — Летние забавы",
+      "subtitle": "Bao Ke Meng Donghua Tujian: Xinao Yi Xia",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-07-18",
+      "release_end_date": "2025-09-17",
+      "release_year": 2025,
+      "release_label": "18 июля — 17 сентября 2025",
+      "episode_count": 10,
+      "release_order": 164,
+      "watch_order": 164,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62265/a5f7dea3b7940fa9fe77ad56c48e2957.jpeg",
+      "match": {
+        "shikimori": [
+          62265
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62209",
+      "title": "Поке-подъём",
+      "subtitle": "Poke Oki",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-07-21",
+      "release_end_date": "2025-08-25",
+      "release_year": 2025,
+      "release_label": "21 июля — 25 августа 2025",
+      "episode_count": 6,
+      "release_order": 165,
+      "watch_order": 165,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62209/d6b64af8f2a40c71101db56999b2cf74.jpeg",
+      "match": {
+        "shikimori": [
+          62209
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62381",
+      "title": "Metamon Henshin Shiritori Battle",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-08-10",
+      "release_year": 2025,
+      "release_label": "10 августа 2025",
+      "episode_count": 1,
+      "release_order": 166,
+      "watch_order": 166,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62381/dfa2345ec05aa0f2b21ce8b63b421849.jpeg",
+      "match": {
+        "shikimori": [
+          62381
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58953",
+      "title": "Покемон: Консьерж. Часть 2",
+      "subtitle": "Pokemon Concierge Part 2",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-09-04",
+      "release_year": 2025,
+      "release_label": "4 сентября 2025",
+      "episode_count": 4,
+      "release_order": 167,
+      "watch_order": 167,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58953/16e49f878ff6afee9678dfe5c336b152.jpeg",
+      "match": {
+        "shikimori": [
+          58953
+        ],
+        "sources": [
+          "yummyanime:8433"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62863",
+      "title": "Покетун (2025)",
+      "subtitle": "Poketoon (2025)",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2025-10-03",
+      "release_end_date": "2026-02-13",
+      "release_year": 2025,
+      "release_label": "3 октября 2025 — 13 февраля 2026",
+      "episode_count": 3,
+      "release_order": 168,
+      "watch_order": 168,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62863/f47c219ee93fd19e7caead1e46f4bb35.jpeg",
+      "match": {
+        "shikimori": [
+          62863
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63373",
+      "title": "Покемон: Мини-энциклопедия — Весёлые мгновения",
+      "subtitle": "Bao Ke Meng Donghua Tujian: Zhuanshun Binfen",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2026-01-19",
+      "release_end_date": "2026-03-16",
+      "release_year": 2026,
+      "release_label": "19 января — 16 марта 2026",
+      "episode_count": 9,
+      "release_order": 169,
+      "watch_order": 169,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63373/970aaf1696b3720107dd0b8ad156511c.jpeg",
+      "match": {
+        "shikimori": [
+          63373
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

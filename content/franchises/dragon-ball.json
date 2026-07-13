@@ -1,0 +1,1215 @@
+{
+  "schema_version": 1,
+  "slug": "dragon-ball",
+  "title": "Драконий жемчуг",
+  "short_title": "Dragon Ball",
+  "original_title": "ドラゴンボール",
+  "summary": "Приключенческая сага о боевых искусствах, дружбе и постоянном преодолении собственных пределов, постепенно выросшая от лёгкого путешествия до космического эпоса.",
+  "guide": "Основной путь: Dragon Ball, затем Dragon Ball Z или его сокращённая версия Kai, после чего Dragon Ball Super. GT представляет альтернативное продолжение, а многочисленные фильмы лучше воспринимать как отдельные ветки соответствующей эпохи.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/223/224c308ff548d13b4449bb8800366dd7.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/223",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "dragon_ball",
+    "primary_shikimori_ids": [
+      223
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 7,
+  "entries": [
+    {
+      "key": "shikimori-223",
+      "title": "Драконий жемчуг",
+      "subtitle": "Dragon Ball",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1986-02-26",
+      "release_end_date": "1989-04-12",
+      "release_year": 1986,
+      "release_label": "26 февраля 1986 — 12 апреля 1989",
+      "episode_count": 153,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/223/224c308ff548d13b4449bb8800366dd7.jpeg",
+      "match": {
+        "shikimori": [
+          223
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-502",
+      "title": "Драконий жемчуг: Проклятие кровавых рубинов",
+      "subtitle": "Dragon Ball Movie 1: Shen Long no Densetsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1986-12-20",
+      "release_year": 1986,
+      "release_label": "20 декабря 1986",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/502/8a67f46f433ca70b07f2facfa35adbc6.jpeg",
+      "match": {
+        "shikimori": [
+          502
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-891",
+      "title": "Драконий жемчуг: Спящая принцесса в замке дьявола",
+      "subtitle": "Dragon Ball Movie 2: Majinjou no Nemurihime",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1987-07-18",
+      "release_year": 1987,
+      "release_label": "18 июля 1987",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/891/c355864ce4f414dc43845c5d51d9fa1d.jpeg",
+      "match": {
+        "shikimori": [
+          891
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2520",
+      "title": "Драконий жемчуг: Спецвыпуски",
+      "subtitle": "Dragon Ball Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1988-06-08",
+      "release_year": 1988,
+      "release_label": "8 июня 1988",
+      "episode_count": 2,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2520/8746077040bf63840ef7fea2c2a84cad.jpeg",
+      "match": {
+        "shikimori": [
+          2520
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-892",
+      "title": "Драконий жемчуг: Мистическое приключение",
+      "subtitle": "Dragon Ball Movie 3: Makafushigi Daibouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1988-07-09",
+      "release_year": 1988,
+      "release_label": "9 июля 1988",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/892/136c4913b1be0affa71904ebcecebd87.jpeg",
+      "match": {
+        "shikimori": [
+          892
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-813",
+      "title": "Драконий жемчуг Зет",
+      "subtitle": "Dragon Ball Z",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1989-04-26",
+      "release_end_date": "1996-01-31",
+      "release_year": 1989,
+      "release_label": "26 апреля 1989 — 31 января 1996",
+      "episode_count": 291,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/813/dcc190566c72279c45ccddd5b4482765.jpeg",
+      "match": {
+        "shikimori": [
+          813
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-894",
+      "title": "Драконий жемчуг Зет: Верните Гохана!!",
+      "subtitle": "Dragon Ball Z Movie 01: Ora no Gohan wo Kaese!!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1989-07-15",
+      "release_year": 1989,
+      "release_label": "15 июля 1989",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/894/3fb824f063dbcad9267458732eec1afd.jpeg",
+      "match": {
+        "shikimori": [
+          894
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-895",
+      "title": "Драконий жемчуг Зет: Сильнейший в мире",
+      "subtitle": "Dragon Ball Z Movie 02: Kono Yo de Ichiban Tsuyoi Yatsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1990-03-10",
+      "release_year": 1990,
+      "release_label": "10 марта 1990",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/895/d354bf354f77e810ec6bb59fe14573b5.jpeg",
+      "match": {
+        "shikimori": [
+          895
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-896",
+      "title": "Драконий жемчуг Зет: Решающая битва за Землю",
+      "subtitle": "Dragon Ball Z Movie 03: Chikyuu Marugoto Choukessen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1990-07-07",
+      "release_year": 1990,
+      "release_label": "7 июля 1990",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/896/fc2ed20e2b043dcd1bb7c571a9a42fad.jpeg",
+      "match": {
+        "shikimori": [
+          896
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11659",
+      "title": "Пинк: Водяные воры, дождевые воры",
+      "subtitle": "Pink Mizu Dorobou Ame Dorobou",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1990-07-07",
+      "release_year": 1990,
+      "release_label": "7 июля 1990",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11659/00d9423fcc068d2268324062703dcee1.jpeg",
+      "match": {
+        "shikimori": [
+          11659
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18603",
+      "title": "Кэнноскэ-сама",
+      "subtitle": "Kennosuke-sama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1990-07-07",
+      "release_year": 1990,
+      "release_label": "7 июля 1990",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18603/947bba17d8ddf0c4e7aba3dddb5e8257.jpeg",
+      "match": {
+        "shikimori": [
+          18603
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-986",
+      "title": "Драконий жемчуг Зет: Бардок — отец Гоку",
+      "subtitle": "Dragon Ball Z Special 1: Tatta Hitori no Saishuu Kessen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1990-10-17",
+      "release_year": 1990,
+      "release_label": "17 октября 1990",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/986/e65f64d0919c7eb59cd533471e77ed7f.jpeg",
+      "match": {
+        "shikimori": [
+          986
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-897",
+      "title": "Драконий жемчуг Зет: Суперсайян Гоку Сона",
+      "subtitle": "Dragon Ball Z Movie 04: Super Saiyajin da Son Gokuu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1991-03-09",
+      "release_year": 1991,
+      "release_label": "9 марта 1991",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/897/07a791cce000dd31aabb7f9e1971ee09.jpeg",
+      "match": {
+        "shikimori": [
+          897
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-898",
+      "title": "Драконий жемчуг Зет: Месть Кулера",
+      "subtitle": "Dragon Ball Z Movie 05: Tobikkiri no Saikyou tai Saikyou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1991-07-20",
+      "release_year": 1991,
+      "release_label": "20 июля 1991",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/898/d73e78ae3d3927886f82b752f7a34879.jpeg",
+      "match": {
+        "shikimori": [
+          898
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6714",
+      "title": "Драконий жемчуг Зет: Мир Гоку",
+      "subtitle": "Dragon Ball Z: Atsumare! Gokuu World",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1992-01-28",
+      "release_year": 1992,
+      "release_label": "28 января 1992",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6714/916735d5203f6fee0afcac3578aa7646.jpeg",
+      "match": {
+        "shikimori": [
+          6714
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-899",
+      "title": "Драконий жемчуг Зет: Сила 10 миллиардов воинов",
+      "subtitle": "Dragon Ball Z Movie 06: Gekitotsu!! 100-oku Power no Senshi-tachi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1992-03-07",
+      "release_year": 1992,
+      "release_label": "7 марта 1992",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/899/84367b76f9163475dde03e3964091b81.jpeg",
+      "match": {
+        "shikimori": [
+          899
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22695",
+      "title": "Драконий жемчуг Зет: Летний спецвыпуск",
+      "subtitle": "Dragon Ball Z: Summer Vacation Special",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1992-07-01",
+      "release_year": 1992,
+      "release_label": "1 июля 1992",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22695/de68e58b19d827b72b4775906ef5cbfd.jpeg",
+      "match": {
+        "shikimori": [
+          22695
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-900",
+      "title": "Драконий жемчуг Зет: Суперандроид 13",
+      "subtitle": "Dragon Ball Z Movie 07: Kyokugen Battle!! Sandai Super Saiyajin",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1992-07-11",
+      "release_year": 1992,
+      "release_label": "11 июля 1992",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/900/98b6ab6aa84b0f2e162e7377b88317a7.jpeg",
+      "match": {
+        "shikimori": [
+          900
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-985",
+      "title": "Драконий жемчуг Зет: Стойкие бойцы — Гохан и Транкс",
+      "subtitle": "Dragon Ball Z Special 2: Zetsubou e no Hankou!! Nokosareta Chousenshi - Gohan to Trunks",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1993-02-24",
+      "release_year": 1993,
+      "release_label": "24 февраля 1993",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/985/b7937b74dbad47ece882a55cd900ccfe.jpeg",
+      "match": {
+        "shikimori": [
+          985
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-901",
+      "title": "Драконий жемчуг Зет: Броли — Легендарный суперсайян",
+      "subtitle": "Dragon Ball Z Movie 08: Moetsukiro!! Nessen, Ressen, Chougekisen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1993-03-06",
+      "release_year": 1993,
+      "release_label": "6 марта 1993",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/901/98e7632730d9a069d109fe1de5a01342.jpeg",
+      "match": {
+        "shikimori": [
+          901
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-902",
+      "title": "Драконий жемчуг Зет: Галактика в опасности",
+      "subtitle": "Dragon Ball Z Movie 09: Ginga Girigiri!! Bucchigiri no Sugoi Yatsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1993-07-10",
+      "release_year": 1993,
+      "release_label": "10 июля 1993",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/902/243b5461342ccee7b14a97869b1f4a3a.jpeg",
+      "match": {
+        "shikimori": [
+          902
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-984",
+      "title": "Драконий жемчуг Зет: План по уничтожению сайянов",
+      "subtitle": "Dragon Ball Z: Saiya-jin Zetsumetsu Keikaku",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1993-07-23",
+      "release_year": 1993,
+      "release_label": "23 июля 1993",
+      "episode_count": 2,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/984/a70875a9aebe8013dbd7c762a123e5ce.jpeg",
+      "match": {
+        "shikimori": [
+          984
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22699",
+      "title": "Драконий жемчуг Зет: Шоу конца года!",
+      "subtitle": "Dragon Ball Z: Zenbu Misemasu Toshi Wasure Dragon Ball Z!",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1993-12-31",
+      "release_year": 1993,
+      "release_label": "31 декабря 1993",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22699/8137c68dc9e854165a38fb49fd30b455.jpeg",
+      "match": {
+        "shikimori": [
+          22699
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-903",
+      "title": "Драконий жемчуг Зет: Броли — Второе появление",
+      "subtitle": "Dragon Ball Z Movie 10: Kiken na Futari! Super Senshi wa Nemurenai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1994-03-12",
+      "release_year": 1994,
+      "release_label": "12 марта 1994",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/903/2585448bdd3efe4cddace2e27799f4db.jpeg",
+      "match": {
+        "shikimori": [
+          903
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-904",
+      "title": "Драконий жемчуг Зет: Био-Броли",
+      "subtitle": "Dragon Ball Z Movie 11: Super Senshi Gekiha!! Katsu no wa Ore da",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1994-07-09",
+      "release_year": 1994,
+      "release_label": "9 июля 1994",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/904/45089824c4c468f0e45a468d86b42ee3.jpeg",
+      "match": {
+        "shikimori": [
+          904
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-905",
+      "title": "Драконий жемчуг Зет: Перерождение",
+      "subtitle": "Dragon Ball Z Movie 12: Fukkatsu no Fusion!! Gokuu to Vegeta",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1995-03-04",
+      "release_year": 1995,
+      "release_label": "4 марта 1995",
+      "episode_count": 1,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/905/f26deb49c9358e68c0ccb0729d4158a2.jpeg",
+      "match": {
+        "shikimori": [
+          905
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-906",
+      "title": "Драконий жемчуг Зет: Гнев дракона",
+      "subtitle": "Dragon Ball Z Movie 13: Ryuuken Bakuhatsu!! Gokuu ga Yaraneba Dare ga Yaru",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1995-07-15",
+      "release_year": 1995,
+      "release_label": "15 июля 1995",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/906/c33e02c3d9421ad6146182e9605726c7.jpeg",
+      "match": {
+        "shikimori": [
+          906
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-225",
+      "title": "Драконий жемчуг БП",
+      "subtitle": "Dragon Ball GT",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1996-02-07",
+      "release_end_date": "1997-11-19",
+      "release_year": 1996,
+      "release_label": "7 февраля 1996 — 19 ноября 1997",
+      "episode_count": 64,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/225/f52262eda053720a9e093b63d3442ed3.jpeg",
+      "match": {
+        "shikimori": [
+          225
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-893",
+      "title": "Драконий жемчуг: Путь к силе",
+      "subtitle": "Dragon Ball Movie 4: Saikyou e no Michi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1996-03-02",
+      "release_year": 1996,
+      "release_label": "2 марта 1996",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/893/5a0a3054d95a2a9a5f243788275474ce.jpeg",
+      "match": {
+        "shikimori": [
+          893
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-987",
+      "title": "Драконий жемчуг БП: Наследие героя",
+      "subtitle": "Dragon Ball GT: Gokuu Gaiden! Yuuki no Akashi wa Suushinchuu",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "1997-03-26",
+      "release_year": 1997,
+      "release_label": "26 марта 1997",
+      "episode_count": 1,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/987/db60576ce0fb78908892132012396c60.jpeg",
+      "match": {
+        "shikimori": [
+          987
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23933",
+      "title": "Сфера панического приключения",
+      "subtitle": "Kyutai Panic Adventure!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2003-07-19",
+      "release_year": 2003,
+      "release_label": "19 июля 2003",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23933/a83c97c16e7a2f096bb239dfe71d04f0.jpeg",
+      "match": {
+        "shikimori": [
+          23933
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23935",
+      "title": "Сфера панического приключения: Возвращение",
+      "subtitle": "Kyutai Panic Adventure Returns!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-07-17",
+      "release_year": 2004,
+      "release_label": "17 июля 2004",
+      "episode_count": 1,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23935/6a037b047a5f63c002837daf5cd9e65f.jpeg",
+      "match": {
+        "shikimori": [
+          23935
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56141",
+      "title": "Премия выдающихся людей Японии: Кто самый великий?",
+      "subtitle": "Dragon Ball: Nihon Ijin Taishou - Saikyou no Ijin wa Dare?",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-04-07",
+      "release_year": 2007,
+      "release_label": "7 апреля 2007",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56141/dc9f180df137be1c1b1cf76679b75365.jpeg",
+      "match": {
+        "shikimori": [
+          56141
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5152",
+      "title": "Драконий жемчуг: Гоку Сон и друзья возвращаются!",
+      "subtitle": "Dragon Ball: Ossu! Kaettekita Son Gokuu to Nakama-tachi!!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-09-21",
+      "release_year": 2008,
+      "release_label": "21 сентября 2008",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5152/bb321f1fc0b9cde6178b34fcbbb2f259.jpeg",
+      "match": {
+        "shikimori": [
+          5152
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6033",
+      "title": "Драконий жемчуг Кай",
+      "subtitle": "Dragon Ball Kai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2009-04-05",
+      "release_end_date": "2011-03-27",
+      "release_year": 2009,
+      "release_label": "5 апреля 2009 — 27 марта 2011",
+      "episode_count": 97,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6033/4b342e19b1e69d3eebed587ae2c78b4d.jpeg",
+      "match": {
+        "shikimori": [
+          6033
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10017",
+      "title": "Драконий жемчуг Зет: План по уничтожению сайянов 2",
+      "subtitle": "Dragon Ball: Super Saiya-jin Zetsumetsu Keikaku",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-11-11",
+      "release_year": 2010,
+      "release_label": "11 ноября 2010",
+      "episode_count": 1,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10017/284566000b3088ddc5b7625586b3ba42.jpeg",
+      "match": {
+        "shikimori": [
+          10017
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11359",
+      "title": "Драконий жемчуг Кай: Спецвыпуск",
+      "subtitle": "Dragon Ball Kai: Mirai ni Heiwa wo! Goku no Tamashii yo Eien ni",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-08-02",
+      "release_year": 2011,
+      "release_label": "2 августа 2011",
+      "episode_count": 1,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11359/5282f4df5aa6574ecbbbc59bb936efff.jpeg",
+      "match": {
+        "shikimori": [
+          11359
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12231",
+      "title": "Драконий жемчуг: Эпизод Бардока",
+      "subtitle": "Dragon Ball: Episode of Bardock",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2011-12-17",
+      "release_year": 2011,
+      "release_label": "17 декабря 2011",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12231/fec77d0c95cb67c0ff18e8284ab6883c.jpeg",
+      "match": {
+        "shikimori": [
+          12231
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14837",
+      "title": "Драконий жемчуг Зет: Битва богов",
+      "subtitle": "Dragon Ball Z Movie 14: Kami to Kami",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-03-30",
+      "release_year": 2013,
+      "release_label": "30 марта 2013",
+      "episode_count": 1,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14837/154fa37a80c9b55a20da9167b04b78ad.jpeg",
+      "match": {
+        "shikimori": [
+          14837
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22777",
+      "title": "Драконий жемчуг Кай (2014)",
+      "subtitle": "Dragon Ball Kai (2014)",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-04-06",
+      "release_end_date": "2015-06-28",
+      "release_year": 2014,
+      "release_label": "6 апреля 2014 — 28 июня 2015",
+      "episode_count": 61,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22777/68034da3e983895a4643ee695b543586.jpeg",
+      "match": {
+        "shikimori": [
+          22777
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25389",
+      "title": "Драконий жемчуг Зет: Воскрешение «Ф»",
+      "subtitle": "Dragon Ball Z Movie 15: Fukkatsu no \"F\"",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-04-18",
+      "release_year": 2015,
+      "release_label": "18 апреля 2015",
+      "episode_count": 1,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25389/caa33d954d1f3f5b9ecb19603b8f36ce.jpeg",
+      "match": {
+        "shikimori": [
+          25389
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30694",
+      "title": "Драконий жемчуг: Супер",
+      "subtitle": "Dragon Ball Super",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-07-05",
+      "release_end_date": "2018-03-25",
+      "release_year": 2015,
+      "release_label": "5 июля 2015 — 25 марта 2018",
+      "episode_count": 131,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30694/50a13d90f9e8c469afe4b35138da2a59.jpeg",
+      "match": {
+        "shikimori": [
+          30694
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37885",
+      "title": "Супердраконий жемчуг: Герои",
+      "subtitle": "Super Dragon Ball Heroes",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-07-01",
+      "release_end_date": "2024-08-08",
+      "release_year": 2018,
+      "release_label": "1 июля 2018 — 8 августа 2024",
+      "episode_count": 56,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37885/e91ab7a5025ea0a3aba57c1081b5f1f8.jpeg",
+      "match": {
+        "shikimori": [
+          37885
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38653",
+      "title": "Драконий жемчуг: Супер — Броли на небоскрёбе",
+      "subtitle": "Dragon Ball Super: Broly - Skytree Super",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-11-01",
+      "release_year": 2018,
+      "release_label": "1 ноября 2018",
+      "episode_count": 1,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38653/c4afee7d7ce3715e925e045a2a9f72f1.jpeg",
+      "match": {
+        "shikimori": [
+          38653
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36946",
+      "title": "Драконий жемчуг: Супер — Броли",
+      "subtitle": "Dragon Ball Super: Broly",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-12-14",
+      "release_year": 2018,
+      "release_label": "14 декабря 2018",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36946/c06be14e585b917e86f526c2c24ff54f.jpeg",
+      "match": {
+        "shikimori": [
+          36946
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48903",
+      "title": "Драконий жемчуг: Супер — Супергерой",
+      "subtitle": "Dragon Ball Super: Super Hero",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-06-11",
+      "release_year": 2022,
+      "release_label": "11 июня 2022",
+      "episode_count": 1,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48903/aa1d7fb6c4cb479b90f77ac341f280a8.jpeg",
+      "match": {
+        "shikimori": [
+          48903
+        ],
+        "sources": [
+          "yummyanime:1218"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56894",
+      "title": "Драконий жемчуг Дайма",
+      "subtitle": "Dragon Ball Daima",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-10-11",
+      "release_end_date": "2025-02-28",
+      "release_year": 2024,
+      "release_label": "11 октября 2024 — 28 февраля 2025",
+      "episode_count": 20,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56894/49a156fd31ca1a3568038c44038b6384.jpeg",
+      "match": {
+        "shikimori": [
+          56894
+        ],
+        "sources": [
+          "yummyanime:4668"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63367",
+      "title": "Драконий жемчуг: Супер — Бирус",
+      "subtitle": "Dragon Ball Super: Beerus",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2026-10-01",
+      "release_year": 2026,
+      "release_label": "1 октября 2026",
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63367/7cee7e38c2d6f26e0d0a65647a3b68f8.jpeg",
+      "match": {
+        "shikimori": [
+          63367
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63368",
+      "title": "Драконий жемчуг: Супер — Галактический патруль",
+      "subtitle": "Dragon Ball Super: Ginga Patrol",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63368/b98ca4285b974750331624eb2ecb1a36.jpeg",
+      "match": {
+        "shikimori": [
+          63368
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

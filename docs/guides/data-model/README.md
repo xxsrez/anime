@@ -217,6 +217,27 @@ the existing canonical item before exposing the franchise API, so duplicate
 AnimeGO/YummyAnime rows remain one release in the timeline. Similar titles are
 never grouped automatically.
 
+The curated top-franchise set is declared in `content/franchise-seeds.json`.
+`scripts/generate_franchise_catalog.py` turns that manifest and Shikimori's
+franchise metadata into checked-in definitions; production never depends on a
+runtime request to Shikimori. Generated entries keep release order as the safe
+default because one tag may contain several continuities; the manifest's
+editorial guide owns branch-specific viewing advice. Hand-authored cards may
+still define a separate recommended order. Regenerate all cards or one card
+with:
+
+```bash
+.venv/bin/python scripts/generate_franchise_catalog.py --write
+.venv/bin/python scripts/generate_franchise_catalog.py --write --slug one-piece
+```
+
+After generation, verify local catalog coverage and one-to-one ownership of
+canonical titles:
+
+```bash
+.venv/bin/python scripts/check_franchise_data.py --db db/animego.sqlite
+```
+
 ## External URLs
 
 `url` and `cover_url` point to upstream sites. `embed_url` points to an external

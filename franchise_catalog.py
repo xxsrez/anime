@@ -128,6 +128,7 @@ def validate_definition(raw, source="franchise definition"):
     entry_keys = set()
     release_orders = set()
     watch_orders = set()
+    generated_from_shikimori = (definition.get("data_origin") or {}).get("provider") == "shikimori"
     for index, entry in enumerate(entries):
         field = f"{source}.entries[{index}]"
         if not isinstance(entry, dict):
@@ -190,14 +191,32 @@ def validate_definition(raw, source="franchise definition"):
         match["anidb"] = [int(value) for value in match.get("anidb") or []]
         if any(value < 1 for value in match["anidb"]):
             raise FranchiseDataError(f"{field}.match.anidb must contain positive IDs")
+        if len(match["anidb"]) != len(set(match["anidb"])):
+            raise FranchiseDataError(f"{field}.match.anidb contains duplicate IDs")
         match["shikimori"] = [int(value) for value in match.get("shikimori") or []]
         if any(value < 1 for value in match["shikimori"]):
             raise FranchiseDataError(f"{field}.match.shikimori must contain positive IDs")
+        if len(match["shikimori"]) != len(set(match["shikimori"])):
+            raise FranchiseDataError(f"{field}.match.shikimori contains duplicate IDs")
         match["sources"] = [
             _validate_source_match(value, f"{field}.match.sources")
             for value in match.get("sources") or []
         ]
+        if len(match["sources"]) != len(set(match["sources"])):
+            raise FranchiseDataError(f"{field}.match.sources contains duplicate keys")
+        if generated_from_shikimori:
+            if not match["shikimori"]:
+                raise FranchiseDataError(f"{field}.match.shikimori is required for generated entries")
+            for required in ("summary", "kind", "watch_note"):
+                _nonempty_text(entry.get(required), f"{field}.{required}")
         entry["match"] = match
+
+    expected_release_orders = set(range(1, len(entries) + 1))
+    if release_orders != expected_release_orders:
+        raise FranchiseDataError(f"{source}.release_order must be continuous from 1")
+    expected_watch_orders = set(range(1, len(watch_orders) + 1))
+    if watch_orders != expected_watch_orders:
+        raise FranchiseDataError(f"{source}.watch_order must be continuous from 1")
 
     announcements = definition.get("announcements") or []
     if not isinstance(announcements, list):
@@ -229,6 +248,31 @@ def validate_definition(raw, source="franchise definition"):
     return definition
 
 
+def validate_definition_set(definitions, source="franchise definitions"):
+    """Reject matchers that could attach one title to multiple entries."""
+
+    matcher_owners = {}
+    for definition in definitions:
+        for entry in definition["entries"]:
+            owner = f"{definition['slug']}/{entry['key']}"
+            match = entry.get("match") or {}
+            matchers = [
+                *(("anidb", str(value)) for value in match.get("anidb") or []),
+                *(("shikimori", str(value)) for value in match.get("shikimori") or []),
+                *(("source", value) for value in match.get("sources") or []),
+            ]
+            for matcher in matchers:
+                previous = matcher_owners.get(matcher)
+                if previous and previous != owner:
+                    namespace, value = matcher
+                    raise FranchiseDataError(
+                        f"{source} matcher {namespace}:{value} belongs to both "
+                        f"{previous} and {owner}"
+                    )
+                matcher_owners[matcher] = owner
+    return definitions
+
+
 def _directory_signature(directory):
     paths = sorted(directory.glob("*.json")) if directory.is_dir() else []
     return tuple((path.name, path.stat().st_mtime_ns, path.stat().st_size) for path in paths), paths
@@ -255,6 +299,7 @@ def load_definitions(directory=None):
             raise FranchiseDataError(f"Duplicate franchise slug {definition['slug']}")
         slugs.add(definition["slug"])
         definitions.append(definition)
+    validate_definition_set(definitions, str(directory))
     definitions.sort(key=lambda item: item["title"])
     with _CACHE_LOCK:
         _DEFINITION_CACHE[key] = (signature, copy.deepcopy(definitions))

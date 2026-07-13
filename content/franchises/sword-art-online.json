@@ -1,0 +1,660 @@
+{
+  "schema_version": 1,
+  "slug": "sword-art-online",
+  "title": "Мастера Меча Онлайн",
+  "short_title": "SAO",
+  "original_title": "ソードアート・オンライン",
+  "summary": "Научно-фантастическая серия о виртуальных мирах, границе между игрой и реальностью и отношениях, которые сохраняют значение по обе стороны экрана.",
+  "guide": "Смотрите первый и второй сезоны, фильм Ordinal Scale, затем Alicization и War of Underworld. Progressive заново и подробнее показывает раннюю арку, поэтому его лучше воспринимать как параллельную версию, а не обязательное продолжение.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/11757/8958e24041338f53bdab4955ed395d66.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/11757",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "sword_art_online",
+    "primary_shikimori_ids": [
+      11757
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 9,
+  "entries": [
+    {
+      "key": "shikimori-11757",
+      "title": "Мастера Меча Онлайн",
+      "subtitle": "Sword Art Online",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-07-08",
+      "release_end_date": "2012-12-23",
+      "release_year": 2012,
+      "release_label": "8 июля — 23 декабря 2012",
+      "episode_count": 25,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11757/8958e24041338f53bdab4955ed395d66.jpeg",
+      "match": {
+        "shikimori": [
+          11757
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-16099",
+      "title": "Мастера Меча Оффлайн",
+      "subtitle": "Sword Art Online: Sword Art Offline",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-10-24",
+      "release_end_date": "2013-06-26",
+      "release_year": 2012,
+      "release_label": "24 октября 2012 — 26 июня 2013",
+      "episode_count": 9,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16099/4a617cd81212e8a6ee577ef97a2d8148.jpeg",
+      "match": {
+        "shikimori": [
+          16099
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20021",
+      "title": "Мастера Меча Онлайн: Дополнительное издание",
+      "subtitle": "Sword Art Online: Extra Edition",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-12-31",
+      "release_year": 2013,
+      "release_label": "31 декабря 2013",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20021/2ced621b54ee5cedbc7f9f9ec6c8542b.jpeg",
+      "match": {
+        "shikimori": [
+          20021
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21879",
+      "title": "Мастера Меча Оффлайн: Дополнительное издание",
+      "subtitle": "Sword Art Online: Sword Art Offline - Extra Edition",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-04-23",
+      "release_year": 2014,
+      "release_label": "23 апреля 2014",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21879/de9269ced44e65b51d060c243e090282.jpeg",
+      "match": {
+        "shikimori": [
+          21879
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21881",
+      "title": "Мастера Меча Онлайн II",
+      "subtitle": "Sword Art Online II",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-07-05",
+      "release_end_date": "2014-12-20",
+      "release_year": 2014,
+      "release_label": "5 июля — 20 декабря 2014",
+      "episode_count": 24,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21881/750ea5cd8a00a1817ebc4eada1cc7bbc.jpeg",
+      "match": {
+        "shikimori": [
+          21881
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-27891",
+      "title": "Мастера Меча Онлайн II: Расследование",
+      "subtitle": "Sword Art Online II: Debriefing",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-10-11",
+      "release_year": 2014,
+      "release_label": "11 октября 2014",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/27891/2bd5dbfdc3b04cbfb23b76c3ba52d806.jpeg",
+      "match": {
+        "shikimori": [
+          27891
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28063",
+      "title": "Мастера Меча Оффлайн II",
+      "subtitle": "Sword Art Online II: Sword Art Offline II",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-10-22",
+      "release_end_date": "2015-06-24",
+      "release_year": 2014,
+      "release_label": "22 октября 2014 — 24 июня 2015",
+      "episode_count": 9,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28063/80b7ce9a49ba4ad85ac126447216aaa2.jpeg",
+      "match": {
+        "shikimori": [
+          28063
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31765",
+      "title": "Мастера Меча Онлайн: Порядковый ранг",
+      "subtitle": "Sword Art Online Movie: Ordinal Scale",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-02-18",
+      "release_year": 2017,
+      "release_label": "18 февраля 2017",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31765/5a5f2bcd1e41cf710e758981607870dd.jpeg",
+      "match": {
+        "shikimori": [
+          31765
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36439",
+      "title": "Мастера Меча Оффлайн: Порядковый ранг",
+      "subtitle": "Sword Art Online Movie: Ordinal Scale - Sword Art Offline",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-09-27",
+      "release_year": 2017,
+      "release_label": "27 сентября 2017",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36439/fad761083b9fdc169f730e1ae5ae2065.jpeg",
+      "match": {
+        "shikimori": [
+          36439
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37278",
+      "title": "Мастера Меча Онлайн: Роковая пуля — Третий эпизод. Пилот",
+      "subtitle": "Sword Art Online Fatal Bullet: The Third Episode - Pilot-ban",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-02-08",
+      "release_year": 2018,
+      "release_label": "8 февраля 2018",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37278/99561536629e68de95bfd4c3564d3cd7.jpeg",
+      "match": {
+        "shikimori": [
+          37278
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37362",
+      "title": "Мастера Меча Онлайн: Роковая пуля — Третий эпизод",
+      "subtitle": "Sword Art Online Fatal Bullet: The Third Episode",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-03-20",
+      "release_year": 2018,
+      "release_label": "20 марта 2018",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37362/922174fcd2fba958ead27b908941f19a.jpeg",
+      "match": {
+        "shikimori": [
+          37362
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36475",
+      "title": "Мастера Меча Онлайн: Альтернативная «Призрачная пуля»",
+      "subtitle": "Sword Art Online Alternative: Gun Gale Online",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-04-08",
+      "release_end_date": "2018-07-01",
+      "release_year": 2018,
+      "release_label": "8 апреля — 1 июля 2018",
+      "episode_count": 12,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36475/4e8b67ef3cbf8451c625bc0a92116313.jpeg",
+      "match": {
+        "shikimori": [
+          36475
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37831",
+      "title": "Мастера Меча Онлайн: Альтернативная «Призрачная пуля» — Рекап",
+      "subtitle": "Sword Art Online Alternative: Gun Gale Online - Refrain",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-05-13",
+      "release_year": 2018,
+      "release_label": "13 мая 2018",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37831/6ae98cce700f1d3093084630b4b5087f.jpeg",
+      "match": {
+        "shikimori": [
+          37831
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36474",
+      "title": "Мастера Меча Онлайн: Алисизация",
+      "subtitle": "Sword Art Online: Alicization",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-10-07",
+      "release_end_date": "2019-03-31",
+      "release_year": 2018,
+      "release_label": "7 октября 2018 — 31 марта 2019",
+      "episode_count": 24,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36474/7a21763930ff64bdd30a1b3f7c4ac004.jpeg",
+      "match": {
+        "shikimori": [
+          36474
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39239",
+      "title": "Мастера Меча Онлайн: Алисизация — Рекап",
+      "subtitle": "Sword Art Online: Alicization - Recollection",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-02-17",
+      "release_year": 2019,
+      "release_label": "17 февраля 2019",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39239/ab03602841e7dbf1ec3500ecc3d0ca45.jpeg",
+      "match": {
+        "shikimori": [
+          39239
+        ],
+        "sources": [
+          "animego:1572"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40489",
+      "title": "Мастера Меча Онлайн: Алисизация — Война в Подмирье. Отражение",
+      "subtitle": "Sword Art Online: Alicization - War of Underworld Reflection",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-10-06",
+      "release_year": 2019,
+      "release_label": "6 октября 2019",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40489/9266ed47df80d936f08b3984286007ec.jpeg",
+      "match": {
+        "shikimori": [
+          40489
+        ],
+        "sources": [
+          "animego:1260"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39597",
+      "title": "Мастера Меча Онлайн: Алисизация — Война в Подмирье",
+      "subtitle": "Sword Art Online: Alicization - War of Underworld",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-10-13",
+      "release_end_date": "2019-12-29",
+      "release_year": 2019,
+      "release_label": "13 октября — 29 декабря 2019",
+      "episode_count": 12,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39597/07be2781d40b4ab2a2331bbf0879d001.jpeg",
+      "match": {
+        "shikimori": [
+          39597
+        ],
+        "sources": [
+          "animego:930",
+          "yummyanime:122"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41341",
+      "title": "Мастера Меча Онлайн: Алисизация — Война в Подмирье. Рекап",
+      "subtitle": "Sword Art Online: Alicization - War of Underworld Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2020-07-04",
+      "release_year": 2020,
+      "release_label": "4 июля 2020",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41341/4d1ba6d727f8c290be9885078fbb98a6.jpeg",
+      "match": {
+        "shikimori": [
+          41341
+        ],
+        "sources": [
+          "animego:1589"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40540",
+      "title": "Мастера Меча Онлайн: Алисизация — Война в Подмирье 2",
+      "subtitle": "Sword Art Online: Alicization - War of Underworld 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-07-12",
+      "release_end_date": "2020-09-20",
+      "release_year": 2020,
+      "release_label": "12 июля — 20 сентября 2020",
+      "episode_count": 11,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40540/58c7a6bd54029cbe5a64fc82903b44f0.jpeg",
+      "match": {
+        "shikimori": [
+          40540
+        ],
+        "sources": [
+          "animego:1464",
+          "yummyanime:120"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42916",
+      "title": "Мастера Меча Онлайн: Прогрессив — Ария в беззвёздной ночи",
+      "subtitle": "Sword Art Online: Progressive Movie - Hoshi Naki Yoru no Aria",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-10-30",
+      "release_year": 2021,
+      "release_label": "30 октября 2021",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42916/dced44e25c18d14e0042a9ffa5c27072.jpeg",
+      "match": {
+        "shikimori": [
+          42916
+        ],
+        "sources": [
+          "animego:2093",
+          "yummyanime:304"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50275",
+      "title": "Мастера Меча Онлайн: Прогрессив — Скерцо глубокой ночи",
+      "subtitle": "Sword Art Online: Progressive Movie - Kuraki Yuuyami no Scherzo",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-10-22",
+      "release_year": 2022,
+      "release_label": "22 октября 2022",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50275/c6cf9e78516a0d3a06c72957f757937d.jpeg",
+      "match": {
+        "shikimori": [
+          50275
+        ],
+        "sources": [
+          "animego:2367",
+          "yummyanime:1229"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53588",
+      "title": "Мастера Меча Онлайн: Полное погружение",
+      "subtitle": "Sword Art Online: Full Dive - Opening Eizou",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-11-06",
+      "release_year": 2022,
+      "release_label": "6 ноября 2022",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53588/45f917cbfc49f12831e221e6909138de.jpeg",
+      "match": {
+        "shikimori": [
+          53588
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59968",
+      "title": "Мастера Меча Онлайн: Альтернативная «Призрачная пуля» 2 — Гала",
+      "subtitle": "Sword Art Online Alternative: Gun Gale Online II - Gala",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-09-27",
+      "release_year": 2024,
+      "release_label": "27 сентября 2024",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59968/216493fb69876bfe0ea95c049f4b9157.jpeg",
+      "match": {
+        "shikimori": [
+          59968
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55994",
+      "title": "Мастера Меча Онлайн: Альтернативная «Призрачная пуля» 2",
+      "subtitle": "Sword Art Online Alternative: Gun Gale Online II",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-10-05",
+      "release_end_date": "2024-12-21",
+      "release_year": 2024,
+      "release_label": "5 октября — 21 декабря 2024",
+      "episode_count": 12,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55994/c0ec347bdd8b252ef0da47bf628e668a.jpeg",
+      "match": {
+        "shikimori": [
+          55994
+        ],
+        "sources": [
+          "animego:2664",
+          "yummyanime:4573"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53529",
+      "title": "Мастера Меча Онлайн: Область целостности",
+      "subtitle": "Sword Art Online Movie: Integral Domain",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_date": "2028-01-01",
+      "release_year": 2028,
+      "release_label": "1 января 2028",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2028.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53529/6809cdfd5a19e9b27d49ab36536a26e6.jpeg",
+      "match": {
+        "shikimori": [
+          53529
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

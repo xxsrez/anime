@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "slug": "classroom-of-the-elite",
+  "title": "Добро пожаловать в класс превосходства",
+  "short_title": "Classroom of the Elite",
+  "original_title": "ようこそ実力至上主義の教室へ",
+  "summary": "Школьная психологическая драма о системе скрытой конкуренции, где оценки, привилегии и отношения между учениками становятся инструментами сложной стратегии.",
+  "guide": "Смотрите номерные сезоны по порядку: каждый продолжает предыдущий учебный этап. Специальные материалы и проморолики для понимания основной истории не нужны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/35507/3dbd2327437c6ba42483550afc46a5c8.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/35507",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "classroom_of_the_elite",
+    "primary_shikimori_ids": [
+      35507
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 37,
+  "entries": [
+    {
+      "key": "shikimori-35507",
+      "title": "Добро пожаловать в класс превосходства",
+      "subtitle": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2017-07-12",
+      "release_end_date": "2017-09-27",
+      "release_year": 2017,
+      "release_label": "12 июля — 27 сентября 2017",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35507/3dbd2327437c6ba42483550afc46a5c8.jpeg",
+      "match": {
+        "shikimori": [
+          35507
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51096",
+      "title": "Добро пожаловать в класс превосходства 2",
+      "subtitle": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-07-04",
+      "release_end_date": "2022-09-26",
+      "release_year": 2022,
+      "release_label": "4 июля — 26 сентября 2022",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51096/d3a4795e318e07cbf5a89f5c254ee610.jpeg",
+      "match": {
+        "shikimori": [
+          51096
+        ],
+        "sources": [
+          "animego:2049",
+          "yummyanime:1544"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51180",
+      "title": "Добро пожаловать в класс превосходства 3",
+      "subtitle": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-03",
+      "release_end_date": "2024-03-27",
+      "release_year": 2024,
+      "release_label": "3 января — 27 марта 2024",
+      "episode_count": 13,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51180/39754d19f1142129fdf3f71a1a008e5c.jpeg",
+      "match": {
+        "shikimori": [
+          51180
+        ],
+        "sources": [
+          "animego:2465",
+          "yummyanime:1546"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59708",
+      "title": "Добро пожаловать в класс превосходства 4: Второй год — Первый семестр",
+      "subtitle": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 4th Season: 2-nensei-hen 1 Gakki",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-04-01",
+      "release_end_date": "2026-06-24",
+      "release_year": 2026,
+      "release_label": "1 апреля — 24 июня 2026",
+      "episode_count": 16,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59708/19c5366bcb03946c500ac347027d1896.jpeg",
+      "match": {
+        "shikimori": [
+          59708
+        ],
+        "sources": [
+          "animego:3286",
+          "yummyanime:4945"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "slug": "bungou-stray-dogs",
+  "title": "Великий из бродячих псов",
+  "short_title": "Bungou Stray Dogs",
+  "original_title": "文豪ストレイドッグス",
+  "summary": "Сверхъестественный детектив о противостоянии организаций одарённых людей, чьи способности и характеры вдохновлены литературой.",
+  "guide": "Основные сезоны смотрите последовательно. Фильм Dead Apple лучше включить после второго сезона, а OVA и спин-офф Wan! оставить как необязательные дополнения.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/31478/e1d6991251999c2eb2ff16b37640629c.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/31478",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "bungou_stray_dogs",
+    "primary_shikimori_ids": [
+      31478
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 33,
+  "entries": [
+    {
+      "key": "shikimori-31478",
+      "title": "Великий из бродячих псов",
+      "subtitle": "Bungou Stray Dogs",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-04-07",
+      "release_end_date": "2016-06-23",
+      "release_year": 2016,
+      "release_label": "7 апреля — 23 июня 2016",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31478/e1d6991251999c2eb2ff16b37640629c.jpeg",
+      "match": {
+        "shikimori": [
+          31478
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32867",
+      "title": "Великий из бродячих псов 2",
+      "subtitle": "Bungou Stray Dogs 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-10-06",
+      "release_end_date": "2016-12-16",
+      "release_year": 2016,
+      "release_label": "6 октября — 16 декабря 2016",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32867/5ff126988737a7014c0c1eef63008804.jpeg",
+      "match": {
+        "shikimori": [
+          32867
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33071",
+      "title": "Великий из бродячих псов: Путешествие в одиночку",
+      "subtitle": "Bungou Stray Dogs: Hitori Ayumu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2017-08-04",
+      "release_year": 2017,
+      "release_label": "4 августа 2017",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33071/fbc23388a0e8e6352d7c4d3033389ecc.jpeg",
+      "match": {
+        "shikimori": [
+          33071
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34944",
+      "title": "Великий из бродячих псов: Сгнившее яблоко",
+      "subtitle": "Bungou Stray Dogs: Dead Apple",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-03-03",
+      "release_year": 2018,
+      "release_label": "3 марта 2018",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34944/955f4aa46cbb519b8bdbf4b56c2cedab.jpeg",
+      "match": {
+        "shikimori": [
+          34944
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38003",
+      "title": "Великий из бродячих псов 3",
+      "subtitle": "Bungou Stray Dogs 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-04-12",
+      "release_end_date": "2019-06-28",
+      "release_year": 2019,
+      "release_label": "12 апреля — 28 июня 2019",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38003/26bf73694bcbf7ca682ead9e5126ce1d.jpeg",
+      "match": {
+        "shikimori": [
+          38003
+        ],
+        "sources": [
+          "animego:924",
+          "yummyanime:158"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42250",
+      "title": "Великий из бродячих псов: Шуточные истории",
+      "subtitle": "Bungou Stray Dogs Wan!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-13",
+      "release_end_date": "2021-03-31",
+      "release_year": 2021,
+      "release_label": "13 января — 31 марта 2021",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42250/c574eabf100936c9f09572abc5d868be.jpeg",
+      "match": {
+        "shikimori": [
+          42250
+        ],
+        "sources": [
+          "animego:1700",
+          "yummyanime:333"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50330",
+      "title": "Великий из бродячих псов 4",
+      "subtitle": "Bungou Stray Dogs 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-04",
+      "release_end_date": "2023-03-29",
+      "release_year": 2023,
+      "release_label": "4 января — 29 марта 2023",
+      "episode_count": 13,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50330/2c512743fe176a344c10d36d507f3510.jpeg",
+      "match": {
+        "shikimori": [
+          50330
+        ],
+        "sources": [
+          "animego:2202",
+          "yummyanime:1269"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54898",
+      "title": "Великий из бродячих псов 5",
+      "subtitle": "Bungou Stray Dogs 5th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-07-12",
+      "release_end_date": "2023-09-20",
+      "release_year": 2023,
+      "release_label": "12 июля — 20 сентября 2023",
+      "episode_count": 11,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54898/f95a69e5d289d4ccd718815c58284dbf.jpeg",
+      "match": {
+        "shikimori": [
+          54898
+        ],
+        "sources": [
+          "animego:2358",
+          "yummyanime:2780"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

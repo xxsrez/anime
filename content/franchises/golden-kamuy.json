@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "slug": "golden-kamuy",
+  "title": "Золотое божество",
+  "short_title": "Golden Kamuy",
+  "original_title": "ゴールデンカムイ",
+  "summary": "Историческое приключение о ветеране и девушке-айну, которые ищут спрятанное золото среди охотников, преступников и солдат послевоенного Хоккайдо.",
+  "guide": "Основные сезоны смотрите последовательно. OVA расширяют отдельные побочные эпизоды и лучше подходят после ближайшего по дате сезона, но для основной линии не обязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/36028/1dd10d1d832ff9edb0406941a9d143c8.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/36028",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "golden_kamuy",
+    "primary_shikimori_ids": [
+      36028
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 36,
+  "entries": [
+    {
+      "key": "shikimori-36028",
+      "title": "Золотое божество",
+      "subtitle": "Golden Kamuy",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-04-09",
+      "release_end_date": "2018-06-25",
+      "release_year": 2018,
+      "release_label": "9 апреля — 25 июня 2018",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36028/1dd10d1d832ff9edb0406941a9d143c8.jpeg",
+      "match": {
+        "shikimori": [
+          36028
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37755",
+      "title": "Золотое божество: Театр пути",
+      "subtitle": "Golden Douga Gekijou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-04-16",
+      "release_end_date": "2023-06-27",
+      "release_year": 2018,
+      "release_label": "16 апреля 2018 — 27 июня 2023",
+      "episode_count": 46,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37755/ef88d05e5cfc57688fca369c043d8541.jpeg",
+      "match": {
+        "shikimori": [
+          37755
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51149",
+      "title": "Золотое божество: Театр пути — Спецвыпуски",
+      "subtitle": "Golden Douga Gekijou Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-07-27",
+      "release_end_date": "2023-09-27",
+      "release_year": 2018,
+      "release_label": "27 июля 2018 — 27 сентября 2023",
+      "episode_count": 7,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51149/6fce8267984feeb590477dab42f5847c.jpeg",
+      "match": {
+        "shikimori": [
+          51149
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37884",
+      "title": "Золотое божество OVA",
+      "subtitle": "Golden Kamuy: Barato no Youjinbou/Kaiki! Nazo no Kyodai Tori",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2018-09-19",
+      "release_year": 2018,
+      "release_label": "19 сентября 2018",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37884/cfabd3379a2bffba590caf086a20957c.jpeg",
+      "match": {
+        "shikimori": [
+          37884
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37989",
+      "title": "Золотое божество 2",
+      "subtitle": "Golden Kamuy 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-10-08",
+      "release_end_date": "2018-12-24",
+      "release_year": 2018,
+      "release_label": "8 октября — 24 декабря 2018",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37989/654cf7a1c1c9dcc15aa3ec8e6b878472.jpeg",
+      "match": {
+        "shikimori": [
+          37989
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38710",
+      "title": "Золотое божество 2 OVA",
+      "subtitle": "Golden Kamuy 2nd Season OVA",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2019-03-19",
+      "release_end_date": "2020-09-18",
+      "release_year": 2019,
+      "release_label": "19 марта 2019 — 18 сентября 2020",
+      "episode_count": 3,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38710/47eae1b676469b74e0e5ed69ff3d0f07.jpeg",
+      "match": {
+        "shikimori": [
+          38710
+        ],
+        "sources": [
+          "animego:1306"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40059",
+      "title": "Золотое божество 3",
+      "subtitle": "Golden Kamuy 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-10-05",
+      "release_end_date": "2020-12-21",
+      "release_year": 2020,
+      "release_label": "5 октября — 21 декабря 2020",
+      "episode_count": 12,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40059/8d896c0f5f96414be57aa22992a5e5b9.jpeg",
+      "match": {
+        "shikimori": [
+          40059
+        ],
+        "sources": [
+          "animego:1632",
+          "yummyanime:31"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50528",
+      "title": "Золотое божество 4",
+      "subtitle": "Golden Kamuy 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-03",
+      "release_end_date": "2023-06-26",
+      "release_year": 2022,
+      "release_label": "3 октября 2022 — 26 июня 2023",
+      "episode_count": 13,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50528/56217f55d616f5339bce5058b5ff1725.jpeg",
+      "match": {
+        "shikimori": [
+          50528
+        ],
+        "sources": [
+          "animego:2135",
+          "yummyanime:1696"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55772",
+      "title": "Золотое божество: Финал",
+      "subtitle": "Golden Kamuy: Saishuushou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-05",
+      "release_end_date": "2026-03-30",
+      "release_year": 2026,
+      "release_label": "5 января — 30 марта 2026",
+      "episode_count": 13,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55772/2aa50c67bcd46ca204bfcf2439df3206.jpeg",
+      "match": {
+        "shikimori": [
+          55772
+        ],
+        "sources": [
+          "animego:2899",
+          "yummyanime:4464"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

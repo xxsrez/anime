@@ -1,0 +1,583 @@
+{
+  "schema_version": 1,
+  "slug": "attack-on-titan",
+  "title": "Атака титанов",
+  "short_title": "AoT",
+  "original_title": "進撃の巨人",
+  "summary": "Мрачная драматическая история о человечестве за стенами, цене свободы и последствиях решений, принимаемых в мире постоянной угрозы.",
+  "guide": "Смотрите сезоны и их части строго по порядку выхода, завершая историю финальными специальными эпизодами. Фильмы-пересказы и большинство дополнительных выпусков для основной линии необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/16498/7a452aa20f27318bd8d87e3d70c2ccca.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/16498",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "shingeki_no_kyojin",
+    "primary_shikimori_ids": [
+      16498
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 13,
+  "entries": [
+    {
+      "key": "shikimori-16498",
+      "title": "Атака титанов",
+      "subtitle": "Shingeki no Kyojin",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-04-07",
+      "release_end_date": "2013-09-29",
+      "release_year": 2013,
+      "release_label": "7 апреля — 29 сентября 2013",
+      "episode_count": 25,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/16498/7a452aa20f27318bd8d87e3d70c2ccca.jpeg",
+      "match": {
+        "shikimori": [
+          16498
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19285",
+      "title": "Атака титанов: Рекап",
+      "subtitle": "Shingeki no Kyojin: Ano Hi Kara",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-07-07",
+      "release_year": 2013,
+      "release_label": "7 июля 2013",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19285/92fdcba30a2682b4e05861c5605686bc.jpeg",
+      "match": {
+        "shikimori": [
+          19285
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19391",
+      "title": "Атака титанов: Театр с монстрами — Вперёд, кадетский корпус!",
+      "subtitle": "Shingeki no Kyojin Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-07-17",
+      "release_end_date": "2014-03-19",
+      "release_year": 2013,
+      "release_label": "17 июля 2013 — 19 марта 2014",
+      "episode_count": 9,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19391/c0848761994040d4ff831822a9bb6e90.jpeg",
+      "match": {
+        "shikimori": [
+          19391
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18397",
+      "title": "Атака титанов OVA",
+      "subtitle": "Shingeki no Kyojin OVA",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2013-12-09",
+      "release_end_date": "2014-08-08",
+      "release_year": 2013,
+      "release_label": "9 декабря 2013 — 8 августа 2014",
+      "episode_count": 3,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18397/08ab985fcbe5e023e58d85412eb7d9e6.jpeg",
+      "match": {
+        "shikimori": [
+          18397
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23775",
+      "title": "Атака титанов: Багровые луки и стрелы",
+      "subtitle": "Shingeki no Kyojin Movie 1: Guren no Yumiya",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-11-22",
+      "release_year": 2014,
+      "release_label": "22 ноября 2014",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23775/dbbb62bf4d468ad47c1ec915cdb92f96.jpeg",
+      "match": {
+        "shikimori": [
+          23775
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25781",
+      "title": "Атака титанов: Выбор без сожалений",
+      "subtitle": "Shingeki no Kyojin: Kuinaki Sentaku",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2014-12-09",
+      "release_end_date": "2015-04-09",
+      "release_year": 2014,
+      "release_label": "9 декабря 2014 — 9 апреля 2015",
+      "episode_count": 2,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25781/649324642e35b46236a89a85e1f092d9.jpeg",
+      "match": {
+        "shikimori": [
+          25781
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23777",
+      "title": "Атака титанов: Крылья свободы",
+      "subtitle": "Shingeki no Kyojin Movie 2: Jiyuu no Tsubasa",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-06-27",
+      "release_year": 2015,
+      "release_label": "27 июня 2015",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23777/34f98984a5fbd4a2544431cc19f2b328.jpeg",
+      "match": {
+        "shikimori": [
+          23777
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31374",
+      "title": "Атака! Титаны средней школы",
+      "subtitle": "Shingeki! Kyojin Chuugakkou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-10-04",
+      "release_end_date": "2015-12-20",
+      "release_year": 2015,
+      "release_label": "4 октября — 20 декабря 2015",
+      "episode_count": 12,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31374/32558f9fbcc218f31929c21ae31d8c86.jpeg",
+      "match": {
+        "shikimori": [
+          31374
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25777",
+      "title": "Атака титанов 2",
+      "subtitle": "Shingeki no Kyojin Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2017-04-01",
+      "release_end_date": "2017-06-17",
+      "release_year": 2017,
+      "release_label": "1 апреля — 17 июня 2017",
+      "episode_count": 12,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25777/284bf6fdc32c1240d1501f0ae849b7fc.jpeg",
+      "match": {
+        "shikimori": [
+          25777
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35122",
+      "title": "Атака титанов: Оборона Skytree",
+      "subtitle": "Shingeki no Kyotou",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-04-10",
+      "release_year": 2017,
+      "release_label": "10 апреля 2017",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35122/d383ce9d947ef6e9d139430090fc1e09.jpeg",
+      "match": {
+        "shikimori": [
+          35122
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39478",
+      "title": "Атака титанов в планетарии",
+      "subtitle": "Shingeki no Kyojin in the Dome: Heishi-tachi no Hoshizora",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-05-20",
+      "release_year": 2017,
+      "release_label": "20 мая 2017",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39478/98d9400ec71e96b0cf28cc0575be2dd9.jpeg",
+      "match": {
+        "shikimori": [
+          39478
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36106",
+      "title": "Атака титанов: Потерянные девушки",
+      "subtitle": "Shingeki no Kyojin: Lost Girls",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2017-12-08",
+      "release_end_date": "2018-08-09",
+      "release_year": 2017,
+      "release_label": "8 декабря 2017 — 9 августа 2018",
+      "episode_count": 3,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36106/ebc8d6dd1ed2c73fc5d7a7fddcfb922f.jpeg",
+      "match": {
+        "shikimori": [
+          36106
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36702",
+      "title": "Атака титанов: Рёв пробуждения",
+      "subtitle": "Shingeki no Kyojin Season 2 Movie: Kakusei no Houkou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-01-13",
+      "release_year": 2018,
+      "release_label": "13 января 2018",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36702/3343b3ee34ad959ff505c7cbe244b7f0.jpeg",
+      "match": {
+        "shikimori": [
+          36702
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35760",
+      "title": "Атака титанов 3",
+      "subtitle": "Shingeki no Kyojin Season 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-07-23",
+      "release_end_date": "2018-10-15",
+      "release_year": 2018,
+      "release_label": "23 июля — 15 октября 2018",
+      "episode_count": 12,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35760/af4885c4fb469216ccbeefc6bd504758.jpeg",
+      "match": {
+        "shikimori": [
+          35760
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39477",
+      "title": "Атака титанов 3: Спецвыпуски",
+      "subtitle": "Shingeki no Kyojin Season 3 Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-10-17",
+      "release_end_date": "2019-09-18",
+      "release_year": 2018,
+      "release_label": "17 октября 2018 — 18 сентября 2019",
+      "episode_count": 7,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39477/fefb93f045241e92e88fabb235169451.jpeg",
+      "match": {
+        "shikimori": [
+          39477
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38524",
+      "title": "Атака титанов 3. Часть 2",
+      "subtitle": "Shingeki no Kyojin Season 3 Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-04-29",
+      "release_end_date": "2019-07-01",
+      "release_year": 2019,
+      "release_label": "29 апреля — 1 июля 2019",
+      "episode_count": 10,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38524/6e47d9541f0a77b994c1f487408121e6.jpeg",
+      "match": {
+        "shikimori": [
+          38524
+        ],
+        "sources": [
+          "yummyanime:138"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42091",
+      "title": "Атака титанов: Хроника",
+      "subtitle": "Shingeki no Kyojin: Chronicle",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-07-17",
+      "release_year": 2020,
+      "release_label": "17 июля 2020",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42091/a12b3a12201e949053600c90ffb37140.jpeg",
+      "match": {
+        "shikimori": [
+          42091
+        ],
+        "sources": [
+          "yummyanime:2559"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40028",
+      "title": "Атака титанов: Финал",
+      "subtitle": "Shingeki no Kyojin: The Final Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-12-07",
+      "release_end_date": "2021-03-29",
+      "release_year": 2020,
+      "release_label": "7 декабря 2020 — 29 марта 2021",
+      "episode_count": 16,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40028/a8ef5365595d684a594b3a65b02e01fc.jpeg",
+      "match": {
+        "shikimori": [
+          40028
+        ],
+        "sources": [
+          "yummyanime:32"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49627",
+      "title": "Атака титанов: Финал — Спецвыпуски",
+      "subtitle": "Shingeki no Kyojin: The Final Season Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-07-07",
+      "release_end_date": "2021-08-04",
+      "release_year": 2021,
+      "release_label": "7 июля — 4 августа 2021",
+      "episode_count": 2,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49627/12905447a4c005bbdb8504ac1234744b.jpeg",
+      "match": {
+        "shikimori": [
+          49627
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48583",
+      "title": "Атака титанов: Финал. Часть 2",
+      "subtitle": "Shingeki no Kyojin: The Final Season Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-01-10",
+      "release_end_date": "2022-04-04",
+      "release_year": 2022,
+      "release_label": "10 января — 4 апреля 2022",
+      "episode_count": 12,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48583/5d9b3195a01cb0cc21d26d829f72b9c8.jpeg",
+      "match": {
+        "shikimori": [
+          48583
+        ],
+        "sources": [
+          "yummyanime:879"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51535",
+      "title": "Атака титанов: Финал — Заключительная глава",
+      "subtitle": "Shingeki no Kyojin: The Final Season - Kanketsu-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-03-04",
+      "release_end_date": "2023-11-05",
+      "release_year": 2023,
+      "release_label": "4 марта — 5 ноября 2023",
+      "episode_count": 2,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51535/b120c9658bf6725b963b055cd5d1bab4.jpeg",
+      "match": {
+        "shikimori": [
+          51535
+        ],
+        "sources": [
+          "yummyanime:1678"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59571",
+      "title": "Атака титанов: Заключительная глава — Последняя атака",
+      "subtitle": "Shingeki no Kyojin Movie: Kanketsu-hen - The Last Attack",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-11-08",
+      "release_year": 2024,
+      "release_label": "8 ноября 2024",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59571/8eaeb81117d13c3a1d21a7541bbde1a1.jpeg",
+      "match": {
+        "shikimori": [
+          59571
+        ],
+        "sources": [
+          "yummyanime:4822"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

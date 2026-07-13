@@ -1,0 +1,1611 @@
+{
+  "schema_version": 1,
+  "slug": "fate",
+  "title": "Судьба",
+  "short_title": "Fate",
+  "original_title": "Fateシリーズ",
+  "summary": "Многослойная фэнтезийная франшиза о магах, легендарных героях и разных вариантах одного судьбоносного конфликта.",
+  "guide": "Для основной линии удобно начать с Unlimited Blade Works, затем посмотреть трилогию Heaven’s Feel и после неё Fate/Zero. Остальные Fate в основном являются альтернативными мирами и спин-оффами, поэтому их можно выбирать независимо после знакомства с базовыми правилами вселенной.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/356/bfa1a693f5ccde24df322818cfe2cd40.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/356",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "fate",
+    "primary_shikimori_ids": [
+      356
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 8,
+  "entries": [
+    {
+      "key": "shikimori-169",
+      "title": "Повесть о лунной принцессе",
+      "subtitle": "Shingetsutan Tsukihime",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2003-10-10",
+      "release_end_date": "2003-12-26",
+      "release_year": 2003,
+      "release_label": "10 октября — 26 декабря 2003",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/169/5d935b2ee3b9fdfd3d031b5f1508c1dc.jpeg",
+      "match": {
+        "shikimori": [
+          169
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-356",
+      "title": "Судьба/Ночь схватки",
+      "subtitle": "Fate/stay night",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2006-01-07",
+      "release_end_date": "2006-06-17",
+      "release_year": 2006,
+      "release_label": "7 января — 17 июня 2006",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/356/bfa1a693f5ccde24df322818cfe2cd40.jpeg",
+      "match": {
+        "shikimori": [
+          356
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7559",
+      "title": "Судьба/Ночь схватки: Репродукция",
+      "subtitle": "Fate/stay night TV Reproduction",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-01-17",
+      "release_year": 2010,
+      "release_label": "17 января 2010",
+      "episode_count": 2,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7559/01ffd1b2837b1164a667b8c533147788.jpeg",
+      "match": {
+        "shikimori": [
+          7559
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6922",
+      "title": "Судьба/Ночь схватки: Бесконечный мир клинков. Фильм",
+      "subtitle": "Fate/stay night Movie: Unlimited Blade Works",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-01-23",
+      "release_year": 2010,
+      "release_label": "23 января 2010",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6922/b88a81b44aa16818e9d761aa7f3d7828.jpeg",
+      "match": {
+        "shikimori": [
+          6922
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10012",
+      "title": "Карнавальный фантазм",
+      "subtitle": "Carnival Phantasm",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-08-14",
+      "release_end_date": "2011-12-31",
+      "release_year": 2011,
+      "release_label": "14 августа — 31 декабря 2011",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10012/ac895bb749f4cdbbc7c71a216b3449da.jpeg",
+      "match": {
+        "shikimori": [
+          10012
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10087",
+      "title": "Судьба/Начало",
+      "subtitle": "Fate/Zero",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2011-10-02",
+      "release_end_date": "2011-12-25",
+      "release_year": 2011,
+      "release_label": "2 октября — 25 декабря 2011",
+      "episode_count": 13,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10087/e329daab53e003b66c7851d5dd9a6e2c.jpeg",
+      "match": {
+        "shikimori": [
+          10087
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12187",
+      "title": "Карнавальный фантазм: Прошлый сезон",
+      "subtitle": "Carnival Phantasm EX Season",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-11-26",
+      "release_year": 2011,
+      "release_label": "26 ноября 2011",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12187/231e11b0823b31aa2d7c64d0908181be.jpeg",
+      "match": {
+        "shikimori": [
+          12187
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12565",
+      "title": "Судьба/Прототип",
+      "subtitle": "Fate/Prototype",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-12-31",
+      "release_year": 2011,
+      "release_label": "31 декабря 2011",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12565/2eadcbcf68505dba02ad85acc27ad56c.jpeg",
+      "match": {
+        "shikimori": [
+          12565
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13263",
+      "title": "Судьба/Начало: Пожалуйста! Консультация с Айнцберн",
+      "subtitle": "Fate/Zero: Onegai! Einzbern Soudanshitsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-03-07",
+      "release_end_date": "2012-09-19",
+      "release_year": 2012,
+      "release_label": "7 марта — 19 сентября 2012",
+      "episode_count": 6,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13263/368491dfb972571d9873f6491c2d6a90.jpeg",
+      "match": {
+        "shikimori": [
+          13263
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13183",
+      "title": "Судьба/Начало: Компиляция",
+      "subtitle": "Fate/Zero Remix",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-03-25",
+      "release_end_date": "2012-04-01",
+      "release_year": 2012,
+      "release_label": "25 марта — 1 апреля 2012",
+      "episode_count": 2,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13183/9a30bfbd70a577bfbb31b8e8be394664.jpeg",
+      "match": {
+        "shikimori": [
+          13183
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11741",
+      "title": "Судьба/Начало 2",
+      "subtitle": "Fate/Zero 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-04-08",
+      "release_end_date": "2012-06-24",
+      "release_year": 2012,
+      "release_label": "8 апреля — 24 июня 2012",
+      "episode_count": 12,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11741/b27aeeb8ab10ea7e788d6d3c8605c87c.jpeg",
+      "match": {
+        "shikimori": [
+          11741
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15927",
+      "title": "Карнавальный фантазм: ХибиТика",
+      "subtitle": "Carnival Phantasm: HibiChika Special",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-07-07",
+      "release_year": 2012,
+      "release_label": "7 июля 2012",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15927/cfaee4cf65bf813910ff9a3c5ec9fcd6.jpeg",
+      "match": {
+        "shikimori": [
+          15927
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14829",
+      "title": "Судьба/Девочка-волшебница Иллия",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-07-13",
+      "release_end_date": "2013-09-14",
+      "release_year": 2013,
+      "release_label": "13 июля — 14 сентября 2013",
+      "episode_count": 10,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14829/aca8f796bc48e752339c166a22e06ff4.jpeg",
+      "match": {
+        "shikimori": [
+          14829
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19165",
+      "title": "Судьба/Начало: Кафе",
+      "subtitle": "Fate/Zero Cafe",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-07-13",
+      "release_end_date": "2016-03-19",
+      "release_year": 2013,
+      "release_label": "13 июля 2013 — 19 марта 2016",
+      "episode_count": 2,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19165/e338a72320a50a284cd1794f2f9097c1.jpeg",
+      "match": {
+        "shikimori": [
+          19165
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19109",
+      "title": "Судьба/Девочка-волшебница Иллия: Спецвыпуски",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-09-27",
+      "release_end_date": "2014-01-31",
+      "release_year": 2013,
+      "release_label": "27 сентября 2013 — 31 января 2014",
+      "episode_count": 5,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19109/22cdd9b65fd0e60ebdd2208e6eb6a1d6.jpeg",
+      "match": {
+        "shikimori": [
+          19109
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18851",
+      "title": "Судьба/Девочка-волшебница Иллия OVA",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya: Undoukai de Dance!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2014-03-10",
+      "release_year": 2014,
+      "release_label": "10 марта 2014",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18851/37d3574fb54af65852440b86cf7f223c.jpeg",
+      "match": {
+        "shikimori": [
+          18851
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20509",
+      "title": "Судьба/Девочка-волшебница Иллия 2",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 2wei!",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-07-10",
+      "release_end_date": "2014-09-11",
+      "release_year": 2014,
+      "release_label": "10 июля — 11 сентября 2014",
+      "episode_count": 10,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20509/958617a30323c5711332b7cbf180607c.jpeg",
+      "match": {
+        "shikimori": [
+          20509
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25011",
+      "title": "Судьба/Девочка-волшебница Иллия 2: Спецвыпуски",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 2wei! Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-09-26",
+      "release_end_date": "2015-01-30",
+      "release_year": 2014,
+      "release_label": "26 сентября 2014 — 30 января 2015",
+      "episode_count": 5,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25011/9fef728551e3803f3009aac81ce3da3f.jpeg",
+      "match": {
+        "shikimori": [
+          25011
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-27821",
+      "title": "Судьба/Ночь схватки: Бесконечный мир клинков — Пролог",
+      "subtitle": "Fate/stay night: Unlimited Blade Works Prologue",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-10-05",
+      "release_year": 2014,
+      "release_label": "5 октября 2014",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/27821/9f9619a7c2f2d8c298b0d4f96431a99f.jpeg",
+      "match": {
+        "shikimori": [
+          27821
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22297",
+      "title": "Судьба/Ночь схватки: Бесконечный мир клинков",
+      "subtitle": "Fate/stay night: Unlimited Blade Works",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-10-12",
+      "release_end_date": "2014-12-28",
+      "release_year": 2014,
+      "release_label": "12 октября — 28 декабря 2014",
+      "episode_count": 12,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22297/121af6de126ca7d66c4b0ee28df39856.jpeg",
+      "match": {
+        "shikimori": [
+          22297
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28701",
+      "title": "Судьба/Ночь схватки: Бесконечный мир клинков 2",
+      "subtitle": "Fate/stay night: Unlimited Blade Works 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-04-05",
+      "release_end_date": "2015-06-28",
+      "release_year": 2015,
+      "release_label": "5 апреля — 28 июня 2015",
+      "episode_count": 13,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28701/a5cef8532a776794e1a2b351b2d607fc.jpeg",
+      "match": {
+        "shikimori": [
+          28701
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-26057",
+      "title": "Судьба/Девочка-волшебница Иллия 2: Девочка-волшебница на горячих источниках",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 2wei!: Mahou Shoujo in Onsen Ryokou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2015-07-25",
+      "release_year": 2015,
+      "release_label": "25 июля 2015",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/26057/dcc90d54ee0358aa12e5b1c155521428.jpeg",
+      "match": {
+        "shikimori": [
+          26057
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-27525",
+      "title": "Судьба/Девочка-волшебница Иллия 2: Продолжение",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 2wei Herz!",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-07-25",
+      "release_end_date": "2015-09-26",
+      "release_year": 2015,
+      "release_label": "25 июля — 26 сентября 2015",
+      "episode_count": 10,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/27525/7741108f31fc60dce465d1579e72de03.jpeg",
+      "match": {
+        "shikimori": [
+          27525
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31056",
+      "title": "Судьба/Девочка-волшебница Иллия 2: Продолжение — Спецвыпуски",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 2wei Herz! Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-09-25",
+      "release_end_date": "2016-01-29",
+      "release_year": 2015,
+      "release_label": "25 сентября 2015 — 29 января 2016",
+      "episode_count": 5,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31056/bc137c69944e845e0b508a2b1f207c35.jpeg",
+      "match": {
+        "shikimori": [
+          31056
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31389",
+      "title": "Судьба/Ночь схватки: Бесконечный мир клинков 2 — Солнечный день",
+      "subtitle": "Fate/stay night: Unlimited Blade Works 2nd Season - Sunny Day",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-10-07",
+      "release_year": 2015,
+      "release_label": "7 октября 2015",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31389/e28b66b15b98abd166c6080c2fa8a1a3.jpeg",
+      "match": {
+        "shikimori": [
+          31389
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31706",
+      "title": "Судьба/Девочка-волшебница Иллия 3",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 3rei!!",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-07-06",
+      "release_end_date": "2016-09-21",
+      "release_year": 2016,
+      "release_label": "6 июля — 21 сентября 2016",
+      "episode_count": 12,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31706/46bbf8a42bbd9f744ee58be6dd7d2381.jpeg",
+      "match": {
+        "shikimori": [
+          31706
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33456",
+      "title": "Судьба/Девочка-волшебница Иллия 3: Спецвыпуски",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya 3rei!! Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-09-30",
+      "release_end_date": "2017-02-24",
+      "release_year": 2016,
+      "release_label": "30 сентября 2016 — 24 февраля 2017",
+      "episode_count": 6,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33456/801b5ea011e44e59d26805d2a36d998f.jpeg",
+      "match": {
+        "shikimori": [
+          33456
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34321",
+      "title": "Судьба/Великий приказ: Первый приказ",
+      "subtitle": "Fate/Grand Order: First Order",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-12-31",
+      "release_year": 2016,
+      "release_label": "31 декабря 2016",
+      "episode_count": 1,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34321/8380760b6a9ce8adfc37fdd2ce09f5eb.jpeg",
+      "match": {
+        "shikimori": [
+          34321
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40469",
+      "title": "Судьба/Великий приказ: Прощание с 2016 годом",
+      "subtitle": "Toshiwasure Guda Guda Order 2016",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-12-31",
+      "release_year": 2016,
+      "release_label": "31 декабря 2016",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40469/1b7f08223f52553761d420989f9f8b22.jpeg",
+      "match": {
+        "shikimori": [
+          40469
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34662",
+      "title": "Судьба/Апокриф",
+      "subtitle": "Fate/Apocrypha",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2017-07-02",
+      "release_end_date": "2017-12-31",
+      "release_year": 2017,
+      "release_label": "2 июля — 31 декабря 2017",
+      "episode_count": 25,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34662/bba8616a444c09bfad79082fdd5d4e36.jpeg",
+      "match": {
+        "shikimori": [
+          34662
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34100",
+      "title": "Судьба/Девочка-волшебница Иллия: Клятва под снегом",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya Movie: Sekka no Chikai",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-08-26",
+      "release_year": 2017,
+      "release_label": "26 августа 2017",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34100/24eb91c530dd0bea1f56eeb13db9c54c.jpeg",
+      "match": {
+        "shikimori": [
+          34100
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36729",
+      "title": "Судьба/Апокриф: Рекапы",
+      "subtitle": "Fate/Apocrypha Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-09-24",
+      "release_end_date": "2017-11-18",
+      "release_year": 2017,
+      "release_label": "24 сентября — 18 ноября 2017",
+      "episode_count": 2,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36729/7dbfee631cb859f39f434e1d335cc156.jpeg",
+      "match": {
+        "shikimori": [
+          36729
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25537",
+      "title": "Судьба/Ночь схватки: Прикосновение небес",
+      "subtitle": "Fate/stay night Movie: Heaven's Feel - I. Presage Flower",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-10-14",
+      "release_year": 2017,
+      "release_label": "14 октября 2017",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25537/7573e48e302225864e21a3ab862d1f8e.jpeg",
+      "match": {
+        "shikimori": [
+          25537
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36914",
+      "title": "Судьба/Великий приказ: Мир Химуро",
+      "subtitle": "Fate/Grand Order: Himuro no Tenchi - 7-nin no Saikyou Ijin-hen",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-12-31",
+      "release_year": 2017,
+      "release_label": "31 декабря 2017",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36914/f107a8489fe3a4b66653a5655d1479e1.jpeg",
+      "match": {
+        "shikimori": [
+          36914
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36915",
+      "title": "Судьба/Великий приказ: Лунный свет в потерянной комнате",
+      "subtitle": "Fate/Grand Order: Moonlight/Lostroom",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-12-31",
+      "release_year": 2017,
+      "release_label": "31 декабря 2017",
+      "episode_count": 1,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36915/bea6e6cc3ad29ae149c6e96c4fdaf901.jpeg",
+      "match": {
+        "shikimori": [
+          36915
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37033",
+      "title": "Сегодняшнее меню для Эмии",
+      "subtitle": "Emiya-san Chi no Kyou no Gohan",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2018-01-25",
+      "release_end_date": "2019-01-01",
+      "release_year": 2018,
+      "release_label": "25 января 2018 — 1 января 2019",
+      "episode_count": 13,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37033/40c5d021f426bbe8abf56ec2a92c4f77.jpeg",
+      "match": {
+        "shikimori": [
+          37033
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33047",
+      "title": "Судьба/Дополнение: Последний вызов на бис",
+      "subtitle": "Fate/Extra: Last Encore",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-01-28",
+      "release_end_date": "2018-04-01",
+      "release_year": 2018,
+      "release_label": "28 января — 1 апреля 2018",
+      "episode_count": 10,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33047/71ddc48ab7d1cae231cb968588c54858.jpeg",
+      "match": {
+        "shikimori": [
+          33047
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36833",
+      "title": "Судьба/Девочка-волшебница Иллия: Клятва под снегом — Спецвыпуск",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya Movie: Sekka no Chikai - Kuro Sakura no Heya",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-01-31",
+      "release_year": 2018,
+      "release_label": "31 января 2018",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36833/d12bfab6141dd9ac352868a3ae5dd43a.jpeg",
+      "match": {
+        "shikimori": [
+          36833
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37651",
+      "title": "Судьба/Дополнение: Последний вызов на бис — Теория движения неба",
+      "subtitle": "Fate/Extra: Last Encore - Illustrias Tendousetsu",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-07-29",
+      "release_year": 2018,
+      "release_label": "29 июля 2018",
+      "episode_count": 3,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37651/00fead817fcd96c0aeca6b9a07b8d9a3.jpeg",
+      "match": {
+        "shikimori": [
+          37651
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38936",
+      "title": "Досье лорда Эль-Меллоя II: Могильщица, кошка и маг",
+      "subtitle": "Lord El-Melloi II-sei no Jikenbo: Rail Zeppelin Grace Note - Hakamori to Neko to Majutsushi",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-12-31",
+      "release_year": 2018,
+      "release_label": "31 декабря 2018",
+      "episode_count": 1,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38936/de6852178e65c39c025e0a9ec954e23e.jpeg",
+      "match": {
+        "shikimori": [
+          38936
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38958",
+      "title": "Судьба/Великий приказ: В манге всё яснее!",
+      "subtitle": "Manga de Wakaru! Fate/Grand Order",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-12-31",
+      "release_year": 2018,
+      "release_label": "31 декабря 2018",
+      "episode_count": 1,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38958/41d5e67fc4d0f54f5380fe17b25916b2.jpeg",
+      "match": {
+        "shikimori": [
+          38958
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33049",
+      "title": "Судьба/Ночь схватки: Прикосновение небес 2",
+      "subtitle": "Fate/stay night Movie: Heaven's Feel - II. Lost Butterfly",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-01-12",
+      "release_year": 2019,
+      "release_label": "12 января 2019",
+      "episode_count": 1,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33049/1d2d40e1866f905b68177f307ce9b94e.jpeg",
+      "match": {
+        "shikimori": [
+          33049
+        ],
+        "sources": [
+          "animego:1210",
+          "yummyanime:1947"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38897",
+      "title": "Судьба/Девочка-волшебница Иллия: Призматический фантазм",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya: Prisma☆Phantasm",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-06-14",
+      "release_year": 2019,
+      "release_label": "14 июня 2019",
+      "episode_count": 1,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38897/78d21a0e6234239c5132f3d379bf4cbe.jpeg",
+      "match": {
+        "shikimori": [
+          38897
+        ],
+        "sources": [
+          "yummyanime:4225"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38959",
+      "title": "Досье лорда Эль-Меллоя II",
+      "subtitle": "Lord El-Melloi II-sei no Jikenbo: Rail Zeppelin Grace Note",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-07-07",
+      "release_end_date": "2019-09-29",
+      "release_year": 2019,
+      "release_label": "7 июля — 29 сентября 2019",
+      "episode_count": 13,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38959/24b912ef8c2fe7a5b418ac82ddad7f42.jpeg",
+      "match": {
+        "shikimori": [
+          38959
+        ],
+        "sources": [
+          "animego:1090",
+          "yummyanime:5463"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40206",
+      "title": "Судьба/Великий приказ: Вавилония — Начало путешествия",
+      "subtitle": "Fate/Grand Order: Zettai Majuu Sensen Babylonia - Initium Iter",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-08-04",
+      "release_year": 2019,
+      "release_label": "4 августа 2019",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40206/55acf34d8048f2db638bf726f5d7bfcb.jpeg",
+      "match": {
+        "shikimori": [
+          40206
+        ],
+        "sources": [
+          "animego:1165"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38084",
+      "title": "Судьба/Великий приказ: Вавилония",
+      "subtitle": "Fate/Grand Order: Zettai Majuu Sensen Babylonia",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-10-05",
+      "release_end_date": "2020-03-21",
+      "release_year": 2019,
+      "release_label": "5 октября 2019 — 21 марта 2020",
+      "episode_count": 21,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38084/e5f1d56080ca60bc202fbe8bd2acb478.jpeg",
+      "match": {
+        "shikimori": [
+          38084
+        ],
+        "sources": [
+          "animego:1166",
+          "yummyanime:2270"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40761",
+      "title": "Судьба/Великий приказ: Вавилония — Рекапы",
+      "subtitle": "Fate/Grand Order: Zettai Majuu Sensen Babylonia Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-12-21",
+      "release_end_date": "2020-02-01",
+      "release_year": 2019,
+      "release_label": "21 декабря 2019 — 1 февраля 2020",
+      "episode_count": 3,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40761/230a9db86469a46308d50e823e123d22.jpeg",
+      "match": {
+        "shikimori": [
+          40761
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33050",
+      "title": "Судьба/Ночь схватки: Прикосновение небес 3",
+      "subtitle": "Fate/stay night Movie: Heaven's Feel - III. Spring Song",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-08-15",
+      "release_year": 2020,
+      "release_label": "15 августа 2020",
+      "episode_count": 1,
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33050/18c55002a0737788533dd44d36608f90.jpeg",
+      "match": {
+        "shikimori": [
+          33050
+        ],
+        "sources": [
+          "animego:1728",
+          "yummyanime:1781"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38085",
+      "title": "Судьба/Великий приказ: Камелот — Странствие",
+      "subtitle": "Fate/Grand Order: Shinsei Entaku Ryouiki Camelot 1 - Wandering; Agateram",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-12-05",
+      "release_year": 2020,
+      "release_label": "5 декабря 2020",
+      "episode_count": 1,
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38085/eef9d0c8ee4155825c8e7adbe8da30ce.jpeg",
+      "match": {
+        "shikimori": [
+          38085
+        ],
+        "sources": [
+          "animego:1972",
+          "yummyanime:4392"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-44248",
+      "title": "Судьба/Великий карнавал",
+      "subtitle": "Fate/Grand Carnival",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2020-12-31",
+      "release_end_date": "2021-10-13",
+      "release_year": 2020,
+      "release_label": "31 декабря 2020 — 13 октября 2021",
+      "episode_count": 4,
+      "release_order": 50,
+      "watch_order": 50,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44248/afb3d2baeb027dca2fbcc465d1db6b72.jpeg",
+      "match": {
+        "shikimori": [
+          44248
+        ],
+        "sources": [
+          "animego:3054",
+          "yummyanime:1152"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38086",
+      "title": "Судьба/Великий приказ: Камелот — Паладин",
+      "subtitle": "Fate/Grand Order: Shinsei Entaku Ryouiki Camelot 2 - Paladin; Agateram",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-05-15",
+      "release_year": 2021,
+      "release_label": "15 мая 2021",
+      "episode_count": 1,
+      "release_order": 51,
+      "watch_order": 51,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38086/b6d136e8ca02ce4acf45a007e6a2329f.jpeg",
+      "match": {
+        "shikimori": [
+          38086
+        ],
+        "sources": [
+          "animego:1973",
+          "yummyanime:356"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41497",
+      "title": "Судьба/Великий приказ: Финальная сингулярность — Соломон",
+      "subtitle": "Fate/Grand Order: Shuukyoku Tokuiten - Kani Jikan Shinden Solomon",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-07-30",
+      "release_year": 2021,
+      "release_label": "30 июля 2021",
+      "episode_count": 1,
+      "release_order": 52,
+      "watch_order": 52,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41497/ca5030fadbc2cf54995c57b495ef96c5.jpeg",
+      "match": {
+        "shikimori": [
+          41497
+        ],
+        "sources": [
+          "animego:1974",
+          "yummyanime:920"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49633",
+      "title": "Судьба/Девочка-волшебница Иллия: Мини-аниме",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya Movie: Licht - Namae no Nai Shoujo Mini Anime",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-08-20",
+      "release_year": 2021,
+      "release_label": "20 августа 2021",
+      "episode_count": 3,
+      "release_order": 53,
+      "watch_order": 53,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49633/6860fca9e613792220a64bd2acce2807.jpeg",
+      "match": {
+        "shikimori": [
+          49633
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42030",
+      "title": "Судьба/Девочка-волшебница Иллия: Свет — Девочка без имени",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya Movie: Licht - Namae no Nai Shoujo",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-08-27",
+      "release_year": 2021,
+      "release_label": "27 августа 2021",
+      "episode_count": 1,
+      "release_order": 54,
+      "watch_order": 54,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42030/f0fbb41553099effb9aa4bd085b4c4b1.jpeg",
+      "match": {
+        "shikimori": [
+          42030
+        ],
+        "sources": [
+          "yummyanime:378"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49361",
+      "title": "Досье лорда Эль-Меллоя II — Спецвыпуск",
+      "subtitle": "Lord El-Melloi II-sei no Jikenbo: Rail Zeppelin Grace Note Special",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-12-31",
+      "release_year": 2021,
+      "release_label": "31 декабря 2021",
+      "episode_count": 1,
+      "release_order": 55,
+      "watch_order": 55,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49361/d5b721f54532f4665277d9325ecd4a15.jpeg",
+      "match": {
+        "shikimori": [
+          49361
+        ],
+        "sources": [
+          "animego:1964",
+          "yummyanime:5273"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54976",
+      "title": "Судьба/Великий приказ: Рицука Фудзимару не понимает этого — Конец года",
+      "subtitle": "Fate/Grand Order: Fujimaru Ritsuka wa Wakaranai - Nenmatsu Special",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-12-31",
+      "release_year": 2022,
+      "release_label": "31 декабря 2022",
+      "episode_count": 1,
+      "release_order": 56,
+      "watch_order": 56,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54976/ad96027c07a331fb2ed657b60dcca48b.jpeg",
+      "match": {
+        "shikimori": [
+          54976
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54042",
+      "title": "Судьба/Великий приказ: Рицука Фудзимару не понимает этого",
+      "subtitle": "Fate/Grand Order: Fujimaru Ritsuka wa Wakaranai",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-02-04",
+      "release_end_date": "2023-07-30",
+      "release_year": 2023,
+      "release_label": "4 февраля — 30 июля 2023",
+      "episode_count": 33,
+      "release_order": 57,
+      "watch_order": 57,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54042/6f56abefa03e6cd493751825d27cf8ff.jpeg",
+      "match": {
+        "shikimori": [
+          54042
+        ],
+        "sources": [
+          "yummyanime:2800"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53127",
+      "title": "Судьба/Странная подделка: Шёпот рассвета",
+      "subtitle": "Fate/strange Fake: Whispers of Dawn",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-07-02",
+      "release_year": 2023,
+      "release_label": "2 июля 2023",
+      "episode_count": 1,
+      "release_order": 58,
+      "watch_order": 58,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53127/c17c6edf93f962c34b8610fb96a78009.jpeg",
+      "match": {
+        "shikimori": [
+          53127
+        ],
+        "sources": [
+          "animego:2362",
+          "yummyanime:2130"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57691",
+      "title": "Судьба/Великий приказ: Рицука Фудзимару не понимает этого — Большая вечеринка в честь завершения две тысячи двадцать третьего года",
+      "subtitle": "Fate/Grand Order: Fujimaru Ritsuka wa Wakaranai - Dai Bounen Otanoshimikai 2023",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-12-31",
+      "release_year": 2023,
+      "release_label": "31 декабря 2023",
+      "episode_count": 7,
+      "release_order": 59,
+      "watch_order": 59,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57691/a6090ec579a6d7dcaf8bd07c87967681.jpeg",
+      "match": {
+        "shikimori": [
+          57691
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59465",
+      "title": "Судьба/Великий приказ: Рицука Фудзимару не понимает этого 2",
+      "subtitle": "Fate/Grand Order: Fujimaru Ritsuka wa Wakaranai Season 2",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-08-03",
+      "release_end_date": "2024-12-31",
+      "release_year": 2024,
+      "release_label": "3 августа — 31 декабря 2024",
+      "episode_count": 26,
+      "release_order": 60,
+      "watch_order": 60,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59465/d68d2285866f0a2eb320af350cb899fe.jpeg",
+      "match": {
+        "shikimori": [
+          59465
+        ],
+        "sources": [
+          "yummyanime:4879"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60660",
+      "title": "Вещание Сноуфилда: Ненастоящая реклама",
+      "subtitle": "SFBC \"Fake\" Commercial Film",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-12-31",
+      "release_year": 2024,
+      "release_label": "31 декабря 2024",
+      "episode_count": 5,
+      "release_order": 61,
+      "watch_order": 61,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60660/a2a8c09130025b5603d88c6f883cb830.jpeg",
+      "match": {
+        "shikimori": [
+          60660
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55830",
+      "title": "Судьба/Странная подделка",
+      "subtitle": "Fate/strange Fake",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-03",
+      "release_end_date": "2026-03-28",
+      "release_year": 2026,
+      "release_label": "3 января — 28 марта 2026",
+      "episode_count": 13,
+      "release_order": 62,
+      "watch_order": 62,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55830/94a218cdfe598a1c6d5a9b43cc4eb16a.jpeg",
+      "match": {
+        "shikimori": [
+          55830
+        ],
+        "sources": [
+          "animego:2901",
+          "yummyanime:4555"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49703",
+      "title": "Судьба/Девочка-волшебница Иллия",
+      "subtitle": "Fate/kaleid liner Prisma☆Illya (Zoku-hen)",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 63,
+      "watch_order": 63,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49703/e07cec88bf9b4ef9f59fa39746345978.jpeg",
+      "match": {
+        "shikimori": [
+          49703
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

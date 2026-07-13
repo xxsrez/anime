@@ -150,6 +150,95 @@ class FranchiseCatalogTest(unittest.TestCase):
         with self.assertRaisesRegex(franchise_catalog.FranchiseDataError, "cannot precede"):
             franchise_catalog.validate_definition(reversed_dates)
 
+        skipped_order = json.loads(json.dumps(raw))
+        skipped_order["entries"][1]["release_order"] = 99
+        with self.assertRaisesRegex(franchise_catalog.FranchiseDataError, "continuous from 1"):
+            franchise_catalog.validate_definition(skipped_order)
+
+    def test_bulk_manifest_and_generated_definitions_are_complete(self):
+        manifest = json.loads(Path("content/franchise-seeds.json").read_text(encoding="utf-8"))
+        definitions = franchise_catalog.load_definitions()
+        generated = [
+            definition
+            for definition in definitions
+            if (definition.get("data_origin") or {}).get("provider") == "shikimori"
+        ]
+
+        self.assertEqual(len(manifest["items"]), 40)
+        self.assertEqual([item["rank"] for item in manifest["items"]], list(range(1, 41)))
+        self.assertEqual(len(generated), 40)
+        self.assertGreaterEqual(len(definitions), 41)
+        self.assertEqual(
+            {item["slug"] for item in manifest["items"]},
+            {definition["slug"] for definition in generated},
+        )
+        self.assertEqual(
+            {definition["selection_rank"] for definition in generated},
+            set(range(1, 41)),
+        )
+        for definition in generated:
+            self.assertGreaterEqual(len(definition["entries"]), 2)
+            self.assertTrue(definition.get("guide"))
+            self.assertTrue(definition.get("source", {}).get("url"))
+            for entry in definition["entries"]:
+                self.assertEqual(len(entry["match"]["shikimori"]), 1)
+                self.assertEqual(entry["watch_order"], entry["release_order"])
+                self.assertTrue(entry.get("summary"))
+                self.assertTrue(entry.get("watch_note"))
+
+    def test_definition_set_rejects_matcher_owned_by_two_entries(self):
+        first = franchise_catalog.validate_definition(
+            {
+                "schema_version": 1,
+                "slug": "first-franchise",
+                "title": "First",
+                "summary": "First summary",
+                "entries": [
+                    {
+                        "key": "first-a",
+                        "title": "First A",
+                        "release_order": 1,
+                        "watch_order": 1,
+                        "match": {"shikimori": [123]},
+                    },
+                    {
+                        "key": "first-b",
+                        "title": "First B",
+                        "release_order": 2,
+                        "watch_order": 2,
+                        "match": {"shikimori": [124]},
+                    },
+                ],
+            }
+        )
+        second = franchise_catalog.validate_definition(
+            {
+                "schema_version": 1,
+                "slug": "second-franchise",
+                "title": "Second",
+                "summary": "Second summary",
+                "entries": [
+                    {
+                        "key": "second-a",
+                        "title": "Second A",
+                        "release_order": 1,
+                        "watch_order": 1,
+                        "match": {"shikimori": [123]},
+                    },
+                    {
+                        "key": "second-b",
+                        "title": "Second B",
+                        "release_order": 2,
+                        "watch_order": 2,
+                        "match": {"shikimori": [125]},
+                    },
+                ],
+            }
+        )
+
+        with self.assertRaisesRegex(franchise_catalog.FranchiseDataError, "belongs to both"):
+            franchise_catalog.validate_definition_set([first, second])
+
     def test_compact_summary_supports_year_only_entries(self):
         summary = franchise_catalog.compact_summary(
             {

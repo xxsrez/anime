@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "slug": "jujutsu-kaisen",
+  "title": "Магическая битва",
+  "short_title": "Jujutsu Kaisen",
+  "original_title": "呪術廻戦",
+  "summary": "Сверхъестественный боевик о людях, противостоящих проклятиям, где сила тесно связана с личным выбором и его последствиями.",
+  "guide": "Удобный порядок для первого просмотра: первый сезон, фильм Jujutsu Kaisen 0, затем второй сезон и дальнейшие продолжения. Рекапы и короткие дополнительные материалы необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/40748/af4f2db18f17de4d7c6491f6f92cd9d9.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/40748",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "jujutsu_kaisen",
+    "primary_shikimori_ids": [
+      40748
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 15,
+  "entries": [
+    {
+      "key": "shikimori-40748",
+      "title": "Магическая битва",
+      "subtitle": "Jujutsu Kaisen",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-10-03",
+      "release_end_date": "2021-03-27",
+      "release_year": 2020,
+      "release_label": "3 октября 2020 — 27 марта 2021",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40748/af4f2db18f17de4d7c6491f6f92cd9d9.jpeg",
+      "match": {
+        "shikimori": [
+          40748
+        ],
+        "sources": [
+          "animego:1635",
+          "yummyanime:18"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48561",
+      "title": "Магическая битва 0. Фильм",
+      "subtitle": "Jujutsu Kaisen 0 Movie",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-12-24",
+      "release_year": 2021,
+      "release_label": "24 декабря 2021",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48561/fd8b173374561dae24fb57d27eba9ae6.jpeg",
+      "match": {
+        "shikimori": [
+          48561
+        ],
+        "sources": [
+          "animego:2132",
+          "yummyanime:873"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51009",
+      "title": "Магическая битва 2",
+      "subtitle": "Jujutsu Kaisen 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-07-06",
+      "release_end_date": "2023-12-28",
+      "release_year": 2023,
+      "release_label": "6 июля — 28 декабря 2023",
+      "episode_count": 23,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51009/11ae4aeb0046c9587150e3982c8da446.jpeg",
+      "match": {
+        "shikimori": [
+          51009
+        ],
+        "sources": [
+          "animego:2332",
+          "yummyanime:1545"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56243",
+      "title": "Магическая битва 2: Рекапы",
+      "subtitle": "Jujutsu Kaisen 2nd Season Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-08-11",
+      "release_end_date": "2023-08-18",
+      "release_year": 2023,
+      "release_label": "11 августа — 18 августа 2023",
+      "episode_count": 2,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56243/260c49a96df8a3b47d21d8f21fdc032c.jpeg",
+      "match": {
+        "shikimori": [
+          56243
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59654",
+      "title": "Магическая битва: Пагубный талант/Таланты умирают молодыми",
+      "subtitle": "Jujutsu Kaisen: Kaigyoku/Gyokusetsu",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-05-30",
+      "release_year": 2025,
+      "release_label": "30 мая 2025",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59654/01975809c67b99dc54cac17db6e0dfa7.jpeg",
+      "match": {
+        "shikimori": [
+          59654
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57658",
+      "title": "Магическая битва: Смертельная миграция",
+      "subtitle": "Jujutsu Kaisen: Shimetsu Kaiyuu - Zenpen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-09",
+      "release_end_date": "2026-03-27",
+      "release_year": 2026,
+      "release_label": "9 января — 27 марта 2026",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57658/7fd0d0760734513d62189ff53015546d.jpeg",
+      "match": {
+        "shikimori": [
+          57658
+        ],
+        "sources": [
+          "animego:2903",
+          "yummyanime:8468"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

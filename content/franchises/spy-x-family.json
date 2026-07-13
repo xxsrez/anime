@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "slug": "spy-x-family",
+  "title": "Семья шпиона",
+  "short_title": "Spy × Family",
+  "original_title": "SPY×FAMILY",
+  "summary": "Комедийный шпионский сериал о фиктивной семье, в которой каждый скрывает необычную тайну, но совместная жизнь постепенно становится настоящей.",
+  "guide": "Смотрите части первого сезона, затем второй сезон и последующие продолжения по порядку. Фильм Code: White рассказывает самостоятельную историю и удобнее всего смотрится после первого сезона.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/50265/5a9984238661e260312fd6e60b2cf17f.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/50265",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "spy_x_family",
+    "primary_shikimori_ids": [
+      50265
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 29,
+  "entries": [
+    {
+      "key": "shikimori-50265",
+      "title": "Семья шпиона",
+      "subtitle": "Spy x Family",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-04-09",
+      "release_end_date": "2022-06-25",
+      "release_year": 2022,
+      "release_label": "9 апреля — 25 июня 2022",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50265/5a9984238661e260312fd6e60b2cf17f.jpeg",
+      "match": {
+        "shikimori": [
+          50265
+        ],
+        "sources": [
+          "yummyanime:1242"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50602",
+      "title": "Семья шпиона. Часть 2",
+      "subtitle": "Spy x Family Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-01",
+      "release_end_date": "2022-12-24",
+      "release_year": 2022,
+      "release_label": "1 октября — 24 декабря 2022",
+      "episode_count": 13,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50602/0534e2ea1e707b1edee87eb9862089de.jpeg",
+      "match": {
+        "shikimori": [
+          50602
+        ],
+        "sources": [
+          "animego:2125",
+          "yummyanime:1673"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58159",
+      "title": "Семья шпиона — Код: Белый. Урок хороших манер",
+      "subtitle": "Spy x Family Movie: Code: White Manner Movie",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-07-28",
+      "release_year": 2023,
+      "release_label": "28 июля 2023",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58159/6aeaae51022f07163ed431a11fa020b4.jpeg",
+      "match": {
+        "shikimori": [
+          58159
+        ],
+        "sources": [
+          "yummyanime:4765"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53887",
+      "title": "Семья шпиона 2",
+      "subtitle": "Spy x Family Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-07",
+      "release_end_date": "2023-12-23",
+      "release_year": 2023,
+      "release_label": "7 октября — 23 декабря 2023",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53887/5b15832dc369aa38d920d0debd12390f.jpeg",
+      "match": {
+        "shikimori": [
+          53887
+        ],
+        "sources": [
+          "animego:2394",
+          "yummyanime:2563"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53888",
+      "title": "Семья шпиона — Код: Белый",
+      "subtitle": "Spy x Family Movie: Code: White",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-12-22",
+      "release_year": 2023,
+      "release_label": "22 декабря 2023",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53888/bf876b1b4c81808d7bf83099461dedf6.jpeg",
+      "match": {
+        "shikimori": [
+          53888
+        ],
+        "sources": [
+          "animego:2700",
+          "yummyanime:2561"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59027",
+      "title": "Семья шпиона 3",
+      "subtitle": "Spy x Family Season 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-10-04",
+      "release_end_date": "2025-12-27",
+      "release_year": 2025,
+      "release_label": "4 октября — 27 декабря 2025",
+      "episode_count": 13,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59027/0ec3b83ed3a173fdd4da2a2827b068d1.jpeg",
+      "match": {
+        "shikimori": [
+          59027
+        ],
+        "sources": [
+          "yummyanime:4933"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

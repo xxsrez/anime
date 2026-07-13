@@ -1,0 +1,860 @@
+{
+  "schema_version": 1,
+  "slug": "code-geass",
+  "title": "Код Гиас",
+  "short_title": "Code Geass",
+  "original_title": "コードギアス",
+  "summary": "Политическая меха-драма о восстании, власти и цене стратегических решений в мире альтернативной истории.",
+  "guide": "Основная телевизионная линия — Lelouch of the Rebellion и R2. Фильмы-пересказы создают альтернативную непрерывность, из которой продолжается «Воскресший Лелуш»; Akito the Exiled — отдельная боковая история.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/1575/c1576bdcddd81781d600266245906989.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/1575",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "code_geass",
+    "primary_shikimori_ids": [
+      1575
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 24,
+  "entries": [
+    {
+      "key": "shikimori-1575",
+      "title": "Код Гиас: Восставший Лелуш",
+      "subtitle": "Code Geass: Hangyaku no Lelouch",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2006-10-06",
+      "release_end_date": "2007-07-29",
+      "release_year": 2006,
+      "release_label": "6 октября 2006 — 29 июля 2007",
+      "episode_count": 25,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1575/c1576bdcddd81781d600266245906989.jpeg",
+      "match": {
+        "shikimori": [
+          1575
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2124",
+      "title": "Код Гиас: Восставший Лелуш — Рекапы",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-12-01",
+      "release_end_date": "2007-02-16",
+      "release_year": 2006,
+      "release_label": "1 декабря 2006 — 16 февраля 2007",
+      "episode_count": 2,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2124/a0e07d8e766ba598a02ba8f1850399a4.jpeg",
+      "match": {
+        "shikimori": [
+          2124
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1953",
+      "title": "Код Гиас: Восставший Лелуш — Спецвыпуски",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Picture Drama",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-01-27",
+      "release_end_date": "2007-09-25",
+      "release_year": 2007,
+      "release_label": "27 января — 25 сентября 2007",
+      "episode_count": 9,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1953/dc0e3018bc030986b7d3bc84cd2bd762.jpeg",
+      "match": {
+        "shikimori": [
+          1953
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41075",
+      "title": "Код Гиас: Восставший Лелуш — Дневник Саёко",
+      "subtitle": "Code Geass: Hangyaku no Lelouch DVD Magazine Picture Drama",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-12-21",
+      "release_end_date": "2008-01-25",
+      "release_year": 2007,
+      "release_label": "21 декабря 2007 — 25 января 2008",
+      "episode_count": 8,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41075/3146b6282f85a481a04ddac00feddd5c.jpeg",
+      "match": {
+        "shikimori": [
+          41075
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54249",
+      "title": "Код Гиас: Восставший Лелуш — Флэш-спецвыпуски",
+      "subtitle": "Code Geass: Hangyaku no Lelouch DVD Magazine: Omake Flash - Baba Theater",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-12-21",
+      "release_end_date": "2008-01-25",
+      "release_year": 2007,
+      "release_label": "21 декабря 2007 — 25 января 2008",
+      "episode_count": 2,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54249/ea1856e63826815ed834bc1666f2b6f5.jpeg",
+      "match": {
+        "shikimori": [
+          54249
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4596",
+      "title": "Код Гиас: Восставший Лелуш — Тёмное восстание",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Special Edition - Black Rebellion",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-02-22",
+      "release_year": 2008,
+      "release_label": "22 февраля 2008",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4596/6494a769caefdd6cec65b1a94317b95d.jpeg",
+      "match": {
+        "shikimori": [
+          4596
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2904",
+      "title": "Код Гиас: Восставший Лелуш 2",
+      "subtitle": "Code Geass: Hangyaku no Lelouch R2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2008-04-06",
+      "release_end_date": "2008-09-28",
+      "release_year": 2008,
+      "release_label": "6 апреля — 28 сентября 2008",
+      "episode_count": 25,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2904/0b5d2c31efae13e936a60b6a30bfc979.jpeg",
+      "match": {
+        "shikimori": [
+          2904
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5163",
+      "title": "Код Гиас: Восставший Лелуш 2 — Спецвыпуски",
+      "subtitle": "Code Geass: Hangyaku no Lelouch R2 Picture Drama",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-08-22",
+      "release_end_date": "2009-04-24",
+      "release_year": 2008,
+      "release_label": "22 августа 2008 — 24 апреля 2009",
+      "episode_count": 9,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5163/47b2453916b0f2329c6c26f2a036b177.jpeg",
+      "match": {
+        "shikimori": [
+          5163
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9591",
+      "title": "Код Гиас: Восставший Лелуш 2 — Флэш-спецвыпуски",
+      "subtitle": "Code Geass: Hangyaku no Lelouch R2 Omake Flash",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2008-08-22",
+      "release_end_date": "2009-04-24",
+      "release_year": 2008,
+      "release_label": "22 августа 2008 — 24 апреля 2009",
+      "episode_count": 9,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9591/b357a15d300319e8a9dbb00ce96cdc1a.jpeg",
+      "match": {
+        "shikimori": [
+          9591
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6768",
+      "title": "Код Гиас: Восставший Лелуш 2 — Реквием Зеро",
+      "subtitle": "Code Geass: Hangyaku no Lelouch R2 Special Edition - Zero Requiem",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-07-24",
+      "release_year": 2009,
+      "release_label": "24 июля 2009",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6768/22d8a42dddba6a2484b0ad49ba6dc766.jpeg",
+      "match": {
+        "shikimori": [
+          6768
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8728",
+      "title": "Код Гиас: Восставший Лелуш — Чудо в день рождения",
+      "subtitle": "Code Geass: Hangyaku no Lelouch - Kiseki no Birthday",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-04-23",
+      "release_year": 2010,
+      "release_label": "23 апреля 2010",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8728/79dbfcb6d3f9c8dd78df782cb2f98e49.jpeg",
+      "match": {
+        "shikimori": [
+          8728
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-18881",
+      "title": "Код Гиас: Восставший Лелуш — Чудо в день рождения. Спецвыпуск",
+      "subtitle": "Code Geass: Hangyaku no Lelouch - Kiseki no Birthday Omake Flash",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-04-23",
+      "release_year": 2010,
+      "release_label": "23 апреля 2010",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/18881/fb17feb353f6c1c56959280bb5f236c5.jpeg",
+      "match": {
+        "shikimori": [
+          18881
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8888",
+      "title": "Код Гиас: Отступник Акито 1 — Падение Виверны",
+      "subtitle": "Code Geass: Boukoku no Akito 1 - Yokuryuu wa Maiorita",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-07-16",
+      "release_year": 2012,
+      "release_label": "16 июля 2012",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8888/01df14a4c1f48208e8de15387dd92776.jpeg",
+      "match": {
+        "shikimori": [
+          8888
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12685",
+      "title": "Код Гиас: Нанналли в Стране чудес",
+      "subtitle": "Code Geass: Hangyaku no Lelouch - Nunnally in Wonderland",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2012-07-27",
+      "release_year": 2012,
+      "release_label": "27 июля 2012",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12685/23dcd0ae7f3aeba61cad7b872c9effa0.jpeg",
+      "match": {
+        "shikimori": [
+          12685
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17277",
+      "title": "Код Гиас: Отражение Оза",
+      "subtitle": "Code Geass: Soubou no Oz Picture Drama",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2013-01-10",
+      "release_year": 2013,
+      "release_label": "10 января 2013",
+      "episode_count": 5,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17277/5161f256beb88ac85bb7d215e4c1013d.jpeg",
+      "match": {
+        "shikimori": [
+          17277
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15197",
+      "title": "Код Гиас: Отступник Акито 2 — Разрыв Виверны",
+      "subtitle": "Code Geass: Boukoku no Akito 2 - Hikisakareshi Yokuryuu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-09-14",
+      "release_year": 2013,
+      "release_label": "14 сентября 2013",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15197/a1cab6b43b016bc64fc929aed197c9ec.jpeg",
+      "match": {
+        "shikimori": [
+          15197
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33155",
+      "title": "Код Гиас: Восставший Лелуш — В преддверии начала",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Picture Drama - Hajimari no Zenya",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-09-25",
+      "release_year": 2013,
+      "release_label": "25 сентября 2013",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33155/bf6e2dabdca75daf63bccb0bb0f894bc.jpeg",
+      "match": {
+        "shikimori": [
+          33155
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23359",
+      "title": "Код Гиас: Отступник Акито 2 — Разрыв Виверны. Спецвыпуск",
+      "subtitle": "Code Geass: Boukoku no Akito 2 - Hikisakareshi Yokuryuu Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-12-25",
+      "release_year": 2013,
+      "release_label": "25 декабря 2013",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23359/dc6257aa4100549281c723cd5f574dde.jpeg",
+      "match": {
+        "shikimori": [
+          23359
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33156",
+      "title": "Код Гиас: Восставший Лелуш — Последний мораторий",
+      "subtitle": "Code Geass: Hangyaku no Lelouch R2 Picture Drama - Last Moratorium",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-03-26",
+      "release_year": 2014,
+      "release_label": "26 марта 2014",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33156/e7f053c64c416399ef61b1fc6eb4d5ca.jpeg",
+      "match": {
+        "shikimori": [
+          33156
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15199",
+      "title": "Код Гиас: Отступник Акито 3 — Яркое падение",
+      "subtitle": "Code Geass: Boukoku no Akito 3 - Kagayaku Mono Ten yori Otsu",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-05-02",
+      "release_year": 2015,
+      "release_label": "2 мая 2015",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15199/db297a1b88306fc1c17382f5711937a6.jpeg",
+      "match": {
+        "shikimori": [
+          15199
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31145",
+      "title": "Код Гиас: Отступник Акито 3 — Яркое падение. Спецвыпуск",
+      "subtitle": "Code Geass: Boukoku no Akito 3 - Kagayaku Mono Ten yori Otsu Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-06-26",
+      "release_year": 2015,
+      "release_label": "26 июня 2015",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31145/2b562255d22b68f531c073b6e8653aa3.jpeg",
+      "match": {
+        "shikimori": [
+          31145
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15201",
+      "title": "Код Гиас: Отступник Акито 4 — Храня ненависть",
+      "subtitle": "Code Geass: Boukoku no Akito 4 - Nikushimi no Kioku kara",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-07-04",
+      "release_year": 2015,
+      "release_label": "4 июля 2015",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15201/13f350c66f18a3093d029c53ab55ae66.jpeg",
+      "match": {
+        "shikimori": [
+          15201
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32240",
+      "title": "Код Гиас: Отступник Акито 4 — Храня ненависть. Спецвыпуск",
+      "subtitle": "Code Geass: Boukoku no Akito 4 - Nikushimi no Kioku kara Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-10-28",
+      "release_year": 2015,
+      "release_label": "28 октября 2015",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32240/82d7b8f37342f3a6d3c0551442288f2a.jpeg",
+      "match": {
+        "shikimori": [
+          32240
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30711",
+      "title": "Код Гиас: Отступник Акито 5 — Быть любимым",
+      "subtitle": "Code Geass: Boukoku no Akito 5 - Itoshiki Mono-tachi e",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-02-06",
+      "release_year": 2016,
+      "release_label": "6 февраля 2016",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30711/e07ca3380171ad4c1dd7814555455606.jpeg",
+      "match": {
+        "shikimori": [
+          30711
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33360",
+      "title": "Код Гиас: Отступник Акито 5 — Быть любимым. Спецвыпуск",
+      "subtitle": "Code Geass: Boukoku no Akito 5 - Itoshiki Mono-tachi e Picture Drama",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-04-22",
+      "release_year": 2016,
+      "release_label": "22 апреля 2016",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33360/2726a069f84c86d9314281b86f786680.jpeg",
+      "match": {
+        "shikimori": [
+          33360
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40334",
+      "title": "Код Гиас: Восставший Лелуш — Чудо в годовщину",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Picture Drama - Kiseki no Anniversary",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-04-21",
+      "release_year": 2017,
+      "release_label": "21 апреля 2017",
+      "episode_count": 1,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40334/2b3a9e0c57d8f99d840dc64797a10d14.jpeg",
+      "match": {
+        "shikimori": [
+          40334
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34438",
+      "title": "Код Гиас: Восставший Лелуш — Пробуждение",
+      "subtitle": "Code Geass: Hangyaku no Lelouch I - Koudou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-10-21",
+      "release_year": 2017,
+      "release_label": "21 октября 2017",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34438/f304590a4f8c8944316f413230b9018c.jpeg",
+      "match": {
+        "shikimori": [
+          34438
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40836",
+      "title": "Код Гиас: Восставший Лелуш — Конкурс признаний в маске. Спецвыпуск",
+      "subtitle": "Code Geass: Hangyaku no Lelouch Picture Drama - Kamen Kokuhaku Taikai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-10-21",
+      "release_year": 2017,
+      "release_label": "21 октября 2017",
+      "episode_count": 1,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40836/3f0738a9cd8d3b3df0237c4a7e77a03b.jpeg",
+      "match": {
+        "shikimori": [
+          40836
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34439",
+      "title": "Код Гиас: Восставший Лелуш — Восстание",
+      "subtitle": "Code Geass: Hangyaku no Lelouch II - Handou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-02-10",
+      "release_year": 2018,
+      "release_label": "10 февраля 2018",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34439/b27ed6ec1e351fe5945b92d96a4649d7.jpeg",
+      "match": {
+        "shikimori": [
+          34439
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34440",
+      "title": "Код Гиас: Восставший Лелуш — Император",
+      "subtitle": "Code Geass: Hangyaku no Lelouch III - Oudou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-05-26",
+      "release_year": 2018,
+      "release_label": "26 мая 2018",
+      "episode_count": 1,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34440/67959f73097d78c214a8cb001a16e1b6.jpeg",
+      "match": {
+        "shikimori": [
+          34440
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34437",
+      "title": "Код Гиас: Лелуш Воскресший",
+      "subtitle": "Code Geass: Fukkatsu no Lelouch",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-02-09",
+      "release_year": 2019,
+      "release_label": "9 февраля 2019",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34437/11362f89cd70726ef62411b4162c85df.jpeg",
+      "match": {
+        "shikimori": [
+          34437
+        ],
+        "sources": [
+          "animego:994",
+          "yummyanime:1957"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40315",
+      "title": "Код Гиас: Лелуш Воскресший — Запах моря",
+      "subtitle": "Code Geass: Fukkatsu no Lelouch Picture Drama",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-12-05",
+      "release_year": 2019,
+      "release_label": "5 декабря 2019",
+      "episode_count": 2,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40315/6039752896e6f813c23141f8482bc164.jpeg",
+      "match": {
+        "shikimori": [
+          40315
+        ],
+        "sources": [
+          "yummyanime:5453"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56835",
+      "title": "Код Гиас: Вернувшийся Розе",
+      "subtitle": "Code Geass: Dakkan no Roze",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-06-21",
+      "release_end_date": "2024-09-06",
+      "release_year": 2024,
+      "release_label": "21 июня — 6 сентября 2024",
+      "episode_count": 12,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56835/edf5d25cba68f1824e00bf381708555a.jpeg",
+      "match": {
+        "shikimori": [
+          56835
+        ],
+        "sources": [
+          "animego:2598",
+          "yummyanime:4671"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63066",
+      "title": "Код Гиас: Аспал — Звёздный искатель",
+      "subtitle": "Code Geass: Hoshi Oi no Aspal",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63066/5763c10d5955dff846794ad0429f69c4.jpeg",
+      "match": {
+        "shikimori": [
+          63066
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

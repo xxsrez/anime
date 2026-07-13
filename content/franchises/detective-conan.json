@@ -1,0 +1,2049 @@
+{
+  "schema_version": 1,
+  "slug": "detective-conan",
+  "title": "Детектив Конан",
+  "short_title": "Конан",
+  "original_title": "名探偵コナン",
+  "summary": "Долгая детективная серия, сочетающая отдельные загадки, постоянный состав героев и постепенно развивающуюся сквозную интригу.",
+  "guide": "Начинайте с основного сериала и двигайтесь по порядку эпизодов. Фильмы обычно рассказывают самостоятельные истории, но лучше смотреть их по годам выхода, а спин-оффы оставить до знакомства с их героями.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/235/888fd61952fdd8b6446cec36da268155.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/235",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "detective_conan",
+    "primary_shikimori_ids": [
+      235
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 6,
+  "entries": [
+    {
+      "key": "shikimori-55134",
+      "title": "Детектив Конан: Чистящая видеокассета TDK",
+      "subtitle": "Meitantei Conan: TDK Video Head Cleaner",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1996-01-01",
+      "release_year": 1996,
+      "release_label": "1 января 1996",
+      "episode_count": 5,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55134/5a92488e7843dc8f5bd2b8e828a19e4d.jpeg",
+      "match": {
+        "shikimori": [
+          55134
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-235",
+      "title": "Детектив Конан",
+      "subtitle": "Meitantei Conan",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "1996-01-08",
+      "release_year": 1996,
+      "release_label": "8 января 1996",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 18 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/235/888fd61952fdd8b6446cec36da268155.jpeg",
+      "match": {
+        "shikimori": [
+          235
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-779",
+      "title": "Детектив Конан: Заминированный небоскрёб",
+      "subtitle": "Meitantei Conan Movie 01: Tokei Jikake no Matenrou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1997-04-19",
+      "release_year": 1997,
+      "release_label": "19 апреля 1997",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/779/e769f2a51cd056c44017a9952cb5f1f9.jpeg",
+      "match": {
+        "shikimori": [
+          779
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-780",
+      "title": "Детектив Конан: Четырнадцатая жертва",
+      "subtitle": "Meitantei Conan Movie 02: 14-banme no Target",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1998-04-18",
+      "release_year": 1998,
+      "release_label": "18 апреля 1998",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/780/975e3fa2cb13f03cb8720e4db1e4116e.jpeg",
+      "match": {
+        "shikimori": [
+          780
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5578",
+      "title": "Сборник историй Госё Аоямы",
+      "subtitle": "Aoyama Goushou Tanpenshuu",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1999-03-17",
+      "release_end_date": "1999-12-22",
+      "release_year": 1999,
+      "release_label": "17 марта — 22 декабря 1999",
+      "episode_count": 7,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5578/4a38c80db3a7db508dabdfafe4c0da5f.jpeg",
+      "match": {
+        "shikimori": [
+          5578
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-781",
+      "title": "Детектив Конан: Последний волшебник века",
+      "subtitle": "Meitantei Conan Movie 03: Seikimatsu no Majutsushi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1999-04-17",
+      "release_year": 1999,
+      "release_label": "17 апреля 1999",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/781/96dc19194c28992aac2d0778cf897e00.jpeg",
+      "match": {
+        "shikimori": [
+          781
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33148",
+      "title": "Детектив Конан: Используя опыт работы периода Дзёмон!",
+      "subtitle": "Meitantei Conan: Jomon Taiken Yatte Miyou!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1999-06-25",
+      "release_year": 1999,
+      "release_label": "25 июня 1999",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33148/b435cacead7ab9ccf77ec426a407ebfa.jpeg",
+      "match": {
+        "shikimori": [
+          33148
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1363",
+      "title": "Детектив Конан: Потерянное в памяти",
+      "subtitle": "Meitantei Conan Movie 04: Hitomi no Naka no Ansatsusha",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2000-04-22",
+      "release_year": 2000,
+      "release_label": "22 апреля 2000",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1363/1ed4f4e5402d5933f65f737441d7030e.jpeg",
+      "match": {
+        "shikimori": [
+          1363
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33149",
+      "title": "Детектив Конан: Интернет — Таинственное дело электронной почты",
+      "subtitle": "Meitantei Conan: Internet Nazo no Mail Jiken",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-06-23",
+      "release_year": 2000,
+      "release_label": "23 июня 2000",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33149/10f2bf854f51c2aa9e57db61e4c058b4.jpeg",
+      "match": {
+        "shikimori": [
+          33149
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1369",
+      "title": "Детектив Конан OVA 01: Конан против Кида против Яйбы",
+      "subtitle": "Meitantei Conan OVA 01: Conan vs. Kid vs. Yaiba - Houtou Soudatsu Daikessen!!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-10-11",
+      "release_year": 2000,
+      "release_label": "11 октября 2000",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1369/54909993372f0a6306f383993c434ee2.jpeg",
+      "match": {
+        "shikimori": [
+          1369
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1364",
+      "title": "Детектив Конан: Отсчёт до небес",
+      "subtitle": "Meitantei Conan Movie 05: Tengoku e no Countdown",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2001-04-21",
+      "release_year": 2001,
+      "release_label": "21 апреля 2001",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1364/d3307ae301b0e2b32495ff7c907e1a23.jpeg",
+      "match": {
+        "shikimori": [
+          1364
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33150",
+      "title": "Детектив Конан: Письменный вызов от пирамид!",
+      "subtitle": "Meitantei Conan: Pyramid kara no Chousenjou!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2001-06-22",
+      "release_year": 2001,
+      "release_label": "22 июня 2001",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33150/1d3f2c68a0fd211cafbad2a9468b395d.jpeg",
+      "match": {
+        "shikimori": [
+          33150
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33145",
+      "title": "Детектив Конан: Преследуя таинственного монстра с кометы!",
+      "subtitle": "Meitantei Conan: Nazo no Suisei Kaijuu wo Oe!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2001-11-09",
+      "release_year": 2001,
+      "release_label": "9 ноября 2001",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33145/a400efc1a3af280ef82c3402b6116250.jpeg",
+      "match": {
+        "shikimori": [
+          33145
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2512",
+      "title": "Детектив Конан OVA 02: 16 подозреваемых",
+      "subtitle": "Meitantei Conan OVA 02: 16-nin no Yougisha!?",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2002-01-16",
+      "release_year": 2002,
+      "release_label": "16 января 2002",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2512/1aac9221c25dd41ce63f3bf8c1592240.jpeg",
+      "match": {
+        "shikimori": [
+          2512
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1365",
+      "title": "Детектив Конан: Призрак с Бейкер-Стрит",
+      "subtitle": "Meitantei Conan Movie 06: Baker Street no Bourei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2002-04-20",
+      "release_year": 2002,
+      "release_label": "20 апреля 2002",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1365/6ca7339c16785db56b4937e4a0e5aec6.jpeg",
+      "match": {
+        "shikimori": [
+          1365
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33151",
+      "title": "Детектив Конан: Прикоснуться к тайне древних динозавров!",
+      "subtitle": "Meitantei Conan: Kodai Kyouryuu no Nazo ni Semare!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2002-06-21",
+      "release_year": 2002,
+      "release_label": "21 июня 2002",
+      "episode_count": 1,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33151/9939f00a305813090e341115306133e7.jpeg",
+      "match": {
+        "shikimori": [
+          33151
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2513",
+      "title": "Детектив Конан OVA 03: Конан, Хэйджи и исчезнувший мальчик",
+      "subtitle": "Meitantei Conan OVA 03: Conan to Heiji to Kieta Shounen",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2003-03-12",
+      "release_year": 2003,
+      "release_label": "12 марта 2003",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2513/ff6e07c97bd48b706a1b22f351f6463d.jpeg",
+      "match": {
+        "shikimori": [
+          2513
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1366",
+      "title": "Детектив Конан: На перекрёстках древней столицы",
+      "subtitle": "Meitantei Conan Movie 07: Meikyuu no Crossroad",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2003-04-19",
+      "release_year": 2003,
+      "release_label": "19 апреля 2003",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1366/9c30436b57efdcc113ef78bc8d27d62a.jpeg",
+      "match": {
+        "shikimori": [
+          1366
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49611",
+      "title": "Детектив Конан: Разгадайте тайну теплового удара!",
+      "subtitle": "Meitantei Conan: Necchuushou no Nazo wo Toke!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2003-05-01",
+      "release_year": 2003,
+      "release_label": "1 мая 2003",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49611/4386d9b43b3b1192fae7829098a86016.jpeg",
+      "match": {
+        "shikimori": [
+          49611
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33152",
+      "title": "Детектив Конан: Исследование города — Отыскать клеймо животного",
+      "subtitle": "Meitantei Conan: Machi Tanken! Doubutsu Mark wo Get Seyo!",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2003-06-20",
+      "release_year": 2003,
+      "release_label": "20 июня 2003",
+      "episode_count": 1,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33152/ea40c0094505c8b108bce23b605458b6.jpeg",
+      "match": {
+        "shikimori": [
+          33152
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2514",
+      "title": "Детектив Конан OVA 04: Конан, Кид и Мать Кристаллов",
+      "subtitle": "Meitantei Conan OVA 04: Conan to Kid to Crystal Mother",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2004-03-03",
+      "release_year": 2004,
+      "release_label": "3 марта 2004",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2514/3c587c0376d5ea5fd498ef971203b86f.jpeg",
+      "match": {
+        "shikimori": [
+          2514
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1367",
+      "title": "Детектив Конан: Волшебник серебряного неба",
+      "subtitle": "Meitantei Conan Movie 08: Ginyoku no Magician",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2004-04-17",
+      "release_year": 2004,
+      "release_label": "17 апреля 2004",
+      "episode_count": 1,
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1367/8903d399fd984c4a10bee5f78b72ea31.jpeg",
+      "match": {
+        "shikimori": [
+          1367
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7304",
+      "title": "Детектив Конан: Волшебник серебряного неба — Промо",
+      "subtitle": "Meitantei Conan Movie 08: Ginyoku no Time Travel Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-04-30",
+      "release_year": 2004,
+      "release_label": "30 апреля 2004",
+      "episode_count": 1,
+      "release_order": 23,
+      "watch_order": 23,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7304/8f3fb7ce8147ebb820a4770c41c05c8a.jpeg",
+      "match": {
+        "shikimori": [
+          7304
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2515",
+      "title": "Детектив Конан OVA 05: Цель — Когоро! Секретное расследование",
+      "subtitle": "Meitantei Conan OVA 05: Target wa Kogorou!! Shounen Tanteidan Maruhi Report",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2005-03-09",
+      "release_year": 2005,
+      "release_label": "9 марта 2005",
+      "episode_count": 1,
+      "release_order": 24,
+      "watch_order": 24,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2515/ddb1f918d5ff57e0a5a89863460200da.jpeg",
+      "match": {
+        "shikimori": [
+          2515
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7471",
+      "title": "Детектив Конан 09: Стратегия над бездной — Промо спецвыпуск",
+      "subtitle": "Meitantei Conan Movie 09: Suihei Senjou no Strategy Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2005-04-02",
+      "release_year": 2005,
+      "release_label": "2 апреля 2005",
+      "episode_count": 1,
+      "release_order": 25,
+      "watch_order": 25,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7471/27b0af1492bb8d11fecc8e2b09d8fdee.jpeg",
+      "match": {
+        "shikimori": [
+          7471
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1505",
+      "title": "Детектив Конан: Стратегия над бездной",
+      "subtitle": "Meitantei Conan Movie 09: Suihei Senjou no Strategy",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-04-09",
+      "release_year": 2005,
+      "release_label": "9 апреля 2005",
+      "episode_count": 1,
+      "release_order": 26,
+      "watch_order": 26,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1505/8e3fcd2f5a9249607cf849b34300a252.jpeg",
+      "match": {
+        "shikimori": [
+          1505
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9785",
+      "title": "Детектив Конан: Конан против Кида — Акула и сокровище",
+      "subtitle": "Meitantei Conan: Conan vs. Kid - Shark & Jewel",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2005-07-29",
+      "release_year": 2005,
+      "release_label": "29 июля 2005",
+      "episode_count": 1,
+      "release_order": 27,
+      "watch_order": 27,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9785/b4acb2038a3d920454ab9a83929a04ae.jpeg",
+      "match": {
+        "shikimori": [
+          9785
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7305",
+      "title": "Детектив Конан 10: Реквием детективов — Промо спецвыпуск",
+      "subtitle": "Meitantei Conan Movie 10: Tantei-tachi no Requiem Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2006-01-01",
+      "release_year": 2006,
+      "release_label": "1 января 2006",
+      "episode_count": 1,
+      "release_order": 28,
+      "watch_order": 28,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7305/072fb196c76ebe92c2933ab321db7816.jpeg",
+      "match": {
+        "shikimori": [
+          7305
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36269",
+      "title": "Детектив Конан: Руководство по борьбе с преступностью",
+      "subtitle": "Meitantei Conan: Bouhan Guide",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2006-01-01",
+      "release_year": 2006,
+      "release_label": "1 января 2006",
+      "episode_count": 1,
+      "release_order": 29,
+      "watch_order": 29,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36269/f93f180f16bfd2e2387e177c6604f122.jpeg",
+      "match": {
+        "shikimori": [
+          36269
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1368",
+      "title": "Детектив Конан OVA 06: Вперёд за пропавшим алмазом! Конан и Хэйджи против Кида!",
+      "subtitle": "Meitantei Conan OVA 06: Kieta Daiya wo Oe! Conan & Heiji VS Kid!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2006-03-15",
+      "release_year": 2006,
+      "release_label": "15 марта 2006",
+      "episode_count": 1,
+      "release_order": 30,
+      "watch_order": 30,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1368/cb376d371b3042e2d104453873bc7ffb.jpeg",
+      "match": {
+        "shikimori": [
+          1368
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1506",
+      "title": "Детектив Конан: Реквием детективов",
+      "subtitle": "Meitantei Conan Movie 10: Tantei-tachi no Requiem",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-04-15",
+      "release_year": 2006,
+      "release_label": "15 апреля 2006",
+      "episode_count": 1,
+      "release_order": 31,
+      "watch_order": 31,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1506/e9f4fe9242960ec5e89438a49b02aaad.jpeg",
+      "match": {
+        "shikimori": [
+          1506
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9786",
+      "title": "Детектив Конан: Конан против Кида — Угольно-чёрный снайпер",
+      "subtitle": "Meitantei Conan: Conan vs. Kid - Shikkoku no Sniper",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2006-07-28",
+      "release_year": 2006,
+      "release_label": "28 июля 2006",
+      "episode_count": 1,
+      "release_order": 32,
+      "watch_order": 32,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9786/5e4bd9d37917b21f11e7ee2cd1d3eccd.jpeg",
+      "match": {
+        "shikimori": [
+          9786
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2597",
+      "title": "Детектив Конан OVA 07: Вызов от Агасы! Агаса против Конана и его команды",
+      "subtitle": "Meitantei Conan OVA 07: Agasa kara no Chousenjou! Agasa vs Conan & Shounen Tanteidan",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2007-03-13",
+      "release_year": 2007,
+      "release_label": "13 марта 2007",
+      "episode_count": 1,
+      "release_order": 33,
+      "watch_order": 33,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2597/5ab148a9a6bb4e40031b0fd687a1a579.jpeg",
+      "match": {
+        "shikimori": [
+          2597
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2171",
+      "title": "Детектив Конан: Джолли Роджер в глубине лазури",
+      "subtitle": "Meitantei Conan Movie 11: Konpeki no Jolly Roger",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-04-21",
+      "release_year": 2007,
+      "release_label": "21 апреля 2007",
+      "episode_count": 1,
+      "release_order": 34,
+      "watch_order": 34,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2171/25a1b693c75f5af113869aa7d5eaae44.jpeg",
+      "match": {
+        "shikimori": [
+          2171
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-7303",
+      "title": "Детектив Конан: Тёмная история",
+      "subtitle": "Meitantei Conan: Kuro no Soshiki to Taiketsu no Rekishi",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2007-12-17",
+      "release_year": 2007,
+      "release_label": "17 декабря 2007",
+      "episode_count": 1,
+      "release_order": 35,
+      "watch_order": 35,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/7303/4f2d35e8e5cf3aad247bdc7590dc3c97.jpeg",
+      "match": {
+        "shikimori": [
+          7303
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6198",
+      "title": "Детектив Конан OVA 08: Детектив-старшеклассница Соноко Сузуки",
+      "subtitle": "Meitantei Conan OVA 08: Joshikousei Tantei Suzuki Sonoko no Jikenbo",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-03-26",
+      "release_year": 2008,
+      "release_label": "26 марта 2008",
+      "episode_count": 1,
+      "release_order": 36,
+      "watch_order": 36,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6198/769d5ff6e7def270b540e92c158ce927.jpeg",
+      "match": {
+        "shikimori": [
+          6198
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4447",
+      "title": "Детектив Конан: Партитура, вызывающая трепет",
+      "subtitle": "Meitantei Conan Movie 12: Senritsu no Full Score",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2008-04-19",
+      "release_year": 2008,
+      "release_label": "19 апреля 2008",
+      "episode_count": 1,
+      "release_order": 37,
+      "watch_order": 37,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4447/e1ccead28c50ddc75c468c0d1c00da9b.jpeg",
+      "match": {
+        "shikimori": [
+          4447
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5348",
+      "title": "Детектив Конан: Дело о таинственной стене и чёрном лабрадоре",
+      "subtitle": "Meitantei Conan Magic File 2: Kudou Shinichi Nazo no Kabe to Kuro Lab Jiken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2008-04-19",
+      "release_year": 2008,
+      "release_label": "19 апреля 2008",
+      "episode_count": 1,
+      "release_order": 38,
+      "watch_order": 38,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5348/722cc7ee01c4753b3116ccb06dd023fd.jpeg",
+      "match": {
+        "shikimori": [
+          5348
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-5460",
+      "title": "Детектив Конан: Охота на ворона",
+      "subtitle": "Meitantei Conan Movie 13: Shikkoku no Chaser",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2009-04-18",
+      "release_year": 2009,
+      "release_label": "18 апреля 2009",
+      "episode_count": 1,
+      "release_order": 39,
+      "watch_order": 39,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5460/d1f7e30fcb636070c1ca74bf365d5fb0.jpeg",
+      "match": {
+        "shikimori": [
+          5460
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6231",
+      "title": "Детектив Конан: Дело о Шиничи и Ран — Воспоминания Танабаты",
+      "subtitle": "Meitantei Conan Magic File 3: Shinichi to Ran Mahjong Pai to Tanabata no Omoide",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-04-18",
+      "release_year": 2009,
+      "release_label": "18 апреля 2009",
+      "episode_count": 1,
+      "release_order": 40,
+      "watch_order": 40,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6231/6bba914879fcbf556835f0611404e3e9.jpeg",
+      "match": {
+        "shikimori": [
+          6231
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6438",
+      "title": "Детектив Конан OVA 09: Незнакомец через 10 лет...",
+      "subtitle": "Meitantei Conan OVA 09: 10-nengo no Stranger",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2009-06-17",
+      "release_year": 2009,
+      "release_label": "17 июня 2009",
+      "episode_count": 1,
+      "release_order": 41,
+      "watch_order": 41,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6438/8c7c6ede0c8f6858391975dbc8e28efc.jpeg",
+      "match": {
+        "shikimori": [
+          6438
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8609",
+      "title": "Детектив Конан OVA 10: Кид на острове-ловушке",
+      "subtitle": "Meitantei Conan OVA 10: Kid in Trap Island",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-04-14",
+      "release_year": 2010,
+      "release_label": "14 апреля 2010",
+      "episode_count": 1,
+      "release_order": 42,
+      "watch_order": 42,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8609/eb7a06192bc3cd070183fca00682a529.jpeg",
+      "match": {
+        "shikimori": [
+          8609
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6467",
+      "title": "Детектив Конан: Потерянный корабль в небе",
+      "subtitle": "Meitantei Conan Movie 14: Tenkuu no Lost Ship",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2010-04-17",
+      "release_year": 2010,
+      "release_label": "17 апреля 2010",
+      "episode_count": 1,
+      "release_order": 43,
+      "watch_order": 43,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6467/007cd7af43c1c5fd3243a00a8b713f0a.jpeg",
+      "match": {
+        "shikimori": [
+          6467
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8310",
+      "title": "Волшебник Кайто",
+      "subtitle": "Magic Kaito",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2010-04-17",
+      "release_end_date": "2012-12-29",
+      "release_year": 2010,
+      "release_label": "17 апреля 2010 — 29 декабря 2012",
+      "episode_count": 12,
+      "release_order": 44,
+      "watch_order": 44,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8310/30b6d6d91d9b8b5b4f00dfc35d8d66f6.jpeg",
+      "match": {
+        "shikimori": [
+          8310
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8331",
+      "title": "Детектив Конан: Дело о блинной одиссее в Осаке",
+      "subtitle": "Meitantei Conan Magic File 4: Osaka Okonomiyaki Odyssey",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2010-04-17",
+      "release_year": 2010,
+      "release_label": "17 апреля 2010",
+      "episode_count": 1,
+      "release_order": 45,
+      "watch_order": 45,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8331/9bfab59837e174380659a543eb2ded27.jpeg",
+      "match": {
+        "shikimori": [
+          8331
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9963",
+      "title": "Детектив Конан: Квартал молчания",
+      "subtitle": "Meitantei Conan Movie 15: Chinmoku no Quarter",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2011-04-16",
+      "release_year": 2011,
+      "release_label": "16 апреля 2011",
+      "episode_count": 1,
+      "release_order": 46,
+      "watch_order": 46,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9963/f7e5bbc58dce8dc289116d8ffd47a5db.jpeg",
+      "match": {
+        "shikimori": [
+          9963
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10531",
+      "title": "Детектив Конан: Дело о сувенирной лихорадке",
+      "subtitle": "Meitantei Conan Magic File 5: Niigata - Tokyo Omiyage Capriccio",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-04-16",
+      "release_year": 2011,
+      "release_label": "16 апреля 2011",
+      "episode_count": 1,
+      "release_order": 47,
+      "watch_order": 47,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10531/de7da1ab3e24d7e4346d3fbdd2b01706.jpeg",
+      "match": {
+        "shikimori": [
+          10531
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10766",
+      "title": "Детектив Конан vs. Вууу",
+      "subtitle": "Meitantei Conan vs. Wooo",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2011-04-22",
+      "release_end_date": "2011-06-23",
+      "release_year": 2011,
+      "release_label": "22 апреля — 23 июня 2011",
+      "episode_count": 2,
+      "release_order": 48,
+      "watch_order": 48,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10766/135efc39b9af40317a0a14d0fbf5d2ef.jpeg",
+      "match": {
+        "shikimori": [
+          10766
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-10703",
+      "title": "Детектив Конан OVA 11: Секретный приказ от Лондона",
+      "subtitle": "Meitantei Conan OVA 11: London kara no Maru Hi Shirei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-05-30",
+      "release_year": 2011,
+      "release_label": "30 мая 2011",
+      "episode_count": 1,
+      "release_order": 49,
+      "watch_order": 49,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/10703/0974249be671c2fa0f440f2b1de8c7ce.jpeg",
+      "match": {
+        "shikimori": [
+          10703
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36760",
+      "title": "Детектив Конан: Волшебник звёздного света",
+      "subtitle": "Meitantei Conan: Hoshikage no Majutsushi",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-01-01",
+      "release_year": 2012,
+      "release_label": "1 января 2012",
+      "episode_count": 1,
+      "release_order": 50,
+      "watch_order": 50,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36760/d1784ed78756532a920eb71cc5d2c1d0.jpeg",
+      "match": {
+        "shikimori": [
+          36760
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12117",
+      "title": "Детектив Конан: Одиннадцатый нападающий",
+      "subtitle": "Meitantei Conan Movie 16: 11-ninme no Striker",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-04-14",
+      "release_year": 2012,
+      "release_label": "14 апреля 2012",
+      "episode_count": 1,
+      "release_order": 51,
+      "watch_order": 51,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12117/80befc57db218fb8676cca371d74b64b.jpeg",
+      "match": {
+        "shikimori": [
+          12117
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13837",
+      "title": "Детектив Конан: Дело о волшебном цветке",
+      "subtitle": "Meitantei Conan Bonus File: Fantasista no Hana",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2012-04-14",
+      "release_year": 2012,
+      "release_label": "14 апреля 2012",
+      "episode_count": 1,
+      "release_order": 52,
+      "watch_order": 52,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13837/72c3a8c43afe28532adcc70b07dc9eba.jpeg",
+      "match": {
+        "shikimori": [
+          13837
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13839",
+      "title": "Детектив Конан OVA 12: Чудо Экскалибура",
+      "subtitle": "Meitantei Conan OVA 12: Excalibur no Kiseki",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2012-05-24",
+      "release_year": 2012,
+      "release_label": "24 мая 2012",
+      "episode_count": 1,
+      "release_order": 53,
+      "watch_order": 53,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13839/c300e81711de4093b1bf1780657416fe.jpeg",
+      "match": {
+        "shikimori": [
+          13839
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14735",
+      "title": "Детектив Конан: Частный сыщик в далёком море",
+      "subtitle": "Meitantei Conan Movie 17: Zekkai no Private Eye",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2013-04-20",
+      "release_year": 2013,
+      "release_label": "20 апреля 2013",
+      "episode_count": 1,
+      "release_order": 54,
+      "watch_order": 54,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14735/bb76a49f617a7ff1b54ad0b2e370bd3a.jpeg",
+      "match": {
+        "shikimori": [
+          14735
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21419",
+      "title": "Детектив Конан: Снайпер из другого измерения",
+      "subtitle": "Meitantei Conan Movie 18: Ijigen no Sniper",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2014-04-19",
+      "release_year": 2014,
+      "release_label": "19 апреля 2014",
+      "episode_count": 1,
+      "release_order": 55,
+      "watch_order": 55,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21419/ebeb97593b71a2d07e27d9caba534208.jpeg",
+      "match": {
+        "shikimori": [
+          21419
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-24169",
+      "title": "Детектив Конан: Беглец Когоро Мори",
+      "subtitle": "Meitantei Conan: Toubousha Mouri Kogorou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-04-30",
+      "release_year": 2014,
+      "release_label": "30 апреля 2014",
+      "episode_count": 1,
+      "release_order": 56,
+      "watch_order": 56,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/24169/198f677f6963189d3502c01890c02e89.jpeg",
+      "match": {
+        "shikimori": [
+          24169
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-25517",
+      "title": "Волшебник Кайто 1412",
+      "subtitle": "Magic Kaito 1412",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-10-04",
+      "release_end_date": "2015-03-28",
+      "release_year": 2014,
+      "release_label": "4 октября 2014 — 28 марта 2015",
+      "episode_count": 24,
+      "release_order": 57,
+      "watch_order": 57,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/25517/f52b3dc71c964fcb6b0b8c068d91e449.jpeg",
+      "match": {
+        "shikimori": [
+          25517
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21867",
+      "title": "Исчезновение Конана Эдогавы: Два самых худших дня в истории",
+      "subtitle": "Edogawa Conan Shissou Jiken: Shijou Saiaku no Futsukakan",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-12-26",
+      "release_year": 2014,
+      "release_label": "26 декабря 2014",
+      "episode_count": 1,
+      "release_order": 58,
+      "watch_order": 58,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21867/5b8e4d90cb0ec6da6abb034594a2915e.jpeg",
+      "match": {
+        "shikimori": [
+          21867
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53976",
+      "title": "Детектив Конан: Звёздная ночь детективов",
+      "subtitle": "Meitantei Conan: Tantei-tachi no Starry Night",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-01-01",
+      "release_year": 2015,
+      "release_label": "1 января 2015",
+      "episode_count": 1,
+      "release_order": 59,
+      "watch_order": 59,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53976/41b08a7562429d36206b802c87b35d9a.jpeg",
+      "match": {
+        "shikimori": [
+          53976
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-29437",
+      "title": "Детектив Конан: С Новым Годом",
+      "subtitle": "Meitantei Conan: Kinga Shinnen Mouri Kogorou",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2015-01-03",
+      "release_year": 2015,
+      "release_label": "3 января 2015",
+      "episode_count": 1,
+      "release_order": 60,
+      "watch_order": 60,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/29437/78968104d3bf846ac81b9e773508f931.jpeg",
+      "match": {
+        "shikimori": [
+          29437
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28479",
+      "title": "Детектив Конан: Подсолнухи из адского пламени",
+      "subtitle": "Meitantei Conan Movie 19: Gouka no Himawari",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-04-18",
+      "release_year": 2015,
+      "release_label": "18 апреля 2015",
+      "episode_count": 1,
+      "release_order": 61,
+      "watch_order": 61,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28479/6da77ffd8a97d5f157d2bc18bb38d016.jpeg",
+      "match": {
+        "shikimori": [
+          28479
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53517",
+      "title": "Детектив Конан: Урок хороших манер",
+      "subtitle": "Meitantei Conan Manner Movie",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-04-18",
+      "release_year": 2015,
+      "release_label": "18 апреля 2015",
+      "episode_count": 1,
+      "release_order": 62,
+      "watch_order": 62,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53517/2bc0c3379e8b89f04a0d35f28de5df40.jpeg",
+      "match": {
+        "shikimori": [
+          53517
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32005",
+      "title": "Детектив Конан: Худший из кошмаров",
+      "subtitle": "Meitantei Conan Movie 20: Junkoku no Nightmare",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-04-16",
+      "release_year": 2016,
+      "release_label": "16 апреля 2016",
+      "episode_count": 1,
+      "release_order": 63,
+      "watch_order": 63,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32005/ec6e60bf498e174f038f3aa3bee892f5.jpeg",
+      "match": {
+        "shikimori": [
+          32005
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34036",
+      "title": "Детектив Конан: Первый эпизод — Уменьшившийся великий детектив",
+      "subtitle": "Meitantei Conan: Episode One - Chiisaku Natta Meitantei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-12-09",
+      "release_year": 2016,
+      "release_label": "9 декабря 2016",
+      "episode_count": 1,
+      "release_order": 64,
+      "watch_order": 64,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34036/64d2ecdb2c696f2d450daa1aeee203a7.jpeg",
+      "match": {
+        "shikimori": [
+          34036
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34430",
+      "title": "Детектив Конан: Тёмно-алое любовное письмо",
+      "subtitle": "Meitantei Conan Movie 21: Karakurenai no Love Letter",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-04-15",
+      "release_year": 2017,
+      "release_label": "15 апреля 2017",
+      "episode_count": 1,
+      "release_order": 65,
+      "watch_order": 65,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34430/e6c5b9539273c697c3adc4e722b4e6b2.jpeg",
+      "match": {
+        "shikimori": [
+          34430
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35798",
+      "title": "Детектив Конан: Палач Зеро",
+      "subtitle": "Meitantei Conan Movie 22: Zero no Shikkounin",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2018-04-13",
+      "release_year": 2018,
+      "release_label": "13 апреля 2018",
+      "episode_count": 1,
+      "release_order": 66,
+      "watch_order": 66,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35798/b77920d4cf500d0a8dee4832c4db1d44.jpeg",
+      "match": {
+        "shikimori": [
+          35798
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38788",
+      "title": "Детектив Конан: Тайный звонок Амуро",
+      "subtitle": "Meitantei Conan: Amuro Secret Call",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-10-03",
+      "release_year": 2018,
+      "release_label": "3 октября 2018",
+      "episode_count": 1,
+      "release_order": 67,
+      "watch_order": 67,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38788/d7b3b594748cef0d56ff89c0e10bb9d5.jpeg",
+      "match": {
+        "shikimori": [
+          38788
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38770",
+      "title": "Детектив Конан: Кулак голубого сапфира",
+      "subtitle": "Meitantei Conan Movie 23: Konjou no Fist",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-04-12",
+      "release_year": 2019,
+      "release_label": "12 апреля 2019",
+      "episode_count": 1,
+      "release_order": 68,
+      "watch_order": 68,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38770/ffea901cb11ba561d8bc28ef0c184b22.jpeg",
+      "match": {
+        "shikimori": [
+          38770
+        ],
+        "sources": [
+          "yummyanime:4236"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42476",
+      "title": "Детектив Конан: Пылающая галактическая железная дорога",
+      "subtitle": "Meitantei Conan: Shakunetsu no Ginga Tetsudou",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-02-01",
+      "release_year": 2020,
+      "release_label": "1 февраля 2020",
+      "episode_count": 1,
+      "release_order": 69,
+      "watch_order": 69,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42476/c99f4fe39936c799ae5149b7935ca3e8.jpeg",
+      "match": {
+        "shikimori": [
+          42476
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-47413",
+      "title": "Детектив Конан: Алое алиби",
+      "subtitle": "Meitantei Conan: Hiiro no Fuzai Shoumei",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-02-11",
+      "release_year": 2021,
+      "release_label": "11 февраля 2021",
+      "episode_count": 1,
+      "release_order": 70,
+      "watch_order": 70,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/47413/64a5a861eb0b5a05a118cc8c84364d67.jpeg",
+      "match": {
+        "shikimori": [
+          47413
+        ],
+        "sources": [
+          "yummyanime:4048"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39764",
+      "title": "Детектив Конан: Алая пуля",
+      "subtitle": "Meitantei Conan Movie 24: Hiiro no Dangan",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-04-16",
+      "release_year": 2021,
+      "release_label": "16 апреля 2021",
+      "episode_count": 1,
+      "release_order": 71,
+      "watch_order": 71,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39764/5b0035c186d91652915f42f568c20b3b.jpeg",
+      "match": {
+        "shikimori": [
+          39764
+        ],
+        "sources": [
+          "yummyanime:406"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50012",
+      "title": "Детектив Конан: Чаепитие Зеро",
+      "subtitle": "Meitantei Conan: Zero no Tea Time",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-04-05",
+      "release_end_date": "2022-05-10",
+      "release_year": 2022,
+      "release_label": "5 апреля — 10 мая 2022",
+      "episode_count": 6,
+      "release_order": 72,
+      "watch_order": 72,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50012/4903a180aec1466a31b94706ddd3f4ba.jpeg",
+      "match": {
+        "shikimori": [
+          50012
+        ],
+        "sources": [
+          "yummyanime:2076"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49320",
+      "title": "Детектив Конан: Хэллоуинская невеста",
+      "subtitle": "Meitantei Conan Movie 25: Halloween no Hanayome",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-04-15",
+      "release_year": 2022,
+      "release_label": "15 апреля 2022",
+      "episode_count": 1,
+      "release_order": 73,
+      "watch_order": 73,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49320/d97739dc0ba799603104b4aa9ee0427f.jpeg",
+      "match": {
+        "shikimori": [
+          49320
+        ],
+        "sources": [
+          "yummyanime:1493"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51782",
+      "title": "Детектив Конан: История любви в штаб-квартире полиции — Накануне свадьбы",
+      "subtitle": "Meitantei Conan: Honchou no Keiji Koi Monogatari - Kekkon Zenya",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-04-15",
+      "release_year": 2022,
+      "release_label": "15 апреля 2022",
+      "episode_count": 1,
+      "release_order": 74,
+      "watch_order": 74,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51782/70619a565e66611d3b27b9e679483370.jpeg",
+      "match": {
+        "shikimori": [
+          51782
+        ],
+        "sources": [
+          "yummyanime:5187"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50010",
+      "title": "Детектив Конан: Преступник Ханзава",
+      "subtitle": "Meitantei Conan: Hannin no Hanzawa-san",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-04",
+      "release_end_date": "2022-12-20",
+      "release_year": 2022,
+      "release_label": "4 октября — 20 декабря 2022",
+      "episode_count": 12,
+      "release_order": 75,
+      "watch_order": 75,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50010/acd0227c07ed43038019f5da7f529a15.jpeg",
+      "match": {
+        "shikimori": [
+          50010
+        ],
+        "sources": [
+          "yummyanime:1734"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53780",
+      "title": "История Ай Хайбары: Железный таинственный поезд",
+      "subtitle": "Meitantei Conan: Haibara Ai Monogatari - Kurogane no Mystery Train",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-01-06",
+      "release_year": 2023,
+      "release_label": "6 января 2023",
+      "episode_count": 1,
+      "release_order": 76,
+      "watch_order": 76,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53780/a603a32068c8fdbbb8d7b08214ea0cf7.jpeg",
+      "match": {
+        "shikimori": [
+          53780
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54864",
+      "title": "Детектив Конан: Полицейская академия — Дело Рэя Фуруи",
+      "subtitle": "Meitantei Conan: Keisatsu Gakkou-hen Wild Police Story - Case. Furuya Rei",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-03-11",
+      "release_year": 2023,
+      "release_label": "11 марта 2023",
+      "episode_count": 1,
+      "release_order": 77,
+      "watch_order": 77,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54864/9c8ee90d47897281fd51f7d32b2a5ff9.jpeg",
+      "match": {
+        "shikimori": [
+          54864
+        ],
+        "sources": [
+          "yummyanime:8441"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53540",
+      "title": "Детектив Конан: Железная подводная лодка",
+      "subtitle": "Meitantei Conan Movie 26: Kurogane no Submarine",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-04-14",
+      "release_year": 2023,
+      "release_label": "14 апреля 2023",
+      "episode_count": 1,
+      "release_order": 78,
+      "watch_order": 78,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53540/0ccd8243473d1bb2adc5ca9fc4fc8747.jpeg",
+      "match": {
+        "shikimori": [
+          53540
+        ],
+        "sources": [
+          "yummyanime:2230"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57441",
+      "title": "Детектив Конан против Кайто Кида",
+      "subtitle": "Meitantei Conan vs. Kaitou Kid",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-01-05",
+      "release_year": 2024,
+      "release_label": "5 января 2024",
+      "episode_count": 1,
+      "release_order": 79,
+      "watch_order": 79,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57441/a40455950acf82194cbd621c05b46d29.jpeg",
+      "match": {
+        "shikimori": [
+          57441
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56785",
+      "title": "Детектив Конан: Пентаграмма на миллион долларов",
+      "subtitle": "Meitantei Conan Movie 27: 100-man Dollar no Michishirube",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-04-12",
+      "release_year": 2024,
+      "release_label": "12 апреля 2024",
+      "episode_count": 1,
+      "release_order": 80,
+      "watch_order": 80,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56785/a65a813ac738f40edc784bea83763bed.jpeg",
+      "match": {
+        "shikimori": [
+          56785
+        ],
+        "sources": [
+          "yummyanime:4610"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62061",
+      "title": "Детектив Конан: Ослепительный космический корабль",
+      "subtitle": "Meitantei Conan: Senkou no Payload",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-03-08",
+      "release_year": 2025,
+      "release_label": "8 марта 2025",
+      "episode_count": 1,
+      "release_order": 81,
+      "watch_order": 81,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62061/868a9eff642852dbeb963a879b5aef9e.jpeg",
+      "match": {
+        "shikimori": [
+          62061
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60445",
+      "title": "Детектив Конан: Воспоминания одноглазого",
+      "subtitle": "Meitantei Conan Movie 28: Sekigan no Flashback",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2025-04-18",
+      "release_year": 2025,
+      "release_label": "18 апреля 2025",
+      "episode_count": 1,
+      "release_order": 82,
+      "watch_order": 82,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60445/2dc38a75da03fc0cdb5f4fc17193f21d.jpeg",
+      "match": {
+        "shikimori": [
+          60445
+        ],
+        "sources": [
+          "yummyanime:8291"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62387",
+      "title": "Детектив Конан: Падший ангел автострады",
+      "subtitle": "Meitantei Conan Movie 29: Highway no Datenshi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2026-04-10",
+      "release_year": 2026,
+      "release_label": "10 апреля 2026",
+      "episode_count": 1,
+      "release_order": 83,
+      "watch_order": 83,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62387/bd0e3be2c18fb71b887432c00940554c.jpeg",
+      "match": {
+        "shikimori": [
+          62387
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "slug": "black-clover",
+  "title": "Чёрный клевер",
+  "short_title": "Black Clover",
+  "original_title": "ブラッククローバー",
+  "summary": "Фэнтезийный сёнэн о двух соперниках, стремящихся стать главой магов, и команде, где упорство оказывается не менее важным, чем талант.",
+  "guide": "Начинайте с основного сериала и после него смотрите фильм «Меч короля магов», если хотите дополнительную историю. Короткие OVA и специальные выпуски необязательны.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/34572/d4c5bf9cac831c03fc5ebed2676b7b10.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/34572",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "black_clover",
+    "primary_shikimori_ids": [
+      34572
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 35,
+  "entries": [
+    {
+      "key": "shikimori-33950",
+      "title": "Чёрный клевер: Джамп Феста 2016",
+      "subtitle": "Black Clover: Jump Festa 2016 Special",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2016-11-27",
+      "release_year": 2016,
+      "release_label": "27 ноября 2016",
+      "episode_count": 1,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33950/611075cae6f6b7b9cc94aed6576f30b0.jpeg",
+      "match": {
+        "shikimori": [
+          33950
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-34572",
+      "title": "Чёрный клевер",
+      "subtitle": "Black Clover",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2017-10-03",
+      "release_end_date": "2021-03-30",
+      "release_year": 2017,
+      "release_label": "3 октября 2017 — 30 марта 2021",
+      "episode_count": 170,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34572/d4c5bf9cac831c03fc5ebed2676b7b10.jpeg",
+      "match": {
+        "shikimori": [
+          34572
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39864",
+      "title": "Чёрный клевер: Спецвыпуски",
+      "subtitle": "Petit Clover Advance",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-02-23",
+      "release_end_date": "2021-06-25",
+      "release_year": 2018,
+      "release_label": "23 февраля 2018 — 25 июня 2021",
+      "episode_count": 15,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39864/6c1c2b26c9a3d26218d70961fb13b7ee.jpeg",
+      "match": {
+        "shikimori": [
+          39864
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38768",
+      "title": "Чёрный клевер: Джамп Феста 2018",
+      "subtitle": "Black Clover: Jump Festa 2018 Special",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-11-25",
+      "release_year": 2018,
+      "release_label": "25 ноября 2018",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38768/748e2df74204bec809e995e5aafaf418.jpeg",
+      "match": {
+        "shikimori": [
+          38768
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40031",
+      "title": "Чёрный клевер: Прости меня!",
+      "subtitle": "Mugyutto! Black Clover",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2019-07-01",
+      "release_end_date": "2019-08-19",
+      "release_year": 2019,
+      "release_label": "1 июля — 19 августа 2019",
+      "episode_count": 8,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40031/8b385fdce7607c79fcc6e994f1f75d04.jpeg",
+      "match": {
+        "shikimori": [
+          40031
+        ],
+        "sources": [
+          "animego:1413",
+          "yummyanime:5470"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48585",
+      "title": "Чёрный клевер: Меч короля магов",
+      "subtitle": "Black Clover: Mahou Tei no Ken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-06-16",
+      "release_year": 2023,
+      "release_label": "16 июня 2023",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48585/e0230c04a6e852343a1ecacb3ec6a4ce.jpeg",
+      "match": {
+        "shikimori": [
+          48585
+        ],
+        "sources": [
+          "animego:2335",
+          "yummyanime:1200"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

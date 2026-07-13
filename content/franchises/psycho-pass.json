@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "slug": "psycho-pass",
+  "title": "Психопаспорт",
+  "short_title": "Psycho-Pass",
+  "original_title": "PSYCHO-PASS サイコパス",
+  "summary": "Антиутопический детектив о системе, оценивающей склонность человека к преступлению, и людях, которые поддерживают или оспаривают её порядок.",
+  "guide": "Начинайте с первого сезона, затем смотрите второй сезон и фильм 2015 года. После них идут Sinners of the System, третий сезон, First Inspector и Providence; расширенная версия первого сезона заменяет оригинал, а не продолжает его.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/13601/e7da418ee2383a04782c1156f735db96.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/13601",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "psycho_pass",
+    "primary_shikimori_ids": [
+      13601
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 27,
+  "entries": [
+    {
+      "key": "shikimori-13601",
+      "title": "Психопаспорт",
+      "subtitle": "Psycho-Pass",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-10-12",
+      "release_end_date": "2013-03-22",
+      "release_year": 2012,
+      "release_label": "12 октября 2012 — 22 марта 2013",
+      "episode_count": 22,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13601/e7da418ee2383a04782c1156f735db96.jpeg",
+      "match": {
+        "shikimori": [
+          13601
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-23281",
+      "title": "Психопаспорт 2",
+      "subtitle": "Psycho-Pass 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-10-10",
+      "release_end_date": "2014-12-19",
+      "release_year": 2014,
+      "release_label": "10 октября — 19 декабря 2014",
+      "episode_count": 11,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/23281/41ef46b7b8ce103489f9df71ccbfa71f.jpeg",
+      "match": {
+        "shikimori": [
+          23281
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21339",
+      "title": "Психопаспорт. Фильм",
+      "subtitle": "Psycho-Pass Movie 1",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-01-09",
+      "release_year": 2015,
+      "release_label": "9 января 2015",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21339/043b8c765a0da161956c46410dcc9a43.jpeg",
+      "match": {
+        "shikimori": [
+          21339
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37440",
+      "title": "Психопаспорт: Грешники системы — Преступление и наказание",
+      "subtitle": "Psycho-Pass: Sinners of the System Case.1 - Tsumi to Batsu",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-01-25",
+      "release_year": 2019,
+      "release_label": "25 января 2019",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37440/b5925648509c8178a806ce2f9d317a2b.jpeg",
+      "match": {
+        "shikimori": [
+          37440
+        ],
+        "sources": [
+          "animego:1328",
+          "yummyanime:4430"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37441",
+      "title": "Психопаспорт: Грешники системы — Первый блюститель",
+      "subtitle": "Psycho-Pass: Sinners of the System Case.2 - First Guardian",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-02-15",
+      "release_year": 2019,
+      "release_label": "15 февраля 2019",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37441/cdae8ec5b74ea7a92545cec6cf826e61.jpeg",
+      "match": {
+        "shikimori": [
+          37441
+        ],
+        "sources": [
+          "animego:1329",
+          "yummyanime:4409"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37442",
+      "title": "Психопаспорт: Грешники системы — По ту сторону царства",
+      "subtitle": "Psycho-Pass: Sinners of the System Case.3 - Onshuu no Kanata ni＿＿",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-03-08",
+      "release_year": 2019,
+      "release_label": "8 марта 2019",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37442/19990fe2314a595a02340c57ca29d856.jpeg",
+      "match": {
+        "shikimori": [
+          37442
+        ],
+        "sources": [
+          "animego:1330",
+          "yummyanime:4410"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39491",
+      "title": "Психопаспорт 3",
+      "subtitle": "Psycho-Pass 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-10-25",
+      "release_end_date": "2019-12-13",
+      "release_year": 2019,
+      "release_label": "25 октября — 13 декабря 2019",
+      "episode_count": 8,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39491/b28bd3d2b87b7e1015ede5975068aa2d.jpeg",
+      "match": {
+        "shikimori": [
+          39491
+        ],
+        "sources": [
+          "animego:1331",
+          "yummyanime:2266"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40858",
+      "title": "Психопаспорт 3: Первый инспектор",
+      "subtitle": "Psycho-Pass 3: First Inspector",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-03-27",
+      "release_year": 2020,
+      "release_label": "27 марта 2020",
+      "episode_count": 3,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40858/3e985c0f1aa4765f71c23e54bf7a9d9c.jpeg",
+      "match": {
+        "shikimori": [
+          40858
+        ],
+        "sources": [
+          "yummyanime:4407"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52747",
+      "title": "Психопаспорт: Провидение",
+      "subtitle": "Psycho-Pass Movie 2: Providence",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-05-12",
+      "release_year": 2023,
+      "release_label": "12 мая 2023",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52747/75bf5f66ec4d90612b21065797f1d7ed.jpeg",
+      "match": {
+        "shikimori": [
+          52747
+        ],
+        "sources": [
+          "animego:2531",
+          "yummyanime:2180"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

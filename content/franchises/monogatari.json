@@ -1,0 +1,574 @@
+{
+  "schema_version": 1,
+  "slug": "monogatari",
+  "title": "Цикл историй",
+  "short_title": "Monogatari",
+  "original_title": "〈物語〉シリーズ",
+  "summary": "Диалоговая сверхъестественная сага о странностях, личных травмах и людях, чьи истории постоянно пересекаются вокруг одного рассказчика.",
+  "guide": "Для первого просмотра удобнее порядок выхода: Bakemonogatari, Nisemonogatari, Nekomonogatari (Black), затем Second Season и последующие части. Хронологический порядок лучше оставить для пересмотра.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/5081/c66dc721a0cd98127ca1c38a2290f5e1.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/5081",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "bakemonogatari",
+    "primary_shikimori_ids": [
+      5081
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 23,
+  "entries": [
+    {
+      "key": "shikimori-5081",
+      "title": "Истории монстров",
+      "subtitle": "Bakemonogatari",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2009-07-03",
+      "release_end_date": "2010-06-25",
+      "release_year": 2009,
+      "release_label": "3 июля 2009 — 25 июня 2010",
+      "episode_count": 15,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/5081/c66dc721a0cd98127ca1c38a2290f5e1.jpeg",
+      "match": {
+        "shikimori": [
+          5081
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-6948",
+      "title": "Истории монстров: Рекап",
+      "subtitle": "Bakemonogatari Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2009-08-07",
+      "release_year": 2009,
+      "release_label": "7 августа 2009",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6948/10b8303ddef810e05b69d302fe41d7e1.jpeg",
+      "match": {
+        "shikimori": [
+          6948
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-11597",
+      "title": "Истории подделок",
+      "subtitle": "Nisemonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-01-08",
+      "release_end_date": "2012-03-18",
+      "release_year": 2012,
+      "release_label": "8 января — 18 марта 2012",
+      "episode_count": 11,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/11597/6a510dcac02a748fe3bddb895a9c8ed9.jpeg",
+      "match": {
+        "shikimori": [
+          11597
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-15689",
+      "title": "История кошки: Чёрная глава",
+      "subtitle": "Nekomonogatari: Kuro",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2012-12-31",
+      "release_year": 2012,
+      "release_label": "31 декабря 2012",
+      "episode_count": 4,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15689/92fff1d95a938f7b0a5fe67851e1ec39.jpeg",
+      "match": {
+        "shikimori": [
+          15689
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38971",
+      "title": "История кошки: Чёрная глава — Рекап",
+      "subtitle": "Nekomonogatari: Kuro Recap",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-03-06",
+      "release_year": 2013,
+      "release_label": "6 марта 2013",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38971/bb887f31607626430413e8701fbcc18e.jpeg",
+      "match": {
+        "shikimori": [
+          38971
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17074",
+      "title": "Цикл историй: Второй сезон",
+      "subtitle": "Monogatari Series: Second Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-07-07",
+      "release_end_date": "2013-12-29",
+      "release_year": 2013,
+      "release_label": "7 июля — 29 декабря 2013",
+      "episode_count": 26,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17074/e9f1f4301a951f56e76863ffff83f2fb.jpeg",
+      "match": {
+        "shikimori": [
+          17074
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-21855",
+      "title": "История цветов",
+      "subtitle": "Hanamonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-08-16",
+      "release_year": 2014,
+      "release_label": "16 августа 2014",
+      "episode_count": 5,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/21855/850d6aa483fea3132513684c710ae21a.jpeg",
+      "match": {
+        "shikimori": [
+          21855
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-28025",
+      "title": "История одержимости",
+      "subtitle": "Tsukimonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2014-12-31",
+      "release_year": 2014,
+      "release_label": "31 декабря 2014",
+      "episode_count": 4,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/28025/00a32e299c94b1e754d2c3aa926cf712.jpeg",
+      "match": {
+        "shikimori": [
+          28025
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31181",
+      "title": "История финала",
+      "subtitle": "Owarimonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-10-04",
+      "release_end_date": "2015-12-20",
+      "release_year": 2015,
+      "release_label": "4 октября — 20 декабря 2015",
+      "episode_count": 12,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31181/98c2ffeae3e999c48a6107b67af63ea8.jpeg",
+      "match": {
+        "shikimori": [
+          31181
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9260",
+      "title": "Истории ран. Часть 1: Железная кровь",
+      "subtitle": "Kizumonogatari I: Tekketsu-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-01-08",
+      "release_year": 2016,
+      "release_label": "8 января 2016",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9260/c9ad8a2e246db0a3ffe7ee7b255211db.jpeg",
+      "match": {
+        "shikimori": [
+          9260
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32268",
+      "title": "Истории Коёми",
+      "subtitle": "Koyomimonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2016-01-10",
+      "release_end_date": "2016-03-27",
+      "release_year": 2016,
+      "release_label": "10 января — 27 марта 2016",
+      "episode_count": 12,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32268/5c942e0412725844d364c0cab365824a.jpeg",
+      "match": {
+        "shikimori": [
+          32268
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54209",
+      "title": "Давайте учиться манерам вместе",
+      "subtitle": "Minna to Manner wo Manabou",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-02-09",
+      "release_year": 2016,
+      "release_label": "9 февраля 2016",
+      "episode_count": 2,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54209/9ab8b5f816f27b43f19a8824f49465d7.jpeg",
+      "match": {
+        "shikimori": [
+          54209
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31757",
+      "title": "Истории ран. Часть 2: Горячая кровь",
+      "subtitle": "Kizumonogatari II: Nekketsu-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2016-08-19",
+      "release_year": 2016,
+      "release_label": "19 августа 2016",
+      "episode_count": 1,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31757/22d8495bf55abb1d6ccab93860ebf698.jpeg",
+      "match": {
+        "shikimori": [
+          31757
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37139",
+      "title": "История Коёми",
+      "subtitle": "Koyomi History",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2016-09-22",
+      "release_year": 2016,
+      "release_label": "22 сентября 2016",
+      "episode_count": 1,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37139/d25b692de1a989a8f36b292a64b86173.jpeg",
+      "match": {
+        "shikimori": [
+          37139
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31758",
+      "title": "Истории ран. Часть 3: Холодная кровь",
+      "subtitle": "Kizumonogatari III: Reiketsu-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-01-06",
+      "release_year": 2017,
+      "release_label": "6 января 2017",
+      "episode_count": 1,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31758/76e5152e524a615d3a93c826d4aff137.jpeg",
+      "match": {
+        "shikimori": [
+          31758
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35247",
+      "title": "История финала 2",
+      "subtitle": "Owarimonogatari 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-08-12",
+      "release_end_date": "2017-08-13",
+      "release_year": 2017,
+      "release_label": "12 августа — 13 августа 2017",
+      "episode_count": 7,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35247/5a9f5cc12fe959dd38640af3ef69913b.jpeg",
+      "match": {
+        "shikimori": [
+          35247
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36796",
+      "title": "История финала 2: Рекапы",
+      "subtitle": "Owarimonogatari 2nd Season Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2017-08-12",
+      "release_end_date": "2017-08-13",
+      "release_year": 2017,
+      "release_label": "12 августа — 13 августа 2017",
+      "episode_count": 2,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36796/15fc49ca0997da0135f7254bd7911627.jpeg",
+      "match": {
+        "shikimori": [
+          36796
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36999",
+      "title": "История финала: Продолжение",
+      "subtitle": "Zoku Owarimonogatari",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-05-19",
+      "release_end_date": "2019-06-23",
+      "release_year": 2019,
+      "release_label": "19 мая — 23 июня 2019",
+      "episode_count": 6,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36999/4df9e71da594b8d9dfa42c8b3c1ee80a.jpeg",
+      "match": {
+        "shikimori": [
+          36999
+        ],
+        "sources": [
+          "animego:894",
+          "yummyanime:1837"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56609",
+      "title": "Истории ран: Вампир Коёми",
+      "subtitle": "Kizumonogatari: Koyomi Vamp",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-01-12",
+      "release_year": 2024,
+      "release_label": "12 января 2024",
+      "episode_count": 1,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56609/c949f17f6215c13484a15e4b40c4ca15.jpeg",
+      "match": {
+        "shikimori": [
+          56609
+        ],
+        "sources": [
+          "yummyanime:4585"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57864",
+      "title": "Цикл историй: Межсезонье и сезон монстров",
+      "subtitle": "Monogatari Series: Off & Monster Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-07-06",
+      "release_end_date": "2024-10-19",
+      "release_year": 2024,
+      "release_label": "6 июля — 19 октября 2024",
+      "episode_count": 14,
+      "release_order": 20,
+      "watch_order": 20,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57864/725a1fff95f1a23fc59a93bf7a7c9b56.jpeg",
+      "match": {
+        "shikimori": [
+          57864
+        ],
+        "sources": [
+          "animego:2629",
+          "yummyanime:4809"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59612",
+      "title": "Цикл историй: Межсезонье — Жестокая сказка. Прекрасная принцесса",
+      "subtitle": "Monogatari Series: Off & Monster Season - Zankoku Douwa: Utsukushi-hime",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-08-17",
+      "release_year": 2024,
+      "release_label": "17 августа 2024",
+      "episode_count": 1,
+      "release_order": 21,
+      "watch_order": 21,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59612/77b48b5a53582d29e010e479a69f9446.jpeg",
+      "match": {
+        "shikimori": [
+          59612
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61968",
+      "title": "Цикл историй: Межсезонье и сезон монстров — История деяний: Демоны Карэн",
+      "subtitle": "Monogatari Series: Off & Monster Season - Wazamonogatari: Karen Ogre",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "announced",
+      "release_date": "2026-01-01",
+      "release_year": 2026,
+      "release_label": "1 января 2026",
+      "release_order": 22,
+      "watch_order": 22,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61968/5fe487986b2032ba5b3b65573a945d43.jpeg",
+      "match": {
+        "shikimori": [
+          61968
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "slug": "jojo",
+  "title": "Невероятное приключение ДжоДжо",
+  "short_title": "JoJo",
+  "original_title": "ジョジョの奇妙な冒険",
+  "summary": "Экстравагантная семейная сага, в которой каждое поколение получает новых героев, эпоху, стиль и необычные правила сражений.",
+  "guide": "Смотрите номерные части последовательно, начиная с Phantom Blood и Battle Tendency. Старые OVA и некоторые фильмы являются альтернативными адаптациями уже знакомых частей и не нужны для продолжения.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/14719/79b29ff889570e1d64f1b328676b6897.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/14719",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "jojo_no_kimyou_na_bouken",
+    "primary_shikimori_ids": [
+      14719
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 12,
+  "entries": [
+    {
+      "key": "shikimori-666",
+      "title": "Невероятное приключение ДжоДжо OVA",
+      "subtitle": "JoJo no Kimyou na Bouken",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1993-11-19",
+      "release_end_date": "1994-11-18",
+      "release_year": 1993,
+      "release_label": "19 ноября 1993 — 18 ноября 1994",
+      "episode_count": 6,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/666/9ffc3fe2a94a78f1e24f1b1c32fd2f8e.jpeg",
+      "match": {
+        "shikimori": [
+          666
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-665",
+      "title": "Невероятное приключение ДжоДжо OVA (2000)",
+      "subtitle": "JoJo no Kimyou na Bouken: Adventure",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2000-05-25",
+      "release_end_date": "2002-01-25",
+      "release_year": 2000,
+      "release_label": "25 мая 2000 — 25 января 2002",
+      "episode_count": 7,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/665/aa11c73bba20bd2137328fd88fea42ec.jpeg",
+      "match": {
+        "shikimori": [
+          665
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41306",
+      "title": "Невероятное приключение ДжоДжо: Призрачная кровь — Пилотный выпуск",
+      "subtitle": "JoJo no Kimyou na Bouken: Phantom Blood Pilot",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2004-03-28",
+      "release_year": 2004,
+      "release_label": "28 марта 2004",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41306/c835074cd692f0d6bfe0193be614fcb7.jpeg",
+      "match": {
+        "shikimori": [
+          41306
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3603",
+      "title": "Невероятное приключение ДжоДжо: Призрачная кровь",
+      "subtitle": "JoJo no Kimyou na Bouken: Phantom Blood",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-02-17",
+      "release_year": 2007,
+      "release_label": "17 февраля 2007",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3603/6f35cb03ead7f4025c61a881f30040c1.jpeg",
+      "match": {
+        "shikimori": [
+          3603
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14719",
+      "title": "Невероятное приключение ДжоДжо",
+      "subtitle": "JoJo no Kimyou na Bouken (TV)",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2012-10-06",
+      "release_end_date": "2013-04-06",
+      "release_year": 2012,
+      "release_label": "6 октября 2012 — 6 апреля 2013",
+      "episode_count": 26,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14719/79b29ff889570e1d64f1b328676b6897.jpeg",
+      "match": {
+        "shikimori": [
+          14719
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-20899",
+      "title": "Невероятное приключение ДжоДжо: Рыцари звёздной пыли",
+      "subtitle": "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-04-05",
+      "release_end_date": "2014-09-13",
+      "release_year": 2014,
+      "release_label": "5 апреля — 13 сентября 2014",
+      "episode_count": 24,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/20899/a6980c13058794f73d0d6e1dbd8e6252.jpeg",
+      "match": {
+        "shikimori": [
+          20899
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-26055",
+      "title": "Невероятное приключение ДжоДжо: Рыцари звёздной пыли 2",
+      "subtitle": "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders - Egypt-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2015-01-10",
+      "release_end_date": "2015-06-20",
+      "release_year": 2015,
+      "release_label": "10 января — 20 июня 2015",
+      "episode_count": 24,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/26055/a8d8961b3b8ba1016324f0061a990ad4.jpeg",
+      "match": {
+        "shikimori": [
+          26055
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31933",
+      "title": "Невероятное приключение ДжоДжо: Несокрушимый алмаз",
+      "subtitle": "JoJo no Kimyou na Bouken Part 4: Diamond wa Kudakenai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-04-02",
+      "release_end_date": "2016-12-24",
+      "release_year": 2016,
+      "release_label": "2 апреля — 24 декабря 2016",
+      "episode_count": 39,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31933/bf860a44a83afc67e87bc4d9fc99de4f.jpeg",
+      "match": {
+        "shikimori": [
+          31933
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-33191",
+      "title": "Так говорил Рохан Кишибэ",
+      "subtitle": "Kishibe Rohan wa Ugokanai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2017-09-20",
+      "release_end_date": "2020-03-25",
+      "release_year": 2017,
+      "release_label": "20 сентября 2017 — 25 марта 2020",
+      "episode_count": 4,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/33191/1b6c0a35e801fe5859b0f1227a4d944d.jpeg",
+      "match": {
+        "shikimori": [
+          33191
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37991",
+      "title": "Невероятное приключение ДжоДжо: Золотой ветер",
+      "subtitle": "JoJo no Kimyou na Bouken Part 5: Ougon no Kaze",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-10-06",
+      "release_end_date": "2019-07-28",
+      "release_year": 2018,
+      "release_label": "6 октября 2018 — 28 июля 2019",
+      "episode_count": 39,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37991/268789301935b2bc0b71450f5c156a24.jpeg",
+      "match": {
+        "shikimori": [
+          37991
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38972",
+      "title": "Невероятное приключение ДжоДжо: Золотой ветер — Рекапы",
+      "subtitle": "JoJo no Kimyou na Bouken Part 5: Ougon no Kaze Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2019-01-05",
+      "release_end_date": "2019-05-04",
+      "release_year": 2019,
+      "release_label": "5 января — 4 мая 2019",
+      "episode_count": 3,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38972/e1bb74e2881d4fb9216bba3ea42f5b6f.jpeg",
+      "match": {
+        "shikimori": [
+          38972
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48661",
+      "title": "Невероятное приключение ДжоДжо: Каменный океан",
+      "subtitle": "JoJo no Kimyou na Bouken Part 6: Stone Ocean",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-12-01",
+      "release_year": 2021,
+      "release_label": "1 декабря 2021",
+      "episode_count": 12,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48661/74b7289396602423bdbb05482e76a124.jpeg",
+      "match": {
+        "shikimori": [
+          48661
+        ],
+        "sources": [
+          "animego:1922",
+          "yummyanime:874"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51367",
+      "title": "Невероятное приключение ДжоДжо: Каменный океан. Часть 2",
+      "subtitle": "JoJo no Kimyou na Bouken Part 6: Stone Ocean Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-09-01",
+      "release_year": 2022,
+      "release_label": "1 сентября 2022",
+      "episode_count": 12,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51367/7cf756364f0770e03b386a430f019d04.jpeg",
+      "match": {
+        "shikimori": [
+          51367
+        ],
+        "sources": [
+          "animego:2112",
+          "yummyanime:1718"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53273",
+      "title": "Невероятное приключение ДжоДжо: Каменный океан. Часть 3",
+      "subtitle": "JoJo no Kimyou na Bouken Part 6: Stone Ocean Part 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-12-01",
+      "release_year": 2022,
+      "release_label": "1 декабря 2022",
+      "episode_count": 14,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53273/5111bd3b3e531e41d686123b2f005b03.jpeg",
+      "match": {
+        "shikimori": [
+          53273
+        ],
+        "sources": [
+          "animego:2182",
+          "yummyanime:2170"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61469",
+      "title": "Невероятное приключение ДжоДжо: Гонка «Стальной шар»",
+      "subtitle": "Steel Ball Run: JoJo no Kimyou na Bouken",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_date": "2026-03-19",
+      "release_year": 2026,
+      "release_label": "19 марта 2026",
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Сейчас выходит; расписание следующих серий может уточняться.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61469/233a58cbe4a5d4db60efe51646eb5efe.jpeg",
+      "match": {
+        "shikimori": [
+          61469
+        ],
+        "sources": [
+          "animego:3313",
+          "yummyanime:8665"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

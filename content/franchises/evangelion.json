@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "slug": "evangelion",
+  "title": "Евангелион",
+  "short_title": "Evangelion",
+  "original_title": "新世紀エヴァンゲリオン",
+  "summary": "Психологическая научная фантастика о подростках-пилотах, взрослении и попытке понять друг друга на фоне глобальной катастрофы.",
+  "guide": "Сначала смотрите сериал 1995 года и The End of Evangelion. Четыре фильма Rebuild — отдельная переосмысленная ветка, которую лучше начинать уже после оригинала; Death — необязательный пересказ.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/30/d2d23780d4f0a3a828b78fcf365c1e0c.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/30",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "evangelion",
+    "primary_shikimori_ids": [
+      30
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 25,
+  "entries": [
+    {
+      "key": "shikimori-30",
+      "title": "Евангелион нового поколения",
+      "subtitle": "Shinseiki Evangelion",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1995-10-04",
+      "release_end_date": "1996-03-27",
+      "release_year": 1995,
+      "release_label": "4 октября 1995 — 27 марта 1996",
+      "episode_count": 26,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30/d2d23780d4f0a3a828b78fcf365c1e0c.jpeg",
+      "match": {
+        "shikimori": [
+          30
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31",
+      "title": "Евангелион нового поколения: Смерть и перерождение",
+      "subtitle": "Shinseiki Evangelion Movie: Shi to Shinsei",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1997-03-15",
+      "release_year": 1997,
+      "release_label": "15 марта 1997",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31/91dd545d17a901467eda6cce293bf82f.jpeg",
+      "match": {
+        "shikimori": [
+          31
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32",
+      "title": "Евангелион нового поколения: Конец Евангелиона",
+      "subtitle": "Shinseiki Evangelion Movie: Air/Magokoro wo, Kimi ni",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1997-07-19",
+      "release_year": 1997,
+      "release_label": "19 июля 1997",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32/565ad2fe0a66d9977ad20afa57f66829.jpeg",
+      "match": {
+        "shikimori": [
+          32
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-4130",
+      "title": "Тиби-Ева: Школьные дни",
+      "subtitle": "Petit Eva: Evangelion@School",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2007-03-20",
+      "release_end_date": "2009-03-11",
+      "release_year": 2007,
+      "release_label": "20 марта 2007 — 11 марта 2009",
+      "episode_count": 24,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/4130/ea819b38fad614c8f978118d47bade01.jpeg",
+      "match": {
+        "shikimori": [
+          4130
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2759",
+      "title": "Евангелион 1.11: Ты (не) один",
+      "subtitle": "Evangelion Movie 1: Jo",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2007-09-01",
+      "release_year": 2007,
+      "release_label": "1 сентября 2007",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2759/46c48d77df70683e3b538063fbbc7d97.jpeg",
+      "match": {
+        "shikimori": [
+          2759
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3784",
+      "title": "Евангелион 2.22: Ты (не) пройдёшь",
+      "subtitle": "Evangelion Movie 2: Ha",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2009-06-27",
+      "release_year": 2009,
+      "release_label": "27 июня 2009",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3784/808b6ffc1ca927bc353d938d0cd7ab73.jpeg",
+      "match": {
+        "shikimori": [
+          3784
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3785",
+      "title": "Евангелион 3.33: Ты (не) исправишь",
+      "subtitle": "Evangelion Movie 3: Q",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-11-17",
+      "release_year": 2012,
+      "release_label": "17 ноября 2012",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3785/b91dceac804b44545e31be27c62e678d.jpeg",
+      "match": {
+        "shikimori": [
+          3785
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41030",
+      "title": "Евангелион: Хаката — Альтернатива атаке ангела",
+      "subtitle": "Evangelion Shito, Hakata Shuurai",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-06-07",
+      "release_year": 2019,
+      "release_label": "7 июня 2019",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41030/c966af135db5e30f478d23a632d8ac3c.jpeg",
+      "match": {
+        "shikimori": [
+          41030
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63018",
+      "title": "Евангелион: Сюрреалистичное ощущение",
+      "subtitle": "Evangelion: Chao Xianshi",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-06-27",
+      "release_year": 2020,
+      "release_label": "27 июня 2020",
+      "episode_count": 1,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63018/e3d3c4e744ce4abaac13d768a4a0914c.jpeg",
+      "match": {
+        "shikimori": [
+          63018
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3786",
+      "title": "Евангелион 3.0+1.01: Как-то раз",
+      "subtitle": "Shin Evangelion Movie:||",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-03-08",
+      "release_year": 2021,
+      "release_label": "8 марта 2021",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3786/eb7e1ac5be7bed731bb682d61eac5f0c.jpeg",
+      "match": {
+        "shikimori": [
+          3786
+        ],
+        "sources": [
+          "animego:1916"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53246",
+      "title": "Евангелион 3.0 (-46h)",
+      "subtitle": "Evangelion: 3.0 (-46h)",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-03-08",
+      "release_year": 2023,
+      "release_label": "8 марта 2023",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53246/4dd82a33ac2a4c2b68b454e855ba75ea.jpeg",
+      "match": {
+        "shikimori": [
+          53246
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63392",
+      "title": "Специальный памятный показ к тридцатилетию «Евангелиона»",
+      "subtitle": "Evangelion: Housou 30-shuunen Kinen Tokubetsu Kougyou",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2026-02-21",
+      "release_year": 2026,
+      "release_label": "21 февраля 2026",
+      "episode_count": 1,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63392/cdca4a90290be730d57e68ceb40271a9.jpeg",
+      "match": {
+        "shikimori": [
+          63392
+        ],
+        "sources": [
+          "yummyanime:8951"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63534",
+      "title": "Евангелион нового поколения",
+      "subtitle": "Shinseiki Evangelion (Shinsaku Series)",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Аниме",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63534/028379b61b6694e101dba6cb7f6dea3e.jpeg",
+      "match": {
+        "shikimori": [
+          63534
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "slug": "fairy-tail",
+  "title": "Хвост Феи",
+  "short_title": "Fairy Tail",
+  "original_title": "FAIRY TAIL",
+  "summary": "Долгое фэнтезийное приключение о гильдии магов, для которой дружба, соперничество и совместные миссии постепенно складываются в большую историю.",
+  "guide": "Смотрите телевизионные сезоны 2009, 2014 и 2018 годов по порядку, затем переходите к «Столетнему квесту». Фильмы и OVA необязательны и лучше воспринимаются после знакомства с соответствующим составом героев.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/6702/332c296606ef55084c92c1c06c8d3d06.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/6702",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "fairy_tail",
+    "primary_shikimori_ids": [
+      6702
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 39,
+  "entries": [
+    {
+      "key": "shikimori-6702",
+      "title": "Хвост Феи",
+      "subtitle": "Fairy Tail",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2009-10-12",
+      "release_end_date": "2013-03-30",
+      "release_year": 2009,
+      "release_label": "12 октября 2009 — 30 марта 2013",
+      "episode_count": 175,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/6702/332c296606ef55084c92c1c06c8d3d06.jpeg",
+      "match": {
+        "shikimori": [
+          6702
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-9982",
+      "title": "Хвост Феи OVA",
+      "subtitle": "Fairy Tail OVA",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2011-04-15",
+      "release_end_date": "2013-06-17",
+      "release_year": 2011,
+      "release_label": "15 апреля 2011 — 17 июня 2013",
+      "episode_count": 5,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/9982/76dac8e14a2590ffe2cf477a2c1429dc.jpeg",
+      "match": {
+        "shikimori": [
+          9982
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-12049",
+      "title": "Хвост Феи: Жрица Феникса",
+      "subtitle": "Fairy Tail Movie 1: Houou no Miko",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2012-08-18",
+      "release_year": 2012,
+      "release_label": "18 августа 2012",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/12049/03fc7f2cb92de1dbe9909498ee8b176f.jpeg",
+      "match": {
+        "shikimori": [
+          12049
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17535",
+      "title": "Хвост Феи: Жрица Феникса — Пролог",
+      "subtitle": "Fairy Tail Movie 1: Houou no Miko - Hajimari no Asa",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2013-02-15",
+      "release_year": 2013,
+      "release_label": "15 февраля 2013",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17535/0f8fb3ce812632e4d5c7f6d1362a6bd3.jpeg",
+      "match": {
+        "shikimori": [
+          17535
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22043",
+      "title": "Хвост Феи (2014)",
+      "subtitle": "Fairy Tail (2014)",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-04-05",
+      "release_end_date": "2016-03-26",
+      "release_year": 2014,
+      "release_label": "5 апреля 2014 — 26 марта 2016",
+      "episode_count": 102,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22043/2337daa38ce8617ae819cc60d16d3b14.jpeg",
+      "match": {
+        "shikimori": [
+          22043
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-32930",
+      "title": "Хвост Феи OVA 2",
+      "subtitle": "Fairy Tail OVA (2016)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2016-05-17",
+      "release_end_date": "2016-12-16",
+      "release_year": 2016,
+      "release_label": "17 мая — 16 декабря 2016",
+      "episode_count": 3,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/32930/6ee39ea6af27689828daed035561ee8b.jpeg",
+      "match": {
+        "shikimori": [
+          32930
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-30778",
+      "title": "Хвост Феи: Плач дракона",
+      "subtitle": "Fairy Tail Movie 2: Dragon Cry",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2017-05-06",
+      "release_year": 2017,
+      "release_label": "6 мая 2017",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/30778/8a8409709b88bcfcf31f2d818fba705f.jpeg",
+      "match": {
+        "shikimori": [
+          30778
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-35972",
+      "title": "Хвост Феи: Финал",
+      "subtitle": "Fairy Tail: Final Series",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-10-07",
+      "release_end_date": "2019-09-29",
+      "release_year": 2018,
+      "release_label": "7 октября 2018 — 29 сентября 2019",
+      "episode_count": 51,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35972/9c96f6fc1f824cd18ac0b1a7e22b97b1.jpeg",
+      "match": {
+        "shikimori": [
+          35972
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49785",
+      "title": "Хвост Феи: Столетний квест",
+      "subtitle": "Fairy Tail: 100-nen Quest",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-07-07",
+      "release_end_date": "2025-01-05",
+      "release_year": 2024,
+      "release_label": "7 июля 2024 — 5 января 2025",
+      "episode_count": 25,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49785/c745fca5f96b6cb146bfdac5c62507a7.jpeg",
+      "match": {
+        "shikimori": [
+          49785
+        ],
+        "sources": [
+          "yummyanime:1216"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60063",
+      "title": "Хвост Феи: Столетний квест — Дневник Люси",
+      "subtitle": "Fairy Tail: 100-nen Quest - Kanwa - Lucy's Diary",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-10-06",
+      "release_year": 2024,
+      "release_label": "6 октября 2024",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60063/9ff465c5ece1290a837f7b325179625a.jpeg",
+      "match": {
+        "shikimori": [
+          60063
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

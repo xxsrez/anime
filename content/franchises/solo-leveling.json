@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "slug": "solo-leveling",
+  "title": "Поднятие уровня в одиночку",
+  "short_title": "Solo Leveling",
+  "original_title": "나 혼자만 레벨업",
+  "summary": "Экшен-фэнтези о слабейшем охотнике, который получает возможность расти без привычных ограничений и постепенно меняет баланс сил вокруг себя.",
+  "guide": "Начинайте с первого сезона и переходите ко второму и дальнейшим продолжениям. Фильм-подборка и пересказы не нужны, если вы смотрели сериал.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52299/9a1ee4e32c72ab99b76e84bbe49f7e87.jpeg",
+  "updated_at": "2026-07-13",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52299",
+    "updated_at": "2026-07-13"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "solo_leveling",
+    "primary_shikimori_ids": [
+      52299
+    ],
+    "fetched_at": "2026-07-13"
+  },
+  "selection_rank": 32,
+  "entries": [
+    {
+      "key": "shikimori-52299",
+      "title": "Поднятие уровня в одиночку",
+      "subtitle": "Ore dake Level Up na Ken",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-07",
+      "release_end_date": "2024-03-31",
+      "release_year": 2024,
+      "release_label": "7 января — 31 марта 2024",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52299/9a1ee4e32c72ab99b76e84bbe49f7e87.jpeg",
+      "match": {
+        "shikimori": [
+          52299
+        ],
+        "sources": [
+          "animego:2477",
+          "yummyanime:2729"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58224",
+      "title": "Поднятие уровня в одиночку: Как стать сильнее",
+      "subtitle": "Ore dake Level Up na Ken: How to Get Stronger",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-02-25",
+      "release_year": 2024,
+      "release_label": "25 февраля 2024",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58224/90852e8bd6d5b71a537b2d7cfd088436.jpeg",
+      "match": {
+        "shikimori": [
+          58224
+        ],
+        "sources": [
+          "yummyanime:4819"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59841",
+      "title": "Поднятие уровня в одиночку: Повторное пробуждение",
+      "subtitle": "Ore dake Level Up na Ken: ReAwakening",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-11-29",
+      "release_year": 2024,
+      "release_label": "29 ноября 2024",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59841/4238c621eeb8d7136db92199a2d719a3.jpeg",
+      "match": {
+        "shikimori": [
+          59841
+        ],
+        "sources": [
+          "yummyanime:4829"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58567",
+      "title": "Поднятие уровня в одиночку 2: Восстаньте из тени",
+      "subtitle": "Ore dake Level Up na Ken Season 2: Arise from the Shadow",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-01-05",
+      "release_end_date": "2025-03-30",
+      "release_year": 2025,
+      "release_label": "5 января — 30 марта 2025",
+      "episode_count": 13,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58567/d10d10241ba31495d7eee0949bbc69e4.jpeg",
+      "match": {
+        "shikimori": [
+          58567
+        ],
+        "sources": [
+          "animego:2723",
+          "yummyanime:4931"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}
