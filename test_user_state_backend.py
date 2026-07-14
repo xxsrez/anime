@@ -342,20 +342,22 @@ class UserStateBackendTest(unittest.TestCase):
     def test_delayed_explicit_event_cannot_undo_newer_none_status(self):
         server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
         before_none = self.detail()
-        delayed = self.watch_payload(event_type="episode_selected")
-        delayed["library_watch_status"] = before_none["watch_status"]
-        delayed["library_watch_status_updated_at"] = before_none["watch_status_updated_at"]
-
         server.update_user_state(
             10,
             {"watch_status": "none"},
             self.db_path,
             self.user_id,
         )
-        result = server.record_watch_event(delayed, self.db_path, self.user_id)
-
-        self.assertEqual(result["state"]["watch_status"], "none")
-        self.assertIsNone(result["state"]["progress_episode_number"])
+        for event_type in ("player_engaged", "fullscreen_enter", "pip_open"):
+            with self.subTest(event_type=event_type):
+                delayed = self.watch_payload(event_type=event_type)
+                delayed["library_watch_status"] = before_none["watch_status"]
+                delayed["library_watch_status_updated_at"] = before_none[
+                    "watch_status_updated_at"
+                ]
+                result = server.record_watch_event(delayed, self.db_path, self.user_id)
+                self.assertEqual(result["state"]["watch_status"], "none")
+                self.assertIsNone(result["state"]["progress_episode_number"])
         con = server.connect(self.db_path)
         try:
             started = con.execute(
@@ -380,6 +382,52 @@ class UserStateBackendTest(unittest.TestCase):
         )
         self.assertEqual(resumed["state"]["watch_status"], "watching")
         self.assertEqual(resumed["state"]["progress_episode_number"], 1)
+
+    def test_fullscreen_and_pip_resume_explicit_none(self):
+        for event_type in ("fullscreen_enter", "pip_open"):
+            with self.subTest(event_type=event_type):
+                server.update_user_state(
+                    10,
+                    {"watch_status": "none"},
+                    self.db_path,
+                    self.user_id,
+                )
+                resumed = server.record_watch_event(
+                    self.watch_payload(event_type=event_type),
+                    self.db_path,
+                    self.user_id,
+                )
+                self.assertEqual(resumed["state"]["watch_status"], "watching")
+                self.assertEqual(resumed["state"]["progress_episode_number"], 1)
+
+    def test_verified_heartbeat_recovers_untouched_first_watch(self):
+        recovered = server.record_watch_event(
+            self.watch_payload(event_type="heartbeat", engaged_seconds=10),
+            self.db_path,
+            self.user_id,
+        )
+
+        self.assertEqual(recovered["state"]["watch_status"], "watching")
+        self.assertEqual(recovered["state"]["progress_episode_number"], 1)
+        self.assertIsNotNone(recovered["episode_state"]["started_at"])
+
+    def test_hidden_heartbeat_requires_picture_in_picture(self):
+        hidden = self.watch_payload(event_type="heartbeat", engaged_seconds=10)
+        hidden["page_visible"] = False
+        hidden["player_focused"] = False
+        ignored = server.record_watch_event(hidden, self.db_path, self.user_id)
+        self.assertEqual(ignored["event"]["engaged_seconds"], 0)
+        self.assertEqual(ignored["state"]["watch_status"], "none")
+        self.assertIsNone(ignored["episode_state"]["started_at"])
+
+        pip = self.watch_payload(event_type="heartbeat", engaged_seconds=10)
+        pip["page_visible"] = False
+        pip["player_focused"] = False
+        pip["picture_in_picture"] = True
+        recovered = server.record_watch_event(pip, self.db_path, self.user_id)
+        self.assertEqual(recovered["event"]["engaged_seconds"], 10)
+        self.assertEqual(recovered["state"]["watch_status"], "watching")
+        self.assertIsNotNone(recovered["episode_state"]["started_at"])
 
     def test_navigation_actions_do_not_resume_explicit_none(self):
         for event_type in ("episode_selected", "source_changed"):

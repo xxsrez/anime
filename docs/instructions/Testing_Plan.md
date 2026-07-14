@@ -132,8 +132,11 @@ release.
   state.
 - A Kodik serial player's internal episode selector updates the outer episode,
   source, shared URL, and last-opened cursor without reloading the iframe.
-- Provider autostart alone does not create watch progress; a real focus/click,
-  fullscreen/PiP, or an already-engaged session is still required.
+- One provider autostart message or click alone does not create watch progress.
+  Kodik/AniBoom require monotonic trusted playback time; providers without a
+  playback API require 30 seconds of uninterrupted player focus and use a
+  bounded fallback window. Fullscreen and provider PiP remain explicit start
+  signals, but trusted-provider time still comes from advancing timestamps.
 - Source, translation, and provider selectors choose a playable embed URL.
 - Fullscreen button targets the iframe wrapper and exits cleanly.
 - PiP button either opens document Picture-in-Picture where supported or shows

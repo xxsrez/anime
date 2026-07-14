@@ -2143,7 +2143,15 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             other_id = self.create_google_user(db_path, "google-user-2", "two@example.com")
             admin_token = self.create_session(db_path, admin_id)
             other_token = self.create_session(db_path, other_id)
+            revoked_token = self.create_session(db_path, other_id)
+            server.revoke_session(revoked_token, db_path)
             anime_id = server.get_anime_list(db_path, user_id=admin_id)[0]["id"]
+            stats_anime_id = self.seed_watchable_title(
+                db_path,
+                anime_id=900001,
+                title="Admin Stats Title",
+                episode_count=6,
+            )
             server.update_user_state(
                 anime_id,
                 {"is_favorite": True, "progress_episode_number": 4},
@@ -2151,6 +2159,41 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 admin_id,
             )
             server.update_user_state(anime_id, {"watched": True}, db_path, other_id)
+            stats_detail = server.get_anime_detail(stats_anime_id, db_path, other_id)
+            for episode_index in range(5):
+                server.record_watch_event(
+                    self.watch_payload(
+                        stats_detail,
+                        episode_index=episode_index,
+                        session_id=f"admin-stats-{episode_index}",
+                    ),
+                    db_path,
+                    other_id,
+                )
+            meaningful = self.watch_payload(
+                stats_detail,
+                episode_index=0,
+                event_type="heartbeat",
+                session_id="admin-stats-0",
+            )
+            meaningful["engaged_seconds"] = server.MEANINGFUL_WATCH_SECONDS
+            server.record_watch_event(meaningful, db_path, other_id)
+            server.record_watch_event(
+                self.watch_payload(
+                    stats_detail,
+                    episode_index=5,
+                    event_type="player_loaded",
+                    session_id="admin-stats-weak-open",
+                ),
+                db_path,
+                other_id,
+            )
+            server.update_user_state(
+                stats_anime_id,
+                {"watch_status": "none"},
+                db_path,
+                other_id,
+            )
 
             with patch.dict(os.environ, {"ANIME_ADMIN_EMAIL": "one@example.com"}):
                 status, _, body = self.request_test_server(
@@ -2226,13 +2269,177 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(payload["summary"]["total_favorites"], 1)
             self.assertEqual(payload["summary"]["total_progress_titles"], 1)
             self.assertEqual(payload["summary"]["total_watched_titles"], 1)
+            self.assertEqual(payload["summary"]["total_started_episodes"], 5)
+            self.assertEqual(payload["summary"]["total_meaningful_episodes"], 1)
+            self.assertEqual(payload["summary"]["valid_authorizations"], 2)
+            self.assertEqual(payload["summary"]["active_users_7d"], 2)
+            self.assertEqual(payload["summary"]["logins_7d"], 3)
             users = {item["email"]: item for item in payload["users"]}
             self.assertEqual(set(users), {"one@example.com", "two@example.com"})
             self.assertTrue(users["one@example.com"]["is_admin"])
             self.assertFalse(users["two@example.com"]["is_admin"])
             self.assertEqual(users["one@example.com"]["favorite_titles"], 1)
             self.assertEqual(users["two@example.com"]["watched_titles"], 1)
+            self.assertEqual(users["two@example.com"]["completed_titles"], 1)
+            self.assertEqual(users["two@example.com"]["started_episodes"], 5)
+            self.assertEqual(users["two@example.com"]["opened_episodes"], 6)
+            self.assertEqual(users["two@example.com"]["meaningful_episodes"], 1)
+            self.assertEqual(users["two@example.com"]["login_count"], 2)
+            self.assertEqual(users["two@example.com"]["valid_authorizations"], 1)
+            self.assertEqual(users["two@example.com"]["last_watch_title"], "Admin Stats Title")
+            self.assertTrue(users["two@example.com"]["viewer_7d"])
             self.assertTrue(payload["top_titles"])
+            stats_title = next(
+                item for item in payload["top_titles"] if item["anime_id"] == stats_anime_id
+            )
+            self.assertEqual(stats_title["started_episodes"], 5)
+            self.assertEqual(stats_title["meaningful_episodes"], 1)
+            self.assertTrue(payload["recent_watch_sessions"])
+            self.assertIsNotNone(payload["telemetry_started_at"])
+
+    def test_admin_analytics_canonicalize_variants_and_only_sessions_are_logins(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            con = server.connect(db_path)
+            try:
+                con.execute("delete from sessions")
+                con.execute("delete from user_title_state")
+                con.execute("delete from users")
+                con.commit()
+            finally:
+                con.close()
+
+            merged = next(
+                item
+                for item in server.get_anime_list(db_path)
+                if len(item.get("source_variants") or []) > 1
+                and item.get("available_episode_count", 0) > 0
+            )
+            canonical_id = int(merged["id"])
+            variant_id = next(
+                int(variant["id"])
+                for variant in merged["source_variants"]
+                if int(variant["id"]) != canonical_id
+            )
+            admin_id = self.create_google_user(
+                db_path,
+                "canonical-admin",
+                "canonical-admin@example.com",
+            )
+            self.create_google_user(
+                db_path,
+                "never-logged-in",
+                "never@example.com",
+            )
+            self.create_session(db_path, admin_id)
+
+            con = server.connect(db_path)
+            try:
+                con.executemany(
+                    """
+                    insert into user_title_state (
+                        user_id, anime_id, is_favorite, progress_episode_number,
+                        watched, updated_at, watch_status, not_interested,
+                        favorite_updated_at, watch_status_updated_at
+                    ) values (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                    """,
+                    (
+                        (
+                            admin_id,
+                            canonical_id,
+                            1,
+                            1,
+                            1,
+                            "2026-07-13T10:00:00+00:00",
+                            "completed",
+                            "2026-07-13T10:00:00+00:00",
+                            "2026-07-13T10:00:00+00:00",
+                        ),
+                        (
+                            admin_id,
+                            variant_id,
+                            0,
+                            None,
+                            0,
+                            "2026-07-13T11:00:00+00:00",
+                            "none",
+                            "2026-07-13T11:00:00+00:00",
+                            None,
+                        ),
+                    ),
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            detail = server.get_anime_detail(canonical_id, db_path, admin_id)
+            server.record_watch_event(
+                self.watch_payload(detail, session_id="canonical-event"),
+                db_path,
+                admin_id,
+            )
+            server.record_watch_event(
+                self.watch_payload(detail, session_id="variant-event"),
+                db_path,
+                admin_id,
+            )
+            con = server.connect(db_path)
+            try:
+                con.execute(
+                    """
+                    update user_watch_events
+                    set anime_id = ?
+                    where user_id = ? and client_session_id = 'variant-event'
+                    """,
+                    (variant_id, admin_id),
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            con = server.connect(db_path)
+            try:
+                server.prepare_admin_canonical_context(con, db_path)
+                self.assertFalse(con.in_transaction)
+            finally:
+                con.close()
+
+            with patch.dict(
+                os.environ,
+                {"ANIME_ADMIN_EMAIL": "canonical-admin@example.com"},
+            ):
+                payload = server.admin_users_payload(db_path)
+
+            self.assertEqual(payload["summary"]["registered_users"], 2)
+            self.assertEqual(payload["summary"]["logins_7d"], 1)
+            self.assertEqual(payload["summary"]["valid_authorizations"], 1)
+            self.assertEqual(payload["summary"]["total_favorites"], 0)
+            self.assertEqual(payload["summary"]["total_progress_titles"], 0)
+            self.assertEqual(payload["summary"]["total_completed_titles"], 1)
+            self.assertEqual(payload["summary"]["total_started_episodes"], 1)
+
+            users = {item["email"]: item for item in payload["users"]}
+            admin = users["canonical-admin@example.com"]
+            never_logged_in = users["never@example.com"]
+            self.assertEqual(admin["favorite_titles"], 0)
+            self.assertEqual(admin["progress_titles"], 0)
+            self.assertEqual(admin["completed_titles"], 1)
+            self.assertEqual(admin["started_episodes"], 1)
+            self.assertEqual(admin["episode_titles"], 1)
+            self.assertEqual(admin["last_watch_anime_id"], canonical_id)
+            self.assertEqual(never_logged_in["login_count"], 0)
+            self.assertIsNone(never_logged_in["last_login_at"])
+            self.assertFalse(never_logged_in["active_7d"])
+            self.assertTrue(any(item["anime_id"] == canonical_id for item in payload["top_titles"]))
+            self.assertFalse(any(item["anime_id"] == variant_id for item in payload["top_titles"]))
+            self.assertTrue(payload["recent_watch_sessions"])
+            self.assertTrue(
+                all(
+                    item["anime_id"] == canonical_id
+                    for item in payload["recent_watch_sessions"]
+                )
+            )
 
     def test_admin_route_redirects_anonymous_user_to_login(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -3187,6 +3394,14 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('id="admin-summary"', html)
         self.assertIn('id="admin-users"', html)
         self.assertIn('id="admin-top-titles"', html)
+        self.assertIn('id="admin-recent-activity"', html)
+        self.assertIn("Серии", html)
+        self.assertIn("по последней активности", js)
+        self.assertIn("Серий начато", js)
+        self.assertIn("Вероятно досмотрено", js)
+        self.assertIn('id="admin-telemetry-scope"', html)
+        self.assertIn('scope="col"', html)
+        self.assertNotIn("С активной сессией", js)
         self.assertIn('src="/static/admin.js"', html)
         self.assertIn("/api/admin/users", js)
         self.assertIn("is_admin", js)
@@ -3206,11 +3421,16 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("event.source !== el.player.contentWindow", js)
         self.assertIn("event.origin === context.playerOrigin", js)
         self.assertIn('message?.provider !== "kodik"', js)
+        self.assertIn("frontendRuntime.playerMessageProvider(source)", js)
+        self.assertIn("providerPlaybackEngagedSeconds", js)
+        self.assertIn("WATCH_FALLBACK_ENGAGEMENT_DELAY_MS", js)
+        self.assertIn('markWatchEngaged("pip_open")', js)
+        self.assertIn("playbackWasActive", js)
         self.assertIn("preservePlayer: true", js)
         self.assertIn("const contextMatches = Boolean(", js)
         self.assertIn("if (contextMatches) {", js)
         self.assertIn("const reportedBy = `${provider}_player_api`", js)
-        self.assertIn("document.hasFocus() && document.activeElement === el.player", js)
+        self.assertIn("fallbackFocused = !state.playerContext?.messageProvider", js)
         self.assertIn('sendWatchEvent("heartbeat"', js)
         self.assertNotIn("manuallyCorrected", js)
 

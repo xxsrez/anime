@@ -2194,7 +2194,7 @@ button.recent-update-row:focus-visible {
 }
 
 .admin-shell {
-  width: min(1180px, 100%);
+  width: min(1560px, 100%);
   min-height: 100vh;
   margin: 0 auto;
   padding: 22px;
@@ -2267,11 +2267,30 @@ button.recent-update-row:focus-visible {
   line-height: 1;
 }
 
+.admin-metric .admin-metric-description {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.admin-telemetry-scope {
+  margin: 10px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .admin-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
+  margin-top: 18px;
+}
+
+.admin-users-panel {
   margin-top: 18px;
 }
 
@@ -2301,10 +2320,15 @@ button.recent-update-row:focus-visible {
   overflow-x: auto;
 }
 
+.admin-table-wrap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 1240px;
 }
 
 .admin-table th,
@@ -2327,15 +2351,29 @@ button.recent-update-row:focus-visible {
 }
 
 .admin-user-cell strong,
-.admin-user-cell span {
+.admin-user-cell > span,
+.admin-stat-cell strong,
+.admin-stat-cell > span {
   display: block;
   max-width: 260px;
   overflow-wrap: anywhere;
 }
 
-.admin-user-cell span {
+.admin-user-cell > span,
+.admin-stat-cell > span {
   margin-top: 3px;
   color: var(--muted);
+}
+
+.admin-stat-cell strong {
+  line-height: 1.3;
+}
+
+.admin-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
 }
 
 .admin-pill {
@@ -2354,6 +2392,18 @@ button.recent-update-row:focus-visible {
   border-color: rgba(244, 184, 96, 0.4);
   background: rgba(244, 184, 96, 0.09);
   color: var(--focus);
+}
+
+.admin-pill.muted {
+  border-color: rgba(169, 176, 184, 0.35);
+  background: rgba(169, 176, 184, 0.08);
+  color: #d5d9de;
+}
+
+.admin-pill.quiet {
+  border-color: rgba(169, 176, 184, 0.2);
+  background: transparent;
+  color: var(--muted);
 }
 
 .admin-title-list {
@@ -2391,6 +2441,90 @@ button.recent-update-row:focus-visible {
 
 .admin-state[data-tone="warn"] {
   color: var(--focus);
+}
+
+@media (max-width: 700px) {
+  .admin-shell {
+    padding: 14px;
+  }
+
+  .admin-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-metric {
+    padding: 10px;
+  }
+
+  .admin-metric strong {
+    font-size: 21px;
+  }
+
+  .admin-table-wrap {
+    overflow: visible;
+  }
+
+  .admin-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .admin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .admin-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .admin-table tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .admin-table td {
+    position: relative;
+    display: block;
+    min-height: 38px;
+    padding: 9px 10px 9px 116px;
+  }
+
+  .admin-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 96px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  .admin-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-user-cell strong,
+  .admin-user-cell > span,
+  .admin-stat-cell strong,
+  .admin-stat-cell > span {
+    max-width: none;
+  }
 }
 
 @media (max-width: 980px) {

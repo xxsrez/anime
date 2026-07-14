@@ -24,37 +24,52 @@
     </header>
 
     <section id="admin-summary" class="admin-summary" aria-label="Сводка"></section>
+    <p id="admin-telemetry-scope" class="admin-telemetry-scope"></p>
+
+    <section class="admin-panel admin-users-panel" aria-labelledby="admin-users-title">
+      <div class="admin-panel-title">
+        <h2 id="admin-users-title">Пользователи</h2>
+        <span id="admin-users-count"></span>
+      </div>
+      <div
+        class="admin-table-wrap"
+        role="region"
+        aria-label="Статистика пользователей"
+        tabindex="0"
+      >
+        <table class="admin-table">
+          <caption class="visually-hidden">Статистика активности пользователей</caption>
+          <thead>
+            <tr>
+              <th scope="col">Аккаунт</th>
+              <th scope="col">Активность</th>
+              <th scope="col">Серии</th>
+              <th scope="col">Время</th>
+              <th scope="col">Библиотека</th>
+              <th scope="col">Последний просмотр</th>
+              <th scope="col">Последний вход</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users"></tbody>
+        </table>
+      </div>
+    </section>
 
     <section class="admin-layout">
-      <section class="admin-panel" aria-labelledby="admin-users-title">
-        <div class="admin-panel-title">
-          <h2 id="admin-users-title">Пользователи</h2>
-          <span id="admin-users-count"></span>
-        </div>
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Аккаунт</th>
-                <th>Роль</th>
-                <th>Избр.</th>
-                <th>Прогресс</th>
-                <th>Просм.</th>
-                <th>Вход</th>
-                <th>Сессии</th>
-              </tr>
-            </thead>
-            <tbody id="admin-users"></tbody>
-          </table>
-        </div>
-      </section>
-
       <section class="admin-panel" aria-labelledby="admin-titles-title">
         <div class="admin-panel-title">
           <h2 id="admin-titles-title">Активные тайтлы</h2>
           <span>топ 12</span>
         </div>
         <div id="admin-top-titles" class="admin-title-list"></div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="admin-recent-title">
+        <div class="admin-panel-title">
+          <h2 id="admin-recent-title">Последние просмотры</h2>
+          <span id="admin-telemetry-start"></span>
+        </div>
+        <div id="admin-recent-activity" class="admin-title-list"></div>
       </section>
     </section>
 

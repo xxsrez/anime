@@ -46,7 +46,8 @@ const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
 const ANIMEGO_SCAN_ENDPOINT = "/api/animego-scans";
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
-const WATCH_EVIDENCE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+const WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS = 90 * 1000;
+const WATCH_FALLBACK_ENGAGEMENT_DELAY_MS = 30 * 1000;
 const SEARCH_INPUT_DEBOUNCE_MS = 140;
 const reportClientError = window.reportClientError || (() => {});
 const clientActionError = window.reportActionError || (() => error => console.error(error));
@@ -150,6 +151,7 @@ const state = {
   urlSyncSuspended: false,
   watchSession: null,
   watchHeartbeatTimer: null,
+  watchFallbackTimer: null,
   watchFullscreenActive: false,
   playerContext: null,
   animeGoScannerReady: false,
@@ -3582,9 +3584,10 @@ function updatePlayerDisplay(source, episode) {
 }
 
 function playerMessageProvider(source) {
-  if (frontendRuntime.parseKodikSerialUrl(source?.embed_url)) return "kodik";
-  if (frontendRuntime.hostnameMatches(source?.embed_host, "aniboom.one")) return "aniboom";
-  return null;
+  // Kodik's playback postMessage API is available for both multi-episode
+  // `/serial/` embeds and the much more common single-episode `/seria/`
+  // embeds. Only episode-number remapping requires a serial URL.
+  return frontendRuntime.playerMessageProvider(source);
 }
 
 function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metadata = {} } = {}) {
@@ -3634,11 +3637,15 @@ function watchContextKey(source, episode, videoSourceId = source?.id) {
 function playerHasPlaybackEvidence(session = state.watchSession) {
   if (!session) return false;
   const fullscreen = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
+  const fallbackFocused = !state.playerContext?.messageProvider
+    && document.hasFocus()
+    && document.activeElement === el.player;
   return frontendRuntime.hasPlaybackEvidence({
     pageHidden: document.hidden,
-    playerFocused: document.hasFocus() && document.activeElement === el.player,
     fullscreen,
     providerPlaybackActive: Boolean(session.providerPlaybackActive),
+    pictureInPicture: Boolean(session.pictureInPictureActive),
+    fallbackFocused,
     evidenceExpiresAt: session.evidenceExpiresAt,
     now: performanceNow(),
   });
@@ -3666,6 +3673,7 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     engaged_seconds: Math.max(0, Math.min(WATCH_MAX_DELTA_SECONDS, Math.round(engagedSeconds || 0))),
     page_visible: !document.hidden,
     player_focused: playerHasPlaybackEvidence(session),
+    picture_in_picture: Boolean(session.pictureInPictureActive),
     library_watch_status: effectiveWatchStatus(libraryState),
     library_watch_status_updated_at: libraryState?.watch_status_updated_at ?? null,
     metadata: session.metadata || {},
@@ -3757,22 +3765,31 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
 
 function consumeWatchEngagedSeconds({ stop = false } = {}) {
   const session = state.watchSession;
-  if (!session?.engaged || !session.activeSince) return 0;
+  if (!session?.engaged) return 0;
+  let seconds = 0;
+  const providerSeconds = Math.floor(Math.max(0, session.pendingProviderSeconds || 0));
+  if (providerSeconds > 0) {
+    seconds += providerSeconds;
+    session.pendingProviderSeconds -= providerSeconds;
+  }
+  if (!session.activeSince || session.providerPlaybackActive) {
+    return Math.min(WATCH_MAX_DELTA_SECONDS, seconds);
+  }
   const now = performanceNow();
-  const seconds = frontendRuntime.boundedElapsedSeconds(
+  seconds += frontendRuntime.boundedElapsedSeconds(
     session.activeSince,
     now,
     WATCH_MAX_DELTA_SECONDS,
   );
   session.activeSince = stop || document.hidden ? null : now;
-  return seconds;
+  return Math.min(WATCH_MAX_DELTA_SECONDS, seconds);
 }
 
 function startWatchHeartbeat() {
   if (state.watchHeartbeatTimer) return;
   state.watchHeartbeatTimer = window.setInterval(() => {
     const session = state.watchSession;
-    if (!session?.engaged || document.hidden) return;
+    if (!session?.engaged || (document.hidden && !session.pictureInPictureActive)) return;
     if (!playerHasPlaybackEvidence(session)) {
       session.engaged = false;
       session.activeSince = null;
@@ -3792,6 +3809,12 @@ function stopWatchHeartbeat() {
   state.watchHeartbeatTimer = null;
 }
 
+function stopWatchFallbackTimer() {
+  if (!state.watchFallbackTimer) return;
+  window.clearTimeout(state.watchFallbackTimer);
+  state.watchFallbackTimer = null;
+}
+
 function markWatchEngaged(eventType, { providerPlayback = false } = {}) {
   const session = state.watchSession;
   if (!session) return;
@@ -3799,12 +3822,30 @@ function markWatchEngaged(eventType, { providerPlayback = false } = {}) {
     || ["player_engaged", "fullscreen_enter", "pip_open"].includes(eventType);
   if (playbackEvidence) {
     const now = performanceNow();
-    session.evidenceExpiresAt = now + WATCH_EVIDENCE_MAX_AGE_MS;
-    if (providerPlayback) session.providerPlaybackActive = true;
+    session.evidenceExpiresAt = now + WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS;
+    if (providerPlayback) {
+      session.providerPlaybackActive = true;
+      session.activeSince = null;
+    }
     if (!session.engaged) {
       session.engaged = true;
-      session.activeSince = now;
-    } else if (!session.activeSince) {
+      if (
+        !providerPlayback
+        && (
+          eventType === "player_engaged"
+          || (eventType === "fullscreen_enter" && !state.playerContext?.messageProvider)
+        )
+      ) {
+        session.activeSince = now;
+      }
+    } else if (
+      !session.activeSince
+      && !providerPlayback
+      && (
+        eventType === "player_engaged"
+        || (eventType === "fullscreen_enter" && !state.playerContext?.messageProvider)
+      )
+    ) {
       session.activeSince = now;
     }
     startWatchHeartbeat();
@@ -3822,7 +3863,9 @@ function flushWatchSession(eventType = "session_end", { beacon = false } = {}) {
   session.engaged = false;
   session.evidenceExpiresAt = 0;
   session.providerPlaybackActive = false;
+  session.pendingProviderSeconds = 0;
   stopWatchHeartbeat();
+  stopWatchFallbackTimer();
 }
 
 function ensureWatchSession(source, episode, { videoSourceId = source?.id, metadata = {} } = {}) {
@@ -3851,6 +3894,11 @@ function ensureWatchSession(source, episode, { videoSourceId = source?.id, metad
     activeSince: null,
     evidenceExpiresAt: 0,
     providerPlaybackActive: false,
+    providerPositionSeconds: null,
+    providerPositionObservedAt: null,
+    pendingProviderSeconds: 0,
+    pictureInPictureActive: false,
+    lastPlayerInteractionAt: 0,
   };
   state.watchSession = session;
   return session;
@@ -3866,6 +3914,7 @@ function clearWatchSession({ beacon = true } = {}) {
 function discardWatchSession() {
   state.watchSession = null;
   stopWatchHeartbeat();
+  stopWatchFallbackTimer();
 }
 
 function handlePlayerLoaded() {
@@ -3873,20 +3922,33 @@ function handlePlayerLoaded() {
   sendWatchEvent("player_loaded").catch(() => {});
 }
 
-function handleProviderPlaybackStarted(provider) {
+function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   const session = state.watchSession;
   if (!session) return;
   const reportedBy = `${provider}_player_api`;
   if (session.metadata?.reported_by !== reportedBy) {
     session.metadata = { ...session.metadata, reported_by: reportedBy };
   }
-  const fullscreen = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
-  const userEvidence = session.engaged
-    || fullscreen
-    || (document.hasFocus() && document.activeElement === el.player);
-  if (!userEvidence) return;
+  const observedAt = performanceNow();
+  const engagedSeconds = positionSeconds != null ? frontendRuntime.providerPlaybackEngagedSeconds({
+    previousPosition: session.providerPositionSeconds,
+    currentPosition: positionSeconds,
+    previousObservedAt: session.providerPositionObservedAt,
+    currentObservedAt: observedAt,
+    pageHidden: document.hidden,
+    pictureInPicture: session.pictureInPictureActive,
+  }) : 0;
+  if (positionSeconds != null && Number.isFinite(Number(positionSeconds))) {
+    session.providerPositionSeconds = Number(positionSeconds);
+    session.providerPositionObservedAt = observedAt;
+  }
+  // Play/start alone may be autoplay. Two monotonic time updates are the
+  // provider-independent proof that playback actually advanced.
+  if (!(engagedSeconds > 0)) return;
+  session.pendingProviderSeconds += engagedSeconds;
   if (session.providerPlaybackActive && session.engaged) {
-    session.evidenceExpiresAt = performanceNow() + WATCH_EVIDENCE_MAX_AGE_MS;
+    session.evidenceExpiresAt = performanceNow() + WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS;
+    startWatchHeartbeat();
     return;
   }
   markWatchEngaged("player_engaged", { providerPlayback: true });
@@ -3894,8 +3956,15 @@ function handleProviderPlaybackStarted(provider) {
 
 function handleProviderPlaybackStopped() {
   const session = state.watchSession;
-  if (!session?.providerPlaybackActive && !session?.engaged) return;
+  if (!session) return;
+  if (!session.providerPlaybackActive && !session.engaged) {
+    session.providerPositionSeconds = null;
+    session.providerPositionObservedAt = null;
+    return;
+  }
   flushWatchSession("session_end");
+  session.providerPositionSeconds = null;
+  session.providerPositionObservedAt = null;
 }
 
 function playerMessageMatchesContext(event) {
@@ -3908,6 +3977,10 @@ function playerMessageMatchesContext(event) {
 function applyPlayerEpisodeChange(message) {
   if (message?.provider !== "kodik" || !state.detail || !state.playerContext) return false;
   const source = state.playerContext.source;
+  // A `/seria/` embed still provides reliable playback messages, but it does
+  // not contain the serial identity needed to remap an internal episode
+  // switch. Treat the message as informational instead of reporting an error.
+  if (!frontendRuntime.parseKodikSerialUrl(source?.embed_url)) return true;
   const target = frontendRuntime.findKodikEpisodeTarget({
     episodes: state.detail.episodes,
     sourcesByEpisode: state.detail.sources_by_episode,
@@ -3930,6 +4003,9 @@ function applyPlayerEpisodeChange(message) {
   const sourceChanged = target.source
     && String(target.source.id) !== String(state.watchSession?.videoSourceId);
   if (!episodeChanged && !sourceChanged) return true;
+  const playbackWasActive = Boolean(
+    state.watchSession?.providerPlaybackActive || state.watchSession?.engaged,
+  );
 
   state.selectedEpisodeId = target.episode.id;
   const previousUrlSync = state.urlSyncSuspended;
@@ -3964,7 +4040,11 @@ function applyPlayerEpisodeChange(message) {
   }
   state.urlSyncSuspended = previousUrlSync;
   syncUrlFromDetail({ replace: false });
-  markWatchEngaged("episode_selected");
+  if (playbackWasActive) {
+    markWatchEngaged("player_engaged", { providerPlayback: true });
+  } else {
+    markWatchEngaged("episode_selected");
+  }
   saveTitleNavigation(target.episode.id).catch(reportActionError("save player episode"));
   return true;
 }
@@ -3980,21 +4060,49 @@ function handlePlayerMessage(event) {
   } else if (message.type === "playback_started") {
     handleProviderPlaybackStarted(message.provider);
   } else if (message.type === "time_update") {
-    handleProviderPlaybackStarted(message.provider);
+    handleProviderPlaybackStarted(message.provider, message.positionSeconds);
   } else if (["playback_paused", "playback_ended"].includes(message.type)) {
     handleProviderPlaybackStopped();
+  } else if (message.type === "pip_entered") {
+    const session = state.watchSession;
+    if (session) {
+      session.pictureInPictureActive = true;
+      markWatchEngaged("pip_open");
+    }
+  } else if (message.type === "pip_exited") {
+    const session = state.watchSession;
+    if (session) {
+      session.pictureInPictureActive = false;
+      if (!session.providerPlaybackActive) flushWatchSession("session_end");
+    }
   }
 }
 
 function handlePlayerEngaged() {
-  markWatchEngaged("player_engaged");
+  const session = state.watchSession;
+  if (!session) return;
+  session.lastPlayerInteractionAt = performanceNow();
+  if (state.playerContext?.messageProvider || document.hidden) return;
+  stopWatchFallbackTimer();
+  const sessionId = session.id;
+  state.watchFallbackTimer = window.setTimeout(() => {
+    state.watchFallbackTimer = null;
+    const current = state.watchSession;
+    if (
+      !current
+      || current.id !== sessionId
+      || state.playerContext?.messageProvider
+      || document.hidden
+      || !document.hasFocus()
+      || document.activeElement !== el.player
+    ) return;
+    markWatchEngaged("player_engaged");
+  }, WATCH_FALLBACK_ENGAGEMENT_DELAY_MS);
 }
 
 function handleVisibilityChange() {
-  if (document.hidden) {
+  if (document.hidden && !state.watchSession?.pictureInPictureActive) {
     flushWatchSession("page_hidden", { beacon: true });
-  } else if (document.activeElement === el.player) {
-    handlePlayerEngaged();
   }
 }
 

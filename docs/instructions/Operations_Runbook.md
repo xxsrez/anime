@@ -495,6 +495,12 @@ The admin UI is `/admin`; admin data API is `/api/admin/users`. Non-admin users
 must not see an admin link, and direct `/admin` or `/api/admin/users` requests
 must not work for them.
 
+Admin terminology is intentionally explicit: registration creates the account,
+while a login is counted only after a browser authorization is actually
+created. `last_activity_at` reflects authenticated site activity, valid
+authorizations are 30-day tokens rather than online users, and episode playback
+is reported separately from the manual whole-title `completed` status.
+
 ## Daily Content Sync
 
 Automatic title/episode discovery should run through the production web

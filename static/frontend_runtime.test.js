@@ -135,6 +135,14 @@ assert.deepEqual(
   runtime.normalizePlayerMessage({ key: "kodik_player_time_update", value: 31 }),
   { provider: "kodik", type: "time_update", positionSeconds: 31 },
 );
+assert.deepEqual(
+  runtime.normalizePlayerMessage({ key: "kodik_player_enter_pip" }),
+  { provider: "kodik", type: "pip_entered" },
+);
+assert.deepEqual(
+  runtime.normalizePlayerMessage({ key: "kodik_player_exit_pip" }),
+  { provider: "kodik", type: "pip_exited" },
+);
 assert.equal(runtime.normalizePlayerMessage({
   key: "kodik_player_current_episode",
   value: { episode: "not-a-number" },
@@ -148,6 +156,16 @@ assert.deepEqual(runtime.normalizePlayerMessage({
   type: "time_update",
   positionSeconds: 44,
 });
+assert.equal(runtime.playerMessageProvider({
+  embed_host: "kodikplayer.com",
+  embed_url: "https://kodikplayer.com/seria/77/hash/720p",
+}), "kodik");
+assert.equal(runtime.playerMessageProvider({
+  embed_host: "kodikplayer.com",
+  embed_url: "https://kodikplayer.com/serial/77/hash/720p",
+}), "kodik");
+assert.equal(runtime.playerMessageProvider({ embed_host: "cdn.aniboom.one" }), "aniboom");
+assert.equal(runtime.playerMessageProvider({ embed_host: "kodikplayer.com.evil.test" }), null);
 const kodikEpisodes = [
   { id: 501, number: "1" },
   { id: 502, number: "2" },
@@ -370,11 +388,63 @@ assert.equal(runtime.localCalendarDayDifference(springAfter, springBefore), 1);
 assert.equal(runtime.boundedElapsedSeconds(0, 30_000, 300), 30);
 assert.equal(runtime.boundedElapsedSeconds(0, 400_000, 300), 300);
 assert.equal(runtime.boundedElapsedSeconds(10_000, 5_000, 300), 0);
-assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresAt: 20, now: 10 }), true);
-assert.equal(runtime.hasPlaybackEvidence({ playerFocused: true, evidenceExpiresAt: 5, now: 10 }), false);
+assert.equal(runtime.hasPlaybackEvidence({ fallbackFocused: true, evidenceExpiresAt: 20, now: 10 }), true);
+assert.equal(runtime.hasPlaybackEvidence({ fallbackFocused: true, evidenceExpiresAt: 5, now: 10 }), false);
 assert.equal(runtime.hasPlaybackEvidence({ fullscreen: true, evidenceExpiresAt: 20, now: 10 }), true);
 assert.equal(runtime.hasPlaybackEvidence({ providerPlaybackActive: true, evidenceExpiresAt: 20, now: 10 }), true);
-assert.equal(runtime.hasPlaybackEvidence({ pageHidden: true, playerFocused: true, evidenceExpiresAt: 20, now: 10 }), false);
+assert.equal(runtime.hasPlaybackEvidence({ pageHidden: true, fallbackFocused: true, evidenceExpiresAt: 20, now: 10 }), false);
+assert.equal(runtime.hasPlaybackEvidence({
+  pageHidden: true,
+  pictureInPicture: true,
+  evidenceExpiresAt: 20,
+  now: 10,
+}), true);
+assert.equal(runtime.providerPlaybackDelta({ previousPosition: 10, currentPosition: 11 }), 1);
+assert.equal(runtime.providerPlaybackProgressed({ previousPosition: 10, currentPosition: 11 }), true);
+assert.equal(runtime.providerPlaybackProgressed({ previousPosition: 10, currentPosition: 10 }), false);
+assert.equal(runtime.providerPlaybackProgressed({ previousPosition: 10, currentPosition: 300 }), false);
+assert.equal(runtime.providerPlaybackProgressed({
+  previousPosition: 10,
+  currentPosition: 11,
+  pageHidden: true,
+}), false);
+assert.equal(runtime.providerPlaybackProgressed({ previousPosition: null, currentPosition: 11 }), false);
+assert.equal(runtime.providerPlaybackDelta({
+  previousPosition: 10,
+  currentPosition: 11,
+  pageHidden: true,
+  pictureInPicture: true,
+}), 1);
+assert.equal(runtime.providerPlaybackEngagedSeconds({
+  previousPosition: 10,
+  currentPosition: 12,
+  previousObservedAt: 1_000,
+  currentObservedAt: 2_000,
+}), 1);
+assert.equal(runtime.providerPlaybackEngagedSeconds({
+  previousPosition: 10,
+  currentPosition: 30,
+  previousObservedAt: 1_000,
+  currentObservedAt: 2_000,
+}), 1);
+assert.equal(runtime.providerPlaybackEngagedSeconds({
+  previousPosition: 10,
+  currentPosition: 10,
+  previousObservedAt: 1_000,
+  currentObservedAt: 2_000,
+}), 0);
+assert.equal(runtime.providerPlaybackEngagedSeconds({
+  previousPosition: 10,
+  currentPosition: 50,
+  previousObservedAt: 1_000,
+  currentObservedAt: 2_000,
+}), 0);
+assert.equal(runtime.providerPlaybackEngagedSeconds({
+  previousPosition: 10,
+  currentPosition: 11,
+  previousObservedAt: 1_000,
+  currentObservedAt: 32_000,
+}), 1);
 
 assert.equal(runtime.effectiveWatchStatus({ watched: true }), "completed");
 assert.equal(runtime.effectiveWatchStatus({ watch_status: "completed" }), "completed");

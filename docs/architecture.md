@@ -183,8 +183,17 @@ Returns the current authenticated user. Requires a valid session cookie.
 `GET /api/admin/users`
 
 Requires the current user's email to match `ANIME_ADMIN_EMAIL`. Returns
-registered users, per-user favorite/progress/watched counts, active-session
-counts, aggregate summary metrics, and top titles by user activity.
+registered users, successful-login and last-activity data, current valid
+authorizations, episode-level playback metrics, recent watch sessions, library
+state, and top titles by playback evidence. Episode opens, confirmed
+starts, five-minute views, likely completions, and explicitly completed titles
+remain separate signals.
+
+Trusted Kodik/AniBoom playback is confirmed by monotonic time updates. For
+players without a message API, a player must retain focus for 30 seconds before
+the bounded fallback signal starts. `telemetry_started_at` is the first stored
+event, not a guarantee that every older provider emitted complete playback
+signals.
 
 `POST /api/auth/google`
 
@@ -441,25 +450,26 @@ The local fullscreen button calls `requestFullscreen()` on the iframe wrapper.
 The iframe also carries `allow="fullscreen; picture-in-picture"` so the embedded
 player can request those permissions.
 
-The PiP button uses `window.documentPictureInPicture` when the browser supports
-it. If unavailable or blocked, the UI reports that PiP is available inside the
-embedded player. The local app cannot directly control a cross-origin player's
-internal video element.
+The PiP button points users to the embedded player's own PiP control. Cloning a
+cross-origin iframe into Document PiP would create a second player, so the app
+does not attempt it. Provider PiP messages are tracked when available.
 
 Automatic watch tracking uses the iframe boundary as the universal fallback and
-provider `postMessage` adapters where a stable contract exists. Kodik serial
-players report the current season/episode and playback state. The frontend
-maps that report back through the exact serial ID/hash/season/episode URL,
-rolls the watch session to the mapped catalog episode, and updates the outer
-episode/source controls, shared URL, and last-opened cursor without reloading
-the already-playing iframe. Messages are accepted only from the active
-`iframe.contentWindow` and its exact HTTPS origin.
+provider `postMessage` adapters where a stable contract exists. Kodik `/seria/`
+and `/serial/` players report playback state and time. Serial players also
+report the current season/episode; the frontend maps that report back through
+the exact serial ID/hash/season/episode URL, rolls the watch session to the
+mapped catalog episode, and updates the outer episode/source controls, shared
+URL, and last-opened cursor without reloading the already-playing iframe.
+Messages are accepted only from the active `iframe.contentWindow` and its exact
+HTTPS origin.
 
-`iframe load` and provider autostart remain low-confidence history only. A
-provider playback event can sustain tracking after real user evidence, but it
-cannot start progress by itself; focus/pointer interaction, fullscreen/PiP, or
-an already-engaged session is still required. Providers without a proven
-message contract continue to use the conservative iframe-boundary fallback.
+`iframe load`, a single click, and provider autostart remain low-confidence
+history only. Two monotonic trusted time updates can start progress without
+parent-frame focus. Fullscreen/PiP are explicit start signals, while accounted
+time for trusted providers still comes from advancing timestamps. Providers
+without a proven message contract use a bounded fallback after 30 seconds of
+continuous iframe focus.
 
 ## Shared Links
 

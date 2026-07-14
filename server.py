@@ -5003,7 +5003,13 @@ def sanitize_watch_metadata(payload):
     return encoded
 
 
-def watch_event_confidence(event_type, engaged_seconds=0, page_visible=None, player_focused=None):
+def watch_event_confidence(
+    event_type,
+    engaged_seconds=0,
+    page_visible=None,
+    player_focused=None,
+    picture_in_picture=None,
+):
     if event_type == "player_loaded":
         return 0.15
     if event_type in {"fullscreen_enter", "pip_open"}:
@@ -5015,9 +5021,9 @@ def watch_event_confidence(event_type, engaged_seconds=0, page_visible=None, pla
     if event_type == "heartbeat":
         if engaged_seconds <= 0:
             return 0.35
-        if page_visible is False:
+        if page_visible is False and not picture_in_picture:
             return 0.35
-        return 0.8 if player_focused else 0.7
+        return 0.8 if player_focused or picture_in_picture else 0.7
     if event_type in {"page_hidden", "session_end"}:
         return 0.45 if engaged_seconds > 0 else 0.25
     return 0.0
@@ -5283,14 +5289,23 @@ def apply_watch_progress_to_user_state(
 
 
 def watch_event_is_explicit_resume(event_type):
-    return event_type == "player_engaged"
+    return event_type in {"player_engaged", "fullscreen_enter", "pip_open"}
 
 
 def watch_event_can_start_title(current, event_type):
     if current.get("watch_status") == "completed":
         return False
     if current.get("watch_status") == "none" or current.get("not_interested"):
-        return watch_event_is_explicit_resume(event_type)
+        if watch_event_is_explicit_resume(event_type):
+            return True
+        # Recover an untouched user's first watch when the initial engagement
+        # request was lost but a later verified heartbeat arrived. An explicit
+        # shelf decision has a timestamp and must never be undone passively.
+        return (
+            event_type == "heartbeat"
+            and not current.get("not_interested")
+            and not current.get("watch_status_updated_at")
+        )
     return True
 
 
@@ -5613,13 +5628,19 @@ def record_watch_event(payload, db_path=None, user_id=None):
         engaged_seconds = engaged_seconds or 0
         page_visible = optional_json_boolean(payload, "page_visible")
         player_focused = optional_json_boolean(payload, "player_focused")
-        if event_type == "heartbeat" and not (page_visible == 1 and player_focused == 1):
+        picture_in_picture = optional_json_boolean(payload, "picture_in_picture")
+        if event_type == "heartbeat" and not (
+            (page_visible == 1 and player_focused == 1) or picture_in_picture == 1
+        ):
             engaged_seconds = 0
         confidence = watch_event_confidence(
             event_type,
             engaged_seconds,
             page_visible=bool(page_visible) if page_visible is not None else None,
             player_focused=bool(player_focused) if player_focused is not None else None,
+            picture_in_picture=(
+                bool(picture_in_picture) if picture_in_picture is not None else None
+            ),
         )
 
         actual_progress_number = episode_progress_number(episode["number"])
@@ -6207,35 +6228,225 @@ def revoke_session(token, db_path=None):
         con.close()
 
 
+ADMIN_EPISODE_ROLLUPS_CTE = """
+event_rows as (
+    select
+        user_id,
+        admin_canonical_anime_id(anime_id) as anime_id,
+        episode_id,
+        client_session_id,
+        event_type,
+        event_at,
+        episode_number,
+        progress_episode_number,
+        engaged_seconds,
+        confidence,
+        coalesce(
+            'n:' || cast(progress_episode_number as text),
+            'e:' || cast(episode_id as text),
+            's:' || client_session_id
+        ) as episode_key
+    from user_watch_events
+),
+episode_rollups as (
+    select
+        user_id,
+        anime_id,
+        episode_key,
+        max(episode_id) as episode_id,
+        max(episode_number) as episode_number,
+        min(event_at) as first_event_at,
+        max(event_at) as last_event_at,
+        max(
+            case
+                when (
+                    event_type in ('player_engaged', 'heartbeat', 'fullscreen_enter', 'pip_open')
+                    and confidence >= ?
+                ) or coalesce(engaged_seconds, 0) > 0
+                then event_at
+            end
+        ) as last_watch_at,
+        sum(coalesce(engaged_seconds, 0)) as engaged_seconds,
+        max(
+            case
+                when event_type in ('player_engaged', 'heartbeat', 'fullscreen_enter', 'pip_open')
+                 and confidence >= ?
+                then 1 else 0
+            end
+        ) as has_strong_signal
+    from event_rows
+    group by user_id, anime_id, episode_key
+)
+"""
+
+
+def admin_latest_timestamp(*values):
+    return max((value for value in values if value), default=None)
+
+
+def prepare_admin_canonical_context(con, db_path):
+    """Install request-local canonical ids and normalized library state for analytics."""
+    cache = get_catalog_cache(db_path, connection=con)
+    canonical_ids = {
+        int(source_id): int(group["id"])
+        for source_id, group in cache.get("id_map", {}).items()
+    }
+
+    def canonical_anime_id(value):
+        if value is None:
+            return None
+        anime_id = int(value)
+        return canonical_ids.get(anime_id, anime_id)
+
+    con.create_function(
+        "admin_canonical_anime_id",
+        1,
+        canonical_anime_id,
+        deterministic=True,
+    )
+
+    grouped_states = {}
+    for row in con.execute("select * from user_title_state").fetchall():
+        key = (int(row["user_id"]), canonical_anime_id(row["anime_id"]))
+        grouped_states.setdefault(key, []).append(row)
+
+    con.execute(
+        """
+        create temp table admin_canonical_user_title_state (
+            user_id integer not null,
+            anime_id integer not null,
+            is_favorite integer not null,
+            watched integer not null,
+            progress_episode_number integer,
+            updated_at text,
+            primary key (user_id, anime_id)
+        )
+        """
+    )
+    rows = []
+    for (user_id, anime_id), state_rows in grouped_states.items():
+        state = aggregate_state_rows(state_rows)
+        rows.append(
+            (
+                user_id,
+                anime_id,
+                int(bool(state["is_favorite"])),
+                int(bool(state["watched"])),
+                state["progress_episode_number"],
+                state["updated_at"],
+            )
+        )
+    con.executemany(
+        """
+        insert into admin_canonical_user_title_state (
+            user_id, anime_id, is_favorite, watched, progress_episode_number, updated_at
+        ) values (?, ?, ?, ?, ?, ?)
+        """,
+        rows,
+    )
+    # TEMP writes otherwise keep a transaction open and retain a read lock on
+    # the main database for the full dashboard render in rollback-journal mode.
+    con.commit()
+
+
 def admin_users_payload(db_path=None):
     now = now_iso()
-    recent_cutoff = (
-        dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=7)
-    ).isoformat(timespec="seconds")
+    current_time = dt.datetime.now(dt.timezone.utc)
+    recent_cutoff = (current_time - dt.timedelta(days=7)).isoformat(timespec="seconds")
+    month_cutoff = (current_time - dt.timedelta(days=30)).isoformat(timespec="seconds")
     con = connect(db_path)
     try:
+        prepare_admin_canonical_context(con, db_path)
         users = rows_to_dicts(
             con.execute(
-                """
-                with state_stats as (
+                f"""
+                with
+                {ADMIN_EPISODE_ROLLUPS_CTE},
+                episode_stats as (
+                    select
+                        user_id,
+                        count(*) as opened_episodes,
+                        sum(
+                            case when has_strong_signal = 1 or engaged_seconds > 0 then 1 else 0 end
+                        ) as started_episodes,
+                        sum(
+                            case
+                                when (has_strong_signal = 1 or engaged_seconds > 0)
+                                 and engaged_seconds >= ?
+                                then 1 else 0
+                            end
+                        ) as meaningful_episodes,
+                        count(
+                            distinct case
+                                when has_strong_signal = 1 or engaged_seconds > 0 then anime_id
+                            end
+                        ) as episode_titles,
+                        sum(coalesce(engaged_seconds, 0)) as engaged_seconds,
+                        max(last_event_at) as last_player_activity_at,
+                        max(last_watch_at) as last_watch_at
+                    from episode_rollups
+                    group by user_id
+                ),
+                episode_completion_stats as (
+                    select
+                        user_id,
+                        count(
+                            distinct case
+                                when completed_at is not null then
+                                    cast(admin_canonical_anime_id(anime_id) as text)
+                                    || ':' || coalesce(
+                                        'n:' || cast(progress_episode_number as text),
+                                        'e:' || cast(episode_id as text)
+                                    )
+                            end
+                        ) as completed_episodes
+                    from user_episode_state
+                    group by user_id
+                ),
+                latest_watch as (
+                    select *
+                    from (
+                        select
+                            er.*,
+                            row_number() over (
+                                partition by er.user_id
+                                order by er.last_watch_at desc, er.anime_id desc, er.episode_key desc
+                            ) as watch_rank
+                        from episode_rollups er
+                        where er.has_strong_signal = 1 or er.engaged_seconds > 0
+                    )
+                    where watch_rank = 1
+                ),
+                state_stats as (
                     select
                         user_id,
                         count(*) as touched_titles,
                         sum(case when is_favorite then 1 else 0 end) as favorite_titles,
-                        sum(case when progress_episode_number is not null then 1 else 0 end) as progress_titles,
-                        sum(case when watched then 1 else 0 end) as watched_titles,
+                        sum(
+                            case
+                                when not watched and progress_episode_number is not null then 1
+                                else 0
+                            end
+                        )
+                            as progress_titles,
+                        sum(case when watched then 1 else 0 end) as completed_titles,
                         max(updated_at) as last_state_at
-                    from user_title_state
+                    from admin_canonical_user_title_state
                     group by user_id
                 ),
-                session_stats as (
+                auth_stats as (
                     select
                         user_id,
-                        count(*) as active_sessions,
-                        max(last_seen_at) as last_session_at
+                        count(*) as login_count,
+                        sum(case when created_at >= ? then 1 else 0 end) as login_count_7d,
+                        max(created_at) as last_successful_login_at,
+                        max(last_seen_at) as last_authenticated_activity_at,
+                        sum(
+                            case
+                                when revoked_at is null and expires_at > ? then 1 else 0
+                            end
+                        ) as valid_authorizations
                     from sessions
-                    where revoked_at is null
-                      and expires_at > ?
                     group by user_id
                 )
                 select
@@ -6244,101 +6455,301 @@ def admin_users_payload(db_path=None):
                     u.name,
                     u.picture_url,
                     u.created_at,
-                    u.last_login_at,
+                    auth.last_successful_login_at as last_login_at,
+                    coalesce(auth.login_count, 0) as login_count,
+                    coalesce(auth.login_count_7d, 0) as login_count_7d,
+                    coalesce(auth.valid_authorizations, 0) as valid_authorizations,
+                    auth.last_authenticated_activity_at,
                     coalesce(ss.touched_titles, 0) as touched_titles,
                     coalesce(ss.favorite_titles, 0) as favorite_titles,
                     coalesce(ss.progress_titles, 0) as progress_titles,
-                    coalesce(ss.watched_titles, 0) as watched_titles,
+                    coalesce(ss.completed_titles, 0) as completed_titles,
+                    coalesce(ss.completed_titles, 0) as watched_titles,
                     ss.last_state_at,
-                    coalesce(sess.active_sessions, 0) as active_sessions,
-                    sess.last_session_at
+                    coalesce(es.opened_episodes, 0) as opened_episodes,
+                    coalesce(es.started_episodes, 0) as started_episodes,
+                    coalesce(es.meaningful_episodes, 0) as meaningful_episodes,
+                    coalesce(ecs.completed_episodes, 0) as completed_episodes,
+                    coalesce(es.episode_titles, 0) as episode_titles,
+                    coalesce(es.engaged_seconds, 0) as engaged_seconds,
+                    es.last_player_activity_at,
+                    es.last_watch_at,
+                    lw.anime_id as last_watch_anime_id,
+                    a.title as last_watch_title,
+                    lw.episode_number as last_watch_episode_number,
+                    lw.engaged_seconds as last_watch_episode_seconds,
+                    coalesce(auth.valid_authorizations, 0) as active_sessions,
+                    auth.last_authenticated_activity_at as last_session_at
                 from users u
                 left join state_stats ss on ss.user_id = u.id
-                left join session_stats sess on sess.user_id = u.id
-                order by
-                    coalesce(u.last_login_at, u.created_at) desc,
-                    u.id desc
+                left join auth_stats auth on auth.user_id = u.id
+                left join episode_stats es on es.user_id = u.id
+                left join episode_completion_stats ecs on ecs.user_id = u.id
+                left join latest_watch lw on lw.user_id = u.id
+                left join anime a on a.id = lw.anime_id
                 """,
-                (now,),
+                (
+                    WATCH_STARTED_CONFIDENCE,
+                    WATCH_STARTED_CONFIDENCE,
+                    MEANINGFUL_WATCH_SECONDS,
+                    recent_cutoff,
+                    now,
+                ),
             ).fetchall()
         )
+        integer_user_fields = (
+            "login_count",
+            "login_count_7d",
+            "valid_authorizations",
+            "touched_titles",
+            "favorite_titles",
+            "progress_titles",
+            "completed_titles",
+            "watched_titles",
+            "opened_episodes",
+            "started_episodes",
+            "meaningful_episodes",
+            "completed_episodes",
+            "episode_titles",
+            "engaged_seconds",
+            "active_sessions",
+        )
         for user in users:
-            for key in (
-                "touched_titles",
-                "favorite_titles",
-                "progress_titles",
-                "watched_titles",
-                "active_sessions",
-            ):
+            for key in integer_user_fields:
                 user[key] = int(user.get(key) or 0)
-            user["is_admin"] = is_admin_user(user)
-
-        summary_row = con.execute(
-            """
-            with state_stats as (
-                select
-                    user_id,
-                    sum(case when is_favorite then 1 else 0 end) as favorite_titles,
-                    sum(case when progress_episode_number is not null then 1 else 0 end) as progress_titles,
-                    sum(case when watched then 1 else 0 end) as watched_titles
-                from user_title_state
-                group by user_id
-            ),
-            session_stats as (
-                select user_id, count(*) as active_sessions
-                from sessions
-                where revoked_at is null
-                  and expires_at > ?
-                group by user_id
+            user["last_activity_at"] = admin_latest_timestamp(
+                user.get("last_authenticated_activity_at"),
+                user.get("last_player_activity_at"),
+                user.get("last_state_at"),
             )
-            select
-                count(u.id) as registered_users,
-                sum(case when u.last_login_at >= ? then 1 else 0 end) as recent_logins,
-                sum(case when coalesce(ss.favorite_titles, 0) > 0 then 1 else 0 end) as users_with_favorites,
-                sum(case when coalesce(ss.progress_titles, 0) > 0 then 1 else 0 end) as users_with_progress,
-                sum(case when coalesce(ss.watched_titles, 0) > 0 then 1 else 0 end) as users_with_watched,
-                coalesce(sum(ss.favorite_titles), 0) as total_favorites,
-                coalesce(sum(ss.progress_titles), 0) as total_progress_titles,
-                coalesce(sum(ss.watched_titles), 0) as total_watched_titles,
-                coalesce(sum(sess.active_sessions), 0) as active_sessions
-            from users u
-            left join state_stats ss on ss.user_id = u.id
-            left join session_stats sess on sess.user_id = u.id
-            """,
-            (now, recent_cutoff),
-        ).fetchone()
-        summary = dict(summary_row)
-        for key, value in list(summary.items()):
-            summary[key] = int(value or 0)
+            user["active_7d"] = bool(
+                user["last_activity_at"] and user["last_activity_at"] >= recent_cutoff
+            )
+            user["active_30d"] = bool(
+                user["last_activity_at"] and user["last_activity_at"] >= month_cutoff
+            )
+            user["viewer_7d"] = bool(
+                user.get("last_watch_at") and user["last_watch_at"] >= recent_cutoff
+            )
+            user["is_admin"] = is_admin_user(user)
+        users.sort(
+            key=lambda user: (user.get("last_activity_at") or "", int(user["id"])),
+            reverse=True,
+        )
+
+        summary = {
+            "registered_users": len(users),
+            "recent_logins": sum(
+                1 for user in users if (user.get("last_login_at") or "") >= recent_cutoff
+            ),
+            "logins_7d": sum(user["login_count_7d"] for user in users),
+            "active_users_7d": sum(user["active_7d"] for user in users),
+            "active_users_30d": sum(user["active_30d"] for user in users),
+            "viewers_7d": sum(user["viewer_7d"] for user in users),
+            "player_users_7d": sum(
+                1
+                for user in users
+                if (user.get("last_player_activity_at") or "") >= recent_cutoff
+            ),
+            "authorized_users": sum(user["valid_authorizations"] > 0 for user in users),
+            "valid_authorizations": sum(user["valid_authorizations"] for user in users),
+            "active_sessions": sum(user["valid_authorizations"] for user in users),
+            "users_with_favorites": sum(user["favorite_titles"] > 0 for user in users),
+            "users_with_progress": sum(user["progress_titles"] > 0 for user in users),
+            "users_with_watched": sum(user["completed_titles"] > 0 for user in users),
+            "total_favorites": sum(user["favorite_titles"] for user in users),
+            "total_progress_titles": sum(user["progress_titles"] for user in users),
+            "total_watched_titles": sum(user["completed_titles"] for user in users),
+            "total_completed_titles": sum(user["completed_titles"] for user in users),
+            "total_opened_episodes": sum(user["opened_episodes"] for user in users),
+            "total_started_episodes": sum(user["started_episodes"] for user in users),
+            "total_meaningful_episodes": sum(user["meaningful_episodes"] for user in users),
+            "total_completed_episodes": sum(user["completed_episodes"] for user in users),
+            "total_engaged_seconds": sum(user["engaged_seconds"] for user in users),
+        }
 
         top_titles = rows_to_dicts(
             con.execute(
-                """
+                f"""
+                with
+                {ADMIN_EPISODE_ROLLUPS_CTE},
+                watch_stats as (
+                    select
+                        anime_id,
+                        count(
+                            distinct case
+                                when has_strong_signal = 1 or engaged_seconds > 0 then user_id
+                            end
+                        ) as users,
+                        count(*) as opened_episodes,
+                        count(
+                            distinct case
+                                when has_strong_signal = 1 or engaged_seconds > 0 then user_id
+                            end
+                        ) as viewers,
+                        sum(
+                            case when has_strong_signal = 1 or engaged_seconds > 0 then 1 else 0 end
+                        ) as started_episodes,
+                        sum(
+                            case
+                                when (has_strong_signal = 1 or engaged_seconds > 0)
+                                 and engaged_seconds >= ?
+                                then 1 else 0
+                            end
+                        ) as meaningful_episodes,
+                        sum(coalesce(engaged_seconds, 0)) as engaged_seconds,
+                        max(last_watch_at) as last_activity_at
+                    from episode_rollups
+                    group by anime_id
+                    having started_episodes > 0
+                ),
+                library_stats as (
+                    select
+                        anime_id,
+                        sum(case when is_favorite then 1 else 0 end) as favorites,
+                        sum(
+                            case
+                                when not watched and progress_episode_number is not null then 1
+                                else 0
+                            end
+                        )
+                            as in_progress,
+                        sum(case when watched then 1 else 0 end) as watched
+                    from admin_canonical_user_title_state
+                    group by anime_id
+                ),
+                completion_stats as (
+                    select
+                        admin_canonical_anime_id(anime_id) as anime_id,
+                        count(
+                            distinct case
+                                when completed_at is not null then
+                                    cast(user_id as text) || ':' || coalesce(
+                                        'n:' || cast(progress_episode_number as text),
+                                        'e:' || cast(episode_id as text)
+                                    )
+                            end
+                        ) as completed_episodes
+                    from user_episode_state
+                    group by admin_canonical_anime_id(anime_id)
+                )
                 select
                     a.id as anime_id,
                     a.title,
                     a.source,
-                    count(distinct uts.user_id) as users,
-                    sum(case when uts.is_favorite then 1 else 0 end) as favorites,
-                    sum(case when uts.progress_episode_number is not null then 1 else 0 end) as in_progress,
-                    sum(case when uts.watched then 1 else 0 end) as watched
-                from user_title_state uts
-                join anime a on a.id = uts.anime_id
-                group by a.id, a.title, a.source
-                having favorites > 0 or in_progress > 0 or watched > 0
-                order by favorites desc, watched desc, in_progress desc, users desc, a.title
+                    ws.users,
+                    ws.opened_episodes,
+                    ws.viewers,
+                    ws.started_episodes,
+                    ws.meaningful_episodes,
+                    coalesce(cs.completed_episodes, 0) as completed_episodes,
+                    ws.engaged_seconds,
+                    ws.last_activity_at,
+                    coalesce(ls.favorites, 0) as favorites,
+                    coalesce(ls.in_progress, 0) as in_progress,
+                    coalesce(ls.watched, 0) as watched
+                from watch_stats ws
+                join anime a on a.id = ws.anime_id
+                left join library_stats ls on ls.anime_id = ws.anime_id
+                left join completion_stats cs on cs.anime_id = ws.anime_id
+                order by
+                    ws.last_activity_at desc,
+                    ws.viewers desc,
+                    ws.started_episodes desc,
+                    ws.engaged_seconds desc,
+                    a.title
                 limit 12
-                """
+                """,
+                (
+                    WATCH_STARTED_CONFIDENCE,
+                    WATCH_STARTED_CONFIDENCE,
+                    MEANINGFUL_WATCH_SECONDS,
+                ),
             ).fetchall()
         )
+        integer_title_fields = (
+            "anime_id",
+            "users",
+            "opened_episodes",
+            "viewers",
+            "started_episodes",
+            "meaningful_episodes",
+            "completed_episodes",
+            "engaged_seconds",
+            "favorites",
+            "in_progress",
+            "watched",
+        )
         for title in top_titles:
-            for key in ("anime_id", "users", "favorites", "in_progress", "watched"):
+            for key in integer_title_fields:
                 title[key] = int(title.get(key) or 0)
 
+        recent_watch_sessions = rows_to_dicts(
+            con.execute(
+                """
+                with session_rollups as (
+                    select
+                        uwe.user_id,
+                        admin_canonical_anime_id(uwe.anime_id) as anime_id,
+                        uwe.client_session_id,
+                        coalesce(
+                            'n:' || cast(uwe.progress_episode_number as text),
+                            'e:' || cast(uwe.episode_id as text),
+                            's:' || uwe.client_session_id
+                        ) as episode_key,
+                        max(uwe.episode_number) as episode_number,
+                        min(uwe.event_at) as started_at,
+                        max(uwe.event_at) as last_event_at,
+                        sum(coalesce(uwe.engaged_seconds, 0)) as engaged_seconds,
+                        max(
+                            case
+                                when uwe.event_type in (
+                                    'player_engaged', 'heartbeat', 'fullscreen_enter', 'pip_open'
+                                ) and uwe.confidence >= ?
+                                then 1 else 0
+                            end
+                        ) as has_strong_signal
+                    from user_watch_events uwe
+                    group by
+                        uwe.user_id,
+                        admin_canonical_anime_id(uwe.anime_id),
+                        uwe.client_session_id,
+                        episode_key
+                )
+                select
+                    sr.user_id,
+                    u.name as user_name,
+                    u.email as user_email,
+                    sr.anime_id,
+                    a.title,
+                    a.source,
+                    sr.episode_number,
+                    sr.started_at,
+                    sr.last_event_at,
+                    sr.engaged_seconds
+                from session_rollups sr
+                join users u on u.id = sr.user_id
+                join anime a on a.id = sr.anime_id
+                where sr.has_strong_signal = 1 or sr.engaged_seconds > 0
+                order by sr.last_event_at desc, sr.user_id desc
+                limit 24
+                """,
+                (WATCH_STARTED_CONFIDENCE,),
+            ).fetchall()
+        )
+        for item in recent_watch_sessions:
+            for key in ("user_id", "anime_id", "engaged_seconds"):
+                item[key] = int(item.get(key) or 0)
+
+        telemetry_started_at = con.execute(
+            "select min(event_at) from user_watch_events"
+        ).fetchone()[0]
         return {
             "summary": summary,
             "users": users,
             "top_titles": top_titles,
+            "recent_watch_sessions": recent_watch_sessions,
+            "telemetry_started_at": telemetry_started_at,
             "generated_at": now,
         }
     finally:

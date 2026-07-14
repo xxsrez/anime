@@ -253,6 +253,12 @@
       if (kodikKey === "kodik_player_video_ended") {
         return { provider: "kodik", type: "playback_ended" };
       }
+      if (kodikKey === "kodik_player_enter_pip") {
+        return { provider: "kodik", type: "pip_entered" };
+      }
+      if (kodikKey === "kodik_player_exit_pip") {
+        return { provider: "kodik", type: "pip_exited" };
+      }
       if (kodikKey === "kodik_player_time_update") {
         const positionSeconds = Number(data.value);
         return Number.isFinite(positionSeconds) && positionSeconds >= 0
@@ -290,6 +296,52 @@
     }
 
     return null;
+  }
+
+  function playerMessageProvider(source) {
+    if (hostnameMatches(source?.embed_host, "kodikplayer.com")) return "kodik";
+    if (hostnameMatches(source?.embed_host, "aniboom.one")) return "aniboom";
+    return null;
+  }
+
+  function providerPlaybackDelta({
+    previousPosition,
+    currentPosition,
+    pageHidden = false,
+    pictureInPicture = false,
+    maximumStepSeconds = 30,
+  } = {}) {
+    if (pageHidden && !pictureInPicture) return 0;
+    if (previousPosition == null || currentPosition == null) return 0;
+    const previous = Number(previousPosition);
+    const current = Number(currentPosition);
+    const maximum = Number(maximumStepSeconds);
+    if (!Number.isFinite(previous) || !Number.isFinite(current) || !Number.isFinite(maximum)) {
+      return 0;
+    }
+    const delta = current - previous;
+    return delta > 0 && delta <= Math.max(1, maximum) ? delta : 0;
+  }
+
+  function providerPlaybackProgressed(options = {}) {
+    return providerPlaybackDelta(options) > 0;
+  }
+
+  function providerPlaybackEngagedSeconds({
+    previousObservedAt,
+    currentObservedAt,
+    maximumWallStepSeconds = 30,
+    ...playback
+  } = {}) {
+    const mediaSeconds = providerPlaybackDelta(playback);
+    if (!(mediaSeconds > 0)) return 0;
+    const previous = Number(previousObservedAt);
+    const current = Number(currentObservedAt);
+    const maximum = Number(maximumWallStepSeconds);
+    if (!Number.isFinite(previous) || !Number.isFinite(current) || current <= previous) return 0;
+    const elapsed = (current - previous) / 1000;
+    if (!Number.isFinite(maximum)) return Math.min(mediaSeconds, elapsed);
+    return Math.min(mediaSeconds, elapsed, Math.max(0, maximum));
   }
 
   function findKodikEpisodeTarget({
@@ -380,14 +432,17 @@
 
   function hasPlaybackEvidence({
     pageHidden = false,
-    playerFocused = false,
     fullscreen = false,
     providerPlaybackActive = false,
+    pictureInPicture = false,
+    fallbackFocused = false,
     evidenceExpiresAt = 0,
     now = Date.now(),
   } = {}) {
-    if (pageHidden || Number(evidenceExpiresAt) <= Number(now)) return false;
-    return Boolean(playerFocused || fullscreen || providerPlaybackActive);
+    if ((pageHidden && !pictureInPicture) || Number(evidenceExpiresAt) <= Number(now)) {
+      return false;
+    }
+    return Boolean(fullscreen || providerPlaybackActive || pictureInPicture || fallbackFocused);
   }
 
   function effectiveWatchStatus(item) {
@@ -476,6 +531,10 @@
     safeHttpsUrl,
     parseKodikSerialUrl,
     normalizePlayerMessage,
+    playerMessageProvider,
+    providerPlaybackDelta,
+    providerPlaybackProgressed,
+    providerPlaybackEngagedSeconds,
     findKodikEpisodeTarget,
     normalizeSourceIdentity,
     normalizeTranslationKey,
