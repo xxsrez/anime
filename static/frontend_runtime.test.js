@@ -381,6 +381,50 @@ const semanticTranslationGroups = runtime.groupSourcesByTranslation([
 assert.equal(semanticTranslationGroups.length, 2);
 assert.deepEqual(semanticTranslationGroups[0].sources.map(source => source.id), [1, 2]);
 
+assert.deepEqual(runtime.groupContentSourceVariants({
+  source_variants: [
+    {
+      source: "yummyanime",
+      source_count: 33,
+      available_episode_count: 3,
+    },
+    {
+      source: "yummyanime",
+      source_count: 2,
+      available_episode_count: 2,
+    },
+    {
+      source: "animego",
+      source_count: 5,
+      available_episode_count: 2,
+    },
+  ],
+  sources_by_episode: {
+    1: [
+      { source: "yummyanime", embed_url: "https://kodikplayer.com/1" },
+      { source: "animego", embed_url: "https://kodikplayer.com/2" },
+    ],
+    2: [
+      { source: "yummyanime", embed_url: "https://kodikplayer.com/3" },
+    ],
+    3: [
+      { source: "yummyanime", embed_url: "https://kodikplayer.com/4" },
+      { source: "yummyanime", embed_url: "https://kodikplayer.com/5" },
+    ],
+  },
+}), [
+  {
+    source: "yummyanime",
+    source_count: 35,
+    available_episode_count: 3,
+  },
+  {
+    source: "animego",
+    source_count: 5,
+    available_episode_count: 1,
+  },
+]);
+
 const springBefore = new Date(2026, 2, 28, 23, 30);
 const springAfter = new Date(2026, 2, 29, 23, 30);
 assert.equal(runtime.localCalendarDayDifference(springAfter, springBefore), 1);

@@ -1874,7 +1874,11 @@ def search_phrase_score(query, field):
         return 500 + field["weight"] * 30
     if query["text"] in field["text"]:
         return 360 + field["weight"] * 24 + len(query["text"])
-    if field["text"] in query["text"] and len(field["text"]) >= 4:
+    if (
+        field["text"] in query["text"]
+        and len(field["text"]) >= 4
+        and len(field["tokens"]) >= required_search_token_matches(len(query["tokens"]))
+    ):
         return 240 + field["weight"] * 12
     return 0
 

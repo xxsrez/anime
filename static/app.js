@@ -1057,9 +1057,7 @@ function sourceLabelList(item) {
 }
 
 function sourceVariants(detail) {
-  const variants = Array.isArray(detail?.source_variants) ? detail.source_variants : [];
-  if (variants.length) return variants;
-  return detail?.source ? [{ source: detail.source, source_count: detail.source_count || 0 }] : [];
+  return frontendRuntime.groupContentSourceVariants(detail);
 }
 
 function allSourcesForEpisode(episodeId) {

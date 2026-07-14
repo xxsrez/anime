@@ -407,6 +407,27 @@ const items = search.prepareSearchIndexes([
       {value: "Ицуки Имадзаки", weight: 5, kind: "metadata"},
     ],
   },
+  {
+    id: "production-magic",
+    title: "Весёлая защита владений беспечного лорда",
+    subtitle: "Okiraku Ryoushu no Tanoshii Ryouchi Bouei",
+    genres: ["Фэнтези"],
+    source_variants: [],
+    search_fields: [
+      {
+        value: "Весёлая защита владений беспечного лорда: Превращение безымянной деревни в неприступную крепость с помощью производственной магии",
+        weight: 9,
+        kind: "alias",
+      },
+    ],
+  },
+  {
+    id: "generic-magic",
+    title: "Постороннее аниме",
+    subtitle: null,
+    genres: ["Магия"],
+    source_variants: [],
+  },
 ]);
 
 function rankedIds(queryText) {
@@ -430,6 +451,8 @@ assert.strictEqual(rankedIds("хаяо миядзаки")[0], "heron");
 assert.strictEqual(rankedIds("миядзаки")[0], "miyazaki-title");
 assert.strictEqual(rankedIds("сигэюки мия")[0], "short-miya");
 assert.strictEqual(rankedIds("ицуки имадзаки")[0], "imadzaki");
+assert.strictEqual(rankedIds("производственная магия")[0], "production-magic");
+assert.ok(!rankedIds("производственная магия").includes("generic-magic"));
 assert.ok(!rankedIds("миядзаки").includes("short-miya"));
 assert.ok(!rankedIds("миядзаки").includes("imadzaki"));
 assert.deepStrictEqual(rankedIds("zz"), []);
@@ -463,6 +486,32 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         miyazaki = server.get_anime_list(q="хаяо миядзаки")
         self.assertTrue(miyazaki)
         self.assertEqual(miyazaki[0]["id"], 10001570)
+
+        production_magic_query = server.search_query_info("производственная магия")
+        production_magic = {
+            "title": "Весёлая защита владений беспечного лорда",
+            "subtitle": "Okiraku Ryoushu no Tanoshii Ryouchi Bouei",
+            "genres": ["Фэнтези"],
+            "search_fields": [
+                {
+                    "value": (
+                        "Весёлая защита владений беспечного лорда: Превращение безымянной "
+                        "деревни в неприступную крепость с помощью производственной магии"
+                    ),
+                    "weight": 9,
+                    "kind": "alias",
+                }
+            ],
+        }
+        generic_magic = {
+            "title": "Постороннее аниме",
+            "genres": ["Магия"],
+        }
+        self.assertGreater(
+            server.item_search_score(production_magic, production_magic_query),
+            server.item_search_score(generic_magic, production_magic_query),
+        )
+        self.assertEqual(server.item_search_score(generic_magic, production_magic_query), 0)
 
     def test_api_search_uses_aliases_and_selected_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:

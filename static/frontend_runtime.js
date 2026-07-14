@@ -52,6 +52,46 @@
     return [...groups.values()];
   }
 
+  function groupContentSourceVariants(detail) {
+    const variants = Array.isArray(detail?.source_variants) && detail.source_variants.length
+      ? detail.source_variants
+      : detail?.source
+        ? [{
+          source: detail.source,
+          source_count: detail.source_count || 0,
+          available_episode_count: detail.available_episode_count || 0,
+        }]
+        : [];
+    const groups = new Map();
+    for (const variant of variants) {
+      const source = String(variant?.source || "").trim();
+      if (!source) continue;
+      if (!groups.has(source)) {
+        groups.set(source, {
+          source,
+          source_count: 0,
+          available_episode_count: 0,
+        });
+      }
+      const group = groups.get(source);
+      group.source_count += Math.max(0, Number(variant.source_count) || 0);
+      group.available_episode_count = Math.max(
+        group.available_episode_count,
+        Math.max(0, Number(variant.available_episode_count) || 0),
+      );
+    }
+
+    const episodeSourceRows = Object.values(detail?.sources_by_episode || {});
+    if (episodeSourceRows.length) {
+      for (const group of groups.values()) {
+        group.available_episode_count = episodeSourceRows.filter(sources => (
+          (sources || []).some(source => source?.source === group.source && source?.embed_url)
+        )).length;
+      }
+    }
+    return [...groups.values()];
+  }
+
   function sourcePreference(source) {
     if (!source) return null;
     return {
@@ -540,6 +580,7 @@
     normalizeTranslationKey,
     sourceTranslationKey,
     groupSourcesByTranslation,
+    groupContentSourceVariants,
     sourcePreference,
     selectPreferredProvider,
     selectPreferredSource,

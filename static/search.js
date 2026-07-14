@@ -209,7 +209,13 @@
     if (!query.text || !field.text) return 0;
     if (field.text === query.text) return 500 + field.weight * 30;
     if (field.text.includes(query.text)) return 360 + field.weight * 24 + query.text.length;
-    if (query.text.includes(field.text) && field.text.length >= 4) return 240 + field.weight * 12;
+    if (
+      query.text.includes(field.text)
+      && field.text.length >= 4
+      && field.tokens.length >= requiredTokenMatches(query.tokens.length)
+    ) {
+      return 240 + field.weight * 12;
+    }
     return 0;
   }
 
