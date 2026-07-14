@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "slug": "rent-a-girlfriend",
+  "title": "Девушка на час",
+  "short_title": "Rent-a-Girlfriend",
+  "original_title": "彼女、お借りします",
+  "summary": "Романтическая комедия о студенте и актрисе, чьи деловые свидания постепенно превращаются в долгую сеть настоящих чувств, лжи и семейных ожиданий.",
+  "history": {
+    "text": "Рэйдзи Миядзима начал мангу в Weekly Shonen Magazine. Телевизионная адаптация TMS последовательно переносит длинные арки оригинала, а популярность героинь породила манга-спин-офф о Суми и множество коротких промоисторий.",
+    "sources": [
+      {
+        "title": "Официальный сайт Rent-a-Girlfriend",
+        "url": "https://kanokari-official.com/"
+      }
+    ]
+  },
+  "guide": "Смотрите сезоны по порядку выхода. Chibi-выпуски и проморолики необязательны; они не заменяют основные эпизоды и не двигают центральные отношения вперёд.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/40839/326c4dac7952e6e9a3886d15326f3386.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/40839",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "rent_a_girlfriend",
+    "primary_shikimori_ids": [
+      40839
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 79,
+  "entries": [
+    {
+      "key": "shikimori-51135",
+      "title": "Девушка на час: Свидания",
+      "subtitle": "Kanojo, Okarishimasu: Date Movie",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-06-13",
+      "release_end_date": "2020-10-06",
+      "release_year": 2020,
+      "release_label": "13 июня — 6 октября 2020",
+      "episode_count": 32,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51135/ac978dbfcd58e2387658b7338ce8f5fc.jpeg",
+      "match": {
+        "shikimori": [
+          51135
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40839",
+      "title": "Девушка на час",
+      "subtitle": "Kanojo, Okarishimasu",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-07-11",
+      "release_end_date": "2020-09-26",
+      "release_year": 2020,
+      "release_label": "11 июля — 26 сентября 2020",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40839/326c4dac7952e6e9a3886d15326f3386.jpeg",
+      "match": {
+        "shikimori": [
+          40839
+        ],
+        "sources": [
+          "animego:1579",
+          "yummyanime:114"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42867",
+      "title": "Девушка на час: Тиби",
+      "subtitle": "Kanojo, Okarishimasu Petit",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2020-07-17",
+      "release_end_date": "2020-10-01",
+      "release_year": 2020,
+      "release_label": "17 июля — 1 октября 2020",
+      "episode_count": 14,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42867/cccef6de35023eee1b9c8364fe440d6d.jpeg",
+      "match": {
+        "shikimori": [
+          42867
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55032",
+      "title": "Девушка на час: Тиби — Спецвыпуск",
+      "subtitle": "Kanojo, Okarishimasu Petit Special",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-01-27",
+      "release_year": 2021,
+      "release_label": "27 января 2021",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55032/193ffa74b5b9fcc264319a79f23e8b22.jpeg",
+      "match": {
+        "shikimori": [
+          55032
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52289",
+      "title": "Девушка на час 2: Мини-аниме",
+      "subtitle": "Kanojo, Okarishimasu 2nd Season: Date Movie",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-05-25",
+      "release_end_date": "2022-09-25",
+      "release_year": 2022,
+      "release_label": "25 мая — 25 сентября 2022",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52289/969e073325faed0cb6afa5f75bd766c3.jpeg",
+      "match": {
+        "shikimori": [
+          52289
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42963",
+      "title": "Девушка на час 2",
+      "subtitle": "Kanojo, Okarishimasu 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-07-02",
+      "release_end_date": "2022-09-17",
+      "release_year": 2022,
+      "release_label": "2 июля — 17 сентября 2022",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42963/60e4841b082caaf44cc24852f5c9efe1.jpeg",
+      "match": {
+        "shikimori": [
+          42963
+        ],
+        "sources": [
+          "animego:2041",
+          "yummyanime:298"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52562",
+      "title": "Девушка на час: Тиби 2",
+      "subtitle": "Kanojo, Okarishimasu Petit 2nd Season",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-07-05",
+      "release_end_date": "2022-09-16",
+      "release_year": 2022,
+      "release_label": "5 июля — 16 сентября 2022",
+      "episode_count": 12,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52562/7bdd7b99d8075656d8ddbc41f0502427.jpeg",
+      "match": {
+        "shikimori": [
+          52562
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54075",
+      "title": "Девушка на час 2: Вызов девушки на час",
+      "subtitle": "Kanojo, Okarishimasu 2nd Season: Kanokari Call",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-10-26",
+      "release_end_date": "2023-01-25",
+      "release_year": 2022,
+      "release_label": "26 октября 2022 — 25 января 2023",
+      "episode_count": 24,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54075/a7fb2871c59ffbdfb443fdb9e23c917b.jpeg",
+      "match": {
+        "shikimori": [
+          54075
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53050",
+      "title": "Девушка на час 3",
+      "subtitle": "Kanojo, Okarishimasu 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-07-08",
+      "release_end_date": "2023-09-30",
+      "release_year": 2023,
+      "release_label": "8 июля — 30 сентября 2023",
+      "episode_count": 12,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53050/dcac900ca6b4706bae1bb17056d29dad.jpeg",
+      "match": {
+        "shikimori": [
+          53050
+        ],
+        "sources": [
+          "animego:2338",
+          "yummyanime:2196"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56740",
+      "title": "Девушка на час: Тиби 3",
+      "subtitle": "Kanojo, Okarishimasu Petit 3rd Season",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-09-09",
+      "release_end_date": "2023-10-11",
+      "release_year": 2023,
+      "release_label": "9 сентября — 11 октября 2023",
+      "episode_count": 14,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56740/f5fa4c809fb2e9eef1230d66efdb3878.jpeg",
+      "match": {
+        "shikimori": [
+          56740
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58369",
+      "title": "Девушка на час 3: Вызов девушки на час",
+      "subtitle": "Kanojo, Okarishimasu 3rd Season: Kanokari Call",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-11-29",
+      "release_end_date": "2023-12-20",
+      "release_year": 2023,
+      "release_label": "29 ноября — 20 декабря 2023",
+      "episode_count": 25,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58369/b548d8768d507b1b0928d81dbb621e44.jpeg",
+      "match": {
+        "shikimori": [
+          58369
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59277",
+      "title": "Девушка на час 4",
+      "subtitle": "Kanojo, Okarishimasu 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-05",
+      "release_end_date": "2025-09-20",
+      "release_year": 2025,
+      "release_label": "5 июля — 20 сентября 2025",
+      "episode_count": 12,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59277/2fd82472720dc79af825591beabe040a.jpeg",
+      "match": {
+        "shikimori": [
+          59277
+        ],
+        "sources": [
+          "animego:2832",
+          "yummyanime:4964"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62485",
+      "title": "Девушка на час 5",
+      "subtitle": "Kanojo, Okarishimasu 5th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-04-11",
+      "release_end_date": "2026-06-27",
+      "release_year": 2026,
+      "release_label": "11 апреля — 27 июня 2026",
+      "episode_count": 12,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62485/731f400945ffd21b4ae5d72b0bfcb1dd.jpeg",
+      "match": {
+        "shikimori": [
+          62485
+        ],
+        "sources": [
+          "animego:3309",
+          "yummyanime:8546"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-64484",
+      "title": "Девушка на час 6",
+      "subtitle": "Kanojo, Okarishimasu 6th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/64484/fb41f9c826dbe4e83a5ecd6281b0412c.jpeg",
+      "match": {
+        "shikimori": [
+          64484
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

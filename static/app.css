@@ -1384,6 +1384,36 @@ button.recent-update-row:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.franchise-history {
+  display: grid;
+  gap: 6px;
+  max-width: 900px;
+  border: 1px solid rgba(116, 198, 157, 0.23);
+  border-radius: 10px;
+  background: rgba(116, 198, 157, 0.055);
+  padding: 11px 12px;
+  color: #d8dde2;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.franchise-history strong {
+  color: #bfe7d3;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.franchise-history p {
+  margin: 0;
+}
+
+.franchise-history-sources {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .franchise-guide {
   display: grid;
   gap: 4px;

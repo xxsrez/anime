@@ -5,13 +5,22 @@
   "short_title": "AoT",
   "original_title": "進撃の巨人",
   "summary": "Мрачная драматическая история о человечестве за стенами, цене свободы и последствиях решений, принимаемых в мире постоянной угрозы.",
+  "history": {
+    "text": "Хадзимэ Исаяма начал мангу в первом выпуске Bessatsu Shonen Magazine в 2009 году. Аниме 2013 года резко расширило аудиторию серии; позднее производство перешло от Wit Studio к MAPPA, а финал был выпущен крупными специальными эпизодами.",
+    "sources": [
+      {
+        "title": "Kodansha: Attack on Titan",
+        "url": "https://kodansha.us/series/attack-on-titan/"
+      }
+    ]
+  },
   "guide": "Смотрите сезоны и их части строго по порядку выхода, завершая историю финальными специальными эпизодами. Фильмы-пересказы и большинство дополнительных выпусков для основной линии необязательны.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/16498/7a452aa20f27318bd8d87e3d70c2ccca.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/16498",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       16498
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 13,
   "entries": [

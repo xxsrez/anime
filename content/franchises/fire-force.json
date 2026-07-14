@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "slug": "fire-force",
+  "title": "Пламенная бригада пожарных",
+  "short_title": "Fire Force",
+  "original_title": "炎炎ノ消防隊",
+  "summary": "Фантастический боевик о специальных пожарных подразделениях, которые расследуют самовозгорания людей и устройство изменившегося мира.",
+  "history": {
+    "text": "Ацуси Окубо начал Fire Force после завершения Soul Eater и публиковал мангу в Weekly Shonen Magazine. David Production перенесла её на экран как последовательность крупных глав, а финальная часть аниме ведёт к задуманному автором завершению мира серии.",
+    "sources": [
+      {
+        "title": "Официальный сайт Fire Force",
+        "url": "https://fireforce-anime.jp/season1/caststaff/"
+      }
+    ]
+  },
+  "guide": "Смотрите первый, второй и третий сезоны по порядку. Это единая линия без обязательных фильмов; промо- и краткие итоговые выпуски можно пропустить.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/38671/c5967362f9875a54b566fff3728ba4f0.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/38671",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "fire_force",
+    "primary_shikimori_ids": [
+      38671
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 78,
+  "entries": [
+    {
+      "key": "shikimori-38671",
+      "title": "Пламенная бригада пожарных",
+      "subtitle": "Enen no Shouboutai",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-07-06",
+      "release_end_date": "2019-12-28",
+      "release_year": 2019,
+      "release_label": "6 июля — 28 декабря 2019",
+      "episode_count": 24,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38671/c5967362f9875a54b566fff3728ba4f0.jpeg",
+      "match": {
+        "shikimori": [
+          38671
+        ],
+        "sources": [
+          "yummyanime:145"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40956",
+      "title": "Пламенная бригада пожарных: Вторая глава",
+      "subtitle": "Enen no Shouboutai: Ni no Shou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-07-04",
+      "release_end_date": "2020-12-12",
+      "release_year": 2020,
+      "release_label": "4 июля — 12 декабря 2020",
+      "episode_count": 24,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40956/7e63be70a49a73532abeaa345a7d0be7.jpeg",
+      "match": {
+        "shikimori": [
+          40956
+        ],
+        "sources": [
+          "yummyanime:16"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-45999",
+      "title": "Пламенная бригада пожарных: Мини-аниме",
+      "subtitle": "Enen no Shouboutai Mini Anime",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-01-08",
+      "release_end_date": "2021-07-30",
+      "release_year": 2021,
+      "release_label": "8 января — 30 июля 2021",
+      "episode_count": 30,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/45999/248874f1850ca66cf42403cc75e427b9.jpeg",
+      "match": {
+        "shikimori": [
+          45999
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51818",
+      "title": "Пламенная бригада пожарных: Третья глава",
+      "subtitle": "Enen no Shouboutai: San no Shou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-04-05",
+      "release_end_date": "2025-06-21",
+      "release_year": 2025,
+      "release_label": "5 апреля — 21 июня 2025",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51818/76e6ef46c7a200eac780a53d332d906c.jpeg",
+      "match": {
+        "shikimori": [
+          51818
+        ],
+        "sources": [
+          "yummyanime:1756"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59229",
+      "title": "Пламенная бригада пожарных: Третья глава. Часть 2",
+      "subtitle": "Enen no Shouboutai: San no Shou Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2026-01-10",
+      "release_end_date": "2026-04-04",
+      "release_year": 2026,
+      "release_label": "10 января — 4 апреля 2026",
+      "episode_count": 13,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59229/71b695350e23e06306b6ad298c023e57.jpeg",
+      "match": {
+        "shikimori": [
+          59229
+        ],
+        "sources": [
+          "yummyanime:4955"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

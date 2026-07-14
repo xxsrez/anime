@@ -5,13 +5,22 @@
   "short_title": "Jujutsu Kaisen",
   "original_title": "呪術廻戦",
   "summary": "Сверхъестественный боевик о людях, противостоящих проклятиям, где сила тесно связана с личным выбором и его последствиями.",
+  "history": {
+    "text": "Гэгэ Акутами сначала рассказал историю токийского колледжа магии в короткой серии, позднее изданной как Jujutsu Kaisen 0. Основная манга стартовала в 2018 году, а MAPPA перенесла на экран сначала главную линию, затем приквел и ключевые арки.",
+    "sources": [
+      {
+        "title": "Официальный сайт Jujutsu Kaisen",
+        "url": "https://jujutsukaisen.jp/story/"
+      }
+    ]
+  },
   "guide": "Удобный порядок для первого просмотра: первый сезон, фильм Jujutsu Kaisen 0, затем второй сезон и дальнейшие продолжения. Рекапы и короткие дополнительные материалы необязательны.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/40748/af4f2db18f17de4d7c6491f6f92cd9d9.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/40748",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       40748
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 15,
   "entries": [

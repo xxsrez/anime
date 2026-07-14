@@ -207,6 +207,7 @@ Franchises sit above canonical titles:
 
 Checked-in definitions live in `content/franchises/*.json`. They keep editorial
 facts that cannot be derived safely from scraped titles: a franchise summary,
+an optional source-backed origin/history note,
 separate release and recommended-watch orders, release role/type, optionality,
 watch notes, and source-backed official announcements. A definition can also
 include a missing or future release with no playable catalog match.
@@ -231,7 +232,11 @@ unrelated brands.
 Generated entries keep release order as the safe default because one tag may
 contain several continuities; the manifest's editorial guide owns
 branch-specific viewing advice. Hand-authored cards may still define a
-separate recommended order. Regenerate all cards or one card with:
+separate recommended order. Editorial history uses a short `history.text` and
+one to three HTTPS references in `history.sources`; it is never synthesized
+from Shikimori release metadata. `scripts/check_franchise_data.py` reports
+history coverage separately from release coverage. Regenerate all cards or one
+card with:
 
 ```bash
 .venv/bin/python scripts/generate_franchise_catalog.py --write

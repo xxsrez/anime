@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "slug": "uma-musume",
+  "title": "Девушки-пони: Славное дерби",
+  "short_title": "Uma Musume",
+  "original_title": "ウマ娘 プリティーダービー",
+  "summary": "Мультимедийная спортивная франшиза, где героини, вдохновлённые реальными скаковыми лошадьми, соревнуются на треке и выступают на сцене.",
+  "history": {
+    "text": "Cygames создала Uma Musume как мультимедийный проект, в котором игра, манга, музыка и аниме развивают разных героинь. Телесериал успел выйти раньше долго разрабатывавшейся мобильной игры, а позднее появились отдельные линии Road to the Top и Cinderella Gray.",
+    "sources": [
+      {
+        "title": "Cygames: о проекте Uma Musume",
+        "url": "https://umamusume.jp/about/"
+      }
+    ]
+  },
+  "guide": "Первые три сезона образуют основную телевизионную линию с меняющимся фокусом. Road to the Top, Beginning of a New Era и Cinderella Gray — самостоятельные входы с другими центральными героинями.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/35249/78a74bdf4a4a386c64f5b441ce31b70b.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/35249",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "uma_musume",
+    "primary_shikimori_ids": [
+      35249
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 66,
+  "entries": [
+    {
+      "key": "shikimori-35249",
+      "title": "Девушки-пони: Славное дерби",
+      "subtitle": "Uma Musume: Pretty Derby",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-04-02",
+      "release_end_date": "2018-06-18",
+      "release_year": 2018,
+      "release_label": "2 апреля — 18 июня 2018",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/35249/78a74bdf4a4a386c64f5b441ce31b70b.jpeg",
+      "match": {
+        "shikimori": [
+          35249
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37916",
+      "title": "Девушки-пони: Славное дерби — Спецвыпуски",
+      "subtitle": "Uma Musume: Pretty Derby - BNW no Chikai",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-12-19",
+      "release_year": 2018,
+      "release_label": "19 декабря 2018",
+      "episode_count": 3,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37916/e7426ed47eacd5e4b1b97c167c24ba10.jpeg",
+      "match": {
+        "shikimori": [
+          37916
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38835",
+      "title": "Девушки-пони: Ёнкома",
+      "subtitle": "Umayon",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-07-07",
+      "release_end_date": "2020-09-22",
+      "release_year": 2020,
+      "release_label": "7 июля — 22 сентября 2020",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38835/34141c87bc4d0a8c338ca0486033df78.jpeg",
+      "match": {
+        "shikimori": [
+          38835
+        ],
+        "sources": [
+          "animego:1868"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42941",
+      "title": "Девушки-пони: Славное дерби 2",
+      "subtitle": "Uma Musume: Pretty Derby Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-05",
+      "release_end_date": "2021-03-30",
+      "release_year": 2021,
+      "release_label": "5 января — 30 марта 2021",
+      "episode_count": 13,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42941/84270332e8341c37ff2fa2ed2a41eaa1.jpeg",
+      "match": {
+        "shikimori": [
+          42941
+        ],
+        "sources": [
+          "animego:1867",
+          "yummyanime:951"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52751",
+      "title": "Девушки-пони: Мини-аниме",
+      "subtitle": "Umayon Shinsaku Short Anime",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-12-08",
+      "release_year": 2021,
+      "release_label": "8 декабря 2021",
+      "episode_count": 12,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52751/3022bc9d06dd7a48fb56fe976a295498.jpeg",
+      "match": {
+        "shikimori": [
+          52751
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51225",
+      "title": "Девушки-пони: Славное дерби — Первая годовщина",
+      "subtitle": "Uma Musume: Pretty Derby - 1st Anniversary Special Animation",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2022-02-22",
+      "release_year": 2022,
+      "release_label": "22 февраля 2022",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51225/c1ec716c90702b04e1cdb50ab92d7ab9.jpeg",
+      "match": {
+        "shikimori": [
+          51225
+        ],
+        "sources": [
+          "yummyanime:1801"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51772",
+      "title": "Взбодритесь, пони!",
+      "subtitle": "Umayuru",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-10-16",
+      "release_end_date": "2023-03-26",
+      "release_year": 2022,
+      "release_label": "16 октября 2022 — 26 марта 2023",
+      "episode_count": 24,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51772/a72bd394267b6f083c87a816cb5d7c9a.jpeg",
+      "match": {
+        "shikimori": [
+          51772
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51761",
+      "title": "Девушки-пони: Славное дерби — Дорога к вершине",
+      "subtitle": "Uma Musume: Pretty Derby - Road to the Top",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-04-16",
+      "release_end_date": "2023-05-07",
+      "release_year": 2023,
+      "release_label": "16 апреля — 7 мая 2023",
+      "episode_count": 4,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51761/637ffe5be67978c422942231fd5428ce.jpeg",
+      "match": {
+        "shikimori": [
+          51761
+        ],
+        "sources": [
+          "yummyanime:1742"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53526",
+      "title": "Девушки-пони: Славное дерби 3",
+      "subtitle": "Uma Musume: Pretty Derby Season 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-10-05",
+      "release_end_date": "2023-12-28",
+      "release_year": 2023,
+      "release_label": "5 октября — 28 декабря 2023",
+      "episode_count": 13,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53526/d21e9d21e84c8475fc6ba86ef6f5384e.jpeg",
+      "match": {
+        "shikimori": [
+          53526
+        ],
+        "sources": [
+          "animego:2447",
+          "yummyanime:2228"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58517",
+      "title": "Девушки-пони: Славное дерби — Дорога к вершине. Фильм",
+      "subtitle": "Uma Musume: Pretty Derby - Road to the Top (Movie)",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-05-10",
+      "release_year": 2024,
+      "release_label": "10 мая 2024",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58517/7dfe75249e760318ce282e38d7611af9.jpeg",
+      "match": {
+        "shikimori": [
+          58517
+        ],
+        "sources": [
+          "yummyanime:4873"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57647",
+      "title": "Девушки-пони: Славное дерби — Начало новой эры",
+      "subtitle": "Uma Musume: Pretty Derby - Shin Jidai no Tobira",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2024-05-24",
+      "release_year": 2024,
+      "release_label": "24 мая 2024",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57647/95a0be0744d4f16db9ddf116dd8b67f1.jpeg",
+      "match": {
+        "shikimori": [
+          57647
+        ],
+        "sources": [
+          "yummyanime:4687"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59636",
+      "title": "Девушки-пони: Серая Золушка",
+      "subtitle": "Uma Musume: Cinderella Gray",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-04-06",
+      "release_end_date": "2025-06-29",
+      "release_year": 2025,
+      "release_label": "6 апреля — 29 июня 2025",
+      "episode_count": 13,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59636/469e96e85eca6ea8520a2ec3bcda3464.jpeg",
+      "match": {
+        "shikimori": [
+          59636
+        ],
+        "sources": [
+          "animego:2787",
+          "yummyanime:7570"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

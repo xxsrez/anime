@@ -1,0 +1,511 @@
+{
+  "schema_version": 1,
+  "slug": "sailor-moon",
+  "title": "Сейлор Мун",
+  "short_title": "Sailor Moon",
+  "original_title": "美少女戦士セーラームーン",
+  "summary": "Классическая махо-сёдзё франшиза о команде воительниц, соединяющая школьную жизнь, романтику, планетарную мифологию и борьбу за будущее.",
+  "history": {
+    "text": "Наоко Такэути развила идеи своей манги Codename: Sailor V в Sailor Moon, публикация которой началась в Nakayoshi в начале 1990-х. Почти одновременно появился длинный сериал Toei, а десятилетия спустя Crystal предложил новую, более близкую к манге адаптацию.",
+    "sources": [
+      {
+        "title": "Официальный сайт Sailor Moon",
+        "url": "https://sailormoon-official.com/comics/"
+      }
+    ]
+  },
+  "guide": "Выберите одну линию: классический сериал 1990-х с сезонами R, S, SuperS и Stars либо современную Crystal с фильмами Eternal и Cosmos. Это две адаптации одной основы, а не последовательные продолжения.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/530/ad0d28f3fe9df19a16fe6466918b7884.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/530",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "sailor_moon",
+    "primary_shikimori_ids": [
+      530
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 63,
+  "entries": [
+    {
+      "key": "shikimori-530",
+      "title": "Красавица-воин Сейлор Мун",
+      "subtitle": "Bishoujo Senshi Sailor Moon",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1992-03-07",
+      "release_end_date": "1993-02-27",
+      "release_year": 1992,
+      "release_label": "7 марта 1992 — 27 февраля 1993",
+      "episode_count": 46,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/530/ad0d28f3fe9df19a16fe6466918b7884.jpeg",
+      "match": {
+        "shikimori": [
+          530
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-740",
+      "title": "Красавица-воин Сейлор Мун Эр",
+      "subtitle": "Bishoujo Senshi Sailor Moon R",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1993-03-06",
+      "release_end_date": "1994-03-12",
+      "release_year": 1993,
+      "release_label": "6 марта 1993 — 12 марта 1994",
+      "episode_count": 43,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/740/0844b63ecdb1db2336d1df396dbc2e88.jpeg",
+      "match": {
+        "shikimori": [
+          740
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-531",
+      "title": "Красавица-воин Сейлор Мун Эр: Опасные цветы",
+      "subtitle": "Bishoujo Senshi Sailor Moon R: The Movie",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1993-12-05",
+      "release_year": 1993,
+      "release_label": "5 декабря 1993",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/531/65b79d8266bea93930dc60484c12fcc2.jpeg",
+      "match": {
+        "shikimori": [
+          531
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-2937",
+      "title": "Красавица-воин Сейлор Мун Эр: Спецвыпуск",
+      "subtitle": "Bishoujo Senshi Sailor Moon R: Make Up! Sailor Senshi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1993-12-05",
+      "release_year": 1993,
+      "release_label": "5 декабря 1993",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/2937/54fbbc97553c1d1c820576c32d3bcb0f.jpeg",
+      "match": {
+        "shikimori": [
+          2937
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-532",
+      "title": "Красавица-воин Сейлор Мун Эс",
+      "subtitle": "Bishoujo Senshi Sailor Moon S",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1994-03-19",
+      "release_end_date": "1995-02-25",
+      "release_year": 1994,
+      "release_label": "19 марта 1994 — 25 февраля 1995",
+      "episode_count": 38,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/532/e95ebbca8e733c4b55e62cb5f2429bbd.jpeg",
+      "match": {
+        "shikimori": [
+          532
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42441",
+      "title": "Красавица-воин Сейлор Мун Эс: Ответ на зов луны!",
+      "subtitle": "Bishoujo Senshi Sailor Moon S: Kotaete Moon Call!",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1994-09-26",
+      "release_year": 1994,
+      "release_label": "26 сентября 1994",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42441/0d764748f0b85cbcb90b0f4706319733.jpeg",
+      "match": {
+        "shikimori": [
+          42441
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-997",
+      "title": "Красавица-воин Сейлор Мун Эс: Возлюбленный принцессы Кагуи",
+      "subtitle": "Bishoujo Senshi Sailor Moon S: Kaguya-hime no Koibito",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1994-12-04",
+      "release_year": 1994,
+      "release_label": "4 декабря 1994",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/997/10a1a278a5c87c4169eb57831bb8d1bc.jpeg",
+      "match": {
+        "shikimori": [
+          997
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1239",
+      "title": "Красавица-воин Сейлор Мун Супер Эс",
+      "subtitle": "Bishoujo Senshi Sailor Moon SuperS",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1995-03-04",
+      "release_end_date": "1996-03-02",
+      "release_year": 1995,
+      "release_label": "4 марта 1995 — 2 марта 1996",
+      "episode_count": 39,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1239/1b91f13d62437db3ac8094626d82a6bf.jpeg",
+      "match": {
+        "shikimori": [
+          1239
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-3076",
+      "title": "Красавица-воин Сейлор Мун Супер Эс — Спецвыпуск",
+      "subtitle": "Bishoujo Senshi Sailor Moon SuperS Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1995-04-08",
+      "release_year": 1995,
+      "release_label": "8 апреля 1995",
+      "episode_count": 3,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/3076/2f61f56fcd1520ae5efc88585cb29932.jpeg",
+      "match": {
+        "shikimori": [
+          3076
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1240",
+      "title": "Красавица-воин Сейлор Мун Супер Эс: Иллюзия чёрной дыры снов",
+      "subtitle": "Bishoujo Senshi Sailor Moon SuperS: Sailor 9 Senshi Shuuketsu! Black Dream Hole no Kiseki",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "1995-12-23",
+      "release_year": 1995,
+      "release_label": "23 декабря 1995",
+      "episode_count": 1,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1240/0a3006d4bb814c43b55666971c348893.jpeg",
+      "match": {
+        "shikimori": [
+          1240
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-1278",
+      "title": "Красавица-воин Сейлор Мун Супер Эс: Первая любовь Ами",
+      "subtitle": "Bishoujo Senshi Sailor Moon SuperS Gaiden: Ami-chan no Hatsukoi",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "1995-12-23",
+      "release_year": 1995,
+      "release_label": "23 декабря 1995",
+      "episode_count": 1,
+      "release_order": 11,
+      "watch_order": 11,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/1278/4a253eb1cc0f3306abf55552db16d7be.jpeg",
+      "match": {
+        "shikimori": [
+          1278
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-996",
+      "title": "Красавица-воин Сейлор Мун: Сейлор-звёзды",
+      "subtitle": "Bishoujo Senshi Sailor Moon: Sailor Stars",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "1996-03-09",
+      "release_end_date": "1997-02-08",
+      "release_year": 1996,
+      "release_label": "9 марта 1996 — 8 февраля 1997",
+      "episode_count": 34,
+      "release_order": 12,
+      "watch_order": 12,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/996/7aff7d1700d042f985d8a704526a7e0c.jpeg",
+      "match": {
+        "shikimori": [
+          996
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-13931",
+      "title": "Красавица-воин Сейлор Мун: Сейлор-звезды — Клуб героев",
+      "subtitle": "Bishoujo Senshi Sailor Moon: Sailor Stars - Hero Club",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1996-12-13",
+      "release_end_date": "1997-06-21",
+      "release_year": 1996,
+      "release_label": "13 декабря 1996 — 21 июня 1997",
+      "episode_count": 3,
+      "release_order": 13,
+      "watch_order": 13,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/13931/32f0f6a08cb19e10685ba330f380d26e.jpeg",
+      "match": {
+        "shikimori": [
+          13931
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-8756",
+      "title": "Красавица-воин Сейлор Мун: Воспоминания",
+      "subtitle": "Bishoujo Senshi Sailor Moon Memorial",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "1998-08-07",
+      "release_end_date": "1999-05-21",
+      "release_year": 1998,
+      "release_label": "7 августа 1998 — 21 мая 1999",
+      "episode_count": 5,
+      "release_order": 14,
+      "watch_order": 14,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/8756/a14428b6b630ae8fd19fc5322e734f79.jpeg",
+      "match": {
+        "shikimori": [
+          8756
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-14751",
+      "title": "Красавица-воин Сейлор Мун: Кристалл",
+      "subtitle": "Bishoujo Senshi Sailor Moon Crystal",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2014-07-05",
+      "release_end_date": "2015-07-18",
+      "release_year": 2014,
+      "release_label": "5 июля 2014 — 18 июля 2015",
+      "episode_count": 26,
+      "release_order": 15,
+      "watch_order": 15,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/14751/44770c11316410e77452e14b267a3fdc.jpeg",
+      "match": {
+        "shikimori": [
+          14751
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-31733",
+      "title": "Красавица-воин Сейлор Мун: Кристалл — Апостолы смерти",
+      "subtitle": "Bishoujo Senshi Sailor Moon Crystal Season III",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2016-04-04",
+      "release_end_date": "2016-06-27",
+      "release_year": 2016,
+      "release_label": "4 апреля — 27 июня 2016",
+      "episode_count": 13,
+      "release_order": 16,
+      "watch_order": 16,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/31733/68d2bfb317d255025166a7cf4f3283d4.jpeg",
+      "match": {
+        "shikimori": [
+          31733
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40024",
+      "title": "Красавица-воин Сейлор Мун: Вечность",
+      "subtitle": "Bishoujo Senshi Sailor Moon Eternal Movie 1",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-01-08",
+      "release_year": 2021,
+      "release_label": "8 января 2021",
+      "episode_count": 1,
+      "release_order": 17,
+      "watch_order": 17,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40024/66c782a97bc7b8dbe375c1af337de5b4.jpeg",
+      "match": {
+        "shikimori": [
+          40024
+        ],
+        "sources": [
+          "animego:1837"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40429",
+      "title": "Красавица-воин Сейлор Мун: Вечность 2",
+      "subtitle": "Bishoujo Senshi Sailor Moon Eternal Movie 2",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2021-02-11",
+      "release_year": 2021,
+      "release_label": "11 февраля 2021",
+      "episode_count": 1,
+      "release_order": 18,
+      "watch_order": 18,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40429/51f87c91911e7ca2d5ff3ec3a1009103.jpeg",
+      "match": {
+        "shikimori": [
+          40429
+        ],
+        "sources": [
+          "animego:1843",
+          "yummyanime:969"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51716",
+      "title": "Красавица-воин Сейлор Мун: Космос",
+      "subtitle": "Bishoujo Senshi Sailor Moon Cosmos Movie",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-06-09",
+      "release_end_date": "2023-06-30",
+      "release_year": 2023,
+      "release_label": "9 июня — 30 июня 2023",
+      "episode_count": 2,
+      "release_order": 19,
+      "watch_order": 19,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51716/bab10f9058ade7ac19870dc055d64d68.jpeg",
+      "match": {
+        "shikimori": [
+          51716
+        ],
+        "sources": [
+          "yummyanime:1737"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

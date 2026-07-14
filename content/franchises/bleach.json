@@ -5,13 +5,22 @@
   "short_title": "Bleach",
   "original_title": "BLEACH",
   "summary": "Сверхъестественный боевик о проводниках душ, противостоянии разных миров и героях, которым приходится принимать всё более сложные обязанности.",
+  "history": {
+    "text": "Тайто Кубо начал Bleach в Weekly Shonen Jump в 2001 году, а телевизионное аниме стартовало в 2004-м. После завершения раннего сериала франшиза вернулась к экранам с «Тысячелетней кровавой войной», чтобы экранизировать финальную крупную арку манги.",
+    "sources": [
+      {
+        "title": "VIZ: Bleach",
+        "url": "https://www.viz.com/bleach"
+      }
+    ]
+  },
   "guide": "Начинайте с оригинального сериала, затем переходите к Thousand-Year Blood War. Филлерные арки, фильмы и большинство спецвыпусков не обязательны для основной истории.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/269/9cfa24e177619cf3c0f39a6098cf47de.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/269",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       269
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 11,
   "entries": [

@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "slug": "rascal-does-not-dream",
+  "title": "Этот глупый свин не понимает мечту девочки-зайки",
+  "short_title": "Rascal Does Not Dream",
+  "original_title": "青春ブタ野郎シリーズ",
+  "summary": "Сверхъестественная школьная драма, где личные кризисы героев проявляются как буквальные аномалии «подросткового синдрома».",
+  "history": {
+    "text": "Серия началась как ранобэ Хадзимэ Камосиды с иллюстрациями Кэйдзи Мидзогути. Телесериал адаптировал первые истории, а дальнейшие тома выпускались как фильмы и новый телевизионный сезон, поэтому формат меняется, но линия остаётся единой.",
+    "sources": [
+      {
+        "title": "Официальный сайт Rascal Does Not Dream",
+        "url": "https://ao-buta.com/odekake/"
+      }
+    ]
+  },
+  "guide": "После сериала смотрите фильмы Dreaming Girl, Sister Venturing Out и Knapsack Kid, затем Santa Claus. Порядок важен: каждый фильм продолжает отношения и правила, введённые раньше.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/54870/c97d1abc98fd124f965ce18742604e14.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/54870",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "seishun_buta_yarou_wa_yumemiru_shoujo_no_yume_wo_minai",
+    "primary_shikimori_ids": [
+      54870
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 72,
+  "entries": [
+    {
+      "key": "shikimori-37450",
+      "title": "Этот глупый свин не понимает мечту девочки-зайки",
+      "subtitle": "Seishun Buta Yarou wa Bunny Girl Senpai no Yume wo Minai",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-10-04",
+      "release_end_date": "2018-12-27",
+      "release_year": 2018,
+      "release_label": "4 октября — 27 декабря 2018",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37450/837b29e9fa80b3b5ceb771018c8183c8.jpeg",
+      "match": {
+        "shikimori": [
+          37450
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38329",
+      "title": "Этот глупый свин не понимает мечту девочки-мечтательницы",
+      "subtitle": "Seishun Buta Yarou wa Yumemiru Shoujo no Yume wo Minai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2019-06-15",
+      "release_year": 2019,
+      "release_label": "15 июня 2019",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38329/e36e47fb091ca68325f9b2836b5f9177.jpeg",
+      "match": {
+        "shikimori": [
+          38329
+        ],
+        "sources": [
+          "animego:711",
+          "yummyanime:156"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53129",
+      "title": "Этот глупый свин не понимает мечту сестры на прогулке",
+      "subtitle": "Seishun Buta Yarou wa Odekake Sister no Yume wo Minai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-06-23",
+      "release_year": 2023,
+      "release_label": "23 июня 2023",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53129/ca21e902df4bf1605d99d2932eced587.jpeg",
+      "match": {
+        "shikimori": [
+          53129
+        ],
+        "sources": [
+          "animego:2522",
+          "yummyanime:2577"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54870",
+      "title": "Этот глупый свин не понимает мечту девушки с рюкзаком",
+      "subtitle": "Seishun Buta Yarou wa Randoseru Girl no Yume wo Minai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2023-12-01",
+      "release_year": 2023,
+      "release_label": "1 декабря 2023",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54870/c97d1abc98fd124f965ce18742604e14.jpeg",
+      "match": {
+        "shikimori": [
+          54870
+        ],
+        "sources": [
+          "animego:2648",
+          "yummyanime:2762"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-57433",
+      "title": "Этот глупый свин не понимает мечту Санта-Клауса",
+      "subtitle": "Seishun Buta Yarou wa Santa Claus no Yume wo Minai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-05",
+      "release_end_date": "2025-09-27",
+      "release_year": 2025,
+      "release_label": "5 июля — 27 сентября 2025",
+      "episode_count": 13,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/57433/27e72048c797985ef620f1870a3ee997.jpeg",
+      "match": {
+        "shikimori": [
+          57433
+        ],
+        "sources": [
+          "animego:2808",
+          "yummyanime:4950"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62582",
+      "title": "Этот глупый свин не понимает мечту дорогой подруги",
+      "subtitle": "Seishun Buta Yarou wa Dear Friend no Yume wo Minai",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "announced",
+      "release_date": "2026-10-16",
+      "release_year": 2026,
+      "release_label": "16 октября 2026",
+      "episode_count": 1,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 16 октября 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62582/8a270d6646e8ad9127c465ad8abecc1f.jpeg",
+      "match": {
+        "shikimori": [
+          62582
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "slug": "laid-back-camp",
+  "title": "Лагерь на свежем воздухе",
+  "short_title": "Laid-Back Camp",
+  "original_title": "ゆるキャン△",
+  "summary": "Уютная серия о школьницах, самостоятельных путешествиях и кемпинге, в которой практические детали походов важны не меньше дружеской атмосферы.",
+  "history": {
+    "text": "Манга Афро началась в Manga Time Kirara Forward в 2015 году и опиралась на личный опыт и поездки автора. Аниме не только расширило аудиторию серии, но и сохранило её необычно прикладной интерес к маршрутам, снаряжению и реальным местам Японии.",
+    "sources": [
+      {
+        "title": "Официальный сайт Yuru Camp: введение",
+        "url": "https://yurucamp.jp/first/introduction/"
+      }
+    ]
+  },
+  "guide": "Смотрите сезоны по порядку; короткий Heya Camp и специальные выпуски необязательны. Полнометражный фильм показывает самостоятельное взрослое будущее героинь и лучше воспринимается после второго сезона.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/34798/e58d27c35b9f206142bc6154f5109ef2.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/34798",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "yuru_camp",
+    "primary_shikimori_ids": [
+      34798
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 69,
+  "entries": [
+    {
+      "key": "shikimori-34798",
+      "title": "Лагерь на свежем воздухе",
+      "subtitle": "Yuru Camp△",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-01-04",
+      "release_end_date": "2018-03-22",
+      "release_year": 2018,
+      "release_label": "4 января — 22 марта 2018",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/34798/e58d27c35b9f206142bc6154f5109ef2.jpeg",
+      "match": {
+        "shikimori": [
+          34798
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-37341",
+      "title": "Лагерь на свежем воздухе: Спецвыпуски",
+      "subtitle": "Yuru Camp△ Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2018-03-28",
+      "release_end_date": "2018-07-25",
+      "release_year": 2018,
+      "release_label": "28 марта — 25 июля 2018",
+      "episode_count": 3,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37341/2e84c3a3c860b5270ab87fa000c54344.jpeg",
+      "match": {
+        "shikimori": [
+          37341
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38476",
+      "title": "Комнатный поход",
+      "subtitle": "Heya Camp△",
+      "summary": "Дополнительная работа внутри франшизы, не обязательная для основной линии.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-01-06",
+      "release_end_date": "2020-03-23",
+      "release_year": 2020,
+      "release_label": "6 января — 23 марта 2020",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38476/753f2cc7ec1eae0c672fb5a9a03c155b.jpeg",
+      "match": {
+        "shikimori": [
+          38476
+        ],
+        "sources": [
+          "animego:1407",
+          "yummyanime:1"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41061",
+      "title": "Комнатный поход: Сауна, рис и трёхколёсный мотоцикл",
+      "subtitle": "Heya Camp△: Sauna to Gohan to Sanrin Bike",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2020-05-27",
+      "release_year": 2020,
+      "release_label": "27 мая 2020",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41061/1e23b1a98f8bcc968198c0ccdc658619.jpeg",
+      "match": {
+        "shikimori": [
+          41061
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38474",
+      "title": "Лагерь на свежем воздухе 2",
+      "subtitle": "Yuru Camp△ Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-07",
+      "release_end_date": "2021-04-01",
+      "release_year": 2021,
+      "release_label": "7 января — 1 апреля 2021",
+      "episode_count": 13,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38474/f0db5453e1758625a2522deb5ebda4bf.jpeg",
+      "match": {
+        "shikimori": [
+          38474
+        ],
+        "sources": [
+          "animego:1678",
+          "yummyanime:285"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49026",
+      "title": "Лагерь на свежем воздухе 2: Спецвыпуски",
+      "subtitle": "Yuru Camp△ Season 2 Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-05-26",
+      "release_end_date": "2021-07-28",
+      "release_year": 2021,
+      "release_label": "26 мая — 28 июля 2021",
+      "episode_count": 2,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49026/3b72387c48510f244c58d2d223788c43.jpeg",
+      "match": {
+        "shikimori": [
+          49026
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-38475",
+      "title": "Лагерь на свежем воздухе. Фильм",
+      "subtitle": "Yuru Camp△ Movie",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-07-01",
+      "release_year": 2022,
+      "release_label": "1 июля 2022",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38475/b114bfaf0a41845f5210d232587824cd.jpeg",
+      "match": {
+        "shikimori": [
+          38475
+        ],
+        "sources": [
+          "yummyanime:433"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-53410",
+      "title": "Лагерь на свежем воздухе 3",
+      "subtitle": "Yuru Camp△ Season 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-04-04",
+      "release_end_date": "2024-06-20",
+      "release_year": 2024,
+      "release_label": "4 апреля — 20 июня 2024",
+      "episode_count": 12,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/53410/0f4be3842336760d35e98c5a6a19541a.jpeg",
+      "match": {
+        "shikimori": [
+          53410
+        ],
+        "sources": [
+          "animego:2570",
+          "yummyanime:2226"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58855",
+      "title": "Лагерь на свежем воздухе 3: Спецвыпуски",
+      "subtitle": "Yuru Camp△ Season 3 Specials",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-06-26",
+      "release_end_date": "2024-10-23",
+      "release_year": 2024,
+      "release_label": "26 июня — 23 октября 2024",
+      "episode_count": 3,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58855/465559b2078c6d64ab33672319d22ffa.jpeg",
+      "match": {
+        "shikimori": [
+          58855
+        ],
+        "sources": [
+          "yummyanime:4861"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60267",
+      "title": "Лагерь на свежем воздухе 4",
+      "subtitle": "Yuru Camp△ Season 4",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60267/b7bc8db25379429fdd6145d2a4e1b4fd.jpeg",
+      "match": {
+        "shikimori": [
+          60267
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

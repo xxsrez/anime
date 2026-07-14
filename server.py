@@ -2,6 +2,7 @@
 import argparse
 import base64
 import binascii
+import copy
 import datetime as dt
 import gzip
 import hashlib
@@ -4012,6 +4013,7 @@ def get_franchise_detail(franchise_ref, db_path=None, user_id=None, current_anim
         "short_title": definition.get("short_title"),
         "original_title": definition.get("original_title"),
         "summary": definition["summary"],
+        "history": copy.deepcopy(definition.get("history")),
         "guide": definition.get("guide"),
         "official_url": definition.get("official_url"),
         "updated_at": definition.get("updated_at"),

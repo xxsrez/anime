@@ -5,13 +5,22 @@
   "short_title": "One-Punch Man",
   "original_title": "ワンパンマン",
   "summary": "Сатирическая история о мире профессиональных героев и человеке, для которого абсолютная сила оказалась неожиданно скучной.",
+  "history": {
+    "text": "ONE начал One-Punch Man как авторский веб-комикс, который быстро собрал огромную аудиторию. Затем Юсукэ Мурата перерисовал историю для цифровой манги, и уже эта версия стала визуальной основой телевизионного аниме.",
+    "sources": [
+      {
+        "title": "VIZ: One-Punch Man",
+        "url": "https://www.viz.com/one-punch-man"
+      }
+    ]
+  },
   "guide": "Основные сезоны смотрите последовательно с первого. OVA и спецвыпуски содержат дополнительные комедийные истории и лучше подходят после соответствующего сезона.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/30276/0b08b0f6f69d32a3062d227ad77e2d83.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/30276",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       30276
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 16,
   "entries": [

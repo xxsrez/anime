@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "slug": "date-a-live",
+  "title": "Рандеву с жизнью",
+  "short_title": "Date A Live",
+  "original_title": "デート・ア・ライブ",
+  "summary": "Научно-фантастическая романтическая серия, где герой должен спасать опасных духов не уничтожением, а знакомством, доверием и свиданиями.",
+  "history": {
+    "text": "Date A Live началась как серия ранобэ Косина Татибаны с иллюстрациями Цунако в Fujimi Fantasia Bunko. Основная история получила пять телевизионных сезонов, а линия Куруми разрослась в отдельные книги и аниме Date A Bullet.",
+    "sources": [
+      {
+        "title": "Официальный сайт Date A Live",
+        "url": "https://date-a-live4th-anime.com/staff/"
+      }
+    ]
+  },
+  "guide": "Смотрите пять основных сезонов по порядку. Date A Bullet — спин-офф о Куруми, лучше после третьего сезона; OVA и фильм Mayuri Judgment необязательны, но рассчитаны на знакомство с составом своего периода.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/15583/888f0cba1d799aff74751cab634374db.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/15583",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "date_a_live",
+    "primary_shikimori_ids": [
+      15583
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 80,
+  "entries": [
+    {
+      "key": "shikimori-15583",
+      "title": "Рандеву с жизнью",
+      "subtitle": "Date A Live",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2013-04-06",
+      "release_end_date": "2013-06-22",
+      "release_year": 2013,
+      "release_label": "6 апреля — 22 июня 2013",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/15583/888f0cba1d799aff74751cab634374db.jpeg",
+      "match": {
+        "shikimori": [
+          15583
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-17641",
+      "title": "Рандеву с жизнью: Время до свидания",
+      "subtitle": "Date A Live: Date to Date",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2013-12-06",
+      "release_year": 2013,
+      "release_label": "6 декабря 2013",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/17641/1be4693bdc35d8d314832fc9c4bfe625.jpeg",
+      "match": {
+        "shikimori": [
+          17641
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-19163",
+      "title": "Рандеву с жизнью 2",
+      "subtitle": "Date A Live II",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2014-04-12",
+      "release_end_date": "2014-06-14",
+      "release_year": 2014,
+      "release_label": "12 апреля — 14 июня 2014",
+      "episode_count": 10,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/19163/54642001f8e9d50ec9fd65de41a8ddd0.jpeg",
+      "match": {
+        "shikimori": [
+          19163
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-22961",
+      "title": "Рандеву с жизнью 2: Куруми на фестивале звёзд",
+      "subtitle": "Date A Live II: Kurumi Star Festival",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "OVA",
+      "status": "finished",
+      "release_date": "2014-12-08",
+      "release_year": 2014,
+      "release_label": "8 декабря 2014",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/22961/778492d262741a0de6dadfe65a729746.jpeg",
+      "match": {
+        "shikimori": [
+          22961
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-24655",
+      "title": "Рандеву с жизнью: Суд Маюри",
+      "subtitle": "Date A Live Movie: Mayuri Judgment",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2015-08-22",
+      "release_year": 2015,
+      "release_label": "22 августа 2015",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/24655/941f6d00b8597a7a9098a7d9b2bc7959.jpeg",
+      "match": {
+        "shikimori": [
+          24655
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-36633",
+      "title": "Рандеву с жизнью 3",
+      "subtitle": "Date A Live III",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-01-11",
+      "release_end_date": "2019-03-29",
+      "release_year": 2019,
+      "release_label": "11 января — 29 марта 2019",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/36633/951197b04f6292b660f053e5eb96c6d3.jpeg",
+      "match": {
+        "shikimori": [
+          36633
+        ],
+        "sources": [
+          "animego:778",
+          "yummyanime:853"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-40416",
+      "title": "Рандеву с пулей: Смерть или пуля",
+      "subtitle": "Date A Bullet: Dead or Bullet",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-08-14",
+      "release_year": 2020,
+      "release_label": "14 августа 2020",
+      "episode_count": 1,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40416/6566db0a74858c0f4e435e9438be2105.jpeg",
+      "match": {
+        "shikimori": [
+          40416
+        ],
+        "sources": [
+          "animego:1663",
+          "yummyanime:2558"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-42423",
+      "title": "Рандеву с пулей: Кошмар или королева",
+      "subtitle": "Date A Bullet: Nightmare or Queen",
+      "summary": "Полнометражная история внутри франшизы; её место в каноне зависит от выбранной ветки.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2020-11-13",
+      "release_year": 2020,
+      "release_label": "13 ноября 2020",
+      "episode_count": 1,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/42423/45fc0ea22e4dafd97c4c6ce415ad7cbf.jpeg",
+      "match": {
+        "shikimori": [
+          42423
+        ],
+        "sources": [
+          "animego:1963"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41461",
+      "title": "Рандеву с жизнью 4",
+      "subtitle": "Date A Live IV",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-04-08",
+      "release_end_date": "2022-06-24",
+      "release_year": 2022,
+      "release_label": "8 апреля — 24 июня 2022",
+      "episode_count": 12,
+      "release_order": 9,
+      "watch_order": 9,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41461/e1ac0c90bc1eb02818ebc1ed47f43765.jpeg",
+      "match": {
+        "shikimori": [
+          41461
+        ],
+        "sources": [
+          "animego:2012",
+          "yummyanime:315"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-52196",
+      "title": "Рандеву с жизнью 5",
+      "subtitle": "Date A Live V",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-04-10",
+      "release_end_date": "2024-06-26",
+      "release_year": 2024,
+      "release_label": "10 апреля — 26 июня 2024",
+      "episode_count": 12,
+      "release_order": 10,
+      "watch_order": 10,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52196/47590d4e2b20c93672b7e05a4906d2ff.jpeg",
+      "match": {
+        "shikimori": [
+          52196
+        ],
+        "sources": [
+          "animego:2567",
+          "yummyanime:2019"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

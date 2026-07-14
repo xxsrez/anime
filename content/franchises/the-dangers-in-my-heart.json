@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "slug": "the-dangers-in-my-heart",
+  "title": "Опасность в моём сердце",
+  "short_title": "The Dangers in My Heart",
+  "original_title": "僕の心のヤバイやつ",
+  "summary": "Романтическая комедия о замкнутом подростке и популярной однокласснице, чьи неловкие повседневные встречи постепенно становятся настоящей близостью.",
+  "history": {
+    "text": "Норио Сакурай начала мангу в Weekly Shonen Champion, затем серия продолжила публикацию на веб-площадке Champion Cross. Аниме Shin-Ei Animation сделало ставку на постепенное взросление героев и сохранило короткие бонусные главы как отдельные мини-эпизоды.",
+    "sources": [
+      {
+        "title": "Официальный сайт The Dangers in My Heart",
+        "url": "https://bokuyaba-anime.com/staff-cast/"
+      }
+    ]
+  },
+  "guide": "Смотрите первый и второй сезоны последовательно. Короткие Twi-Yaba дополняют повседневные сцены, а фильм-компиляцию можно пропустить, если сезоны уже просмотрены.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52578/6ca77a2fc65011e3d7053304b8b001e3.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52578",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "the_dangers_in_my_heart",
+    "primary_shikimori_ids": [
+      52578
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 73,
+  "entries": [
+    {
+      "key": "shikimori-52578",
+      "title": "Опасность в моём сердце",
+      "subtitle": "Boku no Kokoro no Yabai Yatsu",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-02",
+      "release_end_date": "2023-06-18",
+      "release_year": 2023,
+      "release_label": "2 апреля — 18 июня 2023",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52578/6ca77a2fc65011e3d7053304b8b001e3.jpeg",
+      "match": {
+        "shikimori": [
+          52578
+        ],
+        "sources": [
+          "yummyanime:2055"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56948",
+      "title": "Опасность в моём сердце: Тви-Яба",
+      "subtitle": "Boku no Kokoro no Yabai Yatsu: Twi-Yaba",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-12-10",
+      "release_year": 2023,
+      "release_label": "10 декабря 2023",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56948/12ba2d7970d8f863121357818c1122e8.jpeg",
+      "match": {
+        "shikimori": [
+          56948
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55690",
+      "title": "Опасность в моём сердце 2",
+      "subtitle": "Boku no Kokoro no Yabai Yatsu 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-07",
+      "release_end_date": "2024-03-31",
+      "release_year": 2024,
+      "release_label": "7 января — 31 марта 2024",
+      "episode_count": 13,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55690/49d51b1c556632d0214a49831575b5e0.jpeg",
+      "match": {
+        "shikimori": [
+          55690
+        ],
+        "sources": [
+          "yummyanime:4456"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59985",
+      "title": "Опасность в моём сердце. Фильм",
+      "subtitle": "Boku no Kokoro no Yabai Yatsu Movie",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2026-02-13",
+      "release_year": 2026,
+      "release_label": "13 февраля 2026",
+      "episode_count": 1,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59985/9329f5c1cd7d791b44dc6733d20c0103.jpeg",
+      "match": {
+        "shikimori": [
+          59985
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-63735",
+      "title": "Опасность в моём сердце 3",
+      "subtitle": "Boku no Kokoro no Yabai Yatsu 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/63735/0222760755d64e2e313569fd6d7dbe2a.jpeg",
+      "match": {
+        "shikimori": [
+          63735
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

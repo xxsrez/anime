@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "slug": "welcome-to-demon-school-iruma",
+  "title": "Добро пожаловать в ад, Ирума!",
+  "short_title": "Welcome to Demon School! Iruma-kun",
+  "original_title": "魔入りました！入間くん",
+  "summary": "Школьная фэнтези-комедия о слишком добром человеческом подростке, который скрывает своё происхождение в академии демонов и неожиданно находит там семью.",
+  "history": {
+    "text": "Осаму Ниси начал мангу в Weekly Shonen Champion в 2017 году. Аниме для NHK E-Tele превратило длинные школьные арки в семейный сериал, а мир дополнительно расширили официальный спин-офф про мафию и истории о других учениках.",
+    "sources": [
+      {
+        "title": "Официальный сайт Iruma-kun",
+        "url": "https://www.nhk-character.com/chara/iruma/en"
+      }
+    ]
+  },
+  "guide": "Смотрите номерные сезоны по порядку. Короткие музыкальные и рекламные материалы необязательны; каждый новый сезон продолжает школьный год и развитие того же состава.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/39196/fd1b06a890616488f1e767549327e0d0.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/39196",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "mairimashita",
+    "primary_shikimori_ids": [
+      39196
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 81,
+  "entries": [
+    {
+      "key": "shikimori-39196",
+      "title": "Добро пожаловать в ад, Ирума!",
+      "subtitle": "Mairimashita! Iruma-kun",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-10-05",
+      "release_end_date": "2020-03-07",
+      "release_year": 2019,
+      "release_label": "5 октября 2019 — 7 марта 2020",
+      "episode_count": 23,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39196/fd1b06a890616488f1e767549327e0d0.jpeg",
+      "match": {
+        "shikimori": [
+          39196
+        ],
+        "sources": [
+          "animego:1247",
+          "yummyanime:317"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-41402",
+      "title": "Добро пожаловать в ад, Ирума! 2",
+      "subtitle": "Mairimashita! Iruma-kun 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-04-17",
+      "release_end_date": "2021-09-11",
+      "release_year": 2021,
+      "release_label": "17 апреля — 11 сентября 2021",
+      "episode_count": 21,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41402/e9b67c57749cd4511e587718bf9e17ca.jpeg",
+      "match": {
+        "shikimori": [
+          41402
+        ],
+        "sources": [
+          "animego:1761",
+          "yummyanime:316"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49784",
+      "title": "Добро пожаловать в ад, Ирума! 3",
+      "subtitle": "Mairimashita! Iruma-kun 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2022-10-08",
+      "release_end_date": "2023-03-04",
+      "release_year": 2022,
+      "release_label": "8 октября 2022 — 4 марта 2023",
+      "episode_count": 21,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49784/2dc422f66a7a448603c9ad5b3862922b.jpeg",
+      "match": {
+        "shikimori": [
+          49784
+        ],
+        "sources": [
+          "animego:2127",
+          "yummyanime:1240"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-60310",
+      "title": "Добро пожаловать в ад, Ирума! 4",
+      "subtitle": "Mairimashita! Iruma-kun 4th Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "2026-04-04",
+      "release_year": 2026,
+      "release_label": "4 апреля 2026",
+      "episode_count": 24,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 18 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/60310/b535701a5a07596e02da0a3577a55943.jpeg",
+      "match": {
+        "shikimori": [
+          60310
+        ],
+        "sources": [
+          "animego:3292",
+          "yummyanime:8523"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

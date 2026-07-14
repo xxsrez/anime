@@ -5,13 +5,22 @@
   "short_title": "Pokémon",
   "original_title": "ポケットモンスター",
   "summary": "Приключенческая франшиза о путешествиях тренеров, дружбе с покемонами и исследовании постоянно расширяющегося мира.",
+  "history": {
+    "text": "Pokémon родился как парные игры Game Freak для Game Boy в 1996 году. В том же году появился карточный формат, в 1997-м — телевизионное аниме, а затем фильмы и десятки игровых ответвлений превратили идею коллекционирования и обмена в глобальную медиафраншизу.",
+    "sources": [
+      {
+        "title": "The Pokémon Company: история",
+        "url": "https://corporate.pokemon.co.jp/en/aboutus/history/"
+      }
+    ]
+  },
   "guide": "Можно начать с классической «Лиги Индиго» либо с более современной самостоятельной точки входа «Покемон: Горизонты». Сериалы разных поколений лучше не перемешивать, а фильмы смотреть как необязательные истории соответствующей эпохи.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/527/7edfc6d24a5f2a0f4fe916f85c1050fd.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/527",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       527
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 4,
   "entries": [

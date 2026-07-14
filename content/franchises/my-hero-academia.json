@@ -5,13 +5,22 @@
   "short_title": "МГА",
   "original_title": "僕のヒーローアカデミア",
   "summary": "История мира, где сверхспособности стали нормой, а будущие герои учатся превращать талант и решимость в настоящую ответственность.",
+  "history": {
+    "text": "Кохэй Хорикоси запустил мангу в Weekly Shonen Jump после двух более коротких сериалов. История выросла в аниме студии Bones, фильмы и несколько манга-спин-оффов, но её ядром до конца остаётся путь класса 1-А.",
+    "sources": [
+      {
+        "title": "VIZ: My Hero Academia",
+        "url": "https://www.viz.com/my-hero-academia"
+      }
+    ]
+  },
   "guide": "Начинайте с первого сезона и продолжайте основные сезоны по порядку выхода. Фильмы и OVA необязательны; удобнее смотреть их после сезона, рядом с которым они вышли.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/31964/d94d5bd52edd33ec458fd338a2f0517c.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/31964",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       31964
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 1,
   "entries": [

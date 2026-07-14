@@ -5,13 +5,22 @@
   "short_title": "One Piece",
   "original_title": "ONE PIECE",
   "summary": "Масштабное морское приключение о свободе, дружбе и поиске легендарного сокровища, объединяющее десятки островов и самостоятельных сюжетных арок.",
+  "history": {
+    "text": "Эйитиро Ода пришёл к One Piece через ранние ваншоты, включая Romance Dawn, и начал мангу в Weekly Shonen Jump в 1997 году. Телесериал Toei стартовал в 1999-м, после чего мир разросся фильмами, играми и экранизациями, не заменяя единую манга-линию.",
+    "sources": [
+      {
+        "title": "VIZ: One Piece",
+        "url": "https://www.viz.com/one-piece"
+      }
+    ]
+  },
   "guide": "Начинайте с основного сериала 1999 года и смотрите арки последовательно. Большинство фильмов и спецвыпусков необязательны; их лучше включать после ближайшей по дате арки, чтобы не встретить героев раньше времени.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/21/75a07947be55983ce14917f57e96555f.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/21",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       21
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 3,
   "entries": [

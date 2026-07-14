@@ -5,13 +5,22 @@
   "short_title": "Fate",
   "original_title": "Fateシリーズ",
   "summary": "Многослойная фэнтезийная франшиза о магах, легендарных героях и разных вариантах одного судьбоносного конфликта.",
+  "history": {
+    "text": "Fate вырос из визуальной новеллы Type-Moon Fate/stay night 2004 года: три её маршрута показывали один конфликт с разных сторон. Аниме-адаптации, приквел Fate/Zero, игры и альтернативные миры затем превратили эту конструкцию в большую сеть самостоятельных веток.",
+    "sources": [
+      {
+        "title": "Type-Moon: Fate/stay night",
+        "url": "https://typemoon.com/products/f-sn/"
+      }
+    ]
+  },
   "guide": "Для основной линии удобно начать с Unlimited Blade Works, затем посмотреть трилогию Heaven’s Feel и после неё Fate/Zero. Остальные Fate в основном являются альтернативными мирами и спин-оффами, поэтому их можно выбирать независимо после знакомства с базовыми правилами вселенной.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/356/bfa1a693f5ccde24df322818cfe2cd40.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/356",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       356
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 8,
   "entries": [

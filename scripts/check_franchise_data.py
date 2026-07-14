@@ -107,6 +107,14 @@ def main():
             {
                 "definitions": len(definitions),
                 "generated": len(generated),
+                "history_definitions": sum(bool(definition.get("history")) for definition in definitions),
+                "generated_history_definitions": sum(
+                    bool(definition.get("history")) for definition in generated
+                ),
+                "history_sources": sum(
+                    len((definition.get("history") or {}).get("sources") or [])
+                    for definition in definitions
+                ),
                 "entries": sum(row["entries"] for row in franchise_rows),
                 "available_entries": sum(row["available"] for row in franchise_rows),
                 "unique_canonical_groups": len(canonical_owners),

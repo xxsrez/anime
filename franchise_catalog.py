@@ -121,6 +121,26 @@ def validate_definition(raw, source="franchise definition"):
             f"{source}.source.updated_at",
         ).isoformat()
     definition["source"] = source_info
+    history = definition.get("history")
+    if history is not None:
+        if not isinstance(history, dict):
+            raise FranchiseDataError(f"{source}.history must be an object")
+        history = copy.deepcopy(history)
+        history["text"] = _nonempty_text(history.get("text"), f"{source}.history.text")
+        history_sources = history.get("sources") or []
+        if not isinstance(history_sources, list) or not 1 <= len(history_sources) <= 3:
+            raise FranchiseDataError(f"{source}.history.sources must contain 1 to 3 sources")
+        for index, history_source in enumerate(history_sources):
+            field = f"{source}.history.sources[{index}]"
+            if not isinstance(history_source, dict):
+                raise FranchiseDataError(f"{field} must be an object")
+            history_source["title"] = _nonempty_text(history_source.get("title"), f"{field}.title")
+            history_source["url"] = _optional_https_url(
+                _nonempty_text(history_source.get("url"), f"{field}.url"),
+                f"{field}.url",
+            )
+        history["sources"] = history_sources
+        definition["history"] = history
     entries = definition.get("entries")
     if not isinstance(entries, list) or len(entries) < 2:
         raise FranchiseDataError(f"{source}.entries must contain at least two releases")

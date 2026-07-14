@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "slug": "tsukimichi",
+  "title": "Лунное путешествие приведёт к новому миру",
+  "short_title": "Tsukimichi",
+  "original_title": "月が導く異世界道中",
+  "summary": "Исекай о Макото Мисуми, которого богиня отвергла сразу после призыва, после чего он строит собственные отношения с нечеловеческими народами нового мира.",
+  "history": {
+    "text": "Кэй Адзуми начал историю как веб-роман, затем AlphaPolis выпустил книжную версию с иллюстрациями МицуАки Мацумото и мангу Которы Кино. Сам автор описывал аниме как путь от веб-публикации через книгу и комикс к неожиданной экранизации.",
+    "sources": [
+      {
+        "title": "Официальный сайт Tsukimichi: комментарии авторов",
+        "url": "https://tsukimichi.com/1st/staffcast/"
+      }
+    ]
+  },
+  "guide": "Смотрите первый и второй сезоны подряд, затем третий. Это единая основная линия; короткие промоматериалы не являются отдельными главами истории.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/43523/9f56a98052f05ad81a43452ecacf657d.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/43523",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "tsukimichi_moonlit_fantasy",
+    "primary_shikimori_ids": [
+      43523
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 64,
+  "entries": [
+    {
+      "key": "shikimori-43523",
+      "title": "Лунное путешествие приведёт к новому миру",
+      "subtitle": "Tsuki ga Michibiku Isekai Douchuu",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-07-07",
+      "release_end_date": "2021-09-22",
+      "release_year": 2021,
+      "release_label": "7 июля — 22 сентября 2021",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/43523/9f56a98052f05ad81a43452ecacf657d.jpeg",
+      "match": {
+        "shikimori": [
+          43523
+        ],
+        "sources": [
+          "animego:1814",
+          "yummyanime:396"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49889",
+      "title": "Лунное путешествие приведёт к новому миру 2",
+      "subtitle": "Tsuki ga Michibiku Isekai Douchuu 2nd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-08",
+      "release_end_date": "2024-06-24",
+      "release_year": 2024,
+      "release_label": "8 января — 24 июня 2024",
+      "episode_count": 25,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49889/1175b5f9e920c6734590f83a5df6c34b.jpeg",
+      "match": {
+        "shikimori": [
+          49889
+        ],
+        "sources": [
+          "animego:2463",
+          "yummyanime:1210"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59139",
+      "title": "Лунное путешествие приведёт к новому миру 3",
+      "subtitle": "Tsuki ga Michibiku Isekai Douchuu 3rd Season",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_label": "Дата не объявлена",
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; точная дата выхода пока не указана.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59139/444949754cd1e2366cce9538e29deec3.jpeg",
+      "match": {
+        "shikimori": [
+          59139
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

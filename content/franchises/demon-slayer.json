@@ -5,13 +5,22 @@
   "short_title": "Demon Slayer",
   "original_title": "鬼滅の刃",
   "summary": "Историческое фэнтези о семье, сострадании и борьбе с демонами, построенное как последовательность крупных сюжетных арок.",
+  "history": {
+    "text": "Коёхару Готогэ публиковала мангу в Weekly Shonen Jump с 2016 года. Адаптация ufotable с 2019-го сделала каждую сюжетную арку отдельным экранным событием, а «Поезд „Бесконечный“» получил и полнометражную, и телевизионную версии.",
+    "sources": [
+      {
+        "title": "VIZ: Demon Slayer",
+        "url": "https://www.viz.com/demon-slayer-kimetsu-no-yaiba"
+      }
+    ]
+  },
   "guide": "После первого сезона выберите одну версию «Бесконечного поезда» — фильм или расширенную телевизионную арку — и продолжайте последующими сезонами по порядку. Короткие спецвыпуски можно пропустить, а фильмы финальных арок являются прямым продолжением.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/38000/eb6c9a5d46fa9b5a33a0e5960e329e2d.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/38000",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       38000
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 14,
   "entries": [

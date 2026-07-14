@@ -536,6 +536,7 @@ def build_definition(seed, manifest, client, by_name):
         "short_title": seed.get("short_title"),
         "original_title": seed.get("original_title"),
         "summary": seed["summary"],
+        "history": seed.get("history"),
         "guide": seed["guide"],
         "cover_url": (primary.get("poster") or {}).get("originalUrl"),
         "updated_at": updated_at,

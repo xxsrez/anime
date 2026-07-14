@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "slug": "quintessential-quintuplets",
+  "title": "Пять невест",
+  "short_title": "The Quintessential Quintuplets",
+  "original_title": "五等分の花嫁",
+  "summary": "Романтическая комедия о бедном отличнике, который становится репетитором пяти сестёр и постепенно оказывается в центре общей истории о взрослении и выборе.",
+  "history": {
+    "text": "Нэги Харуба создал завершённую мангу для Weekly Shonen Magazine. Два телевизионных сезона адаптировали основную часть, полнометражный фильм довёл романтическую линию до финала, а поздние спецвыпуски вернулись к ранее пропущенным главам.",
+    "sources": [
+      {
+        "title": "Kodansha: The Quintessential Quintuplets",
+        "url": "https://kodansha.us/series/the-quintessential-quintuplets/"
+      }
+    ]
+  },
+  "guide": "Смотрите два сезона, затем полнометражный фильм. Спецвыпуски 2023–2024 годов экранизируют пропущенные эпизоды и лучше подходят после основной истории, чтобы не ломать темп первого знакомства.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/38101/df9c0a133a4715d9eedee446bd033f04.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/38101",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "5_toubun_no_hanayome",
+    "primary_shikimori_ids": [
+      38101
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 76,
+  "entries": [
+    {
+      "key": "shikimori-38101",
+      "title": "Пять невест",
+      "subtitle": "5-toubun no Hanayome",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2019-01-11",
+      "release_end_date": "2019-03-29",
+      "release_year": 2019,
+      "release_label": "11 января — 29 марта 2019",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/38101/df9c0a133a4715d9eedee446bd033f04.jpeg",
+      "match": {
+        "shikimori": [
+          38101
+        ],
+        "sources": [
+          "animego:774",
+          "yummyanime:151"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-39783",
+      "title": "Пять невест 2",
+      "subtitle": "5-toubun no Hanayome ∬",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-01-08",
+      "release_end_date": "2021-03-26",
+      "release_year": 2021,
+      "release_label": "8 января — 26 марта 2021",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/39783/58cadf75d419fb62350f18f3c129d390.jpeg",
+      "match": {
+        "shikimori": [
+          39783
+        ],
+        "sources": [
+          "animego:1680",
+          "yummyanime:275"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48548",
+      "title": "Пять невест. Фильм",
+      "subtitle": "5-toubun no Hanayome Movie",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Фильм",
+      "status": "finished",
+      "release_date": "2022-05-20",
+      "release_year": 2022,
+      "release_label": "20 мая 2022",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48548/6a942c3b83b1097ea2ba738293d31c2f.jpeg",
+      "match": {
+        "shikimori": [
+          48548
+        ],
+        "sources": [
+          "animego:2231",
+          "yummyanime:1201"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-54915",
+      "title": "Пять невест: Спецвыпуски",
+      "subtitle": "5-toubun no Hanayome∽",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-09-02",
+      "release_end_date": "2023-09-09",
+      "release_year": 2023,
+      "release_label": "2 сентября — 9 сентября 2023",
+      "episode_count": 2,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/54915/d4f1abc502f117ce01ddcd2c3f9ce87a.jpeg",
+      "match": {
+        "shikimori": [
+          54915
+        ],
+        "sources": [
+          "animego:2456",
+          "yummyanime:2782"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58755",
+      "title": "Пять невест: Спецвыпуски 2",
+      "subtitle": "5-toubun no Hanayome*",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2024-12-24",
+      "release_year": 2024,
+      "release_label": "24 декабря 2024",
+      "episode_count": 2,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58755/e1a5e0a4347f185093abe8042e4aeff7.jpeg",
+      "match": {
+        "shikimori": [
+          58755
+        ],
+        "sources": [
+          "animego:3437",
+          "yummyanime:5073"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

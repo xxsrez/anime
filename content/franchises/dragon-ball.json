@@ -5,13 +5,22 @@
   "short_title": "Dragon Ball",
   "original_title": "ドラゴンボール",
   "summary": "Приключенческая сага о боевых искусствах, дружбе и постоянном преодолении собственных пределов, постепенно выросшая от лёгкого путешествия до космического эпоса.",
+  "history": {
+    "text": "Акира Торияма начал мангу Dragon Ball в 1984 году как комедийное приключение с мотивами «Путешествия на Запад». По мере публикации она сместилась к большим турнирам и боям, а аниме-линии Dragon Ball и Dragon Ball Z закрепили этот переход и породили фильмы, игры и новые продолжения.",
+    "sources": [
+      {
+        "title": "VIZ: Dragon Ball",
+        "url": "https://www.viz.com/dragon-ball"
+      }
+    ]
+  },
   "guide": "Основной путь: Dragon Ball, затем Dragon Ball Z или его сокращённая версия Kai, после чего Dragon Ball Super. GT представляет альтернативное продолжение, а многочисленные фильмы лучше воспринимать как отдельные ветки соответствующей эпохи.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/223/224c308ff548d13b4449bb8800366dd7.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/223",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       223
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 7,
   "entries": [

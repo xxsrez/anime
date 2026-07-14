@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "slug": "grand-blue",
+  "title": "Необъятный океан",
+  "short_title": "Grand Blue",
+  "original_title": "ぐらんぶる",
+  "summary": "Студенческая комедия о дайвинг-клубе, где искренняя любовь к морю постоянно соседствует с абсурдными вечеринками и дружеским хаосом.",
+  "history": {
+    "text": "Мангу пишет Кэндзи Иноуэ, а рисует Кимитакэ Ёсиока для good! Afternoon. Авторы задумывали её и как комедию, и как популяризацию дайвинга; телевизионное аниме сохранило оба полюса, а затем вернулось с продолжениями после долгого перерыва.",
+    "sources": [
+      {
+        "title": "Официальный сайт Grand Blue",
+        "url": "https://grandblue-anime.com/"
+      }
+    ]
+  },
+  "guide": "Смотрите сезоны по порядку. Спецвыпуски необязательны; не путайте эту франшизу с игровым Granblue Fantasy — совпадение названий не означает общую вселенную.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/37105/13c69689c3a6233472798d82b47254dd.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/37105",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "grand_blue",
+    "primary_shikimori_ids": [
+      37105
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 74,
+  "entries": [
+    {
+      "key": "shikimori-37105",
+      "title": "Необъятный океан",
+      "subtitle": "Grand Blue",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2018-07-14",
+      "release_end_date": "2018-09-29",
+      "release_year": 2018,
+      "release_label": "14 июля — 29 сентября 2018",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/37105/13c69689c3a6233472798d82b47254dd.jpeg",
+      "match": {
+        "shikimori": [
+          37105
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59986",
+      "title": "Необъятный океан 2",
+      "subtitle": "Grand Blue Season 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2025-07-08",
+      "release_end_date": "2025-09-23",
+      "release_year": 2025,
+      "release_label": "8 июля — 23 сентября 2025",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59986/26b6a1137ca7513bf60a5122b58bb334.jpeg",
+      "match": {
+        "shikimori": [
+          59986
+        ],
+        "sources": [
+          "animego:2817",
+          "yummyanime:4951"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-62542",
+      "title": "Необъятный океан 3",
+      "subtitle": "Grand Blue Season 3",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_date": "2026-07-07",
+      "release_year": 2026,
+      "release_label": "7 июля 2026",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Выходит; следующая серия ожидается 20 июля 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/62542/621dc32e8f624002feac52812931be58.jpeg",
+      "match": {
+        "shikimori": [
+          62542
+        ],
+        "sources": [
+          "animego:3547"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

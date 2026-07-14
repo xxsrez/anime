@@ -156,6 +156,29 @@ class FranchiseCatalogTest(unittest.TestCase):
         with self.assertRaisesRegex(franchise_catalog.FranchiseDataError, "continuous from 1"):
             franchise_catalog.validate_definition(skipped_order)
 
+    def test_definition_validation_requires_sourced_franchise_history(self):
+        raw = json.loads((Path("content/franchises/tensei-slime.json")).read_text())
+        raw["history"] = {
+            "text": "Серия выросла из авторского романа.",
+            "sources": [{"title": "Официальный сайт", "url": "https://example.test/history"}],
+        }
+
+        validated = franchise_catalog.validate_definition(raw)
+        self.assertEqual(validated["history"]["text"], "Серия выросла из авторского романа.")
+
+        missing_sources = json.loads(json.dumps(raw))
+        missing_sources["history"]["sources"] = []
+        with self.assertRaisesRegex(
+            franchise_catalog.FranchiseDataError,
+            "history.sources must contain 1 to 3 sources",
+        ):
+            franchise_catalog.validate_definition(missing_sources)
+
+        insecure_source = json.loads(json.dumps(raw))
+        insecure_source["history"]["sources"][0]["url"] = "http://example.test/history"
+        with self.assertRaisesRegex(franchise_catalog.FranchiseDataError, "must use https"):
+            franchise_catalog.validate_definition(insecure_source)
+
     def test_bulk_manifest_and_generated_definitions_are_complete(self):
         manifest = json.loads(Path("content/franchise-seeds.json").read_text(encoding="utf-8"))
         definitions = franchise_catalog.load_definitions()
@@ -182,6 +205,11 @@ class FranchiseCatalogTest(unittest.TestCase):
             set(range(1, manifest_count + 1)),
         )
         self.assertIn("frieren", {definition["slug"] for definition in generated})
+        self.assertIn("tsukimichi", {definition["slug"] for definition in generated})
+        self.assertGreaterEqual(
+            sum(bool(definition.get("history")) for definition in definitions),
+            30,
+        )
         for definition in generated:
             self.assertGreaterEqual(len(definition["entries"]), 2)
             self.assertTrue(definition.get("guide"))
@@ -395,6 +423,11 @@ class FranchiseCatalogTest(unittest.TestCase):
         entries = {entry["id"]: entry for entry in payload["entries"]}
 
         self.assertEqual(payload["entry_count"], 15)
+        self.assertIn("веб-роман", payload["history"]["text"])
+        self.assertEqual(
+            payload["history"]["sources"][0]["url"],
+            "https://www.ten-sura.com/about",
+        )
         self.assertEqual(entries["season-3"]["catalog_item"]["id"], 2540)
         self.assertEqual(len(entries["season-3"]["catalog_item"]["source_variants"]), 1)
         self.assertTrue(entries["season-3"]["is_current"])

@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "slug": "eighty-six",
+  "title": "Восемьдесят шесть",
+  "short_title": "86 Eighty-Six",
+  "original_title": "86―エイティシックス―",
+  "summary": "Военная научная фантастика о дискриминации, дистанционном командовании и солдатах, которых официальная пропаганда отказывается считать людьми.",
+  "history": {
+    "text": "Асато Асато написала историю как ранобэ для Dengeki Bunko; первый том получил главный приз Dengeki Novel Prize. После манга-версий A-1 Pictures адаптировала начало в двух телевизионных частях с особым вниманием к параллельным точкам зрения.",
+    "sources": [
+      {
+        "title": "Dengeki Bunko: 86",
+        "url": "https://dengekibunko.jp/product/86/321611000284.html"
+      }
+    ]
+  },
+  "guide": "Смотрите первый cour и 86 Part 2 подряд — это две части одного сезона. Рекапы можно пропустить; специальные материалы не продолжают сюжет после финала второй части.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/41457/2ad3eae1d7c270595de4c21ce5276f38.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/41457",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "86_part",
+    "primary_shikimori_ids": [
+      41457
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 71,
+  "entries": [
+    {
+      "key": "shikimori-41457",
+      "title": "Восемьдесят шесть",
+      "subtitle": "86",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-04-11",
+      "release_end_date": "2021-06-20",
+      "release_year": 2021,
+      "release_label": "11 апреля — 20 июня 2021",
+      "episode_count": 11,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/41457/2ad3eae1d7c270595de4c21ce5276f38.jpeg",
+      "match": {
+        "shikimori": [
+          41457
+        ],
+        "sources": [
+          "animego:1752",
+          "yummyanime:34"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49235",
+      "title": "Восемьдесят шесть: Рекап",
+      "subtitle": "86 Special Edition: Senya ni Akaku Hinageshi no Saku",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-06-27",
+      "release_year": 2021,
+      "release_label": "27 июня 2021",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49235/4c8bff6d944294bdb628d0371080a74d.jpeg",
+      "match": {
+        "shikimori": [
+          49235
+        ],
+        "sources": [
+          "animego:1812"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48569",
+      "title": "Восемьдесят шесть. Часть 2",
+      "subtitle": "86 Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2021-10-03",
+      "release_end_date": "2022-03-19",
+      "release_year": 2021,
+      "release_label": "3 октября 2021 — 19 марта 2022",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48569/a10e21562feb4e0a3035409576ec613f.jpeg",
+      "match": {
+        "shikimori": [
+          48569
+        ],
+        "sources": [
+          "animego:1891",
+          "yummyanime:877"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50475",
+      "title": "Восемьдесят шесть. Часть 2: Рекапы",
+      "subtitle": "86 Part 2 Recaps",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2021-11-28",
+      "release_end_date": "2022-03-05",
+      "release_year": 2021,
+      "release_label": "28 ноября 2021 — 5 марта 2022",
+      "episode_count": 2,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50475/f350fade6ca038d519442bd3ec8b0f57.jpeg",
+      "match": {
+        "shikimori": [
+          50475
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

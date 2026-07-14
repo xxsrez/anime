@@ -5,13 +5,22 @@
   "short_title": "Gundam",
   "original_title": "機動戦士ガンダム",
   "summary": "Большая научно-фантастическая франшиза о войне, политике и людях по обе стороны конфликта, где мобильные доспехи служат не только оружием, но и символами своей эпохи.",
+  "history": {
+    "text": "Gundam начался не с манги, а с оригинального телесериала Sunrise 1979 года, созданного при участии Ёсиюки Томино. Затем одна военная драма превратилась в целое семейство временных линий, фильмов, романов, игр и модельных наборов Gunpla.",
+    "sources": [
+      {
+        "title": "Gundam.info: Mobile Suit Gundam",
+        "url": "https://en.gundam.info/about-gundam/series-pages/first-gundam/"
+      }
+    ]
+  },
   "guide": "Это несколько независимых вселенных: для короткого входа подойдут «Ведьма с Меркурия», Iron-Blooded Orphans или Gundam 00. Основную Universal Century лучше начинать с Mobile Suit Gundam 1979 года; фильмы-пересказы можно смотреть вместо соответствующих сериалов.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/80/a848a95677ecb63e5a0dc9e35fd3ad09.jpeg",
-  "updated_at": "2026-07-13",
+  "updated_at": "2026-07-14",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/80",
-    "updated_at": "2026-07-13"
+    "updated_at": "2026-07-14"
   },
   "data_origin": {
     "provider": "shikimori",
@@ -19,7 +28,7 @@
     "primary_shikimori_ids": [
       80
     ],
-    "fetched_at": "2026-07-13"
+    "fetched_at": "2026-07-14"
   },
   "selection_rank": 2,
   "entries": [

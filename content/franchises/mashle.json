@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "slug": "mashle",
+  "title": "Магия и мускулы",
+  "short_title": "Mashle",
+  "original_title": "マッシュル-MASHLE-",
+  "summary": "Пародийное школьное фэнтези о юноше без магии, который решает все волшебные проблемы феноменальной физической силой и невозмутимостью.",
+  "history": {
+    "text": "Mashle стала дебютным сериалом Хадзимэ Комото в Weekly Shonen Jump в 2020 году. Завершённую мангу A-1 Pictures адаптирует по крупным экзаменационным аркам, сохраняя смесь боевого сёнэна и прямой пародии на магические школы.",
+    "sources": [
+      {
+        "title": "VIZ: Mashle",
+        "url": "https://www.viz.com/mashle-magic-and-muscles"
+      }
+    ]
+  },
+  "guide": "Смотрите номерные сезоны и арки по порядку. Короткие школьные спецвыпуски необязательны; продолжения развивают одну и ту же завершённую манга-линию.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/52211/3656ad1fb3786e5c5eba5806335c8599.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/52211",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "mashle",
+    "primary_shikimori_ids": [
+      52211
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 77,
+  "entries": [
+    {
+      "key": "shikimori-52211",
+      "title": "Магия и мускулы",
+      "subtitle": "Mashle",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-04-08",
+      "release_end_date": "2023-07-01",
+      "release_year": 2023,
+      "release_label": "8 апреля — 1 июля 2023",
+      "episode_count": 12,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/52211/3656ad1fb3786e5c5eba5806335c8599.jpeg",
+      "match": {
+        "shikimori": [
+          52211
+        ],
+        "sources": [
+          "animego:2273",
+          "yummyanime:2018"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55339",
+      "title": "Магия и мускулы: Мэш Бёрндэд и загадочное письмо",
+      "subtitle": "Mashle: Mash Burnedead to Fushigi na Tegami",
+      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "kind": "ТВ-спецвыпуск",
+      "status": "finished",
+      "release_date": "2023-05-20",
+      "release_year": 2023,
+      "release_label": "20 мая 2023",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "recap",
+      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55339/4a57aa5144a9ffb59da4237bbeb9e7b5.jpeg",
+      "match": {
+        "shikimori": [
+          55339
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-59138",
+      "title": "Мэш Бёрндэд и школьная жизнь",
+      "subtitle": "Mash Burnedead-tachi to School Life",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-08-13",
+      "release_end_date": "2023-10-25",
+      "release_year": 2023,
+      "release_label": "13 августа — 25 октября 2023",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/59138/9ff0b0dd3c3229858be68e47a872434a.jpeg",
+      "match": {
+        "shikimori": [
+          59138
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-55813",
+      "title": "Магия и мускулы: Экзамен на звание Вестника Бога",
+      "subtitle": "Mashle: Shinkakusha Kouho Senbatsu Shiken-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-01-06",
+      "release_end_date": "2024-03-30",
+      "release_year": 2024,
+      "release_label": "6 января — 30 марта 2024",
+      "episode_count": 12,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/55813/378c027d13b5c9e8f01f370cb23da5e4.jpeg",
+      "match": {
+        "shikimori": [
+          55813
+        ],
+        "sources": [
+          "animego:2493",
+          "yummyanime:4457"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-58934",
+      "title": "Магия и мускулы: Турнир трёх магий — Финальный экзамен на звание Вестника Бога",
+      "subtitle": "Mashle: Sanma Taisou Shinkakusha Saishuu Shiken-hen",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_date": "2027-01-01",
+      "release_year": 2027,
+      "release_label": "1 января 2027",
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 1 января 2027.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/58934/f712bf3b215573d1fe47b9512b3358f0.jpeg",
+      "match": {
+        "shikimori": [
+          58934
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

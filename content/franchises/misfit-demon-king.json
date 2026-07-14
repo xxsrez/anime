@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "slug": "misfit-demon-king",
+  "title": "Непризнанный школой владыка демонов",
+  "short_title": "The Misfit of Demon King Academy",
+  "original_title": "魔王学院の不適合者",
+  "summary": "Фэнтези о переродившемся владыке демонов, который обнаруживает, что история его эпохи переписана, а собственная академия не способна узнать основателя.",
+  "history": {
+    "text": "Автор Сю начал историю как веб-роман, затем она стала ранобэ с иллюстрациями Ёсинори Сидзумы и получила манга-версию. Аниме Silver Link адаптирует длинные сюжетные арки частями, поэтому второй сезон разделён на два самостоятельных телевизионных блока.",
+    "sources": [
+      {
+        "title": "Yen Press: The Misfit of Demon King Academy",
+        "url": "https://yenpress.com/series/the-misfit-of-demon-king-academy-light-novel"
+      }
+    ]
+  },
+  "guide": "Смотрите первый сезон, затем обе части второго. Рекапы и промоматериалы можно пропустить; продолжения относятся к одной линии ранобэ.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/40496/f252fc7227ef4696bbe372bd09e462f2.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/40496",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "maou_gakuin_no_futekigousha",
+    "primary_shikimori_ids": [
+      40496
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 82,
+  "entries": [
+    {
+      "key": "shikimori-40496",
+      "title": "Непризнанный школой владыка демонов! Сильнейший владыка демонов в истории поступает в академию, переродившись своим потомком",
+      "subtitle": "Maou Gakuin no Futekigousha: Shijou Saikyou no Maou no Shiso, Tensei shite Shison-tachi no Gakkou e Kayou",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2020-07-04",
+      "release_end_date": "2020-09-26",
+      "release_year": 2020,
+      "release_label": "4 июля — 26 сентября 2020",
+      "episode_count": 13,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/40496/f252fc7227ef4696bbe372bd09e462f2.jpeg",
+      "match": {
+        "shikimori": [
+          40496
+        ],
+        "sources": [
+          "animego:1584",
+          "yummyanime:111"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48417",
+      "title": "Непризнанный школой владыка демонов! Сильнейший владыка демонов в истории поступает в академию, переродившись своим потомком 2",
+      "subtitle": "Maou Gakuin no Futekigousha II: Shijou Saikyou no Maou no Shiso, Tensei shite Shison-tachi no Gakkou e Kayou",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2023-01-08",
+      "release_end_date": "2023-09-24",
+      "release_year": 2023,
+      "release_label": "8 января — 24 сентября 2023",
+      "episode_count": 12,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48417/d27b87bbc483772ca747c50a29154c49.jpeg",
+      "match": {
+        "shikimori": [
+          48417
+        ],
+        "sources": [
+          "animego:2190",
+          "yummyanime:343"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-48418",
+      "title": "Непризнанный школой владыка демонов! Сильнейший владыка демонов в истории поступает в академию, переродившись своим потомком 2. Часть 2",
+      "subtitle": "Maou Gakuin no Futekigousha II: Shijou Saikyou no Maou no Shiso, Tensei shite Shison-tachi no Gakkou e Kayou Part 2",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_date": "2024-04-12",
+      "release_end_date": "2024-07-25",
+      "release_year": 2024,
+      "release_label": "12 апреля — 25 июля 2024",
+      "episode_count": 12,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/48418/05dcd1c15e4056c683237985b9b702ca.jpeg",
+      "match": {
+        "shikimori": [
+          48418
+        ],
+        "sources": [
+          "animego:2547",
+          "yummyanime:942"
+        ],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

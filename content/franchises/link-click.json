@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "slug": "link-click",
+  "title": "Агент времени",
+  "short_title": "Link Click",
+  "original_title": "时光代理人",
+  "summary": "Китайская фантастическая драма о двух сотрудниках фотостудии, которые погружаются в прошлое снимков и платят за каждое вмешательство в чужую жизнь.",
+  "history": {
+    "text": "Link Click задумывался сразу как оригинальная китайская анимация, а не экранизация манги или романа. Сериал стартовал на Bilibili в 2021 году, после чего получил продолжения, японский дубляж, сценические и печатные ответвления.",
+    "sources": [
+      {
+        "title": "Aniplex: Link Click",
+        "url": "https://www.aniplex.co.jp/lineup/linkclick/"
+      }
+    ]
+  },
+  "guide": "Смотрите первый сезон, специальный эпизод 5.5, второй сезон и затем арку Bridon. Короткие дополнительные ролики необязательны; следите за порядком выхода, потому что приквелы раскрывают важный контекст.",
+  "cover_url": "https://shikimori.io/uploads/poster/animes/44074/baa99c8e01ff82bc19b548d9b3d501c9.jpeg",
+  "updated_at": "2026-07-14",
+  "source": {
+    "title": "Shikimori: карточки и граф связей релизов",
+    "url": "https://shikimori.io/animes/44074",
+    "updated_at": "2026-07-14"
+  },
+  "data_origin": {
+    "provider": "shikimori",
+    "franchise": "link_click",
+    "primary_shikimori_ids": [
+      44074
+    ],
+    "fetched_at": "2026-07-14"
+  },
+  "selection_rank": 65,
+  "entries": [
+    {
+      "key": "shikimori-44074",
+      "title": "Агент времени",
+      "subtitle": "Shiguang Dailiren",
+      "summary": "Старт одной из основных сюжетных линий франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-04-30",
+      "release_end_date": "2021-07-09",
+      "release_year": 2021,
+      "release_label": "30 апреля — 9 июля 2021",
+      "episode_count": 11,
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "watch_note": "Ранняя точка входа в одну из основных линий; сверьтесь с инструкцией вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/44074/baa99c8e01ff82bc19b548d9b3d501c9.jpeg",
+      "match": {
+        "shikimori": [
+          44074
+        ],
+        "sources": [
+          "yummyanime:894"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49200",
+      "title": "Агент времени: Поединок за руку дочери",
+      "subtitle": "Shiguang Dailiren Fanwai Pian: Biwu Zhaoqin",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-05-28",
+      "release_year": 2021,
+      "release_label": "28 мая 2021",
+      "episode_count": 1,
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49200/fd00a6c0321ed5bbb0440a6cd1c0b147.jpeg",
+      "match": {
+        "shikimori": [
+          49200
+        ],
+        "sources": [
+          "yummyanime:5197"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49652",
+      "title": "Агент времени: Спецвыпуск",
+      "subtitle": "Shiguang Dailiren Special: Xiaoyao Sanren de Weituo",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-08-27",
+      "release_year": 2021,
+      "release_label": "27 августа 2021",
+      "episode_count": 1,
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49652/9d5dbbc1ddc1a83ed2f0f92d93b3f22b.jpeg",
+      "match": {
+        "shikimori": [
+          49652
+        ],
+        "sources": [
+          "yummyanime:5274"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-50105",
+      "title": "Повседневная жизнь в фотостудии времени",
+      "subtitle": "Shiguang Zhaoxiangguan de Richang",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2021-10-10",
+      "release_end_date": "2023-03-10",
+      "release_year": 2021,
+      "release_label": "10 октября 2021 — 10 марта 2023",
+      "episode_count": 18,
+      "release_order": 4,
+      "watch_order": 4,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/50105/79ae80b73afea77b79cf2fe33049b832.jpeg",
+      "match": {
+        "shikimori": [
+          50105
+        ],
+        "sources": [
+          "animego:1921",
+          "yummyanime:5199"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-51825",
+      "title": "Агент времени x Laneige",
+      "subtitle": "Shiguang Dailiren x Laneige: Cheng Xiaoshi Po Fang Weiji",
+      "summary": "Дополнительный выпуск, расширяющий мир или истории героев франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2022-05-10",
+      "release_year": 2022,
+      "release_label": "10 мая 2022",
+      "episode_count": 1,
+      "release_order": 5,
+      "watch_order": 5,
+      "story_role": "optional",
+      "watch_note": "Необязательно для основной линии; безопаснее смотреть по порядку выхода.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/51825/788081d943401f9d85ee58af11e6e611.jpeg",
+      "match": {
+        "shikimori": [
+          51825
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-49413",
+      "title": "Агент времени 2",
+      "subtitle": "Shiguang Dailiren II",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2023-07-14",
+      "release_end_date": "2023-09-22",
+      "release_year": 2023,
+      "release_label": "14 июля — 22 сентября 2023",
+      "episode_count": 12,
+      "release_order": 6,
+      "watch_order": 6,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/49413/14cccf2581e9eca6a559f47bd91ddbb8.jpeg",
+      "match": {
+        "shikimori": [
+          49413
+        ],
+        "sources": [
+          "yummyanime:1252"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-56752",
+      "title": "Агент времени: Глава о британской столице",
+      "subtitle": "Shiguang Dailiren: Yingdu Pian",
+      "summary": "Отдельная ветка франшизы с другим фокусом, героями или версией истории.",
+      "kind": "ONA",
+      "status": "finished",
+      "release_date": "2024-12-27",
+      "release_end_date": "2025-01-31",
+      "release_year": 2024,
+      "release_label": "27 декабря 2024 — 31 января 2025",
+      "episode_count": 6,
+      "release_order": 7,
+      "watch_order": 7,
+      "story_role": "spinoff",
+      "watch_note": "Самостоятельная ветка; её место в маршруте указано в инструкции вверху карточки.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/56752/b443f7ca0c53787b45e31dad4c6f882a.jpeg",
+      "match": {
+        "shikimori": [
+          56752
+        ],
+        "sources": [
+          "yummyanime:5056"
+        ],
+        "anidb": []
+      }
+    },
+    {
+      "key": "shikimori-61607",
+      "title": "Агент времени 3",
+      "subtitle": "Shiguang Dailiren III",
+      "summary": "Продолжение основной сюжетной линии франшизы.",
+      "kind": "ONA",
+      "status": "announced",
+      "release_date": "2026-08-14",
+      "release_year": 2026,
+      "release_label": "14 августа 2026",
+      "episode_count": 12,
+      "release_order": 8,
+      "watch_order": 8,
+      "story_role": "main",
+      "watch_note": "Часть одной из основных линий; место в маршруте указано в инструкции вверху карточки.",
+      "status_note": "Анонсировано; заявленная дата выхода — 14 августа 2026.",
+      "cover_url": "https://shikimori.io/uploads/poster/animes/61607/380f0967d4e40a539b3af7c90db53ff3.jpeg",
+      "match": {
+        "shikimori": [
+          61607
+        ],
+        "sources": [],
+        "anidb": []
+      }
+    }
+  ],
+  "announcements": [],
+  "official_url": null
+}

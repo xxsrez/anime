@@ -2705,6 +2705,31 @@ function renderFranchiseHero(franchise) {
     summary.textContent = summaryText;
     hero.append(summary);
   }
+  const history = franchise.history;
+  if (history?.text) {
+    const historyBlock = document.createElement("section");
+    historyBlock.className = "franchise-history";
+    const historyTitle = document.createElement("strong");
+    historyTitle.textContent = "История франшизы";
+    const historyText = document.createElement("p");
+    historyText.textContent = history.text;
+    historyBlock.append(historyTitle, historyText);
+
+    const historySources = (history.sources || [])
+      .map(source => createFranchiseExternalLink(source.title, source.url))
+      .filter(Boolean);
+    if (historySources.length) {
+      const sources = document.createElement("div");
+      sources.className = "franchise-history-sources";
+      sources.append(document.createTextNode("Подробнее: "));
+      historySources.forEach((link, index) => {
+        if (index) sources.append(document.createTextNode(" · "));
+        sources.append(link);
+      });
+      historyBlock.append(sources);
+    }
+    hero.append(historyBlock);
+  }
   if (franchise.guide) {
     const guide = document.createElement("div");
     guide.className = "franchise-guide";
