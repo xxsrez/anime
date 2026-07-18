@@ -163,7 +163,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertEqual(rare["items"][0]["report"]["event_count"], 2)
         self.assertEqual(len(rare["items"][0]["report"]["translations"]), 2)
 
-    def test_favorite_and_watching_titles_are_ranked_first_without_cache_leak(self):
+    def test_only_watching_titles_are_ranked_first_without_cache_leak(self):
         con = server.connect(self.db_path)
         try:
             user = server.upsert_google_user(
@@ -185,8 +185,10 @@ class ContentUpdatesV2Test(unittest.TestCase):
         personalized = server.get_content_updates(self.db_path, days=7, limit=3, user_id=user["id"], offset=0)
         anonymous = server.get_content_updates(self.db_path, days=7, limit=3, offset=0)
 
-        self.assertEqual([item["id"] for item in personalized["items"][:2]], [103, 104])
-        self.assertTrue(all(item["is_priority"] for item in personalized["items"][:2]))
+        personalized_items = {item["id"]: item for item in personalized["items"]}
+        self.assertEqual([item["id"] for item in personalized["items"]], [103, 101, 104])
+        self.assertTrue(personalized_items[103]["is_priority"])
+        self.assertFalse(personalized_items[104]["is_priority"])
         self.assertEqual(anonymous["items"][0]["id"], 101)
         self.assertFalse(any(item["is_priority"] for item in anonymous["items"]))
 
@@ -289,7 +291,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
         items = {item["id"]: item for item in personalized["items"]}
 
         self.assertEqual(personalized["period"]["days"], 7)
-        self.assertEqual([item["id"] for item in personalized["items"][:3]], [106, 108, 110])
+        self.assertEqual([item["id"] for item in personalized["items"][:3]], [106, 110, 109])
         self.assertTrue(items[106]["has_unseen_episode"])
         self.assertTrue(items[108]["has_unseen_episode"])
         self.assertFalse(items[105]["has_unseen_episode"])
@@ -297,6 +299,7 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertFalse(items[109]["has_unseen_episode"])
         self.assertFalse(items[105]["is_priority"])
         self.assertFalse(items[107]["is_priority"])
+        self.assertFalse(items[108]["is_priority"])
         self.assertFalse(items[109]["is_priority"])
 
         server.update_user_state(106, {"progress_episode_number": 3}, self.db_path, user["id"])
@@ -310,8 +313,8 @@ class ContentUpdatesV2Test(unittest.TestCase):
         caught_up_items = {item["id"]: item for item in caught_up["items"]}
         self.assertFalse(caught_up_items[106]["has_unseen_episode"])
         self.assertFalse(caught_up_items[106]["is_priority"])
-        self.assertEqual([item["id"] for item in caught_up["items"] if item["is_priority"]], [108])
-        self.assertEqual([item["id"] for item in caught_up["items"][:4]], [108, 110, 109, 106])
+        self.assertFalse(any(item["is_priority"] for item in caught_up["items"]))
+        self.assertEqual([item["id"] for item in caught_up["items"][:4]], [110, 109, 106, 107])
 
     def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
         now = server.now_iso()

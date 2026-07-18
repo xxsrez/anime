@@ -3529,13 +3529,18 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("function contentUpdateItemIsPriority(item)", js)
         self.assertIn('effectiveWatchStatus(item) === "completed"', js)
         self.assertIn("number > progress", js)
-        self.assertIn('heading.textContent = "Новое для меня · избранное и смотрю"', js)
+        self.assertIn('heading.textContent = "Новое для меня · смотрю"', js)
         self.assertIn('const CONTENT_UPDATE_DEFAULT_DAYS = "7"', js)
         self.assertIn('russianPlural(days, "день", "дня", "дней")', js)
 
         compare_start = js.index("function compareContentUpdates")
         compare_end = js.index("function filterOptionLabel", compare_start)
         compare_updates = js[compare_start:compare_end]
+        priority_start = js.index("function contentUpdateItemIsPriority")
+        priority_end = js.index("function contentUpdateItemsForView", priority_start)
+        priority_rule = js[priority_start:priority_end]
+        self.assertIn('effectiveWatchStatus(item) === "watching"', priority_rule)
+        self.assertNotIn("is_favorite", priority_rule)
         self.assertIn("contentUpdateItemIsPriority(left)", compare_updates)
         self.assertIn("contentUpdateItemIsPriority(right)", compare_updates)
         self.assertNotIn("Boolean(left.is_favorite)", compare_updates)

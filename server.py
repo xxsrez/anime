@@ -2884,8 +2884,10 @@ def content_update_item_has_unseen_episode(item, episode_numbers):
 
 
 def content_update_item_is_priority(item, episode_numbers):
-    follows_title = bool(item.get("is_favorite")) or item.get("watch_status") == "watching"
-    return follows_title and content_update_item_has_unseen_episode(item, episode_numbers)
+    return item.get("watch_status") == "watching" and content_update_item_has_unseen_episode(
+        item,
+        episode_numbers,
+    )
 
 
 def compact_content_update_item(item, events, days):

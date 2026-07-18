@@ -1525,8 +1525,7 @@ function contentUpdateHasUnseenEpisode(item) {
 }
 
 function contentUpdateItemIsPriority(item) {
-  const followsTitle = Boolean(item?.is_favorite) || effectiveWatchStatus(item) === "watching";
-  return followsTitle && contentUpdateHasUnseenEpisode(item);
+  return effectiveWatchStatus(item) === "watching" && contentUpdateHasUnseenEpisode(item);
 }
 
 function contentUpdateItemsForView() {
@@ -2421,7 +2420,7 @@ function renderContentUpdateRows(parent, items) {
         priorityGroup = document.createElement("section");
         priorityGroup.className = "updates-day updates-priority";
         const heading = document.createElement("h3");
-        heading.textContent = "Новое для меня · избранное и смотрю";
+        heading.textContent = "Новое для меня · смотрю";
         priorityGroup.append(heading);
         parent.append(priorityGroup);
       }
