@@ -44,6 +44,7 @@ let playerHosts = [];
 const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
 const ANIMEGO_SCAN_ENDPOINT = "/api/animego-scans";
+const ANIMEGO_SCAN_POLL_INTERVAL_MS = 2000;
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
 const WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS = 90 * 1000;
@@ -231,6 +232,8 @@ let titleTooltipTarget = null;
 let appStatusTimer = 0;
 let searchInputTimer = 0;
 let animeGoScanDialogResolve = null;
+let animeGoScanPollTimer = 0;
+let animeGoScanPollGeneration = 0;
 
 function isAbortError(error) {
   return error?.name === "AbortError";
@@ -576,6 +579,73 @@ function animeGoScanProgressMessage(detail) {
   return `${progress} · +${added} серий${current}`;
 }
 
+function stopAnimeGoScanPolling() {
+  animeGoScanPollGeneration += 1;
+  if (!animeGoScanPollTimer) return;
+  window.clearTimeout(animeGoScanPollTimer);
+  animeGoScanPollTimer = 0;
+}
+
+function scheduleAnimeGoScanPoll(jobId, token, generation) {
+  if (generation !== animeGoScanPollGeneration) return;
+  animeGoScanPollTimer = window.setTimeout(async () => {
+    animeGoScanPollTimer = 0;
+    if (
+      generation !== animeGoScanPollGeneration
+      || state.animeGoScanPhase !== "active"
+      || String(state.animeGoScanJobId) !== String(jobId)
+    ) {
+      return;
+    }
+    try {
+      const payload = await api(`${ANIMEGO_SCAN_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (
+        generation !== animeGoScanPollGeneration
+        || state.animeGoScanPhase !== "active"
+        || String(state.animeGoScanJobId) !== String(jobId)
+      ) {
+        return;
+      }
+      const job = payload?.job || payload || {};
+      const status = String(job.status || "").toLowerCase();
+      if (status === "running") {
+        scheduleAnimeGoScanPoll(jobId, token, generation);
+        return;
+      }
+      if (status === "completed" || status === "stopped") {
+        handleAnimeGoScanComplete({
+          detail: { ...payload, stopped: status === "stopped" },
+        });
+        return;
+      }
+      handleAnimeGoScanError({
+        detail: {
+          ...payload,
+          error: status === "expired"
+            ? "Срок задания сканирования истёк"
+            : `Сканирование завершилось со статусом ${status || "unknown"}`,
+        },
+      });
+    } catch (error) {
+      if (
+        generation === animeGoScanPollGeneration
+        && state.animeGoScanPhase === "active"
+        && String(state.animeGoScanJobId) === String(jobId)
+      ) {
+        scheduleAnimeGoScanPoll(jobId, token, generation);
+      }
+    }
+  }, ANIMEGO_SCAN_POLL_INTERVAL_MS);
+}
+
+function startAnimeGoScanPolling(jobId, token) {
+  stopAnimeGoScanPolling();
+  scheduleAnimeGoScanPoll(jobId, token, animeGoScanPollGeneration);
+}
+
 function handleAnimeGoScannerReady(event) {
   state.animeGoScannerReady = true;
   state.animeGoScannerVersion = event?.detail?.version || null;
@@ -631,11 +701,15 @@ function handleAnimeGoScanComplete(event) {
   const checked = animeGoScanMetric(detail, "checked_items", "checked") ?? 0;
   const total = animeGoScanMetric(detail, "total_items", "total") ?? checked;
   const added = animeGoScanMetric(detail, "new_episode_count", "added") ?? 0;
-  const message = `Готово: ${checked}/${total} · добавлено серий: ${added}`;
+  const stopped = Boolean(detail.stopped) || String(detail?.job?.status || "") === "stopped";
+  const message = stopped
+    ? `Остановлено: ${checked}/${total} · добавлено серий: ${added}`
+    : `Готово: ${checked}/${total} · добавлено серий: ${added}`;
+  stopAnimeGoScanPolling();
   state.animeGoScanJobId = null;
   state.animeGoScanMode = null;
-  setAnimeGoScanPhase("idle", message, "ok");
-  showAppStatus(message, "ok");
+  setAnimeGoScanPhase("idle", message, stopped ? "warn" : "ok");
+  showAppStatus(message, stopped ? "warn" : "ok");
   refreshCatalogAfterAnimeGoScan().catch(error => {
     reportClientError(error, { action: "refresh catalog after animego scan" });
   });
@@ -647,6 +721,7 @@ function handleAnimeGoScanError(event) {
   const message = detail.blocked
     ? "AnimeGO временно остановил запросы. Попробуйте позже."
     : detail.error || detail.message || "Сканирование завершилось с ошибкой";
+  stopAnimeGoScanPolling();
   state.animeGoScanJobId = null;
   state.animeGoScanMode = null;
   setAnimeGoScanPhase("idle", message, "warn");
@@ -655,6 +730,7 @@ function handleAnimeGoScanError(event) {
 
 async function startAnimeGoScan(mode = "partial") {
   if (state.animeGoScanPhase === "starting" || state.animeGoScanPhase === "active") return;
+  stopAnimeGoScanPolling();
   if (!state.animeGoScannerReady) pingAnimeGoScanner();
   if (!state.animeGoScannerReady) {
     showAnimeGoScannerSetup();
@@ -697,6 +773,7 @@ async function startAnimeGoScan(mode = "partial") {
     state.animeGoScanJobId = jobId;
     state.animeGoScanMode = normalizedMode;
     setAnimeGoScanPhase("active", `0/${total} · передано сканеру`);
+    startAnimeGoScanPolling(jobId, token);
     if (normalizedMode === "full") {
       showAppStatus(`Full Scan: сервер подготовил ${total} актуальных тайтлов`, "warn");
     }

@@ -43,10 +43,12 @@ function element(extra = {}) {
   };
 }
 
-function scannerHarness({ ready = true, apiResult, apiError } = {}) {
+function scannerHarness({ ready = true, apiResult, apiError, apiHandler } = {}) {
   const events = [];
   const requests = [];
   const statuses = [];
+  const timers = new Map();
+  let nextTimerId = 1;
   const el = {
     animeGoScanControl: element(),
     animeGoScanSplit: element(),
@@ -85,8 +87,11 @@ function scannerHarness({ ready = true, apiResult, apiError } = {}) {
   }
   const context = vm.createContext({
     ANIMEGO_SCAN_ENDPOINT: "/api/animego-scans",
+    ANIMEGO_SCAN_POLL_INTERVAL_MS: 2000,
     CustomEvent,
     animeGoScanDialogResolve: null,
+    animeGoScanPollTimer: 0,
+    animeGoScanPollGeneration: 0,
     document: {
       activeElement: null,
       dispatchEvent(event) {
@@ -96,11 +101,23 @@ function scannerHarness({ ready = true, apiResult, apiError } = {}) {
     },
     el,
     state,
-    window: { location: { origin: "https://anime.test" } },
+    window: {
+      location: { origin: "https://anime.test" },
+      setTimeout(callback) {
+        const id = nextTimerId;
+        nextTimerId += 1;
+        timers.set(id, callback);
+        return id;
+      },
+      clearTimeout(id) {
+        timers.delete(id);
+      },
+    },
     api: async (path, options) => {
       requests.push({ path, options });
-      if (apiError) throw apiError;
       if (path === "/api/anime") return { items: [] };
+      if (apiHandler) return apiHandler(path, options);
+      if (apiError) throw apiError;
       return apiResult;
     },
     applyLoadedSearchFields() {},
@@ -118,7 +135,21 @@ function scannerHarness({ ready = true, apiResult, apiError } = {}) {
     },
   });
   vm.runInContext(scannerSource, context, { filename: "app.js#animego-scan-ui" });
-  return { context, el, events, requests, state, statuses };
+  return {
+    context,
+    el,
+    events,
+    requests,
+    state,
+    statuses,
+    async runNextTimer() {
+      const next = timers.entries().next().value;
+      assert.ok(next, "a scan status poll is scheduled");
+      const [id, callback] = next;
+      timers.delete(id);
+      await callback();
+    },
+  };
 }
 
 async function testPartialScanDispatch() {
@@ -190,6 +221,44 @@ async function testOwnBusyScanReopensExtension() {
   assert.match(harness.el.animeGoScanState.textContent, /открываем сканер/);
 }
 
+async function testServerStatusSettlesMissedCompletionEvent() {
+  const harness = scannerHarness({
+    apiHandler(path) {
+      if (path === "/api/animego-scans") {
+        return {
+          job: { id: 21, status: "running", total_items: 2 },
+          token: "job-token-for-polling",
+          tasks: [{ anime_id: 1 }, { anime_id: 2 }],
+        };
+      }
+      assert.equal(path, "/api/animego-scans/21");
+      return {
+        job: {
+          id: 21,
+          status: "completed",
+          checked_items: 2,
+          total_items: 2,
+          new_episode_count: 1,
+        },
+      };
+    },
+  });
+  await harness.context.startAnimeGoScan("partial");
+  assert.equal(harness.state.animeGoScanPhase, "active");
+  assert.equal(harness.el.animeGoScanButton.textContent, "Scanning…");
+
+  await harness.runNextTimer();
+
+  assert.equal(harness.state.animeGoScanPhase, "idle");
+  assert.equal(harness.el.animeGoScanButton.textContent, "Scan");
+  assert.equal(harness.el.animeGoScanButton.disabled, false);
+  assert.match(harness.el.animeGoScanState.textContent, /добавлено серий: 1/);
+  assert.equal(
+    harness.requests.find(request => request.path === "/api/animego-scans/21").options.headers.Authorization,
+    "Bearer job-token-for-polling",
+  );
+}
+
 assert.match(indexSource, /id="animego-scan-button"/);
 assert.match(indexSource, /role="menu"/);
 assert.match(indexSource, /data-scan-mode="partial"/);
@@ -201,4 +270,5 @@ Promise.resolve()
   .then(testNoExtensionShowsSetup)
   .then(testFullScanConfirmationAndNoWork)
   .then(testOwnBusyScanReopensExtension)
+  .then(testServerStatusSettlesMissedCompletionEvent)
   .then(() => console.log("animego scan UI tests passed"));
