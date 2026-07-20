@@ -373,6 +373,28 @@ assert.equal(
 );
 assert.equal(runtime.nearestAvailableEpisodeId(sourceSwitchEpisodes, [], 45887), null);
 
+const updateNavigationEpisodes = [
+  { id: 101, number: "1", source_count: 1 },
+  { id: 102, number: "2", source_count: 1 },
+  { id: 103, number: "3", source_count: 1 },
+  { id: 104, number: "4", source_count: 1 },
+];
+assert.equal(runtime.nextEpisodeIdAfterProgress(updateNavigationEpisodes, null), 101);
+assert.equal(runtime.nextEpisodeIdAfterProgress(updateNavigationEpisodes, 0), 101);
+assert.equal(runtime.nextEpisodeIdAfterProgress(updateNavigationEpisodes, 3), 104);
+assert.equal(runtime.nextEpisodeIdAfterProgress(updateNavigationEpisodes, 4), 104);
+assert.equal(runtime.nextEpisodeIdAfterProgress(updateNavigationEpisodes, 99), 104);
+assert.equal(runtime.nextEpisodeIdAfterProgress([
+  { id: 201, number: "1", source_count: 1 },
+  { id: 202, number: "2", source_count: 0 },
+  { id: 203, number: "3", source_count: 1 },
+], 1), 203);
+assert.equal(runtime.nextEpisodeIdAfterProgress([
+  { id: 301, number: "1", source_count: 0 },
+  { id: 302, number: "2", source_count: 1 },
+], null), 302);
+assert.equal(runtime.nextEpisodeIdAfterProgress([], 1), null);
+
 const semanticTranslationGroups = runtime.groupSourcesByTranslation([
   { id: 1, translation_id: 10, translation_title: "Akari Group" },
   { id: 2, translation_id: 11, translation_title: "Akari GROUP" },

@@ -1116,6 +1116,13 @@ function effectiveProgressEpisodeNumber(detail) {
   return detail?.last_watch?.progress_episode_number ?? detail?.progress_episode_number;
 }
 
+function nextUnwatchedEpisodeId(detail) {
+  return frontendRuntime.nextEpisodeIdAfterProgress(
+    detail?.episodes || [],
+    effectiveProgressEpisodeNumber(detail),
+  );
+}
+
 function sourceLabel(source) {
   if (source === "yummyanime") return "YummyAnime";
   if (source === "animego") return "AnimeGO";
@@ -2444,9 +2451,7 @@ function renderContentUpdateRows(parent, items) {
     row.className = "content-update-row";
     row.dataset.priority = item.is_priority ? "true" : "false";
     row.addEventListener("click", () => {
-      const latestEvent = item.events?.[0];
-      const request = latestEvent ? openContentUpdateEvent(latestEvent) : openUpdatedTitle(item);
-      request.catch(reportActionError("open content update"));
+      openUpdatedTitle(item).catch(reportActionError("open content update"));
     });
 
     const img = document.createElement("img");
@@ -4852,6 +4857,10 @@ function detailContainsUpdateEvent(event) {
 async function openUpdatedTitle(item) {
   activateViewMode("all", { selectFirst: false });
   await selectAnime(titleRefForItem(item), { scrollDetail: true, history: "push" });
+  const episodeId = nextUnwatchedEpisodeId(state.detail);
+  if (episodeId != null && String(episodeId) !== String(state.selectedEpisodeId)) {
+    await selectEpisode(episodeId, { history: "replace" });
+  }
 }
 
 async function openContentUpdateEvent(event) {

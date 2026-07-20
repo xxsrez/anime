@@ -213,6 +213,42 @@
     return candidates[0].episode.id;
   }
 
+  function episodeSequenceNumber(value) {
+    const match = String(value ?? "")
+      .trim()
+      .replace(",", ".")
+      .match(/\d+(?:\.\d+)?/);
+    if (!match) return null;
+    const number = Number(match[0]);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function nextEpisodeIdAfterProgress(episodes, progressEpisodeNumber = null) {
+    const ordered = (episodes || []).filter(episode => episode?.id != null);
+    if (!ordered.length) return null;
+
+    const playable = ordered.filter(episode => Number(episode.source_count) > 0);
+    const selectable = playable.length ? playable : ordered;
+    const progress = episodeSequenceNumber(progressEpisodeNumber);
+    if (progress == null) return selectable[0].id;
+
+    const numbered = selectable
+      .map((episode, index) => ({
+        episode,
+        index,
+        number: episodeSequenceNumber(episode.number),
+      }))
+      .filter(candidate => candidate.number != null);
+    const next = numbered
+      .filter(candidate => candidate.number > progress)
+      .sort((left, right) => left.number - right.number || left.index - right.index)[0];
+    if (next) return next.episode.id;
+
+    const latest = numbered
+      .sort((left, right) => right.number - left.number || right.index - left.index)[0];
+    return latest?.episode.id || selectable[selectable.length - 1].id;
+  }
+
   function hostnameMatches(hostname, allowedHostname) {
     const host = normalizeHostname(hostname);
     const allowed = normalizeHostname(allowedHostname);
@@ -586,6 +622,7 @@
     selectPreferredSource,
     selectSourceForEpisode,
     nearestAvailableEpisodeId,
+    nextEpisodeIdAfterProgress,
     localCalendarDayNumber,
     localCalendarDayDifference,
     boundedElapsedSeconds,

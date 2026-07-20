@@ -3498,6 +3498,20 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn("progress_episode_number", select_episode)
         self.assertNotIn("persist: false", open_update)
 
+    def test_content_update_title_click_opens_next_unwatched_episode(self):
+        js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        rows_start = js.index("function renderContentUpdateRows")
+        rows_end = js.index("function renderContentUpdatesView", rows_start)
+        update_rows = js[rows_start:rows_end]
+        open_start = js.index("async function openUpdatedTitle")
+        open_end = js.index("async function openContentUpdateEvent", open_start)
+        open_title = js[open_start:open_end]
+
+        self.assertIn("openUpdatedTitle(item)", update_rows)
+        self.assertNotIn("openContentUpdateEvent(latestEvent)", update_rows)
+        self.assertIn("nextUnwatchedEpisodeId(state.detail)", open_title)
+        self.assertIn('selectEpisode(episodeId, { history: "replace" })', open_title)
+
     def test_content_source_switch_moves_to_nearest_available_episode(self):
         js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         handler_start = js.index('el.contentSource.addEventListener("change"')
