@@ -564,7 +564,8 @@ class AnimeGoScansTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(zip_body)) as archive:
             self.assertIn("animego-scanner/manifest.json", archive.namelist())
             manifest = json.loads(archive.read("animego-scanner/manifest.json"))
-        self.assertEqual(manifest["version"], "0.2.0")
+        source_manifest = json.loads((server.SCANNER_EXTENSION_DIR / "manifest.json").read_text())
+        self.assertEqual(manifest["version"], source_manifest["version"])
         self.assertEqual(
             manifest["optional_host_permissions"], ["https://animego.me/*"]
         )
