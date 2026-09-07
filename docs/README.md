@@ -4,48 +4,48 @@ This directory is the durable project documentation for the local anime catalog
 and player prototype. It follows the `project-docs` layout:
 
 - root pages explain the project, architecture, and repository structure;
-- `instructions/` contains working rules and operational process;
-- `guides/` contains current component and deployment how-tos;
-- `design/`, `tasks/`, and `reports/` are reserved for future historical
+- [instructions/](instructions/README.md) contains working rules and operational process;
+- [guides/](guides/README.md) contains current component and deployment how-tos;
+- [design/](design/README.md), [tasks/](tasks/README.md), and [reports/](reports/README.md) are reserved for future historical
   specifications, multi-day investigations, and final analyses.
 
 ## Reading order
 
-1. `overview.md` - product summary, current scope, workflows, limitations.
-2. `architecture.md` - runtime, data flow, API, scraper behavior,
+1. [overview.md](overview.md) - product summary, current scope, workflows, limitations.
+2. [architecture.md](architecture.md) - runtime, data flow, API, scraper behavior,
    recommendations, and verification.
-3. `project-structure.md` - where source, docs, ignored data, and generated
+3. [project-structure.md](project-structure.md) - where source, docs, ignored data, and generated
    artifacts live.
-4. `instructions/Operations_Runbook.md` - central runbook for dev, prod,
+4. [instructions/Operations_Runbook.md](instructions/Operations_Runbook.md) - central runbook for dev, prod,
    release, tmux, env vars, login troubleshooting, and smoke checks.
-5. `instructions/Incremental_DB_Update.md` - production-safe incremental
+5. [instructions/Incremental_DB_Update.md](instructions/Incremental_DB_Update.md) - production-safe incremental
    catalog/player update process for agents and operators.
-6. `instructions/Environment_Rules.md` - short dev/prod environment map.
-7. `instructions/Testing_Plan.md` - shared browser, mobile, dev/prod, and
+6. [instructions/Environment_Rules.md](instructions/Environment_Rules.md) - short dev/prod environment map.
+7. [instructions/Testing_Plan.md](instructions/Testing_Plan.md) - shared browser, mobile, dev/prod, and
    release testing checklist for agents.
-8. `guides/deployment/railway-production.md` - Railway-specific quick
+8. [guides/deployment/railway-production.md](guides/deployment/railway-production.md) - Railway-specific quick
    reference; defer to the operations runbook for the release checklist.
-9. `guides/data-model/README.md` - SQLite tables, relationships, ID
+9. [guides/data-model/README.md](guides/data-model/README.md) - SQLite tables, relationships, ID
    conventions, and mutable data.
-10. `guides/animego-scanner/README.md` - Partial/Full user scans, Chrome setup,
+10. [guides/animego-scanner/README.md](guides/animego-scanner/README.md) - Partial/Full user scans, Chrome/Safari setup,
     attribution, API, and troubleshooting.
-11. `instructions/Code_Style_Instructions.md` - coding rules and contribution
+11. [instructions/Code_Style_Instructions.md](instructions/Code_Style_Instructions.md) - coding rules and contribution
    conventions.
-12. `tasks/project-hardening/README.md` - 2026-07-09 repository-wide
+12. [tasks/project-hardening/README.md](tasks/project-hardening/README.md) - 2026-07-09 repository-wide
     correctness, concurrency, recovery, security, and performance hardening.
 
 ## Directory Map
 
 | Path | Purpose |
 | --- | --- |
-| `overview.md` | What Anime Local is and why it exists. |
-| `architecture.md` | How the app, scrapers, auth, API, and UI work. |
-| `project-structure.md` | Where files live and which paths are generated. |
-| `instructions/` | Rules for working on this repo. |
-| `guides/` | Current how-tos for components and deployment. |
-| `design/` | Future original/historical specifications. |
-| `tasks/` | Future complex investigations with changelogs. |
-| `reports/` | Future final analysis documents. |
+| [overview.md](overview.md) | What Anime Local is and why it exists. |
+| [architecture.md](architecture.md) | How the app, scrapers, auth, API, and UI work. |
+| [project-structure.md](project-structure.md) | Where files live and which paths are generated. |
+| [instructions/](instructions/README.md) | Rules for working on this repo. |
+| [guides/](guides/README.md) | Current how-tos for components and deployment. |
+| [design/](design/README.md) | Future original/historical specifications. |
+| [tasks/](tasks/README.md) | Future complex investigations with changelogs. |
+| [reports/](reports/README.md) | Future final analysis documents. |
 
 ## Quick start
 
@@ -61,7 +61,7 @@ Open `http://127.0.0.1:8765/`.
 
 Production is Railway service `web` at
 `https://anime-srez.up.railway.app` and must only be updated after an explicit
-release request. See `instructions/Operations_Runbook.md` before touching dev
+release request. See [instructions/Operations_Runbook.md](instructions/Operations_Runbook.md) before touching dev
 process management, Railway variables, production deploys, or database uploads.
 
 Run the current verification set:

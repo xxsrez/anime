@@ -288,6 +288,16 @@ class AnimeGoScansTest(unittest.TestCase):
         first = self.create_job()
         with self.assertRaises(animego_scans.ScanConflictError):
             self.create_job()
+        with self.assertRaisesRegex(ValueError, "pending titles"):
+            animego_scans.complete_scan_job(
+                self.db_path, first["job"]["id"], first["token"], {}
+            )
+        still_running = animego_scans.get_scan_job(self.db_path, first["job"]["id"], first["token"])
+        self.assertEqual(still_running["job"]["status"], "running")
+        animego_scans.submit_scan_result(
+            self.db_path, first["job"]["id"], first["token"],
+            {"anime_id": 1, "episodes": []}, server.PLAYER_HOSTS,
+        )
         completed = animego_scans.complete_scan_job(
             self.db_path, first["job"]["id"], first["token"], {}
         )
@@ -537,6 +547,8 @@ class AnimeGoScansTest(unittest.TestCase):
         )
         self.assertEqual(authenticated_setup, 200)
         self.assertIn(b"AnimeGo", setup_body)
+        self.assertIn(b"Safari 26", setup_body)
+        self.assertIn(b"Add Temporary Extension", setup_body)
 
         anonymous_zip, _, _ = self.request("GET", "/api/animego-scanner-extension")
         self.assertEqual(anonymous_zip, 401)
@@ -551,6 +563,16 @@ class AnimeGoScansTest(unittest.TestCase):
         )
         with zipfile.ZipFile(io.BytesIO(zip_body)) as archive:
             self.assertIn("animego-scanner/manifest.json", archive.namelist())
+            manifest = json.loads(archive.read("animego-scanner/manifest.json"))
+        self.assertEqual(manifest["version"], "0.2.0")
+        self.assertEqual(
+            manifest["optional_host_permissions"], ["https://animego.me/*"]
+        )
+        self.assertNotIn("https://animego.me/*", manifest["host_permissions"])
+        self.assertEqual(
+            manifest["browser_specific_settings"]["safari"]["strict_min_version"],
+            "16.4",
+        )
 
 
 if __name__ == "__main__":

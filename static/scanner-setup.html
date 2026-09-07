@@ -22,36 +22,125 @@
 
       <p class="lede">
         Расширение делает запросы к AnimeGo через ваш браузер и отправляет в каталог
-        только найденные новые серии. Установка нужна один раз.
+        только найденные новые серии. Выберите браузер — Safari определится автоматически.
       </p>
 
-      <ol class="setup-steps">
-        <li>
-          <strong>Скачайте расширение</strong>
-          <a class="primary-button" href="/api/animego-scanner-extension" download="animego-scanner.zip">
-            Скачать ZIP
-          </a>
-        </li>
-        <li>
-          <strong>Распакуйте ZIP</strong>
-          <span>Оставьте папку <code>animego-scanner</code> в удобном постоянном месте.</span>
-        </li>
-        <li>
-          <strong>Откройте расширения Chrome</strong>
-          <div class="copy-row">
-            <code id="extensions-url">chrome://extensions</code>
-            <button id="copy-extensions-url" type="button">Копировать</button>
-          </div>
-        </li>
-        <li>
-          <strong>Включите «Режим разработчика»</strong>
-          <span>Нажмите «Загрузить распакованное» и выберите распакованную папку.</span>
-        </li>
-        <li>
-          <strong>Вернитесь в каталог</strong>
-          <span>Обновите страницу. Кнопки Scan и Full Scan станут активны.</span>
-        </li>
-      </ol>
+      <div class="browser-tabs" role="tablist" aria-label="Инструкции для браузера" aria-orientation="horizontal">
+        <button
+          id="browser-tab-safari"
+          class="browser-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="browser-panel-safari"
+          tabindex="-1"
+          data-browser="safari"
+        >Safari 26</button>
+        <button
+          id="browser-tab-chrome"
+          class="browser-tab"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="browser-panel-chrome"
+          tabindex="0"
+          data-browser="chrome"
+        >Chrome</button>
+      </div>
+
+      <section
+        id="browser-panel-safari"
+        class="browser-panel"
+        role="tabpanel"
+        aria-labelledby="browser-tab-safari"
+        tabindex="0"
+        data-browser-panel="safari"
+        hidden
+      >
+        <h2>Установка в Safari 26</h2>
+        <ol class="setup-steps">
+          <li>
+            <strong>Скачайте расширение</strong>
+            <a class="primary-button" href="/api/animego-scanner-extension" download="animego-scanner.zip">
+              Скачать ZIP
+            </a>
+            <span>Safari может установить скачанный ZIP напрямую. При желании распакуйте его и выберите папку.</span>
+          </li>
+          <li>
+            <strong>Включите функции для веб-разработчиков</strong>
+            <span>
+              Откройте <code>Safari → Settings → Advanced</code> и включите
+              <q>Show features for web developers</q>.
+            </span>
+          </li>
+          <li>
+            <strong>Добавьте временное расширение</strong>
+            <span>
+              Откройте <code>Safari → Settings → Developer</code>, нажмите
+              <q>Add Temporary Extension…</q> и выберите скачанный ZIP или распакованную папку.
+              Подтвердите системный запрос Safari, если он появится.
+            </span>
+          </li>
+          <li>
+            <strong>Разрешите доступ к Anime Catalog</strong>
+            <span>
+              В Safari разрешите расширению website access для текущего Anime Catalog.
+              Доступ к <code>animego.me</code> сканер запросит отдельно при первом Scan —
+              нажмите во вкладке расширения <q>Разрешить AnimeGo</q> и подтвердите Safari.
+            </span>
+          </li>
+          <li>
+            <strong>Обновите каталог</strong>
+            <span>Вернитесь в Anime Catalog и перезагрузите страницу (<kbd>⌘R</kbd>). Кнопки Scan и Full Scan станут активны.</span>
+          </li>
+        </ol>
+
+        <aside class="temporary-note">
+          Временная установка удаляется через 24 часа или при выходе из Safari.
+          После этого повторно добавьте ZIP или папку через <q>Add Temporary Extension…</q>.
+        </aside>
+      </section>
+
+      <section
+        id="browser-panel-chrome"
+        class="browser-panel"
+        role="tabpanel"
+        aria-labelledby="browser-tab-chrome"
+        tabindex="0"
+        data-browser-panel="chrome"
+      >
+        <h2>Установка в Chrome</h2>
+        <ol class="setup-steps">
+          <li>
+            <strong>Скачайте расширение</strong>
+            <a class="primary-button" href="/api/animego-scanner-extension" download="animego-scanner.zip">
+              Скачать ZIP
+            </a>
+          </li>
+          <li>
+            <strong>Распакуйте ZIP</strong>
+            <span>Оставьте папку <code>animego-scanner</code> в удобном постоянном месте.</span>
+          </li>
+          <li>
+            <strong>Откройте расширения Chrome</strong>
+            <div class="copy-row">
+              <code id="extensions-url">chrome://extensions</code>
+              <button id="copy-extensions-url" type="button">Копировать</button>
+            </div>
+          </li>
+          <li>
+            <strong>Включите «Режим разработчика»</strong>
+            <span>Нажмите «Загрузить распакованное» и выберите распакованную папку.</span>
+          </li>
+          <li>
+            <strong>Вернитесь в каталог</strong>
+            <span>
+              Обновите страницу. При первом Scan подтвердите узкий доступ к <code>animego.me</code>
+              во вкладке сканера; серверное задание создастся только после разрешения.
+            </span>
+          </li>
+        </ol>
+      </section>
 
       <aside class="permission-note">
         Расширение запрашивает доступ только к <code>animego.me</code>, локальному dev

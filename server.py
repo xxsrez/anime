@@ -71,6 +71,7 @@ GOOGLE_AUTH_STATE_FALLBACK_SECRET = secrets.token_bytes(32)
 GOOGLE_AUTH_STATE_SECRET_ENV = "ANIME_GOOGLE_AUTH_STATE_SECRET"
 GOOGLE_AUTH_STATE_ERROR = "Не удалось подтвердить ответ Google. Попробуйте войти еще раз."
 LOGIN_HANDOFF_TTL_SECONDS = 60
+LOGIN_BROWSER_COOKIE_NAME = "anime_login_browser"
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 PLAYER_HOSTS = (
     "kodikplayer.com",
@@ -4183,7 +4184,13 @@ def build_catalog_cache_snapshot(path):
 
     id_map = {}
     slug_map = {}
+    recent_update_expirations = []
     for item in items:
+        for event in item.get("recent_updates") or []:
+            occurred_at = dt.datetime.fromisoformat(event["occurred_at"])
+            recent_update_expirations.append(
+                occurred_at.timestamp() + content_updates.RECENT_UPDATE_DAYS * 86400 + 1
+            )
         slug_map[item["slug"]] = item
         slug_map[item["internal_id"]] = item
         for variant in item.get("source_variants") or []:
@@ -4195,6 +4202,7 @@ def build_catalog_cache_snapshot(path):
         "id_map": id_map,
         "slug_map": slug_map,
         "translation_rankings": translation_rankings,
+        "recent_updates_expire_at": min(recent_update_expirations, default=None),
     }
 
 
@@ -4215,6 +4223,9 @@ def build_catalog_cache(db_path=None):
 
 
 def catalog_cache_is_current(path, cached, connection=None):
+    expires_at = cached.get("recent_updates_expire_at")
+    if expires_at is not None and time.time() >= expires_at:
+        return False
     current = catalog_revision_token(path, connection=connection)
     cached_token = cached.get("revision_token")
     return bool(
@@ -7141,18 +7152,23 @@ def base64url_decode(value):
     return base64.urlsafe_b64decode(f"{value}{padding}")
 
 
-def sign_google_auth_state(next_path):
+def sign_google_auth_state(next_path, browser_binding):
+    if not browser_binding:
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
     payload = {
         "iat": int(time.time()),
         "next": safe_next_path(next_path),
         "nonce": secrets.token_urlsafe(16),
+        "browser_hash": session_token_hash(browser_binding),
     }
     payload_bytes = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     signature = hmac.new(google_auth_state_secret(), payload_bytes, hashlib.sha256).digest()
     return f"{base64url_encode(payload_bytes)}.{base64url_encode(signature)}"
 
 
-def verify_google_auth_state(value):
+def google_auth_state_payload(value):
+    if not isinstance(value, str):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
     try:
         payload_part, signature_part = (value or "").split(".", 1)
         payload_bytes = base64url_decode(payload_part)
@@ -7166,6 +7182,8 @@ def verify_google_auth_state(value):
 
     try:
         payload = json.loads(payload_bytes.decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("state must be an object")
         issued_at = int(payload.get("iat") or 0)
     except (TypeError, ValueError, json.JSONDecodeError):
         raise AuthError(GOOGLE_AUTH_STATE_ERROR) from None
@@ -7173,10 +7191,23 @@ def verify_google_auth_state(value):
     now = int(time.time())
     if issued_at < now - GOOGLE_AUTH_STATE_TTL_SECONDS or issued_at > now + 60:
         raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+    if not re.fullmatch(r"[a-f0-9]{64}", str(payload.get("browser_hash") or "")):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
+    return payload
+
+
+def verify_google_auth_state(value, browser_binding):
+    payload = google_auth_state_payload(value)
+    if not browser_binding or not hmac.compare_digest(
+        payload["browser_hash"], session_token_hash(browser_binding)
+    ):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
     return safe_next_path(payload.get("next") or "/")
 
 
-def create_login_handoff(session_token, next_path, db_path=None):
+def create_login_handoff(session_token, next_path, db_path=None, *, browser_binding_hash):
+    if not re.fullmatch(r"[a-f0-9]{64}", str(browser_binding_hash or "")):
+        raise AuthError(GOOGLE_AUTH_STATE_ERROR)
     code = secrets.token_urlsafe(32)
     created_at = now_iso()
     expires_at = (
@@ -7204,7 +7235,7 @@ def create_login_handoff(session_token, next_path, db_path=None):
             values (?, ?, ?, ?, ?)
             """,
             (
-                session_token_hash(code),
+                session_token_hash(f"{browser_binding_hash}:{code}"),
                 session["user_id"],
                 safe_next_path(next_path),
                 created_at,
@@ -7227,10 +7258,10 @@ def create_login_handoff(session_token, next_path, db_path=None):
     return code
 
 
-def consume_login_handoff(code, db_path=None):
-    if not code:
+def consume_login_handoff(code, db_path=None, *, browser_binding=""):
+    if not code or not browser_binding:
         raise AuthError("Сессия входа истекла. Попробуйте войти еще раз.")
-    code_hash = session_token_hash(code)
+    code_hash = session_token_hash(f"{session_token_hash(browser_binding)}:{code}")
     timestamp = now_iso()
     con = connect(db_path)
     try:
@@ -7310,12 +7341,11 @@ class AnimeHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         parsed = urlparse(getattr(self, "path", "") or "")
         server_logger().info(
-            "remote=%s method=%s path=%s status=%s message=%s",
+            "remote=%s method=%s path=%s status=%s",
             self.client_address[0] if self.client_address else "-",
             getattr(self, "command", "-"),
             parsed.path or "-",
             getattr(self, "_last_status", "-"),
-            fmt % args,
         )
 
     def handle_request(self, callback):
@@ -7632,6 +7662,26 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return selected
         return next(iter(self.session_tokens()), None)
 
+    def login_browser_binding(self):
+        values = []
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            name, separator, value = part.strip().partition("=")
+            if name == LOGIN_BROWSER_COOKIE_NAME and separator:
+                if not re.fullmatch(r"[A-Za-z0-9_-]{43}", value):
+                    return ""
+                values.append(value)
+        return values[0] if len(values) == 1 else ""
+
+    def login_browser_cookie_header(self, binding):
+        parts = [
+            f"{LOGIN_BROWSER_COOKIE_NAME}={binding}",
+            "Path=/", "HttpOnly", "SameSite=Lax",
+            f"Max-Age={GOOGLE_AUTH_STATE_TTL_SECONDS + LOGIN_HANDOFF_TTL_SECONDS}",
+        ]
+        if session_cookie_secure():
+            parts.append("Secure")
+        return "; ".join(parts)
+
     def current_user(self):
         if hasattr(self, "_current_user"):
             return self._current_user
@@ -7884,8 +7934,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
         if path == "/api/auth/config":
             client_id = google_client_id()
             next_path = safe_next_path(parse_qs(parsed.query).get("next", ["/"])[0])
+            browser_binding = self.login_browser_binding() or secrets.token_urlsafe(32)
             try:
-                state = sign_google_auth_state(next_path) if client_id else ""
+                state = sign_google_auth_state(next_path, browser_binding) if client_id else ""
             except AuthConfigError as exc:
                 self.send_json(
                     {
@@ -7902,7 +7953,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     "configured": bool(client_id),
                     "client_id": client_id,
                     "state": state,
-                }
+                },
+                headers=[("Set-Cookie", self.login_browser_cookie_header(browser_binding))] if client_id else None,
             )
             return
 
@@ -7919,6 +7971,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 token, next_path = consume_login_handoff(
                     parse_qs(parsed.query).get("code", [""])[0],
                     self.server.db_path,
+                    browser_binding=self.login_browser_binding(),
                 )
             except AuthError as exc:
                 self.redirect_to_login_auth_error(str(exc) or "Не удалось войти через Google")
@@ -8247,12 +8300,18 @@ class AnimeHandler(BaseHTTPRequestHandler):
             next_path = "/"
             try:
                 payload, is_redirect_flow = self.read_google_auth_body()
+                if not isinstance(payload, dict):
+                    raise ValueError("payload must be an object")
+                auth_state = google_auth_state_payload(payload.get("state"))
                 if is_redirect_flow:
-                    next_path = verify_google_auth_state(payload.get("state"))
-                elif payload.get("state"):
-                    next_path = verify_google_auth_state(payload.get("state"))
+                    # Google may POST cross-site without the Lax cookie. The
+                    # signed state binds this handoff, and the top-level GET
+                    # must present the matching browser cookie before login.
+                    next_path = safe_next_path(auth_state.get("next") or "/")
                 else:
-                    next_path = safe_next_path(payload.get("next") or "/")
+                    next_path = verify_google_auth_state(
+                        payload.get("state"), self.login_browser_binding()
+                    )
                 auth = authenticate_google_credential(payload.get("credential"), self.server.db_path)
             except ClientErrorPayloadTooLarge:
                 self.send_google_auth_error("payload too large", 413, is_redirect_flow, next_path)
@@ -8279,7 +8338,10 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     next_path,
                 )
                 return
-            code = create_login_handoff(auth["token"], next_path, self.server.db_path)
+            code = create_login_handoff(
+                auth["token"], next_path, self.server.db_path,
+                browser_binding_hash=auth_state["browser_hash"],
+            )
             complete_url = f"/api/auth/complete?code={quote(code, safe='')}"
             if is_redirect_flow:
                 self.send_redirect(complete_url)

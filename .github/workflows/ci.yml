@@ -52,6 +52,7 @@ jobs:
         run: |
           find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
           node static/animego_scan_ui.test.js
+          node --test static/scanner_setup.test.js
           node --test static/frontend_runtime.test.js
           npm test --prefix browser-extension/animego-scanner
 

@@ -1068,6 +1068,16 @@ def apply_animego_snapshot(con, snapshot, args, stats, reason):
             stats["episode_without_new_provider_skipped"] += 1
 
     if not writes:
+        # Metadata can change after the final episode was indexed. Do not
+        # introduce metadata-only titles into the playable catalog.
+        if not new_title and con.execute(
+            "select 1 from video_sources where anime_id = ? and embed_url is not null limit 1",
+            (item["id"],),
+        ).fetchone():
+            animego.upsert_anime(
+                con, item, detail, args.scraped_at, authoritative_metadata=reason != "manual"
+            )
+            stats["metadata_refreshed"] += 1
         stats["known_skipped"] += 1
         return
 

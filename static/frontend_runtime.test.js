@@ -224,6 +224,18 @@ const mergedVariantSources = {
     },
   ],
 };
+for (const season of [undefined, null]) {
+  const message = runtime.normalizePlayerMessage({
+    key: "kodik_player_current_episode", value: { episode: 5, season },
+  });
+  assert.equal(message.seasonNumber, null);
+  assert.deepEqual(runtime.findKodikEpisodeTarget({
+    episodes: kodikEpisodes, sourcesByEpisode: kodikSourcesByEpisode,
+    currentSource: kodikSourcesByEpisode[501][0],
+    episodeNumber: message.episodeNumber, seasonNumber: message.seasonNumber,
+  }), { episode: kodikEpisodes[4], source: kodikSourcesByEpisode[505][0] });
+}
+assert.equal(runtime.parseKodikSerialUrl("https://kodikplayer.com/serial/77/hash/720p?episode=5").seasonNumber, null);
 assert.equal(runtime.findKodikEpisodeTarget({
   episodes: kodikEpisodes,
   sourcesByEpisode: mergedVariantSources,

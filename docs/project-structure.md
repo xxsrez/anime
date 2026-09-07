@@ -44,7 +44,8 @@ can change outside git.
 | `static/frontend_runtime.js` | Independently testable URL, date, watch-evidence, and keyed-queue primitives. |
 | `static/frontend_runtime.test.js` | Node regression tests for those browser-independent primitives. |
 | `static/app.css` | Compact dark UI styling. |
-| `static/scanner-setup.html`, `static/scanner-setup.js`, `static/scanner-setup.css` | Authenticated one-time Chrome extension setup page. |
+| `static/scanner-setup.html`, `static/scanner-setup.js`, `static/scanner-setup.css` | Authenticated browser-aware Chrome/Safari extension setup page. |
+| `static/scanner_setup.test.js` | Browser detection, accessible tab switching, and Safari setup guidance tests. |
 | `static/login.html` | Google login page. |
 | `static/login.js` | Google Identity Services login flow and session handoff. |
 | `static/admin.html` | Admin page shell. |
@@ -62,7 +63,7 @@ can change outside git.
 
 | Path | Purpose |
 | --- | --- |
-| `browser-extension/animego-scanner/` | Unpacked Chrome Manifest V3 extension plus Node parser/state tests; it receives assigned jobs, reads AnimeGo player metadata through the user's browser, checkpoints progress, and posts validated results. |
+| `browser-extension/animego-scanner/` | Cross-browser Manifest V3 extension plus Node parser/state/runtime tests; it receives assigned jobs, requests exact optional AnimeGo access, reads player metadata through Chrome or Safari, checkpoints progress, and posts validated results. |
 
 ## Scripts
 

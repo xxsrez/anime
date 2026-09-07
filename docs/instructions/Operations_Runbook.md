@@ -138,12 +138,20 @@ PY
 curl -fsS 'http://127.0.0.1:8765/api/auth/config?next=%2F' | python3 -m json.tool
 ```
 
-4. A fake token should return `401 invalid Google credential`, not `503`:
+4. A fake token with valid browser-bound state should return
+   `401 invalid Google credential`, not `503`:
 
 ```bash
-curl -sS -i -X POST http://127.0.0.1:8765/api/auth/google \
-  -H 'Content-Type: application/json' \
-  --data '{"credential":"not-a-real-token","next":"/"}'
+.venv/bin/python - <<'PY'
+import requests
+session = requests.Session()
+base = "http://127.0.0.1:8765"
+config = session.get(base + "/api/auth/config", timeout=10).json()
+response = session.post(base + "/api/auth/google", json={
+    "credential": "not-a-real-token", "state": config["state"],
+}, timeout=10)
+print(response.status_code, response.text)
+PY
 ```
 
 If it returns `503` with `google-auth dependencies are not installed`, restart
@@ -163,6 +171,7 @@ pip-audit -r requirements.txt
 .venv/bin/python -m unittest discover -v -p 'test*.py'
 find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
 node static/animego_scan_ui.test.js
+node --test static/scanner_setup.test.js
 node --test static/frontend_runtime.test.js
 npm test --prefix browser-extension/animego-scanner
 npx --yes --package typescript@5.9.3 tsc railway-functions/daily-sync.ts \
@@ -536,7 +545,7 @@ operation lock, writes SQLite/update events, and advances
 ```
 
 Authenticated catalog users can also run additive catch-up scans through the
-unpacked Chrome extension. Keep that path separate from the trusted worker:
+Chrome/Safari Manifest V3 WebExtension. Keep that path separate from the trusted worker:
 user jobs receive only a job-scoped token, never `ANIMEGO_PUSH_TOKEN`, and
 do not advance the worker's last-success marker. Both paths still validate and
 write on the web process under the shared database-operation lock. Setup,

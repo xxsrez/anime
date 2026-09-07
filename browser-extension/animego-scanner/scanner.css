@@ -163,6 +163,8 @@ h1 {
 .button:disabled { cursor: default; opacity: 0.38; }
 .primary { background: #6d28d9; }
 .primary:not(:disabled):hover { background: #7c3aed; }
+.permission { background: #0f766e; }
+.permission:not(:disabled):hover { background: #0d9488; }
 .danger { border-color: #4a2530; background: #271319; color: #fda4af; }
 .danger:not(:disabled):hover { background: #361820; }
 

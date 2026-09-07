@@ -43,8 +43,11 @@ export function redactEmbedUrl(value) {
   if (!parts) {
     return null;
   }
-  const { parsed, host } = parts;
-  let path = parsed.pathname;
+  const { parsed, host, normalized } = parts;
+  // URL.pathname percent-encodes literal spaces/non-ASCII characters. The
+  // backend's urllib.parse.urlparse preserves them when redacting the URL,
+  // so use the original path after URL has validated the HTTPS authority.
+  let path = normalized.match(/^(?:https:)?\/\/[^/?#]+([^?#]*)/i)?.[1] || "";
   let query = "";
 
   if (host.toLowerCase().includes("aniboom.one")) {

@@ -1,9 +1,10 @@
 # AnimeGo User Scanner
 
 The user scanner lets an authenticated Anime Catalog user check AnimeGo through
-their own Chrome connection. The server chooses the work, the extension reads
-AnimeGo player endpoints, and the server validates and applies only additive
-episode/provider changes. A successful scan benefits every catalog user.
+their own Chrome or Safari connection. The server chooses the work, the
+extension reads AnimeGo player endpoints, and the server validates and applies
+only additive episode/provider changes. A successful scan benefits every
+catalog user.
 
 This is a catch-up path for the cloud-egress block. It complements, rather than
 replaces, the trusted AnimeGo push worker.
@@ -25,27 +26,48 @@ unchanged ongoing title backs off from 18 to at most 54 hours after repeated
 no-change checks, an unchanged non-ongoing title waits 7 days, and a title-level
 error retries after 30 minutes. Full Scan ignores these cooldowns.
 
-## One-Time Chrome Setup
+## Browser Setup
 
-1. Sign in to Anime Catalog and open `/scanner-setup`.
-2. Download `/api/animego-scanner-extension` and unzip it in a permanent local
+Sign in to Anime Catalog and open `/scanner-setup`. It detects Safari and also
+provides a manual Safari/Chrome switch.
+
+### Chrome
+
+1. Download `/api/animego-scanner-extension` and unzip it in a permanent local
    folder.
-3. Open `chrome://extensions`, enable **Developer mode**, and choose **Load
+2. Open `chrome://extensions`, enable **Developer mode**, and choose **Load
    unpacked**.
-4. Select the unpacked `animego-scanner` folder.
-5. Reload Anime Catalog. Clicking `Scan` should open the scanner tab.
+3. Select the unpacked `animego-scanner` folder and reload Anime Catalog.
 
-The ZIP and setup page require an authenticated Anime Catalog session. This is
-an unpacked extension, so after a scanner code update download the ZIP again,
-replace the local files, and click **Reload** for the extension in
-`chrome://extensions`.
+### Safari 26 development install
+
+1. In Safari **Settings → Advanced**, enable **Show features for web developers**.
+2. In **Settings → Developer**, choose **Add Temporary Extension…** and select
+   the downloaded ZIP or unpacked folder.
+3. Enable the extension and grant it website access to the current Anime
+   Catalog origin, then reload the catalog.
+4. Click Scan. In the scanner tab, click **Разрешить AnimeGo** and approve the
+   exact `https://animego.me/*` optional host permission.
+
+Safari removes a temporary extension after 24 hours or when Safari quits. A
+normal persistent Safari distribution requires a packaged and signed containing
+app; the current ZIP is the development/smoke path, not a permanent install.
+
+In both browsers the first Scan performs the AnimeGo permission handshake
+before `POST /api/animego-scans`, so denying access does not create or occupy a
+server job.
+
+The ZIP and setup page require an authenticated Anime Catalog session. After a
+scanner code update, download the ZIP again and reload/re-add the extension in
+the browser's extension settings.
 
 ## Running A Scan
 
 1. Keep Anime Catalog signed in and click `Scan` or choose a mode from its arrow
-   menu.
-2. The app creates a server job and hands its job-scoped token and task list
-   to the installed extension.
+   menu. The extension first verifies its optional AnimeGo permission and opens
+   a visible grant screen if needed.
+2. After permission succeeds, the app creates a server job and hands its
+   job-scoped token and task list to the installed extension.
 3. The extension opens a visible scanner tab. It checks each assigned title,
    posts results title by title, and shows checked titles, added episodes,
    providers, and errors.
@@ -60,11 +82,16 @@ AnimeGo requests are sequential, with a randomized delay between requests and
 bounded exponential retry backoff for transient failures. Do not add parallel
 request concurrency to make Full Scan faster.
 
-The extension stores the current job and checkpoint in `chrome.storage.local`.
+The extension stores the current job and checkpoint in WebExtension local storage.
 Reloading the scanner tab or clicking the extension's toolbar action reopens an
 unfinished job. Clicking `Scan` again also reopens it when the active global job
 belongs to the current user; another user's job remains busy. **Resume** retries
-the current title when it was not checkpointed. An AnimeGo `403`, `429`, or bot
+the current title when it was not checkpointed. Collected results are saved before
+delivery; a failed delivery pauses the scan, and Resume resends the saved result
+without requesting the title from AnimeGo again, including after a reload. A
+failed Stop can be retried. Reloading during Stop restores a controllable job.
+The server rejects normal completion while titles remain pending.
+An AnimeGo `403`, `429`, or bot
 challenge is treated as a block: the scanner stops making requests without
 completing the job so it can be retried from the checkpoint. Ordinary per-title
 errors are posted to the job and the scan continues.
@@ -185,10 +212,11 @@ database-operation lock, and preserve attribution/reversion history.
 
 ## Security Boundary
 
-- The extension has exact host permissions for `https://animego.me`, local dev
-  at `http://127.0.0.1:8765`, and the production Anime Catalog origin. It does
-  not request `<all_urls>`, browser-history, `cookies`, or video-download
-  permissions.
+- The extension has exact required host permissions for local dev at
+  `http://127.0.0.1:8765` and the production Anime Catalog origin. AnimeGo is an
+  exact optional host permission (`https://animego.me/*`) requested from a
+  visible extension page before a job is created. It does not request
+  `<all_urls>`, browser-history, `cookies`, or video-download permissions.
 - Only those two app origins may start the extension, and the requested origin
   must match the source tab.
 - The server accepts results only for a title assigned to that job. It bounds
@@ -220,6 +248,8 @@ trusted worker, so the operation lock remains the final write boundary.
 | Symptom | Meaning/action |
 | --- | --- |
 | The app says the scanner is required | Install the unpacked extension, confirm it is enabled, then reload the app tab. Also reload the extension after replacing its files. |
+| Safari says access to AnimeGo is required | In the scanner tab click **Разрешить AnimeGo** and approve the exact site permission. A denied first request creates no server job; if access is revoked mid-scan, the checkpoint and job remain available for resume. |
+| Safari extension disappeared | Temporary Safari extensions are removed after 24 hours or when Safari quits. Re-add the ZIP/folder from **Settings → Developer**. |
 | HTTP `401` creating a job or downloading the ZIP | Sign in to Anime Catalog again. |
 | HTTP `401` on job status/result | The extension has no valid token for that job; start a fresh scan after the old job finishes/expires. |
 | HTTP `409` on create | If it is your job, the app reopens the saved scanner. If it belongs to another user, wait for its owner to finish/stop it or for the two-hour expiry. |

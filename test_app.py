@@ -26,6 +26,7 @@ from scripts import enrich_title_aliases
 
 
 class LocalAppTest(unittest.TestCase):
+    login_binding = "a" * 43
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -2704,7 +2705,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             body = urlencode(
                 {
                     "credential": "fake-token",
-                    "state": server.sign_google_auth_state("/some-title"),
+                    "state": server.sign_google_auth_state("/some-title", self.login_binding),
                 }
             )
             headers = {
@@ -2737,6 +2738,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 db_path,
                 "GET",
                 complete_location,
+                headers={"Cookie": f"{server.LOGIN_BROWSER_COOKIE_NAME}={self.login_binding}"},
             )
 
             self.assertEqual(status, 200)
@@ -2777,9 +2779,13 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"
             shutil.copy(server.DEFAULT_DB, db_path)
-            body = json.dumps({"credential": "fake-token", "next": "/wanted"})
+            body = json.dumps({
+                "credential": "fake-token",
+                "state": server.sign_google_auth_state("/wanted", self.login_binding),
+            })
             headers = {
                 "Content-Type": "application/json",
+                "Cookie": f"{server.LOGIN_BROWSER_COOKIE_NAME}={self.login_binding}",
             }
             user_id = self.create_google_user(db_path, "handoff-json", "one@example.com")
             provisional_token = self.create_session(db_path, user_id)
@@ -2809,6 +2815,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 db_path,
                 "GET",
                 payload["complete_url"],
+                headers={"Cookie": f"{server.LOGIN_BROWSER_COOKIE_NAME}={self.login_binding}"},
             )
 
             self.assertEqual(status, 200)
@@ -2826,7 +2833,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             shutil.copy(server.DEFAULT_DB, db_path)
 
             with patch.object(server, "google_client_id", return_value="client.apps.googleusercontent.com"):
-                status, _, body = self.request_test_server(
+                status, headers, body = self.request_test_server(
                     db_path,
                     "GET",
                     "/api/auth/config?next=%2Fwanted%3Ftab%3Dfavorites",
@@ -2836,7 +2843,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             payload = json.loads(body)
             self.assertEqual(payload["client_id"], "client.apps.googleusercontent.com")
             self.assertTrue(payload["state"])
-            self.assertEqual(server.verify_google_auth_state(payload["state"]), "/wanted?tab=favorites")
+            binding = headers["Set-Cookie"].split(";", 1)[0].split("=", 1)[1]
+            self.assertIn("HttpOnly", headers["Set-Cookie"])
+            self.assertIn("SameSite=Lax", headers["Set-Cookie"])
+            self.assertEqual(server.verify_google_auth_state(payload["state"], binding), "/wanted?tab=favorites")
 
     def test_google_auth_state_secret_is_stable_across_process_fallbacks(self):
         configured_secret = "shared-replica-secret-material-1234567890"
@@ -2844,9 +2854,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             os.environ,
             {server.GOOGLE_AUTH_STATE_SECRET_ENV: configured_secret},
         ):
-            state = server.sign_google_auth_state("/wanted")
+            state = server.sign_google_auth_state("/wanted", self.login_binding)
             with patch.object(server, "GOOGLE_AUTH_STATE_FALLBACK_SECRET", b"other-process" * 3):
-                self.assertEqual(server.verify_google_auth_state(state), "/wanted")
+                self.assertEqual(server.verify_google_auth_state(state, self.login_binding), "/wanted")
 
     def test_google_auth_state_rejects_weak_configured_secret(self):
         with patch.dict(
@@ -2854,7 +2864,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             {server.GOOGLE_AUTH_STATE_SECRET_ENV: "too-short"},
         ):
             with self.assertRaisesRegex(server.AuthConfigError, "at least 32 bytes"):
-                server.sign_google_auth_state("/wanted")
+                server.sign_google_auth_state("/wanted", self.login_binding)
 
     def test_auth_config_reports_weak_state_secret_as_deployment_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2912,7 +2922,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             user_id = self.create_google_user(db_path, "secure-handoff", "secure@example.com")
             provisional_token = self.create_session(db_path, user_id)
 
-            code = server.create_login_handoff(provisional_token, "/wanted", db_path)
+            code = server.create_login_handoff(
+                provisional_token, "/wanted", db_path,
+                browser_binding_hash=server.session_token_hash(self.login_binding),
+            )
 
             raw = sqlite3.connect(db_path)
             try:
@@ -2931,7 +2944,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 if candidate.exists():
                     self.assertNotIn(provisional_token.encode(), candidate.read_bytes())
 
-            token, next_path = server.consume_login_handoff(code, db_path)
+            for binding in ("", "b" * 43):
+                with self.assertRaises(server.AuthError):
+                    server.consume_login_handoff(code, db_path, browser_binding=binding)
+            token, next_path = server.consume_login_handoff(code, db_path, browser_binding=self.login_binding)
             self.assertNotEqual(token, provisional_token)
             self.assertEqual(next_path, "/wanted")
             self.assertEqual(server.get_session_user(token, db_path)["id"], user_id)
@@ -2945,7 +2961,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 blocker.execute("begin immediate")
                 started = time.perf_counter()
                 with self.assertRaises(server.AuthError):
-                    server.consume_login_handoff("definitely-missing", db_path)
+                    server.consume_login_handoff("definitely-missing", db_path, browser_binding=self.login_binding)
                 elapsed = time.perf_counter() - started
             finally:
                 blocker.rollback()
@@ -2985,7 +3001,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             body = urlencode(
                 {
                     "credential": "fake-token",
-                    "state": server.sign_google_auth_state("/wanted"),
+                    "state": server.sign_google_auth_state("/wanted", self.login_binding),
                 }
             )
             headers = {

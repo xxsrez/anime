@@ -162,6 +162,7 @@ Run local health and smoke checks:
 ```bash
 .venv/bin/python -m unittest discover -v -p 'test*.py'
 node static/animego_scan_ui.test.js
+node --test static/scanner_setup.test.js
 node --test static/frontend_runtime.test.js
 npm test --prefix browser-extension/animego-scanner
 .venv/bin/python scripts/check_repo_hygiene.py

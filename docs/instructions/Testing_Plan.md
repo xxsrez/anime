@@ -62,6 +62,7 @@ pip-audit -r requirements.txt
 .venv/bin/python -m unittest discover -v -p 'test*.py'
 find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
 node static/animego_scan_ui.test.js
+node --test static/scanner_setup.test.js
 node --test static/frontend_runtime.test.js
 npm test --prefix browser-extension/animego-scanner
 npx --yes --package typescript@5.9.3 tsc railway-functions/daily-sync.ts \
@@ -86,6 +87,8 @@ separate operational target, not a hidden test dependency.
 ### Desktop
 
 - Chrome desktop, authenticated user.
+- Safari 26 desktop with the temporary WebExtension, catalog website access,
+  and the optional AnimeGo permission flow exercised as allow and deny.
 - At least one anonymous window or cleared-session context.
 - Widths around `1280x800` and `1440x900`.
 

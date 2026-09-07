@@ -57,6 +57,15 @@ test("redacts supported provider URLs with the same stable shape as the backend"
   assert.equal(redactEmbedUrl("https://name:secret@aniboom.one/embed/nope"), null);
 });
 
+test("preserves literal player path characters to match backend validation", () => {
+  for (const translation of ["Dream Cast", "Дубляж", "Dream%20Cast"]) {
+    assert.equal(
+      redactEmbedUrl(`https://animego.me/remoteplayer/61316/${translation}/4/1`),
+      `//animego.me/<redacted>/61316/${translation}/4/1`,
+    );
+  }
+});
+
 test("parses episodes and deduplicates providers by backend identity", () => {
   const documentNode = fakeDocument({
     selected: new FakeNode({ value: "501" }),

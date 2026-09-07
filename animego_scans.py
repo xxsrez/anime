@@ -1344,6 +1344,11 @@ def complete_scan_job(db_path, job_id, token, payload=None, *, now=None):
             return {"job": job_payload(job)}
         if job["status"] != "running":
             raise ValueError("scan is not running")
+        if not stopped and con.execute(
+            "select 1 from animego_scan_job_items where job_id = ? and status = 'pending' limit 1",
+            (int(job_id),),
+        ).fetchone():
+            raise ValueError("scan still has pending titles; submit results or stop the scan")
         new_errors = 0
         last_error = None
         for error in errors:

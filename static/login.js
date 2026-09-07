@@ -13,6 +13,7 @@ const LOGIN_RECOVERY_FAST_WINDOW_MS = 12_000;
 const LOGIN_RECOVERY_MAX_CHECKS = 10;
 
 let credentialSubmitInFlight = false;
+let googleAuthState = "";
 let sessionCheckInFlight = false;
 let sessionCheckTimer = 0;
 let fastSessionChecksUntil = 0;
@@ -225,7 +226,7 @@ async function submitCredential(response) {
       body: JSON.stringify({
         credential: response.credential,
         next: nextPath(),
-        state: response.state || "",
+        state: googleAuthState,
       }),
     });
     const payload = await authResponse.json().catch(() => ({}));
@@ -305,6 +306,7 @@ async function bootLogin() {
   }
 
   const google = await waitForGoogle();
+  googleAuthState = config.state;
   if (redirectingAfterSession) return;
   // Recovery must only poll the app session. Starting One Tap again here can
   // mint another handoff before Firefox exposes the cookie from the first one.

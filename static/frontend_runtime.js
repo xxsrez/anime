@@ -268,6 +268,7 @@
   }
 
   function integerValue(value, { minimum = null } = {}) {
+    if (value == null || typeof value === "boolean") return null;
     if (typeof value === "string" && !value.trim()) return null;
     const number = Number(value);
     if (!Number.isInteger(number)) return null;

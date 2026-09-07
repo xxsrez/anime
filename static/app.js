@@ -45,6 +45,7 @@ const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
 const ANIMEGO_SCAN_ENDPOINT = "/api/animego-scans";
 const ANIMEGO_SCAN_POLL_INTERVAL_MS = 2000;
+const ANIMEGO_SCANNER_PREPARE_TIMEOUT_MS = 2500;
 const WATCH_HEARTBEAT_MS = 30000;
 const WATCH_MAX_DELTA_SECONDS = 300;
 const WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS = 90 * 1000;
@@ -157,6 +158,7 @@ const state = {
   playerContext: null,
   animeGoScannerReady: false,
   animeGoScannerVersion: null,
+  animeGoScannerUpstreamReady: false,
   animeGoScanPhase: "idle",
   animeGoScanJobId: null,
   animeGoScanMode: null,
@@ -234,6 +236,7 @@ let searchInputTimer = 0;
 let animeGoScanDialogResolve = null;
 let animeGoScanPollTimer = 0;
 let animeGoScanPollGeneration = 0;
+let pendingAnimeGoScan = null;
 
 function isAbortError(error) {
   return error?.name === "AbortError";
@@ -661,6 +664,38 @@ function pingAnimeGoScanner() {
   }));
 }
 
+function prepareAnimeGoScanner() {
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = detail => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("animego-scanner-permission-state", handleState);
+      resolve(detail || { granted: false });
+    };
+    const handleState = event => finish(event?.detail);
+    const timer = window.setTimeout(() => {
+      finish({
+        granted: false,
+        error: "Сканер не ответил. Обновите расширение со страницы установки.",
+      });
+    }, ANIMEGO_SCANNER_PREPARE_TIMEOUT_MS);
+    document.addEventListener("animego-scanner-permission-state", handleState);
+    document.dispatchEvent(new CustomEvent("animego-scanner-prepare", {
+      detail: { origin: window.location.origin },
+    }));
+  });
+}
+
+function handleAnimeGoScannerPermissionGranted() {
+  state.animeGoScannerUpstreamReady = true;
+  const pending = pendingAnimeGoScan;
+  pendingAnimeGoScan = null;
+  if (!pending) return Promise.resolve();
+  return startAnimeGoScan(pending.mode, { fullConfirmed: pending.fullConfirmed });
+}
+
 function handleAnimeGoScanProgress(event) {
   const detail = event?.detail || {};
   if (!animeGoScanEventMatches(detail)) return;
@@ -718,6 +753,13 @@ function handleAnimeGoScanComplete(event) {
 function handleAnimeGoScanError(event) {
   const detail = event?.detail || {};
   if (!animeGoScanEventMatches(detail)) return;
+  if (detail.permission) {
+    const message = detail.error || "Разрешите сканеру доступ к AnimeGo во вкладке расширения.";
+    state.animeGoScannerUpstreamReady = false;
+    setAnimeGoScanPhase("active", message, "warn");
+    showAppStatus(message, "warn");
+    return;
+  }
   const message = detail.blocked
     ? "AnimeGO временно остановил запросы. Попробуйте позже."
     : detail.error || detail.message || "Сканирование завершилось с ошибкой";
@@ -728,7 +770,7 @@ function handleAnimeGoScanError(event) {
   showAppStatus(message, "warn");
 }
 
-async function startAnimeGoScan(mode = "partial") {
+async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}) {
   if (state.animeGoScanPhase === "starting" || state.animeGoScanPhase === "active") return;
   stopAnimeGoScanPolling();
   if (!state.animeGoScannerReady) pingAnimeGoScanner();
@@ -737,7 +779,23 @@ async function startAnimeGoScan(mode = "partial") {
     return;
   }
   const normalizedMode = mode === "full" ? "full" : "partial";
-  if (normalizedMode === "full" && !(await confirmFullAnimeGoScan())) return;
+  if (normalizedMode === "full" && !fullConfirmed) {
+    if (!(await confirmFullAnimeGoScan())) return;
+    fullConfirmed = true;
+  }
+
+  setAnimeGoScanPhase("starting", "Проверяем доступ к AnimeGo…");
+  const permission = await prepareAnimeGoScanner();
+  if (!permission?.granted) {
+    state.animeGoScannerUpstreamReady = false;
+    pendingAnimeGoScan = { mode: normalizedMode, fullConfirmed };
+    const message = permission?.error || "Разрешите доступ во вкладке сканера";
+    setAnimeGoScanPhase("idle", message, "warn");
+    showAppStatus(message, "warn");
+    return;
+  }
+  state.animeGoScannerUpstreamReady = true;
+  pendingAnimeGoScan = null;
 
   setAnimeGoScanPhase("starting", "Готовим задание…");
   try {
@@ -4942,6 +5000,10 @@ el.animeGoScanDialog?.addEventListener("close", () => {
   resolve(false);
 });
 document.addEventListener("animego-scanner-ready", handleAnimeGoScannerReady);
+document.addEventListener(
+  "animego-scanner-permission-granted",
+  () => handleAnimeGoScannerPermissionGranted().catch(reportActionError("grant animego scanner permission")),
+);
 document.addEventListener("animego-scan-progress", handleAnimeGoScanProgress);
 document.addEventListener("animego-scan-complete", handleAnimeGoScanComplete);
 document.addEventListener("animego-scan-error", handleAnimeGoScanError);

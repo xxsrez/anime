@@ -1,16 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Anime Catalog — сканер AnimeGo",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Проверяет новые серии AnimeGo через браузер пользователя и передаёт их в Anime Catalog.",
   "permissions": [
     "storage",
     "tabs"
   ],
   "host_permissions": [
-    "https://animego.me/*",
     "http://127.0.0.1:8765/*",
     "https://anime-srez.up.railway.app/*"
+  ],
+  "optional_host_permissions": [
+    "https://animego.me/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -30,5 +32,10 @@
   ],
   "action": {
     "default_title": "Сканер AnimeGo"
+  },
+  "browser_specific_settings": {
+    "safari": {
+      "strict_min_version": "16.4"
+    }
   }
 }

@@ -23,7 +23,7 @@
   uncovered titles.
 - `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
   results, applies additive episode/provider changes, records attribution, and
-  packages the Chrome extension download.
+  packages the cross-browser WebExtension download.
 - `scrape_animego.py` owns the base SQLite schema and the AnimeGO scraper.
 - `scrape_yummyanime.py` imports selected YummyAnime/YummyAni titles into the
   same schema.
@@ -40,8 +40,8 @@
   calls.
 - `static/app.css` owns the compact dark UI.
 - `browser-extension/animego-scanner/` reads assigned AnimeGo player endpoints
-  through an authenticated user's Chrome network path, checkpoints progress,
-  and submits title results back to the web service.
+  through an authenticated user's Chrome or Safari network path, checkpoints
+  progress, and submits title results back to the web service.
 - `test_app.py` contains the current regression tests.
 
 ## Local Server
@@ -93,7 +93,12 @@ account can pass the normal login gate.
 
 Sessions use an opaque `HttpOnly` cookie and are stored as SHA-256 hashes in
 SQLite. Set `ANIME_SESSION_SECURE=1` only when serving over HTTPS.
-Google callback state is HMAC-signed. Set a durable, random, at-least-32-byte
+Google callback state is HMAC-signed and bound to an `HttpOnly`, `SameSite=Lax`
+browser cookie. Both JSON credential submission and the completion URL require
+the initiating browser. A cross-site Google form callback can omit the cookie,
+but its handoff still requires that cookie on the top-level completion GET.
+Handoff codes are stored as hashes salted with the browser binding hash, and
+access logs omit query strings. Set a durable, random, at-least-32-byte
 `ANIME_GOOGLE_AUTH_STATE_SECRET` in production so callbacks survive restarts
 and work across replicas; the local fallback is intentionally process-scoped.
 
@@ -159,7 +164,9 @@ Writers mark the revision dirty, including same-size in-place updates. Request
 connections read the token without opening another SQLite connection; one
 thread rebuilds a snapshot while peers wait, and a writer racing the snapshot
 forces a bounded retry. User/session writes do not invalidate immutable catalog
-data.
+data. A snapshot also expires when its earliest visible recent-update event
+leaves the seven-day window, so old badges disappear on the next catalog or
+detail request even without another database write.
 
 ## API
 
@@ -197,7 +204,9 @@ signals.
 
 `POST /api/auth/google`
 
-Accepts a Google Identity Services ID token in `{ "credential": "..." }`,
+Accepts a Google Identity Services ID token and the state from `/api/auth/config`
+in `{ "credential": "...", "state": "..." }`, with the cookie issued by that
+configuration request,
 verifies it server-side, upserts the local user, and returns a short-lived
 `complete_url`. New Google users start with empty favorites/progress state. The
 browser then opens that URL as a top-level page so the server can set the
@@ -311,8 +320,9 @@ content-update run.
 
 `GET /api/animego-scanner-extension`
 
-Requires an authenticated app session. Returns the current unpacked Chrome
-extension as a ZIP. The setup UI is `/scanner-setup`.
+Requires an authenticated app session. Returns the current unpacked Manifest V3
+WebExtension as a ZIP. Chrome loads the unpacked folder; Safari 26 can load the
+ZIP/folder temporarily for development. The setup UI is `/scanner-setup`.
 
 ## Data Flow
 
@@ -343,12 +353,14 @@ extension as a ZIP. The setup UI is `/scanner-setup`.
    appends raw events, updates per-episode aggregate state, and updates the same
    per-title progress summary used by the manual controls.
 11. Recommendation data is reloaded after favorite/progress/status changes.
-12. A user may start a Partial or Full AnimeGo scan. The server chooses eligible
-    source-title tasks and issues a job-only token; the extension fetches
-    AnimeGo player metadata through the user's Chrome connection and posts each
-    title back. The server validates assigned IDs and allowed HTTPS player URLs,
-    applies only new episodes/providers under the database-operation lock,
-    writes attribution/content-update rows, and invalidates the catalog cache.
+12. A user may start a Partial or Full AnimeGo scan. The WebExtension first
+    verifies or requests its exact optional AnimeGo host permission. Only after
+    that succeeds does the server choose eligible source-title tasks and issue a
+    job-only token. The extension fetches AnimeGo player metadata through the
+    user's Chrome or Safari connection and posts each title back. The server
+    validates assigned IDs and allowed HTTPS player URLs, applies only new
+    episodes/providers under the database-operation lock, writes
+    attribution/content-update rows, and invalidates the catalog cache.
 
 ## Scraper Notes
 
@@ -374,7 +386,7 @@ AnimeGO:
   but the production web process validates the complete bundle and remains the
   only SQLite writer. YummyAnime continues through the built-in web sync.
 - Authenticated users can additionally run distributed Partial/Full catch-up
-  scans through the Chrome extension. These scans do not replace the trusted
+  scans through the Chrome/Safari WebExtension. These scans do not replace the trusted
   worker or advance its `animego:<mode>:last_success` marker. See
   `guides/animego-scanner/README.md`.
 

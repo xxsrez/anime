@@ -43,11 +43,19 @@ function element(extra = {}) {
   };
 }
 
-function scannerHarness({ ready = true, apiResult, apiError, apiHandler } = {}) {
+function scannerHarness({
+  ready = true,
+  upstreamReady = true,
+  permissionResult,
+  apiResult,
+  apiError,
+  apiHandler,
+} = {}) {
   const events = [];
   const requests = [];
   const statuses = [];
   const timers = new Map();
+  const documentListeners = new Map();
   let nextTimerId = 1;
   const el = {
     animeGoScanControl: element(),
@@ -67,6 +75,7 @@ function scannerHarness({ ready = true, apiResult, apiError, apiHandler } = {}) 
   const state = {
     animeGoScannerReady: ready,
     animeGoScannerVersion: null,
+    animeGoScannerUpstreamReady: upstreamReady,
     animeGoScanPhase: "idle",
     animeGoScanJobId: null,
     animeGoScanMode: null,
@@ -88,14 +97,37 @@ function scannerHarness({ ready = true, apiResult, apiError, apiHandler } = {}) 
   const context = vm.createContext({
     ANIMEGO_SCAN_ENDPOINT: "/api/animego-scans",
     ANIMEGO_SCAN_POLL_INTERVAL_MS: 2000,
+    ANIMEGO_SCANNER_PREPARE_TIMEOUT_MS: 2500,
     CustomEvent,
     animeGoScanDialogResolve: null,
     animeGoScanPollTimer: 0,
     animeGoScanPollGeneration: 0,
+    pendingAnimeGoScan: null,
     document: {
       activeElement: null,
+      addEventListener(type, listener) {
+        const listeners = documentListeners.get(type) || new Set();
+        listeners.add(listener);
+        documentListeners.set(type, listeners);
+      },
+      removeEventListener(type, listener) {
+        documentListeners.get(type)?.delete(listener);
+      },
       dispatchEvent(event) {
         events.push(event);
+        for (const listener of documentListeners.get(event.type) || []) {
+          listener(event);
+        }
+        if (event.type === "animego-scanner-prepare") {
+          Promise.resolve().then(() => {
+            const result = typeof permissionResult === "function"
+              ? permissionResult()
+              : permissionResult;
+            this.dispatchEvent(new CustomEvent("animego-scanner-permission-state", {
+              detail: result ?? { granted: upstreamReady },
+            }));
+          });
+        }
         return true;
       },
     },
@@ -194,6 +226,70 @@ async function testNoExtensionShowsSetup() {
   assert.equal(harness.el.animeGoScanSetupLink.hidden, false);
 }
 
+async function testPermissionIsGrantedBeforeCreatingJob() {
+  let permissionGranted = false;
+  const harness = scannerHarness({
+    upstreamReady: false,
+    permissionResult: () => ({ granted: permissionGranted }),
+    apiResult: {
+      job: { id: 20, status: "running", total_items: 1 },
+      token: "job-token",
+      tasks: [{ anime_id: 1 }],
+    },
+  });
+
+  await harness.context.startAnimeGoScan("partial");
+  assert.equal(harness.requests.length, 0, "permission denial does not create a server job");
+  assert.ok(harness.events.some(event => event.type === "animego-scanner-prepare"));
+  assert.match(harness.el.animeGoScanState.textContent, /Разрешите доступ/);
+
+  permissionGranted = true;
+  await harness.context.handleAnimeGoScannerPermissionGranted();
+  assert.equal(harness.requests[0].path, "/api/animego-scans");
+  assert.equal(harness.state.animeGoScanJobId, 20);
+}
+
+async function testPermissionIsRecheckedBeforeEveryJob() {
+  const harness = scannerHarness({
+    upstreamReady: true,
+    permissionResult: { granted: false, error: "Доступ отозван" },
+    apiResult: {
+      job: { id: 23, status: "running", total_items: 1 },
+      token: "job-token",
+      tasks: [{ anime_id: 1 }],
+    },
+  });
+
+  await harness.context.startAnimeGoScan("partial");
+
+  assert.equal(harness.requests.length, 0, "revoked permission does not create a server job");
+  assert.equal(harness.state.animeGoScannerUpstreamReady, false);
+  assert.ok(harness.events.some(event => event.type === "animego-scanner-prepare"));
+}
+
+async function testGrantedPreflightClearsStalePendingScan() {
+  const harness = scannerHarness({
+    upstreamReady: true,
+    permissionResult: { granted: true },
+    apiResult: {
+      job: { id: 24, status: "running", total_items: 1 },
+      token: "job-token",
+      tasks: [{ anime_id: 1 }],
+    },
+  });
+  harness.context.pendingAnimeGoScan = { mode: "full", fullConfirmed: true };
+
+  await harness.context.startAnimeGoScan("partial");
+  await harness.context.handleAnimeGoScannerPermissionGranted();
+
+  assert.equal(
+    harness.requests.filter(request => request.path === "/api/animego-scans").length,
+    1,
+    "a stale permission event cannot launch a second scan",
+  );
+  assert.equal(JSON.parse(harness.requests[0].options.body).mode, "partial");
+}
+
 async function testFullScanConfirmationAndNoWork() {
   const harness = scannerHarness({
     apiResult: {
@@ -259,6 +355,26 @@ async function testServerStatusSettlesMissedCompletionEvent() {
   );
 }
 
+async function testPermissionLossKeepsRunningJobAttached() {
+  const harness = scannerHarness({
+    apiResult: {
+      job: { id: 22, status: "running", total_items: 1 },
+      token: "job-token",
+      tasks: [{ anime_id: 1 }],
+    },
+  });
+  await harness.context.startAnimeGoScan("partial");
+
+  harness.context.handleAnimeGoScanError({
+    detail: { job_id: 22, permission: true, error: "Разрешите animego.me" },
+  });
+
+  assert.equal(harness.state.animeGoScanPhase, "active");
+  assert.equal(harness.state.animeGoScanJobId, 22);
+  assert.equal(harness.state.animeGoScannerUpstreamReady, false);
+  assert.match(harness.el.animeGoScanState.textContent, /Разрешите animego\.me/);
+}
+
 assert.match(indexSource, /id="animego-scan-button"/);
 assert.match(indexSource, /role="menu"/);
 assert.match(indexSource, /data-scan-mode="partial"/);
@@ -268,7 +384,11 @@ assert.match(indexSource, /href="\/scanner-setup"/);
 Promise.resolve()
   .then(testPartialScanDispatch)
   .then(testNoExtensionShowsSetup)
+  .then(testPermissionIsGrantedBeforeCreatingJob)
+  .then(testPermissionIsRecheckedBeforeEveryJob)
+  .then(testGrantedPreflightClearsStalePendingScan)
   .then(testFullScanConfirmationAndNoWork)
   .then(testOwnBusyScanReopensExtension)
   .then(testServerStatusSettlesMissedCompletionEvent)
+  .then(testPermissionLossKeepsRunningJobAttached)
   .then(() => console.log("animego scan UI tests passed"));
