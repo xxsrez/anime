@@ -1264,6 +1264,13 @@ function episodeIdForUpdateEvent(event) {
 
 function episodeIdForLastWatch(lastWatch) {
   if (!lastWatch) return null;
+  if (lastWatch.completed_at) {
+    const progress = numberFrom(lastWatch.progress_episode_number ?? lastWatch.episode_number);
+    const next = state.detail.episodes.find(episode => (
+      progress != null && numberFrom(episode.number) > progress && episode.source_count > 0
+    ));
+    if (next) return next.id;
+  }
   return matchingEpisodeId(lastWatch.episode_id)
     || episodeIdForProgress(lastWatch.progress_episode_number || lastWatch.episode_number);
 }
@@ -1309,7 +1316,9 @@ function applyDetailLinkState(linkState = {}) {
   const firstAvailable = state.detail.episodes.find(episode => episode.source_count > 0);
   const lastWatch = state.detail.last_watch || null;
   const explicitEpisodeId = matchingEpisodeId(linkState.episodeId);
-  const lastOpenedEpisodeId = !explicitEpisodeId
+  const navigationIsNewer = !lastWatch?.last_seen_at
+    || state.detail.last_opened_episode?.updated_at > lastWatch.last_seen_at;
+  const lastOpenedEpisodeId = !explicitEpisodeId && navigationIsNewer
     ? episodeIdForLastOpened(state.detail.last_opened_episode)
     : null;
   const lastWatchEpisodeId = !explicitEpisodeId && !lastOpenedEpisodeId
@@ -3903,9 +3912,10 @@ function postWatchPayload(payload, { beacon = false } = {}) {
   });
 }
 
-function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session = state.watchSession } = {}) {
+function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session = state.watchSession, playbackEnded = false } = {}) {
   if (!session) return Promise.resolve(null);
   const payload = watchPayloadForSession(session, eventType, engagedSeconds);
+  if (playbackEnded) payload.playback_ended = true;
   const requestRevision = animeStateRevision(session.animeId);
   return postWatchPayload(payload, { beacon })
     .then(result => {
@@ -4015,12 +4025,12 @@ function markWatchEngaged(eventType, { providerPlayback = false } = {}) {
   sendWatchEvent(eventType).catch(() => {});
 }
 
-function flushWatchSession(eventType = "session_end", { beacon = false } = {}) {
+function flushWatchSession(eventType = "session_end", { beacon = false, playbackEnded = false } = {}) {
   const session = state.watchSession;
   if (!session) return;
   const seconds = consumeWatchEngagedSeconds({ stop: true });
-  if (session.engaged || eventType !== "session_end") {
-    sendWatchEvent(eventType, { engagedSeconds: seconds, beacon, session }).catch(() => {});
+  if (session.engaged || eventType !== "session_end" || playbackEnded) {
+    sendWatchEvent(eventType, { engagedSeconds: seconds, beacon, session, playbackEnded }).catch(() => {});
   }
   session.engaged = false;
   session.evidenceExpiresAt = 0;
@@ -4116,15 +4126,17 @@ function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   markWatchEngaged("player_engaged", { providerPlayback: true });
 }
 
-function handleProviderPlaybackStopped() {
+function handleProviderPlaybackStopped({ ended = false } = {}) {
   const session = state.watchSession;
   if (!session) return;
-  if (!session.providerPlaybackActive && !session.engaged) {
+  if (!ended && !session.providerPlaybackActive && !session.engaged) {
     session.providerPositionSeconds = null;
     session.providerPositionObservedAt = null;
     return;
   }
-  flushWatchSession("session_end");
+  // Some players emit pause immediately before ended. Do not lose the final
+  // signal just because the pause already flushed the remaining watch time.
+  flushWatchSession("session_end", { playbackEnded: ended });
   session.providerPositionSeconds = null;
   session.providerPositionObservedAt = null;
 }
@@ -4224,7 +4236,7 @@ function handlePlayerMessage(event) {
   } else if (message.type === "time_update") {
     handleProviderPlaybackStarted(message.provider, message.positionSeconds);
   } else if (["playback_paused", "playback_ended"].includes(message.type)) {
-    handleProviderPlaybackStopped();
+    handleProviderPlaybackStopped({ ended: message.type === "playback_ended" });
   } else if (message.type === "pip_entered") {
     const session = state.watchSession;
     if (session) {
@@ -4380,7 +4392,8 @@ async function selectAnime(id, options = {}) {
     state.urlSyncSuspended = previousUrlSync;
     if (options.updateUrl !== false) syncUrlFromDetail({ replace: options.history !== "push" });
     if (options.scrollDetail) scrollDetailIntoViewForMobile();
-    saveTitleNavigation(state.selectedEpisodeId, detail.id).catch(reportActionError("save title navigation"));
+    // Automatic restore/deep links must not overwrite a newer user's choice
+    // from another tab. Persist only explicit episode selection below.
     return true;
   } finally {
     if (requestId === state.detailRequestId) {

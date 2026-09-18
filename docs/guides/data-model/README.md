@@ -135,12 +135,14 @@ itself.
 
 `user_title_navigation_state`
 
-Per-user navigation cursor for a canonical title. It stores the last opened
+Per-user navigation cursor for a canonical title. It stores the last selected
 `episode_id`, its textual episode number as a resilient fallback, and
-`updated_at`. Opening or selecting an episode updates this cursor without
-changing library status, watch progress, or recommendation signals. Explicit
-episode links and Continue Watching targets override the cursor for that entry
-and then become the newly remembered episode.
+`updated_at`. Explicit episode selection updates this cursor without changing
+library status, watch progress, or recommendation signals. A newer real watch
+takes priority over the cursor and opens the next available episode when the
+watched episode is completed. Explicit episode links override that choice for
+the current entry. Automatic restoration and deep-link loading do not rewrite
+the cursor, so an old tab cannot replace another tab's explicit selection.
 
 `user_episode_state`
 
@@ -148,13 +150,28 @@ Aggregated per-user episode state derived from `user_watch_events`:
 
 - Primary key `(user_id, anime_id, episode_id)`.
 - Episode/source/provider labels for the latest known source.
-- `first_seen_at`, `last_seen_at`, `started_at`, `completed_at`.
+- `first_seen_at`, `last_seen_at` (last accepted watch signal once started),
+  `started_at`, `completed_at`.
 - `engaged_seconds`, `heartbeat_count`, `last_event_type`, and confidence
   fields.
 
 Strong watch signals update `user_title_state.progress_episode_number`.
 Episode/source selection signals remain telemetry only and do not start or
 resume a title by themselves.
+
+Passive load/hide/selection events remain in `user_watch_events` but do not
+replace an existing episode aggregate when they contain no watched seconds.
+Delayed terminal events can add elapsed time without moving watch recency or
+replacing the last actively selected source. The tracked `2026-09-18_watch-recency`
+migration repairs legacy recency from engagement events, preserving explicit
+manual progress and cleared states. It does not infer missing completion.
+
+The frontend sends `playback_ended: true` with `session_end` when the current
+player reports an actual end, including an end immediately after a pause. The
+backend accepts completion only for an already-started episode with positive
+watched seconds in that same client session. This works below the 18-minute
+heuristic, which remains a fallback when no end signal is available. Pausing,
+opening a page, or an end message from an idle session cannot complete a series.
 
 ## Canonical Title View
 

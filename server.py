@@ -5013,8 +5013,10 @@ def require_payload_match(payload, field, expected):
 
 def sanitize_watch_metadata(payload):
     metadata = payload.get("metadata") if isinstance(payload, dict) else None
-    if not isinstance(metadata, dict):
-        return "{}"
+    metadata = dict(metadata) if isinstance(metadata, dict) else {}
+    metadata.pop("playback_ended", None)
+    if payload.get("playback_ended") is True:
+        metadata["playback_ended"] = True
     cleaned = sanitize_client_error_value(metadata)
     encoded = json.dumps(cleaned, ensure_ascii=False, sort_keys=True)
     if len(encoded.encode("utf-8")) > MAX_WATCH_METADATA_BYTES:
@@ -5487,6 +5489,7 @@ def upsert_episode_watch_state(
     provider_id,
     provider_title,
     embed_host,
+    playback_ended=False,
 ):
     existing = con.execute(
         """
@@ -5498,6 +5501,10 @@ def upsert_episode_watch_state(
         """,
         (user_id, anime_id, episode_id),
     ).fetchone()
+    # A dormant tab still emits load/hide/source events. Keep them in the raw
+    # event log, but never let them replace a real watch (or a manual edit).
+    if existing and not started and not engaged_seconds and not playback_ended:
+        return dict(existing)
     total_engaged = nonnegative_int(engaged_seconds)
     if existing:
         total_engaged += int(existing["engaged_seconds"] or 0)
@@ -5507,6 +5514,9 @@ def upsert_episode_watch_state(
     if started_at and not completed_at and total_engaged >= WATCH_LIKELY_COMPLETED_SECONDS:
         completed_at = timestamp
         completion_confidence = 0.7
+    if started_at and playback_ended:
+        completed_at = completed_at or timestamp
+        completion_confidence = 1.0
 
     next_row = {
         "user_id": user_id,
@@ -5523,16 +5533,22 @@ def upsert_episode_watch_state(
         "provider_title": provider_title,
         "embed_host": embed_host,
         "first_seen_at": existing["first_seen_at"] if existing else timestamp,
-        "last_seen_at": timestamp,
+        "last_seen_at": timestamp if started or not existing else existing["last_seen_at"],
         "started_at": started_at,
         "completed_at": completed_at,
         "engaged_seconds": total_engaged,
         "heartbeat_count": (int(existing["heartbeat_count"] or 0) if existing else 0) + heartbeat_count,
-        "last_event_type": event_type,
-        "last_confidence": confidence,
+        "last_event_type": event_type if started or not existing else existing["last_event_type"],
+        "last_confidence": confidence if started or not existing else existing["last_confidence"],
         "completion_confidence": completion_confidence,
         "updated_at": timestamp,
     }
+    if existing and not started:
+        for field in (
+            "video_source_id", "source", "source_anime_id", "translation_id",
+            "translation_title", "provider_id", "provider_title", "embed_host",
+        ):
+            next_row[field] = existing[field]
     con.execute(
         """
         insert into user_episode_state (
@@ -5603,7 +5619,7 @@ def upsert_episode_watch_state(
             heartbeat_count = excluded.heartbeat_count,
             last_event_type = excluded.last_event_type,
             last_confidence = excluded.last_confidence,
-            completion_confidence = coalesce(user_episode_state.completion_confidence, excluded.completion_confidence),
+            completion_confidence = excluded.completion_confidence,
             updated_at = excluded.updated_at
         """,
         next_row,
@@ -5618,6 +5634,9 @@ def record_watch_event(payload, db_path=None, user_id=None):
     event_type = bounded_text(payload.get("event_type"), 40)
     if event_type not in WATCH_EVENT_TYPES:
         raise ValueError("unsupported watch event type")
+    playback_ended = optional_json_boolean(payload, "playback_ended") == 1
+    if playback_ended and event_type != "session_end":
+        raise ValueError("playback_ended requires session_end")
 
     client_session_id = bounded_text(payload.get("client_session_id"), 120)
     if not client_session_id:
@@ -5776,6 +5795,29 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 expected_updated_at = bounded_text(payload.get("library_watch_status_updated_at"), 80)
                 event_state_is_current = expected_updated_at == current_title_state.get("watch_status_updated_at")
             started = event_state_is_current and watch_event_can_start_title(current_title_state, event_type)
+        # An ended message must belong to a session that actually advanced.
+        # Loading an old episode with a historical started_at is insufficient.
+        completion_reported = playback_ended or (engaged_seconds > 0 and bool(con.execute(
+            """
+            select 1 from user_watch_events
+            where user_id = ? and anime_id = ? and episode_id = ?
+              and client_session_id = ? and event_type = 'session_end'
+              and json_extract(metadata_json, '$.playback_ended') = 1
+            limit 1
+            """,
+            (user_id, anime_id, episode["id"], client_session_id),
+        ).fetchone()))
+        # Pause/heartbeat and ended requests can reach the server out of order.
+        # Reconcile both pieces from the same session, whichever arrives last.
+        completion_verified = completion_reported and bool(con.execute(
+            """
+            select 1 from user_watch_events
+            where user_id = ? and anime_id = ? and episode_id = ?
+              and client_session_id = ? and engaged_seconds > 0
+            limit 1
+            """,
+            (user_id, anime_id, episode["id"], client_session_id),
+        ).fetchone())
         episode_state = upsert_episode_watch_state(
             con,
             user_id=user_id,
@@ -5797,6 +5839,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
             provider_id=provider_id,
             provider_title=provider_title,
             embed_host=embed_host,
+            playback_ended=completion_verified,
         )
 
         title_state = None
@@ -5897,6 +5940,7 @@ def detail_watch_target_from_episode_state(row, detail):
         "provider_id": selected_source.get("provider_id") if selected_source else row.get("provider_id"),
         "video_source_id": selected_source.get("id") if selected_source else row.get("video_source_id"),
         "last_seen_at": row.get("last_seen_at"),
+        "completed_at": row.get("completed_at"),
         "engaged_seconds": row.get("engaged_seconds"),
     }
 

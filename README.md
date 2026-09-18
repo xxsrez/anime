@@ -83,10 +83,12 @@ The OAuth client must be a Google Cloud `Web application` client with the dev
 origin registered, for example `http://127.0.0.1:8765` and/or
 `http://localhost:8765`.
 
-The local app stores favorites, watch progress, and the last opened episode per
+The local app stores favorites, watch progress, and the last selected episode per
 Google user in SQLite. `user_title_navigation_state` remembers which episode to
-reopen without treating browsing as watching. `user_title_state` is the current
-per-title summary, while `user_watch_events` and `user_episode_state` keep
+reopen without treating browsing as watching. A newer real watch takes priority
+over that selection; automatic page restoration does not rewrite it.
+`user_title_state` is the current per-title summary, while `user_watch_events`
+and `user_episode_state` keep
 automatic watch history around the embedded player. Use the title page controls
 to add a title to favorites, correct the current episode manually, or choose one
 mutually exclusive library status:
