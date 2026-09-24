@@ -27,6 +27,14 @@ from scripts.operation_lock import DatabaseOperationLock, OperationLockError, de
 
 
 class PipelineHardeningTest(unittest.TestCase):
+    def test_animego_detail_reads_current_player_loader_url(self):
+        detail = scrape_animego.parse_detail(
+            '<h1>Восставший против неба 2</h1>'
+            '<div class="player__video" data-controller="anime-player-loader" '
+            'data-anime-player-loader-url-value="/player/4077"></div>'
+        )
+        self.assertEqual(detail["player_url"], "/player/4077")
+
     @staticmethod
     def animego_bundle(*, anime_id=3623, episode_id=45887, complete=True):
         collected_at = server.now_iso()
@@ -1445,6 +1453,31 @@ class PipelineHardeningTest(unittest.TestCase):
             self.assertEqual(item["listing_score"], 8.8)
             self.assertEqual(item["year"], "2024")
             self.assertEqual(item["cover_url"], "https://img.test/42.jpg")
+            con.close()
+
+    def test_manual_animego_ref_infers_year_from_detail(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            con = scrape_animego.init_db(Path(tmpdir) / "anime.sqlite")
+            item = sync_videos.animego_item_from_ref(
+                "https://animego.me/anime/vosstavshii-protiv-neba-2-4077"
+            )
+            detail = {
+                "title": "Восставший против неба 2",
+                "cover_url": None,
+                "aggregate_score": None,
+                "aggregate_count": None,
+                "date_published": "2026-04-16",
+                "content_rating": None,
+                "fields": {"Статус": "Онгоинг"},
+                "genres": [],
+                "dubbings": [],
+                "description": None,
+                "schema_data": {},
+            }
+            scrape_animego.upsert_anime(
+                con, item, detail, "2026-09-23T00:00:00+00:00", authoritative_metadata=False
+            )
+            self.assertEqual(con.execute("select year from anime where id=4077").fetchone()[0], "2026")
             con.close()
 
     def test_authoritative_metadata_can_clear_children_while_partial_preserves_them(self):

@@ -47,6 +47,104 @@ class DatabaseMigrationTest(unittest.TestCase):
         finally:
             con.close()
 
+    def test_video_source_index_migration_preserves_playable_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            root = Path(tmpdir) / "migrations"
+            con = scrape_animego.init_db(db_path)
+            try:
+                con.execute(
+                    "insert into anime(id, title, url, scraped_at) values (1, 'Title', 'https://example.test/title', '2026-09-24')"
+                )
+                con.execute(
+                    "insert into episodes(id, anime_id, number, scraped_at) values (10, 1, '1', '2026-09-24')"
+                )
+                con.executemany(
+                    """
+                    insert into video_sources(
+                        anime_id, episode_id, provider_id, embed_url,
+                        embed_url_redacted, scraped_at
+                    ) values (1, 10, ?, ?, ?, '2026-09-24')
+                    """,
+                    [
+                        ("playable", "https://example.test/embed/" + "x" * 600, "playable"),
+                        ("unavailable", None, "unavailable"),
+                    ],
+                )
+                con.execute(
+                    "create index idx_video_sources_anime_embed on video_sources(anime_id, embed_url)"
+                )
+                con.execute(
+                    "create index idx_video_sources_episode_embed on video_sources(episode_id, embed_url)"
+                )
+                con.commit()
+            finally:
+                con.close()
+
+            fresh_con = scrape_animego.init_db(Path(tmpdir) / "fresh.sqlite")
+            try:
+                server.ensure_runtime_indexes(fresh_con)
+                for name in ("idx_video_sources_anime_embed", "idx_video_sources_episode_embed"):
+                    self.assertIn(
+                        "where embed_url is not null",
+                        fresh_con.execute(
+                            "select sql from sqlite_master where type = 'index' and name = ?",
+                            (name,),
+                        ).fetchone()[0].lower(),
+                    )
+            finally:
+                fresh_con.close()
+
+            migration_path = (
+                Path(__file__).parent
+                / "migrations/2026-09-24_compact-video-source-indexes/00_compact_video_source_indexes.sql"
+            )
+            self.write_migration(
+                root,
+                migration_path.parent.name,
+                migration_path.name,
+                migration_path.read_text(encoding="utf-8"),
+            )
+            db_migrate.apply_pending(db_path, root, no_backup=True, verify=True)
+
+            con = sqlite3.connect(db_path)
+            try:
+                for name, column in (
+                    ("idx_video_sources_anime_embed", "anime_id"),
+                    ("idx_video_sources_episode_embed", "episode_id"),
+                ):
+                    definition = con.execute(
+                        "select sql from sqlite_master where type = 'index' and name = ?",
+                        (name,),
+                    ).fetchone()[0].lower()
+                    self.assertIn(f"on video_sources({column}) where embed_url is not null", definition)
+                    self.assertNotIn(f"{column}, embed_url", definition)
+                    plan = con.execute(
+                        f"explain query plan select id from video_sources indexed by {name} "
+                        f"where {column} = ? and embed_url is not null",
+                        (1 if column == "anime_id" else 10,),
+                    ).fetchall()
+                    self.assertIn(name, " ".join(str(row[3]) for row in plan))
+
+                self.assertEqual(
+                    con.execute(
+                        "select count(*) from video_sources where anime_id = 1 and embed_url is not null"
+                    ).fetchone()[0],
+                    1,
+                )
+                self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 2)
+                self.assertEqual(con.execute("pragma foreign_key_check").fetchall(), [])
+                self.assertEqual(con.execute("pragma integrity_check").fetchone()[0], "ok")
+                server.ensure_runtime_indexes(con)
+                self.assertIn(
+                    "where embed_url is not null",
+                    con.execute(
+                        "select sql from sqlite_master where name = 'idx_video_sources_anime_embed'"
+                    ).fetchone()[0].lower(),
+                )
+            finally:
+                con.close()
+
     def test_library_contract_adoption_does_not_timestamp_neutral_none(self):
         con = sqlite3.connect(":memory:")
         con.row_factory = sqlite3.Row

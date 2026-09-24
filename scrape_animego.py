@@ -150,8 +150,12 @@ def parse_detail(html_text):
 
     aggregate = schema_data.get("aggregateRating") if isinstance(schema_data, dict) else None
     aggregate = aggregate if isinstance(aggregate, dict) else {}
-    player_shell = soup.select_one(".player__video[data-ajax-url]")
-    player_url = player_shell.get("data-ajax-url") if player_shell else None
+    player_shell = soup.select_one(".player__video")
+    player_url = (
+        player_shell.get("data-anime-player-loader-url-value") or player_shell.get("data-ajax-url")
+        if player_shell
+        else None
+    )
     poster = soup.select_one(".entity__poster img.image__img")
     aggregate_score = parse_score(soup.select_one(".entity-rating__aggregate-score .entity-rating__value"))
     aggregate_count = parse_int(soup.select_one(".entity-rating__count"))
@@ -448,6 +452,8 @@ def ensure_columns(con, table, columns):
 
 def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
     fields = detail["fields"]
+    published = str(detail.get("date_published") or "")
+    year = item.get("year") or (published[:4] if re.match(r"^\d{4}-\d{2}-\d{2}$", published) else None)
     fields_json = json.dumps(fields, ensure_ascii=False, sort_keys=True)
     schema_json = json.dumps(detail.get("schema_data") or {}, ensure_ascii=False, sort_keys=True)
     if authoritative_metadata:
@@ -536,7 +542,7 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
             detail.get("aggregate_count"),
             detail.get("date_published"),
             fields.get("Тип") or item.get("kind"),
-            item.get("year"),
+            year,
             fields.get("Статус"),
             fields.get("Эпизоды"),
             fields.get("Выпуск"),

@@ -1182,12 +1182,12 @@ def ensure_runtime_indexes(con):
     changed |= ensure_index(
         con,
         "idx_video_sources_anime_embed",
-        "create index idx_video_sources_anime_embed on video_sources(anime_id, embed_url)",
+        "create index idx_video_sources_anime_embed on video_sources(anime_id) where embed_url is not null",
     )
     changed |= ensure_index(
         con,
         "idx_video_sources_episode_embed",
-        "create index idx_video_sources_episode_embed on video_sources(episode_id, embed_url)",
+        "create index idx_video_sources_episode_embed on video_sources(episode_id) where embed_url is not null",
     )
     changed |= ensure_index(
         con,
