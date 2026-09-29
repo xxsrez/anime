@@ -3223,7 +3223,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("picture-in-picture", html)
         self.assertIn("web-share", html)
         self.assertIn("screen-wake-lock", html)
-        self.assertIn('id="fullscreen-toggle"', html)
+        self.assertNotIn('id="fullscreen-toggle"', html)
         self.assertIn('id="pip-toggle"', html)
         self.assertIn('id="recommendation-meta"', html)
         self.assertIn('href="/static/favicon.svg"', html)
