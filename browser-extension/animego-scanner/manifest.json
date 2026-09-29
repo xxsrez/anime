@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Anime Catalog — сканер AnimeGo",
-  "version": "0.2.1",
-  "description": "Проверяет новые серии AnimeGo через браузер пользователя и передаёт их в Anime Catalog.",
+  "version": "0.3.0",
+  "description": "Находит новые тайтлы и серии AnimeGo через браузер пользователя и передаёт их в Anime Catalog.",
   "permissions": [
     "storage",
     "tabs"

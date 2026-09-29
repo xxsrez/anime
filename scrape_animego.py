@@ -436,6 +436,7 @@ def init_db(db_path):
             "schema_json": "text",
             "source": "text",
             "source_id": "text",
+            "editorial_status": "text not null default 'legacy'",
         },
     )
     con.execute("update anime set source = 'animego' where source is null")
@@ -451,6 +452,11 @@ def ensure_columns(con, table, columns):
 
 
 def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
+    # Editorial approval is explicit. Imports must never overwrite an approved card.
+    ensure_columns(con, "anime", {"editorial_status": "text not null default 'legacy'"})
+    existing = con.execute("select editorial_status from anime where id = ?", (item["id"],)).fetchone()
+    if existing and existing[0] == "ready":
+        return
     fields = detail["fields"]
     published = str(detail.get("date_published") or "")
     year = item.get("year") or (published[:4] if re.match(r"^\d{4}-\d{2}-\d{2}$", published) else None)
@@ -574,6 +580,8 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
         con.execute("delete from anime_dubbings where anime_id=?", (item["id"],))
         for dubbing in dubbings:
             con.execute("insert or ignore into anime_dubbings(anime_id, dubbing) values (?, ?)", (item["id"], dubbing))
+    if existing is None:
+        con.execute("update anime set editorial_status = 'needs_review' where id = ?", (item["id"],))
 
 
 def upsert_episode(con, anime_id, episode, has_video, unavailable_reason, scraped_at):

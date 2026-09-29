@@ -1156,6 +1156,7 @@ def ensure_catalog_schema(con):
         {
             "source": "text",
             "source_id": "text",
+            "editorial_status": "text not null default 'legacy'",
         },
     )
     if con.execute("select 1 from anime where source is null limit 1").fetchone():
@@ -2252,6 +2253,11 @@ def merge_canonical_items(items):
     merged["source_variant_count"] = len(variants)
     merged["sources"] = sources
     merged["source_member_ids"] = [variant["id"] for variant in variants]
+    statuses = {item.get("editorial_status") or "legacy" for item in sorted_items}
+    merged["editorial_status"] = (
+        "needs_review" if "needs_review" in statuses else
+        "ready" if "ready" in statuses else "legacy"
+    )
     merged["source_count"] = sum((item.get("source_count") or 0) for item in sorted_items)
     merged["available_episode_count"] = max((item.get("available_episode_count") or 0) for item in sorted_items)
     merged["episode_count"] = max((item.get("episode_count") or 0) for item in sorted_items)
@@ -3517,6 +3523,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             a.id,
             a.title,
             a.subtitle,
+            a.editorial_status,
             a.url,
             a.cover_url,
             a.source,
@@ -3752,6 +3759,7 @@ def compact_catalog_variant(variant):
 
 
 CATALOG_API_ITEM_FIELDS = (
+    "editorial_status",
     "id",
     "slug",
     "title",
@@ -8227,7 +8235,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         scan_action_match = re.fullmatch(
-            r"/api/animego-scans/(\d+)/(results|complete)", path
+            r"/api/animego-scans/(\d+)/(results|complete|discover)", path
         )
         if scan_action_match:
             job_id = int(scan_action_match.group(1))
@@ -8235,11 +8243,15 @@ class AnimeHandler(BaseHTTPRequestHandler):
             try:
                 max_bytes = (
                     animego_scans.MAX_RESULT_BODY_BYTES
-                    if action == "results"
+                    if action in {"results", "discover"}
                     else animego_scans.MAX_COMPLETE_BODY_BYTES
                 )
                 payload = self.read_limited_json_body(max_bytes)
-                if action == "results":
+                if action == "discover":
+                    result = animego_scans.discover_scan_titles(
+                        self.server.db_path, job_id, self.bearer_request_token(), payload
+                    )
+                elif action == "results":
                     result = animego_scans.submit_scan_result(
                         self.server.db_path,
                         job_id,

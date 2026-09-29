@@ -86,6 +86,21 @@ def ensure_schema(con):
     )
     con.executescript(
         """
+        create table if not exists animego_scan_discovery (
+            job_id integer not null references animego_scan_jobs(id) on delete cascade,
+            anime_id integer not null,
+            page integer not null,
+            item_json text not null,
+            processed integer not null default 0,
+            primary key (job_id, anime_id)
+        );
+        create table if not exists animego_scan_pages (
+            job_id integer not null references animego_scan_jobs(id) on delete cascade,
+            page integer not null,
+            done integer not null,
+            fingerprint text,
+            primary key (job_id, page)
+        );
         create table if not exists animego_scan_jobs (
             id integer primary key autoincrement,
             user_id integer not null references users(id) on delete restrict,
@@ -569,7 +584,7 @@ def create_scan_job(
             ["animego"],
             started_at=created_at,
         )
-        job_status = "running" if tasks else "completed"
+        job_status = "running" if tasks or mode == "full" else "completed"
         cursor = con.execute(
             """
             insert into animego_scan_jobs (
@@ -589,7 +604,7 @@ def create_scan_job(
                 run_id,
                 created_at,
                 expires_at,
-                created_at if not tasks else None,
+                created_at if job_status == "completed" else None,
                 len(tasks),
             ),
         )
@@ -603,7 +618,7 @@ def create_scan_job(
                 """,
                 (job_id, task["anime_id"], position, task["selection_reason"]),
             )
-        if not tasks:
+        if job_status == "completed":
             completed = load_job(con, job_id)
             content_updates.finish_run(
                 con,
@@ -619,6 +634,7 @@ def create_scan_job(
             "token": token,
             "tasks": tasks,
             "origin": origin,
+            "discovery": mode == "full",
         }
     except sqlite3.IntegrityError as exc:
         con.rollback()
@@ -627,6 +643,65 @@ def create_scan_job(
         ).fetchone()
         if active is not None:
             raise ScanConflictError(job_payload(active)) from exc
+        raise
+    finally:
+        con.close()
+
+
+def discover_scan_titles(db_path, job_id, token, payload):
+    """Parse browser-fetched listing HTML; queue candidates without publishing empty cards."""
+    if not isinstance(payload, dict) or type(payload.get("page")) is not int:
+        raise ValueError("discovery requires a page number")
+    page = payload["page"]
+    if not 1 <= page <= 500:
+        raise ValueError("discovery page limit reached")
+    html = validated_text(payload.get("html"), "html", maximum=MAX_RESULT_BODY_BYTES)
+    not_found = payload.get("not_found") is True
+    con = connect(db_path)
+    try:
+        ensure_schema(con)
+        con.execute("begin immediate")
+        job = authenticate_job(con, job_id, token, require_running=True)
+        if job["mode"] != "full":
+            raise ValueError("discovery requires a full scan")
+        previous = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, page)).fetchone()
+        if previous is None:
+            if page > 1:
+                predecessor = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, page - 1)).fetchone()
+                if predecessor is None or predecessor["done"]:
+                    raise ValueError("discovery pages must be sequential")
+            items = animego.parse_listing(html or "")
+            empty_listing = (
+                page > 1 and not items and isinstance(html, str)
+                and bool(re.search(r'class=["\'][^"\']*\bani-list\b', html))
+            )
+            if not items and not (not_found and page > 1) and not empty_listing:
+                # A changed parser or challenge page must not silently mean success.
+                raise ValueError("listing contains no recognizable titles")
+            fingerprint = payload_sha256(sorted(item["id"] for item in items))
+            repeated = con.execute("select 1 from animego_scan_pages where job_id=? and fingerprint=?", (job_id, fingerprint)).fetchone()
+            done = (not_found and page > 1) or empty_listing or bool(repeated)
+            if not done:
+                seen = {row[0] for row in con.execute("select anime_id from animego_scan_discovery where job_id=?", (job_id,))}
+                for item in items:
+                    if not 0 < item["id"] < 10_000_000:
+                        raise ValueError("invalid listing title id")
+                    if item["id"] in seen or con.execute("select 1 from anime where id=?", (item["id"],)).fetchone():
+                        continue
+                    con.execute("insert into animego_scan_discovery(job_id, anime_id, page, item_json) values (?, ?, ?, ?)", (job_id, item["id"], page, json.dumps(item)))
+                    seen.add(item["id"])
+                    con.execute("update animego_scan_jobs set total_items=total_items+1 where id=?", (job_id,))
+            con.execute("insert into animego_scan_pages values (?, ?, ?, ?)", (job_id, page, int(done), fingerprint))
+        else:
+            done = bool(previous["done"])
+        tasks = []
+        for row in con.execute("select * from animego_scan_discovery where job_id=? and page=? order by anime_id", (job_id, page)):
+            item = json.loads(row["item_json"])
+            tasks.append({"anime_id": item["id"], "title": item["title"], "url": item["url"], "known_episode_ids": [], "selection_reason": "discovery"})
+        con.commit()
+        return {"tasks": tasks, "done": done, "job": job_payload(load_job(con, job_id))}
+    except Exception:
+        con.rollback()
         raise
     finally:
         con.close()
@@ -1185,7 +1260,31 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 (int(job_id), anime_id),
             ).fetchone()
             if item is None:
-                raise ValueError("anime_id is not assigned to this scan")
+                candidate = con.execute("select * from animego_scan_discovery where job_id=? and anime_id=?", (job_id, anime_id)).fetchone()
+                if candidate is None:
+                    raise ValueError("anime_id is not assigned to this scan")
+                if candidate["processed"]:
+                    con.commit()
+                    return {"job": job_payload(job), "result": {"anime_id": anime_id, "status": "already_processed", "new_episode_count": 0, "new_provider_count": 0}}
+                normalized = validate_result_payload(payload, anime_id, allowed_hosts)
+                con.execute("update animego_scan_discovery set processed=1 where job_id=? and anime_id=?", (job_id, anime_id))
+                if normalized["error"] or not normalized["episodes"]:
+                    con.execute("update animego_scan_jobs set checked_items=checked_items+1, error_count=error_count+?, last_error=coalesce(?, last_error) where id=?", (int(bool(normalized["error"])), normalized["error"], job_id))
+                    con.commit()
+                    return {"job": job_payload(load_job(con, job_id)), "result": {"anime_id": anime_id, "status": "failed" if normalized["error"] else "completed", "new_episode_count": 0, "new_provider_count": 0}}
+                existing = con.execute("select source from anime where id=?", (anime_id,)).fetchone()
+                if existing and existing["source"] != "animego":
+                    raise ValueError("discovered title id belongs to another source")
+                if existing is None:
+                    html = validated_text(payload.get("detail_html"), "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
+                    detail = animego.parse_detail(html)
+                    if not detail["title"]:
+                        raise ValueError("detail page contains no title")
+                    animego.upsert_anime(con, json.loads(candidate["item_json"]), detail, iso_timestamp(now), authoritative_metadata=True)
+                    content_updates.insert_event(con, job["content_update_run_id"], "new_title", anime_id, source="animego", source_id=str(anime_id), title=detail["title"], description="Добавлен тайтл; карточка требует оформления")
+                position = con.execute("select coalesce(max(position), -1)+1 from animego_scan_job_items where job_id=?", (job_id,)).fetchone()[0]
+                con.execute("insert into animego_scan_job_items(job_id, anime_id, position, selection_reason) values (?, ?, ?, 'discovery')", (job_id, anime_id, position))
+                item = con.execute("select * from animego_scan_job_items where job_id=? and anime_id=?", (job_id, anime_id)).fetchone()
             if item["status"] != "pending":
                 con.commit()
                 return {
@@ -1349,6 +1448,11 @@ def complete_scan_job(db_path, job_id, token, payload=None, *, now=None):
             (int(job_id),),
         ).fetchone():
             raise ValueError("scan still has pending titles; submit results or stop the scan")
+        if not stopped and job["mode"] == "full":
+            if not con.execute("select 1 from animego_scan_pages where job_id=? and done=1", (job_id,)).fetchone():
+                raise ValueError("full scan discovery is not complete; update the scanner extension")
+            if con.execute("select 1 from animego_scan_discovery where job_id=? and processed=0", (job_id,)).fetchone():
+                raise ValueError("scan still has pending discovered titles")
         new_errors = 0
         last_error = None
         for error in errors:

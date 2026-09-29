@@ -632,6 +632,10 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
+    if new_title and not any(providers for _, providers, _, _ in writes):
+        stats["known_skipped"] += 1
+        return
+
     animego.upsert_anime(
         con,
         item,

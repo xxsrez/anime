@@ -5,11 +5,12 @@ import vm from "node:vm";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, fetch }) {
+async function scannerHarness({ stored = null, fetch, discovery = false }) {
   const element = () => ({
     children: [], style: {}, append() {}, prepend() {}, setAttribute() {}, addEventListener() {},
   });
   const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture" }] };
+  if (discovery) { payload.discovery = true; payload.tasks = []; }
   let storage = stored || {
     payload, checkpoint: { job_id: "1", status: "paused" },
   };
@@ -31,6 +32,7 @@ async function scannerHarness({ stored = null, fetch }) {
     globalThis.driver = {
       get state() { return checkpoint; },
       collect(fn) { collectTitle = fn; },
+      upstream(fn) { upstreamJson = fn; },
       async run() { checkpoint.status = "running"; await runScan(); },
       stop: stopScan,
     };
@@ -42,6 +44,32 @@ async function scannerHarness({ stored = null, fetch }) {
 function response(job) {
   return { ok: true, status: 200, text: async () => JSON.stringify({ job }) };
 }
+
+test("discovered tasks and metadata survive reload after an uncertain delivery", async () => {
+  const task = { anime_id: 701, title: "New title", url: "https://animego.me/anime/new-701", known_episode_ids: [], selection_reason: "discovery" };
+  let posted;
+  const first = await scannerHarness({ discovery: true, fetch: async (url, options) => {
+    if (url.pathname.endsWith("/discover")) return { ok: true, text: async () => JSON.stringify({ tasks: [task], done: true }) };
+    posted = JSON.parse(options.body);
+    throw new TypeError("Uncertain delivery");
+  } });
+  first.driver.upstream(async path => path === "/anime" ? "listing HTML" : "<h1>New title</h1>");
+  first.driver.collect(async () => [{ episode: { id: 70101 }, providers: [{ provider_id: "fixture" }] }]);
+  await first.driver.run();
+  assert.equal(first.driver.state.status, "error");
+  assert.equal(first.snapshot().payload.tasks[0].anime_id, 701);
+  assert.equal(first.snapshot().checkpoint.pending_result.detail_html, "<h1>New title</h1>");
+  const paths = [];
+  const resumed = await scannerHarness({ stored: first.snapshot(), fetch: async (url, options) => {
+    paths.push(url.pathname);
+    if (url.pathname.endsWith("/results")) assert.deepEqual(JSON.parse(options.body), posted);
+    return response({ checked_items: 1, new_episode_count: 1 });
+  } });
+  resumed.driver.collect(async () => { throw new Error("Must replay"); });
+  await resumed.driver.run();
+  assert.equal(resumed.driver.state.status, "completed");
+  assert.deepEqual(paths, ["/api/animego-scans/1/results", "/api/animego-scans/1/complete"]);
+});
 
 test("a failed delivery survives reload and retries the exact collected result", async () => {
   const bodies = [];

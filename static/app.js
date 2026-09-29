@@ -4,6 +4,7 @@ const DEFAULT_FILTERS = {
   kind: "",
   status: "",
   source: "",
+  editorial_status: "",
   video: "any",
 };
 const DEFAULT_SORT_BY = "rating_best";
@@ -779,6 +780,13 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
     return;
   }
   const normalizedMode = mode === "full" ? "full" : "partial";
+  const scannerVersion = String(state.animeGoScannerVersion || "").split(".").map(Number);
+  if (normalizedMode === "full" && state.animeGoScannerVersion &&
+      !(scannerVersion[0] > 0 || scannerVersion[1] >= 3)) {
+    showAppStatus("Для поиска новых тайтлов обновите расширение сканера до версии 0.3.0 или новее", "warn");
+    showAnimeGoScannerSetup();
+    return;
+  }
   if (normalizedMode === "full" && !fullConfirmed) {
     if (!(await confirmFullAnimeGoScan())) return;
     fullConfirmed = true;
@@ -817,7 +825,7 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
       setAnimeGoScanPhase("idle", payload.message || "AnimeGO уже сканируется", "warn");
       return;
     }
-    if (!tasks.length || ["no_work", "empty", "up_to_date"].includes(status)) {
+    if ((!tasks.length && !payload.discovery) || ["no_work", "empty", "up_to_date"].includes(status)) {
       const message = payload.message || "Сейчас нечего проверять — каталог уже актуален";
       setAnimeGoScanPhase("idle", message, "ok");
       showAppStatus(message, "ok");
@@ -841,6 +849,7 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
         job_id: jobId,
         token,
         tasks,
+        discovery: payload.discovery === true,
         origin: window.location.origin,
         mode: normalizedMode,
         raw: payload,
@@ -1681,6 +1690,17 @@ function countedOptions(items, extractor, labeler = value => value, sorter = nul
 
 const filterDefinitions = [
   {
+    id: "editorial_status",
+    label: "Оформление",
+    allLabel: "Любое оформление",
+    options: () => [
+      { value: "needs_review", label: "Требует оформления" },
+      { value: "ready", label: "Оформлено" },
+      { value: "legacy", label: "Не оценено" },
+    ],
+    match: (item, value) => !value || (item.editorial_status || "legacy") === value,
+  },
+  {
     id: "genre",
     label: "Жанр",
     allLabel: "Все жанры",
@@ -2151,6 +2171,12 @@ function renderList() {
     title.textContent = `${rank}${item.is_favorite ? "★ " : ""}${item.title}`;
     button.dataset.fullTitle = item.title || title.textContent;
     titleRow.append(title);
+    if (item.editorial_status === "needs_review") {
+      const badge = document.createElement("span");
+      badge.className = "recent-update-badge";
+      badge.textContent = "Требует оформления";
+      titleRow.append(badge);
+    }
     const badgeText = recentUpdateBadgeText(item);
     if (badgeText) {
       const badge = document.createElement("span");
@@ -3381,7 +3407,7 @@ function renderDetail() {
   el.poster.src = detail.cover_url || "";
   el.poster.alt = detail.title || "";
   const scoreText = ratingText(detail);
-  el.meta.textContent = [detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
+  el.meta.textContent = [detail.editorial_status === "needs_review" ? "Требует оформления" : null, detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
   renderFranchiseOpen(detail);

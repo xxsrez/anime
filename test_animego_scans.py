@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import http.client
+from contextlib import closing
 import io
 import json
 from pathlib import Path
@@ -194,6 +195,79 @@ class AnimeGoScansTest(unittest.TestCase):
             **kwargs,
         )
 
+    def listing_html(self, *ids):
+        return "".join(
+            f'<div class="ani-list__item"><div class="ani-list__item-title">'
+            f'<a href="/anime/new-{i}">New {i}</a></div></div>' for i in ids
+        )
+
+    def discover(self, job, page, html=None, **extra):
+        return animego_scans.discover_scan_titles(
+            self.db_path, job["job"]["id"], job["token"],
+            {"page": page, "html": html, **extra},
+        )
+
+    def test_discovery_creates_playable_draft_atomically_and_replays(self):
+        job = self.create_job()
+        self.assertEqual(job["job"]["status"], "running")
+        listing = self.listing_html(701, 702)
+        found = self.discover(job, 1, listing)
+        self.assertEqual(len(found["tasks"]), 2)
+        self.assertEqual(self.discover(job, 1, listing), found)
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select count(*) from anime").fetchone()[0], 0)
+        body = self.result_payload(701, 70101)
+        body["detail_html"] = '<h1>New title</h1><div class="description">Source description</div>'
+        invalid = self.result_payload(701, 70101)
+        invalid["detail_html"] = body["detail_html"]
+        invalid["episodes"][0]["providers"][0]["embed_url"] = "https://invalid.example/video"
+        with self.assertRaises(ValueError):
+            animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], invalid, server.PLAYER_HOSTS)
+        first = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS)
+        self.assertEqual(first["result"]["new_episode_count"], 1)
+        again = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS)
+        self.assertEqual(again["result"]["status"], "already_processed")
+        animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], {"anime_id": 702, "episodes": []}, server.PLAYER_HOSTS)
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select editorial_status from anime where id=701").fetchone()[0], "needs_review")
+            self.assertEqual(con.execute("select description from anime where id=701").fetchone()[0], "Source description")
+            self.assertIsNone(con.execute("select 1 from anime where id=702").fetchone())
+            self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 1)
+            self.assertEqual(con.execute("pragma foreign_key_check").fetchall(), [])
+        item = server.catalog_api_item(server.get_catalog_items(self.db_path)[0])
+        self.assertEqual(item["editorial_status"], "needs_review")
+        self.assertTrue(self.discover(job, 2, not_found=True)["done"])
+        result = animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {})
+        self.assertEqual(result["job"]["checked_items"], 2)
+
+    def test_discovery_continues_past_known_page_and_rejects_unparsed_page(self):
+        self.add_title(1)
+        job = self.create_job()
+        self.assertFalse(self.discover(job, 1, self.listing_html(1))["done"])
+        with self.assertRaisesRegex(ValueError, "no recognizable"):
+            self.discover(job, 2, "<html>challenge</html>")
+        self.assertEqual(len(self.discover(job, 2, self.listing_html(2))["tasks"]), 1)
+        self.assertTrue(self.discover(job, 3, self.listing_html(2))["done"])
+        with self.assertRaises(ValueError):
+            animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {})
+
+    def test_empty_listing_ends_discovery_but_challenge_does_not(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701))
+        with self.assertRaisesRegex(ValueError, "no recognizable"):
+            self.discover(job, 2, "<html>challenge</html>")
+        self.assertTrue(self.discover(job, 2, '<div class="ani-list"></div>')["done"])
+
+    def test_ready_metadata_is_preserved_by_automatic_import(self):
+        con = scrape_animego.init_db(self.db_path)
+        item = scrape_animego.parse_listing(self.listing_html(701))[0]
+        detail = scrape_animego.parse_detail('<h1>Source title</h1>')
+        scrape_animego.upsert_anime(con, item, detail, animego_scans.iso_timestamp(), authoritative_metadata=True)
+        con.execute("update anime set editorial_status='ready', title='Edited title', description='Edited description' where id=701")
+        scrape_animego.upsert_anime(con, item, detail, animego_scans.iso_timestamp(), authoritative_metadata=True)
+        self.assertEqual(con.execute("select title, description, editorial_status from anime where id=701").fetchone(), ("Edited title", "Edited description", "ready"))
+        con.close()
+
     def request(self, method, path, *, headers=None, body=None):
         httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.AnimeHandler)
         httpd.db_path = str(self.db_path)
@@ -298,6 +372,8 @@ class AnimeGoScansTest(unittest.TestCase):
             self.db_path, first["job"]["id"], first["token"],
             {"anime_id": 1, "episodes": []}, server.PLAYER_HOSTS,
         )
+        self.discover(first, 1, self.listing_html(1))
+        self.discover(first, 2, not_found=True)
         completed = animego_scans.complete_scan_job(
             self.db_path, first["job"]["id"], first["token"], {}
         )
@@ -311,11 +387,11 @@ class AnimeGoScansTest(unittest.TestCase):
 
     def test_zero_work_job_completes_immediately_without_holding_lease(self):
         self.add_title(1, status="Завершён", episodes_text="1", playable=True)
-        first = self.create_job()
+        first = self.create_job("partial")
         self.assertEqual(first["tasks"], [])
         self.assertEqual(first["job"]["status"], "completed")
         self.assertEqual(first["job"]["total_items"], 0)
-        second = self.create_job()
+        second = self.create_job("partial")
         self.assertEqual(second["job"]["status"], "completed")
         con = server.connect(self.db_path)
         try:

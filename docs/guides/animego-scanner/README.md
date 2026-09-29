@@ -2,8 +2,8 @@
 
 The user scanner lets an authenticated Anime Catalog user check AnimeGo through
 their own Chrome or Safari connection. The server chooses the work, the
-extension reads AnimeGo player endpoints, and the server validates and applies
-only additive episode/provider changes. A successful scan benefits every
+extension reads AnimeGo listings and player endpoints, and the server validates
+new playable cards as well as additive episode/provider changes. A successful scan benefits every
 catalog user.
 
 This is a catch-up path for the cloud-egress block. It complements, rather than
@@ -14,10 +14,47 @@ replaces, the trusted AnimeGo push worker.
 | Mode | UI | Server selection |
 | --- | --- | --- |
 | Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | Up to 15 current AnimeGo candidates: the selected title when applicable, up to 6 titles from the user's favorites/watching/recent activity, up to 5 least-recently checked titles, and up to 3 random titles. Remaining room is filled from stale candidates. Per-title cooldowns can make the result smaller. |
-| Full | Choose `Full Scan` from the arrow menu and confirm. | Every current AnimeGo candidate, ignoring partial-scan cooldowns. The candidate set is ongoing titles plus titles whose known episodes lack playable coverage; it is not every historical row in the database. |
+| Full | Choose `Full Scan` from the arrow menu and confirm. | Every current AnimeGo candidate, ignoring partial-scan cooldowns, followed by listing discovery of titles absent from the database. Existing candidates are ongoing titles plus titles whose known episodes lack playable coverage. |
 
 Full Scan creates substantially more AnimeGo requests. Prefer Partial Scan for
 routine use and Full Scan for an intentional broad catch-up.
+
+### New cards and editorial review
+
+Full Scan requires extension 0.3.0 or later. It reads `/anime`, `/anime/2`, and
+subsequent listing pages through the browser, including pages containing only
+known titles. A repeated page, an empty valid listing, or HTTP 404 after page
+one ends discovery. An
+unrecognizable page or the 500-page limit stops the scan with an error instead
+of claiming complete coverage. Discovery checkpoints and collected results
+survive reloads and can be replayed without duplicate cards.
+
+A discovered title is queued separately; it becomes a catalog card only when a
+validated episode with a playable provider is saved. The title, source URL,
+poster, year, type, description, ratings, genres, studio, release information,
+and other available source fields are copied without AI. Video and the card
+are saved in one transaction. Titles without video remain outside the catalog.
+
+`anime.editorial_status` is independent of release status:
+
+- `needs_review`: automatically imported card; shown as **Требует оформления**.
+- `ready`: explicitly completed editorial work; automatic metadata imports
+  preserve this card while episode/provider updates continue.
+- `legacy`: pre-existing card whose editorial quality has not been assessed.
+
+The catalog's **Оформление** filter selects these states. The background import
+uses the same new-card marker and protection for approved metadata. Future AI
+editing should select `needs_review`, verify descriptions and franchise/season
+links, then explicitly set `ready` only after completing the card. This change
+does not run AI editing or infer franchise links from title similarity.
+
+For a local review queue:
+
+```sql
+select id, title, url from anime
+where editorial_status = 'needs_review'
+order by id;
+```
 
 Except for an eligible title currently open in the UI, Partial Scan honors
 `animego_title_scan_state.next_eligible_at`. A changed ongoing title becomes
@@ -121,6 +158,7 @@ The server, not the extension, is the SQLite writer.
 | --- | --- | --- |
 | `POST /api/animego-scans` | Anime Catalog session cookie | Create a `partial` or `full` job. Example body: `{"mode":"partial","current_anime_id":123}`. Returns HTTP `201` with `job`, job `token`, `tasks`, and `origin`; returns `409` when another job is active. |
 | `GET /api/animego-scans/<job_id>` | `Authorization: Bearer <job token>` | Read the job counters/status for extension recovery. |
+| `POST /api/animego-scans/<job_id>/discover` | `Authorization: Bearer <job token>` | Full scans only: submit sequential `{page, html}` listing pages, or `{page, not_found: true}` for a final 404. Returns new `tasks`, `done`, and job counters. Replaying a page is idempotent. |
 | `POST /api/animego-scans/<job_id>/results` | `Authorization: Bearer <job token>` | Submit one assigned title. Body contains `anime_id` and either an `episodes` array or an `error`. |
 | `POST /api/animego-scans/<job_id>/complete` | `Authorization: Bearer <job token>` | Finish the job. Optional body fields are `errors: [{"anime_id":123,"message":"..."}]` and `stopped: true|false`. Retrying completion for an already completed/stopped job is idempotent. |
 | `GET /api/animego-scanner-extension` | Anime Catalog session cookie | Download the current extension ZIP. |
@@ -132,6 +170,13 @@ again. An episode result contains the upstream episode fields and one or more
 playable providers. Provider fields are `provider_id`,
 `provider_title`, `translation_id`, `translation_title`, `embed_host`,
 `embed_url`, and `embed_url_redacted`.
+
+Full job creation also returns `discovery: true`, including when the initial
+task list is empty. Discovered tasks include the source `url` and
+`selection_reason: "discovery"`; their first playable result includes
+`detail_html` from that page. The server parses it with the shared source
+parser. A full job cannot complete until discovery and all queued titles have
+finished; stopping remains available at any point.
 
 A per-title error submitted through `/results` counts that item as checked. An
 error mentioned only in the final `/complete` summary marks the item failed but

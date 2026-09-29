@@ -128,6 +128,8 @@ function defaultCheckpoint(payload) {
     errors: [],
     current: null,
     pending_result: null,
+    discovery_page: 1,
+    discovery_done: !payload.discovery,
   };
 }
 
@@ -252,6 +254,7 @@ async function saveCheckpoint() {
   }
   session = {
     ...current,
+    payload: session.payload,
     checkpoint: { ...checkpoint },
     savedAt: new Date().toISOString(),
   };
@@ -346,7 +349,7 @@ async function ensureAnimeGoAccess() {
   }
 }
 
-async function upstreamJson(path, runGeneration) {
+async function upstreamJson(path, runGeneration, { html = false } = {}) {
   let lastError = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (attempt > 0) {
@@ -384,6 +387,7 @@ async function upstreamJson(path, runGeneration) {
           status: response.status,
         });
       }
+      if (html) return body;
       let parsed;
       try {
         parsed = JSON.parse(body);
@@ -544,6 +548,13 @@ async function processTask(task, index, runGeneration) {
     const episodes = await collectTitle(task, runGeneration);
     if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
     body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
+    if (task.selection_reason === "discovery" && episodes.length) {
+      const url = new URL(task.url);
+      if (url.origin !== UPSTREAM_BASE || !url.pathname.startsWith("/anime/")) {
+        throw new UpstreamError("Некорректный адрес карточки AnimeGo.");
+      }
+      body.detail_html = await upstreamJson(url.pathname, runGeneration, { html: true });
+    }
   }
   await submitTaskResult(body, index, runGeneration);
   const episodes = body.episodes;
@@ -627,10 +638,34 @@ async function runScan() {
   activeRun = true;
   const runGeneration = generation;
   try {
-    for (let index = checkpoint.next_index; index < session.payload.tasks.length; index += 1) {
+    for (let index = checkpoint.next_index; ; index += 1) {
       await interruptibleDelay(0, runGeneration);
       if (checkpoint.status !== "running") {
         return;
+      }
+      if (index >= session.payload.tasks.length) {
+        if (checkpoint.discovery_done) break;
+        const page = checkpoint.discovery_page;
+        log(`Ищем новые тайтлы: страница ${page}…`);
+        let html = null;
+        let notFound = false;
+        try {
+          html = await upstreamJson(page === 1 ? "/anime" : `/anime/${page}`, runGeneration, { html: true });
+        } catch (error) {
+          if (error.status === 404 && page > 1) notFound = true;
+          else throw error;
+        }
+        const discovered = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/discover`, { page, html, not_found: notFound });
+        if (runGeneration !== generation) return;
+        const known = new Set(session.payload.tasks.map(task => task.anime_id));
+        session.payload.tasks.push(...discovered.tasks.filter(task => !known.has(task.anime_id)));
+        checkpoint.total_items = session.payload.tasks.length;
+        checkpoint.discovery_page = page + 1;
+        checkpoint.discovery_done = discovered.done;
+        await saveCheckpoint();
+        render();
+        index -= 1;
+        continue;
       }
       const task = session.payload.tasks[index];
       try {
@@ -711,6 +746,13 @@ async function runScan() {
         });
       }
     }
+  } catch (error) {
+    if (runGeneration !== generation || ["stopping", "stopped", "paused"].includes(checkpoint.status)) return;
+    checkpoint.status = error instanceof BlockedError ? "blocked" : error instanceof PermissionError ? "permission" : "error";
+    await saveCheckpoint();
+    render();
+    log(error.message || String(error), "error");
+    notifyApp("animego-scan-error", { error: error.message || String(error) });
   } finally {
     activeRun = false;
     if (shouldRestartAfterReload(runGeneration, generation, checkpoint?.status)) {
