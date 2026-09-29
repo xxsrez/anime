@@ -218,7 +218,6 @@ const el = {
   contentSource: document.getElementById("content-source"),
   translation: document.getElementById("translation"),
   provider: document.getElementById("provider"),
-  fullscreenToggle: document.getElementById("fullscreen-toggle"),
   pipToggle: document.getElementById("pip-toggle"),
   playerActionState: document.getElementById("player-action-state"),
   player: document.getElementById("player"),
@@ -3769,12 +3768,14 @@ function setPlayer(source, episode) {
     loaded: navigatesPlayer ? false : (state.playerContext?.loaded ?? true),
   };
   if (navigatesPlayer) {
+    setPlayerActionState("");
     el.player.src = playerUrl;
   }
   updatePlayerDisplay(source, episode);
 }
 
 function updatePlayerDisplay(source, episode) {
+  el.pipToggle.hidden = playerMessageProvider(source) !== "kodik";
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
   el.empty.textContent = "";
@@ -3797,6 +3798,7 @@ function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metada
 }
 
 function clearPlayer(message) {
+  el.pipToggle.hidden = true;
   clearWatchSession();
   state.playerContext = null;
   el.player.removeAttribute("src");
@@ -4264,12 +4266,14 @@ function handlePlayerMessage(event) {
   } else if (["playback_paused", "playback_ended"].includes(message.type)) {
     handleProviderPlaybackStopped({ ended: message.type === "playback_ended" });
   } else if (message.type === "pip_entered") {
+    setPlayerActionState("Картинка в картинке включена");
     const session = state.watchSession;
     if (session) {
       session.pictureInPictureActive = true;
       markWatchEngaged("pip_open");
     }
   } else if (message.type === "pip_exited") {
+    setPlayerActionState("");
     const session = state.watchSession;
     if (session) {
       session.pictureInPictureActive = false;
@@ -4308,7 +4312,6 @@ function handleVisibilityChange() {
 
 function handleFullscreenStateChange() {
   const active = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
-  updateFullscreenControl();
   if (active && !state.watchFullscreenActive) markWatchEngaged("fullscreen_enter");
   state.watchFullscreenActive = active;
 }
@@ -4316,14 +4319,6 @@ function handleFullscreenStateChange() {
 function setPlayerActionState(message = "", tone = "") {
   el.playerActionState.textContent = message;
   el.playerActionState.dataset.tone = tone;
-}
-
-function updateFullscreenControl() {
-  const active = document.fullscreenElement === el.wrap || document.fullscreenElement === el.player;
-  el.fullscreenToggle.classList.toggle("active", active);
-  el.fullscreenToggle.title = active ? "Выйти из полного экрана" : "Во весь экран";
-  el.fullscreenToggle.setAttribute("aria-label", el.fullscreenToggle.title);
-  el.fullscreenToggle.setAttribute("aria-pressed", active ? "true" : "false");
 }
 
 async function toggleFullscreen() {
@@ -4343,7 +4338,6 @@ async function toggleFullscreen() {
       await el.wrap.requestFullscreen();
     }
     setPlayerActionState("");
-    updateFullscreenControl();
   } catch (error) {
     reportClientError(error, { action: "fullscreen" });
     setPlayerActionState(error.message || "Не удалось открыть fullscreen", "warn");
@@ -4369,10 +4363,19 @@ async function openPictureInPicture() {
     return;
   }
 
-  // Cloning a cross-origin iframe into Document PiP starts a second player and
-  // can double audio and watch tracking. Providers that support PiP expose it
-  // inside their own controls, which is the only safe boundary available here.
-  setPlayerActionState("PiP доступен в самом плеере", "warn");
+  const context = state.playerContext;
+  if (context?.messageProvider === "kodik" && context.playerOrigin && el.player.contentWindow) {
+    const exiting = Boolean(state.watchSession?.pictureInPictureActive);
+    // Ask the existing player to use its native PiP implementation (including
+    // Safari's webkitSetPresentationMode). Never clone or reload the iframe.
+    el.player.contentWindow.postMessage({
+      key: "kodik_player_api",
+      value: { method: exiting ? "exit_pip" : "enter_pip" },
+    }, context.playerOrigin);
+    // Only the provider's pip_entered event confirms success.
+    setPlayerActionState("");
+    return;
+  }
 }
 
 async function selectAnime(id, options = {}) {
@@ -5187,9 +5190,6 @@ el.provider.addEventListener("change", event => {
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
   saveTitleNavigation().catch(reportActionError("save provider"));
-});
-el.fullscreenToggle.addEventListener("click", () => {
-  toggleFullscreen().catch(reportActionError("fullscreen button"));
 });
 el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(reportActionError("picture in picture button"));
