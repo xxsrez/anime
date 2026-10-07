@@ -3702,6 +3702,7 @@ def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
         con.execute("pragma busy_timeout=30000")
         con.row_factory = sqlite3.Row
     try:
+        reconcile_completed_titles(con, user_id)
         rows = con.execute(
             """
             with
@@ -4515,6 +4516,81 @@ def get_group_state(con, anime_ids, user_id=None):
     return aggregate_state_rows(rows)
 
 
+def reconcile_completed_titles(con, user_id, groups=None):
+    """Persist finished titles once their current, final episode is completed.
+
+    Progress is the existing sequential-watch frontier; older episode telemetry
+    can be absent (manual progress/imports). Never infer completion of the current
+    episode from its number alone. Recheck on library reads too: the catalog may
+    become finished after the user's last playback event.
+    """
+    if user_id is None:
+        return []
+    if groups is None:
+        ids = [row[0] for row in con.execute(
+            "select anime_id from user_title_state where user_id = ? and watch_status = 'watching'",
+            (user_id,),
+        )]
+        if not ids:
+            return []
+        path = con.execute("pragma database_list").fetchone()["file"]
+        cache = get_catalog_cache(path, connection=con)
+        groups = list({cache["id_map"][aid]["id"]: cache["id_map"][aid]
+                       for aid in ids if aid in cache["id_map"]}.values())
+    groups = [group for group in groups if str(group.get("status") or "").strip().casefold()
+              in {"вышел", "завершён", "завершен", "finished", "released", "completed"}]
+    if not groups:
+        return []
+    owns_transaction = not con.in_transaction
+    changed = []
+    try:
+        if owns_transaction:
+            con.execute("begin immediate")
+        for group in groups:
+            ids = group.get("source_member_ids") or [group["id"]]
+            state = get_group_state(con, ids, user_id)
+            progress = numeric(state.get("progress_episode_number"))
+            if state.get("watch_status") != "watching" or progress is None:
+                continue
+            placeholders = sql_placeholders(ids)
+            numbers = [numeric(row[0]) for row in con.execute(
+                f"select distinct number from episodes where anime_id in ({placeholders})", ids,
+            )]
+            if not numbers or None in numbers or progress < max(numbers):
+                continue
+            # A truncated import must not turn its last available episode into
+            # the series finale. Respect known totals across all sources.
+            totals = [numeric(value) for row in con.execute(
+                f"select episodes_text from anime where id in ({placeholders})", ids,
+            ) for value in re.findall(r"\d+(?:\.\d+)?", row[0] or "")]
+            if totals and progress < max(totals):
+                continue
+            latest = con.execute(
+                f"""select completed_at from user_episode_state
+                    where user_id = ? and anime_id in ({placeholders})
+                      and progress_episode_number = ? and started_at is not null
+                    order by last_seen_at desc, updated_at desc limit 1""",
+                (user_id, *ids, progress),
+            ).fetchone()
+            if not latest or not latest["completed_at"]:
+                continue
+            timestamp = now_iso()
+            con.execute(
+                f"""update user_title_state set watch_status = 'completed', watched = 1,
+                    watch_status_updated_at = ?, updated_at = ?
+                    where user_id = ? and anime_id in ({placeholders})""",
+                (timestamp, timestamp, user_id, *ids),
+            )
+            changed.append(group["id"])
+        if owns_transaction:
+            con.commit()
+    except Exception:
+        if owns_transaction:
+            con.rollback()
+        raise
+    return changed
+
+
 def get_group_title_navigation(con, anime_ids, user_id=None):
     if not anime_ids:
         return None
@@ -4697,6 +4773,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     if not group:
         con.close()
         return None
+
+    reconcile_completed_titles(con, user_id, [group])
 
     member_ids = [variant["id"] for variant in group.get("source_variants") or []]
     primary_id = group["id"]
@@ -5906,6 +5984,8 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 timestamp,
                 event_type=event_type,
             )
+        if reconcile_completed_titles(con, user_id, [group]):
+            title_state = get_group_state(con, member_ids, user_id)
         con.commit()
         if title_state is None:
             title_state = get_group_state(con, member_ids, user_id)

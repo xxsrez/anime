@@ -97,6 +97,81 @@ class WatchResumeTest(unittest.TestCase):
         self.event(22, "session_end", engaged_seconds=10)
         self.assertEqual(self.target()["episode_number"], "23")
 
+    def set_release_status(self, status, total="23"):
+        con = server.connect(self.db)
+        con.execute("update anime set status = ?, episodes_text = ? where id = 901", (status, total))
+        con.commit()
+        con.close()
+        server.invalidate_catalog_cache(self.db)
+
+    def test_final_episode_ends_finished_title_and_preserves_favorite(self):
+        self.set_release_status("Вышел")
+        server.update_user_state(901, {"is_favorite": True}, self.db, self.user)
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=10)
+        result = self.event(23, "session_end", playback_ended=True)
+        self.assertEqual(result["state"]["watch_status"], "completed")
+        self.assertTrue(result["state"]["watched"])
+        self.assertTrue(result["state"]["is_favorite"])
+        self.assertIsNone(self.target())
+
+    def test_completed_ongoing_title_is_reconciled_when_release_finishes(self):
+        self.set_release_status("Онгоинг")
+        self.event(23)
+        self.event(23, "session_end", playback_ended=True)
+        result = self.event(23, "session_end", engaged_seconds=10)
+        self.assertEqual(result["state"]["watch_status"], "watching")
+        self.set_release_status("Вышел")
+        items = server.get_anime_list(self.db, user_id=self.user)
+        self.assertEqual(next(item for item in items if item["id"] == 901)["watch_status"], "completed")
+        con = server.connect(self.db)
+        self.assertEqual(con.execute("select watch_status from user_title_state where user_id=? and anime_id=901", (self.user,)).fetchone()[0], "completed")
+        con.close()
+
+    def test_final_episode_selection_or_incomplete_import_is_not_completion(self):
+        self.set_release_status("Вышел")
+        server.update_user_state(901, {"progress_episode_number": 23}, self.db, self.user)
+        self.assertEqual(server.get_anime_detail(901, self.db, self.user)["watch_status"], "watching")
+        self.set_release_status("Вышел", "24")
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=10)
+        self.event(23, "session_end", playback_ended=True)
+        self.assertEqual(server.get_anime_detail(901, self.db, self.user)["watch_status"], "watching")
+
+    def test_unknown_release_status_does_not_auto_complete(self):
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=10)
+        self.event(23, "session_end", playback_ended=True)
+        self.assertEqual(server.get_anime_detail(901, self.db, self.user)["watch_status"], "watching")
+
+    def test_completion_checks_extra_fractional_episode_from_other_source(self):
+        self.fixture.seed_title(902, "Resume regression", source="yummyanime", episode_count=24)
+        con = server.connect(self.db)
+        con.execute("update episodes set number='23.5' where id=90224")
+        con.commit()
+        con.close()
+        self.set_release_status("Вышел")
+        self.detail = server.get_anime_detail(901, self.db, self.user)
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=10)
+        result = self.event(23, "session_end", playback_ended=True)
+        self.assertEqual(result["state"]["watch_status"], "watching")
+
+    def test_background_duplicate_does_not_hide_completed_finale(self):
+        self.fixture.seed_title(902, "Resume regression", source="yummyanime", episode_count=23)
+        self.set_release_status("Онгоинг")
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=10)
+        self.event(23, "session_end", playback_ended=True)
+        con = server.connect(self.db)
+        con.execute("""insert into user_episode_state
+            (user_id,anime_id,episode_id,progress_episode_number,first_seen_at,last_seen_at,updated_at,last_event_type)
+            values (?,901,90223,23,'2026-09-13','2026-09-13','2026-09-13','player_loaded')""", (self.user,))
+        con.commit()
+        con.close()
+        self.set_release_status("Вышел")
+        self.assertEqual(server.get_anime_detail(901, self.db, self.user)["watch_status"], "completed")
+
     def test_passive_events_preserve_manual_progress_and_source(self):
         self.event(15, day=4)
         with patch("server.now_iso", return_value="2026-09-12T16:00:00+00:00"):
