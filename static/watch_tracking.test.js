@@ -88,6 +88,23 @@ for (const bad of [NaN, Infinity, true, "1168junk"]) assert.equal(runtime.episod
 assert.equal(runtime.parseKodikSerialUrl("https://kodikplayer.com/serial/1/hash/720p?season=1&episode=1168.5").episodeNumber, 1168.5);
 assert.equal(runtime.normalizePlayerMessage({key:"kodik_player_current_episode",value:{episode:1168.5,season:1}}).episodeNumber,1168.5);
 
+const updatesContext = vm.createContext({
+  effectiveWatchStatus: item => item.watch_status,
+  numericValue: value => value == null || value === "" ? null : Number(value),
+});
+vm.runInContext(block("function contentUpdateHasUnseenEpisode(", "function contentUpdateItemsForView("), updatesContext);
+const newTitle = {watch_status: "watching", progress_episode_number: 1,
+  report: {episode_numbers: []}, update_episode_numbers: ["1"],
+  last_watch: {progress_episode_number: 1, completed_at: null}};
+assert.equal(updatesContext.contentUpdateItemIsPriority(newTitle), true);
+newTitle.last_watch.completed_at = "2026-10-07T20:00:00Z";
+assert.equal(updatesContext.contentUpdateItemIsPriority(newTitle), false);
+newTitle.update_episode_numbers = ["1.5"];
+assert.equal(updatesContext.contentUpdateItemIsPriority(newTitle), true);
+newTitle.watch_status = "completed";
+assert.equal(updatesContext.contentUpdateItemIsPriority(newTitle), false);
+assert.equal(updatesContext.contentUpdateItemIsPriority({watch_status:"watching", report:{episode_numbers:[]}}), false);
+
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));
 } else {

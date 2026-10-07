@@ -2684,21 +2684,38 @@ def load_content_update_source_summaries(con, days, event_type="all"):
 
 
 def load_content_update_new_episode_numbers(con, days, event_type="all"):
-    if event_type not in {"all", "new_episode"}:
+    if event_type not in {"all", "new_episode", "new_title"}:
         return {}
-    where, params = content_update_where(days, "new_episode")
+    where, params = content_update_where(days, event_type)
     rows = con.execute(
         f"""
-        select anime_id, episode_number
+        select anime_id, episode_number, event_type
         from content_update_events
         {where}
+          and event_type in ('new_episode', 'new_title')
         order by occurred_at desc, id desc
         """,
         params,
     ).fetchall()
     numbers_by_anime_id = {}
     for row in rows:
-        numbers_by_anime_id.setdefault(int(row["anime_id"]), []).append(row["episode_number"])
+        anime_id = int(row["anime_id"])
+        if row["event_type"] == "new_episode":
+            numbers_by_anime_id.setdefault(anime_id, []).append(row["episode_number"])
+        else:
+            numbers_by_anime_id.setdefault(anime_id, [])
+    new_title_ids = sorted({int(row["anime_id"]) for row in rows if row["event_type"] == "new_title"})
+    if new_title_ids:
+        # New-title events summarize the import; they have no episode number.
+        # Use actual playable episodes, never infer numbers from a total count.
+        for episode in con.execute(
+            f"""select distinct e.anime_id, e.number from episodes e
+                join video_sources v on v.episode_id = e.id
+                where e.anime_id in ({sql_placeholders(new_title_ids)})
+                  and v.embed_url is not null and trim(v.embed_url) <> ''""",
+            new_title_ids,
+        ):
+            numbers_by_anime_id[episode["anime_id"]].append(episode["number"])
     return numbers_by_anime_id
 
 
@@ -2887,7 +2904,12 @@ def content_update_item_has_unseen_episode(item, episode_numbers):
     comparable_numbers = [number for value in episode_numbers if (number := numeric(value)) is not None]
     if not comparable_numbers:
         return True
-    return any(number > progress for number in comparable_numbers)
+    last_watch = item.get("last_watch") or {}
+    current_unfinished = (
+        numeric(last_watch.get("progress_episode_number")) == progress
+        and not last_watch.get("completed_at")
+    )
+    return any(number > progress or (number == progress and current_unfinished) for number in comparable_numbers)
 
 
 def content_update_item_is_priority(item, episode_numbers):
@@ -2897,9 +2919,9 @@ def content_update_item_is_priority(item, episode_numbers):
     )
 
 
-def compact_content_update_item(item, events, days):
+def compact_content_update_item(item, events, days, update_episode_numbers=None):
     report = content_update_report(events)
-    new_episode_numbers = report["episode_numbers"]
+    new_episode_numbers = report["episode_numbers"] if update_episode_numbers is None else update_episode_numbers
     has_unseen_episode = content_update_item_has_unseen_episode(item, new_episode_numbers)
     payload = {
         key: item.get(key)
@@ -2930,6 +2952,8 @@ def compact_content_update_item(item, events, days):
             "watch_status": item.get("watch_status"),
             "has_unseen_episode": has_unseen_episode,
             "is_priority": content_update_item_is_priority(item, new_episode_numbers),
+            "update_episode_numbers": sorted(set(new_episode_numbers), key=content_update_value_sort_key),
+            "last_watch": item.get("last_watch"),
         }
     )
     sources = list(item.get("sources") or [])
@@ -2986,6 +3010,13 @@ def get_content_updates(
         new_episode_numbers_by_source_id = load_content_update_new_episode_numbers(con, days, event_type)
         summary = content_update_total_summary(con, cache, days, event_type)
         latest_run = latest_content_update_run(con)
+        episode_states = {}
+        if user_id is not None:
+            for row in con.execute(
+                """select anime_id, progress_episode_number, completed_at, last_seen_at
+                   from user_episode_state where user_id = ?""", (user_id,),
+            ):
+                episode_states.setdefault(row["anime_id"], []).append(dict(row))
         grouped = {}
         for row in source_summaries:
             group = cache.get("id_map", {}).get(int(row["anime_id"]))
@@ -3019,6 +3050,17 @@ def get_content_updates(
                 entry["group"],
                 user_state_by_source_id=user_state_by_source_id,
             )
+            progress = numeric(entry["item"].get("progress_episode_number"))
+            current_episode_states = [
+                state
+                for source_id in entry["group"].get("source_member_ids") or [entry["group"]["id"]]
+                for state in episode_states.get(source_id, [])
+                if progress is not None and numeric(state.get("progress_episode_number")) == progress
+            ]
+            if current_episode_states:
+                entry["item"]["last_watch"] = max(
+                    current_episode_states, key=lambda state: state.get("last_seen_at") or "",
+                )
             entry["is_priority"] = content_update_item_is_priority(
                 entry["item"],
                 entry["new_episode_numbers"],
@@ -3061,7 +3103,7 @@ def get_content_updates(
     for entry in page_groups:
         item_events = events_by_item_id.get(entry["group"]["id"], [])
         item_events.sort(key=lambda event: (event["occurred_at"], event["id"]), reverse=True)
-        items.append(compact_content_update_item(entry["item"], item_events, days))
+        items.append(compact_content_update_item(entry["item"], item_events, days, entry["new_episode_numbers"]))
 
     has_more = offset + len(items) < len(ordered_groups)
     preview_events = [event for item in items for event in item["events"]]

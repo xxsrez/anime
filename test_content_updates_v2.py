@@ -316,6 +316,53 @@ class ContentUpdatesV2Test(unittest.TestCase):
         self.assertFalse(any(item["is_priority"] for item in caught_up["items"]))
         self.assertEqual([item["id"] for item in caught_up["items"][:4]], [110, 109, 106, 107])
 
+    def test_new_title_priority_uses_playable_episodes_and_completion_before_pagination(self):
+        con = server.connect(self.db_path)
+        try:
+            user = server.upsert_google_user(con, {
+                "sub": "new-title-viewer", "email": "new-title@example.test",
+                "email_verified": True, "name": "New Title Viewer", "picture": None,
+            })
+            now = server.now_iso()
+            con.execute("insert into episodes(id,anime_id,number,has_video,scraped_at) values(104001,104,'1',1,?)", (now,))
+            con.execute("insert into video_sources(anime_id,episode_id,provider_id,embed_url,scraped_at) values(104,104001,'test','https://player.test/1',?)", (now,))
+            con.execute("delete from content_update_events where anime_id=104")
+            content_updates.insert_event(con, None, "new_title", 104, source="animego", title="Priority Update",
+                occurred_at=(dt.datetime.now(dt.timezone.utc)-dt.timedelta(days=1)).isoformat(timespec="seconds"),
+                metadata={"episode_count": 100}, dedupe_key="new-title-priority")
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db_path)
+        server.update_user_state(104, {"is_favorite": True, "progress_episode_number": 1}, self.db_path, user["id"])
+        for event_type in ("all", "new_title"):
+            page = server.get_content_updates(self.db_path, limit=1, offset=0, user_id=user["id"], event_type=event_type)
+            item = page["items"][0]
+            self.assertEqual(item["id"], 104)
+            self.assertTrue(item["is_priority"])
+            self.assertEqual(item["update_episode_numbers"], ["1"])
+            self.assertEqual(item["report"]["episode_numbers"], [])
+            self.assertIsNone(item["last_watch"]["completed_at"])
+        other_user = server.get_content_updates(self.db_path, limit=20, user_id=None)
+        self.assertFalse(any(i["is_priority"] for i in other_user["items"]))
+        con = server.connect(self.db_path)
+        try:
+            con.execute("update user_episode_state set completed_at=? where user_id=? and anime_id=104", (now,user["id"]))
+            con.commit()
+        finally:
+            con.close()
+        finished = server.get_content_updates(self.db_path, user_id=user["id"],event_type="new_title")["items"][0]
+        self.assertFalse(finished["is_priority"])
+        self.assertFalse(finished["has_unseen_episode"])
+
+    def test_unfinished_fractional_episode_remains_unseen(self):
+        item = {"watch_status":"watching", "progress_episode_number":1168.5,
+                "last_watch":{"progress_episode_number":1168.5,"completed_at":None}}
+        self.assertTrue(server.content_update_item_has_unseen_episode(item,["1168.5"]))
+        self.assertFalse(server.content_update_item_has_unseen_episode(item,["1168"]))
+        item["last_watch"]["completed_at"] = server.now_iso()
+        self.assertFalse(server.content_update_item_has_unseen_episode(item,["1168.5"]))
+
     def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
         now = server.now_iso()
         events = [

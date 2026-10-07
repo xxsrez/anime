@@ -1596,13 +1596,17 @@ function supersedeRecommendationsRequest() {
 }
 
 function contentUpdateHasUnseenEpisode(item) {
-  const episodeNumbers = (item?.report?.episode_numbers || []).filter(value => String(value || "").trim());
+  const episodeNumbers = (item?.update_episode_numbers ?? item?.report?.episode_numbers ?? []).filter(value => String(value || "").trim());
   if (effectiveWatchStatus(item) === "completed" || !episodeNumbers.length) return false;
   const progress = numericValue(item?.progress_episode_number);
   if (progress == null) return true;
   const comparableNumbers = episodeNumbers.map(numericValue).filter(value => value != null);
   if (!comparableNumbers.length) return true;
-  return comparableNumbers.some(number => number > progress);
+  const lastWatch = item?.last_watch;
+  const currentUnfinished = lastWatch
+    && numericValue(lastWatch.progress_episode_number) === progress
+    && !lastWatch.completed_at;
+  return comparableNumbers.some(number => number > progress || (number === progress && currentUnfinished));
 }
 
 function contentUpdateItemIsPriority(item) {
@@ -1622,6 +1626,7 @@ function contentUpdateItemsForView() {
     for (const field of USER_STATE_RESPONSE_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(current, field)) item[field] = current[field];
     }
+    if (Object.prototype.hasOwnProperty.call(current, "last_watch")) item.last_watch = current.last_watch;
     item.has_unseen_episode = contentUpdateHasUnseenEpisode(item);
     item.is_priority = contentUpdateItemIsPriority(item);
     return item;
@@ -3949,6 +3954,10 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
       const semanticChanged = result?.state
         ? applyWatchState(result.state, session.animeId, requestRevision)
         : false;
+      if (result?.episode_state && requestRevision === animeStateRevision(session.animeId)) {
+        applyLocalUserStatePatch(session.animeId, { last_watch: result.episode_state });
+        if (isUpdatesView()) applyFilter({ selectFirst: false });
+      }
       if (result?.recommendation_signal_changed && !semanticChanged) {
         invalidateRecommendations();
         if (isRecommendationView()) {
