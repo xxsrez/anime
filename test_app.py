@@ -1375,6 +1375,26 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             scrape_yummyanime.internal_modern_anime_id(4981),
         )
 
+    def test_modern_yummy_fractional_special_does_not_drop_regular_or_new_episodes(self):
+        anime = {
+            "anime_id": 15, "anime_url": "long-running", "title": "Long running",
+            "episodes": {"count": 1168, "aired": 1168},
+            "videos": [
+                {"number": number, "video_id": index, "iframe_url": f"https://kodikplayer.com/seria/{index}/token",
+                 "data": {"player": "Плеер Kodik", "dubbing": "Test"}}
+                for index, number in enumerate(["1169", "1168.5", "1168.0", "NaN", "special"], start=1)
+            ],
+        }
+        with patch.object(scrape_yummyanime, "fetch_modern_anime", return_value=(anime, "https://api.test/anime/15")):
+            item, detail, episodes, providers = scrape_yummyanime.parse_modern_detail(
+                "https://ru.yummyani.me/catalog/item/long-running",
+            )
+        self.assertEqual([p["episode_number"] for p in providers], ["1168", "1169"])
+        self.assertEqual([e["number"] for e in episodes][-2:], ["1168", "1169"])
+        self.assertEqual(episodes[-2]["id"], 20000015 * 1000 + 1168)
+        self.assertEqual(detail["unsupported_episode_numbers"], {"1168.5": 1, "NaN": 1, "special": 1})
+        self.assertEqual(detail["fields"]["Эпизоды"], "1168")
+
     def test_modern_yummyani_source_id_is_namespaced(self):
         anime = {
             "anime_id": 15,

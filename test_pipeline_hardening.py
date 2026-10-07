@@ -27,6 +27,36 @@ from scripts.operation_lock import DatabaseOperationLock, OperationLockError, de
 
 
 class PipelineHardeningTest(unittest.TestCase):
+    def test_yummy_new_title_imports_then_repeated_scan_is_idempotent(self):
+        snapshot = self.animego_bundle(anime_id=20000015, episode_id=20000015001)["snapshots"][0]
+        snapshot["item"].update(source="yummyanime", source_id="yummyani:15")
+        episode = snapshot["episodes"][0]["episode"]
+        providers = snapshot["episodes"][0]["providers"]
+        providers[0].update(provider_id="yummyani-kodik-15", episode_number="1")
+        args = sync_videos.parse_args(["--mode", "manual", "--yummy-ref", "test-title"])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            con = sync_videos.connect(Path(tmpdir) / "anime.sqlite")
+            try:
+                with patch("sync_videos.parse_yummy_detail_for_sync", return_value=(
+                    snapshot["item"], snapshot["detail"], [episode], providers,
+                )):
+                    sync_videos.ensure_sync_tables(con)
+                    stats = sync_videos.defaultdict(int)
+                    sync_videos.sync_yummy_title(con, "test-title", args, stats, "ongoing")
+                    self.assertEqual(stats["titles_imported"], 1)
+                    self.assertEqual(con.execute("select count(*) from anime").fetchone()[0], 1)
+                    self.assertEqual(con.execute("select has_video from episodes").fetchone()[0], 1)
+                    self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 1)
+                    self.assertEqual(con.execute(
+                        "select count(*) from content_update_events where event_type='new_title'"
+                    ).fetchone()[0], 1)
+                    repeat = sync_videos.defaultdict(int)
+                    sync_videos.sync_yummy_title(con, "test-title", args, repeat, "ongoing")
+                    self.assertEqual(repeat["titles_imported"], 0)
+                    self.assertEqual(con.execute("select count(*) from video_sources").fetchone()[0], 1)
+            finally:
+                con.close()
+
     def test_animego_detail_reads_current_player_loader_url(self):
         detail = scrape_animego.parse_detail(
             '<h1>Восставший против неба 2</h1>'
@@ -34,6 +64,28 @@ class PipelineHardeningTest(unittest.TestCase):
             'data-anime-player-loader-url-value="/player/4077"></div>'
         )
         self.assertEqual(detail["player_url"], "/player/4077")
+
+    def test_yummy_episode_id_collision_does_not_reassign_another_title(self):
+        snapshot = self.animego_bundle(anime_id=20000015, episode_id=20000016168)["snapshots"][0]
+        snapshot["item"].update(source="yummyanime", source_id="yummyani:15")
+        episode = snapshot["episodes"][0]["episode"]
+        episode["number"] = "1168"
+        providers = snapshot["episodes"][0]["providers"]
+        providers[0]["episode_number"] = "1168"
+        args = sync_videos.parse_args(["--mode", "manual", "--yummy-ref", "test-title"])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            con = sync_videos.connect(Path(tmpdir) / "anime.sqlite")
+            try:
+                con.execute("insert into anime(id,title,url,scraped_at) values (20000016,'Other','https://example.test/other','now')")
+                con.execute("insert into episodes(id,anime_id,number,scraped_at) values (20000016168,20000016,'168','now')")
+                with patch("sync_videos.parse_yummy_detail_for_sync", return_value=(
+                    snapshot["item"], snapshot["detail"], [episode], providers,
+                )), self.assertRaisesRegex(ValueError, "episode ID collision"):
+                    sync_videos.sync_yummy_title(con, "test-title", args, sync_videos.defaultdict(int), "ongoing")
+                self.assertEqual(tuple(con.execute("select anime_id,number from episodes").fetchone()), (20000016, "168"))
+                self.assertEqual(con.execute("select count(*) from anime").fetchone()[0], 1)
+            finally:
+                con.close()
 
     @staticmethod
     def animego_bundle(*, anime_id=3623, episode_id=45887, complete=True):

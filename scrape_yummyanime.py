@@ -4,6 +4,7 @@ import json
 import re
 import time
 import zlib
+from decimal import Decimal, InvalidOperation
 from urllib.error import HTTPError
 from urllib.parse import quote, urlencode, urljoin, urlparse, parse_qsl, urlunparse
 from urllib.request import Request
@@ -420,7 +421,21 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
     anime_type = anime.get("type") or {}
     remote_ids = anime.get("remote_ids") or {}
     poster = anime.get("poster") or {}
-    videos = sorted(anime.get("videos") or [], key=lambda item: (int(item.get("number") or 0), item.get("index") or 0))
+    videos = []
+    skipped_numbers = {}
+    for video in anime.get("videos") or []:
+        raw_number = str(video.get("number") or "1").strip()
+        try:
+            number = Decimal(raw_number)
+        except InvalidOperation:
+            number = Decimal("NaN")
+        # Fractional specials need a separate identity/progress model. Never
+        # truncate them into a regular episode or fail the whole title.
+        if not number.is_finite() or number <= 0 or number != number.to_integral_value():
+            skipped_numbers[raw_number] = skipped_numbers.get(raw_number, 0) + 1
+            continue
+        videos.append({**video, "number": str(int(number))})
+    videos.sort(key=lambda item: (int(item["number"]), item.get("index") or 0))
     other_titles = anime.get("other_titles") or []
 
     episode_count = int(episode_info.get("count") or episode_info.get("aired") or 1)
@@ -493,7 +508,10 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
         "genres": genres,
         "dubbings": dubbings,
         "player_url": canonical_url if videos else None,
+        "unsupported_episode_numbers": skipped_numbers,
     }
+    # Feeds can expose a newly aired episode before updating the total count.
+    episode_numbers = sorted(set(range(1, episode_count + 1)) | {int(video["number"]) for video in videos})
     episodes = [
         {
             "id": internal_episode_id(anime_id, number),
@@ -503,7 +521,7 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
             "release_label": None,
             "description": "YummyAni iframe source.",
         }
-        for number in range(1, episode_count + 1)
+        for number in episode_numbers
     ]
 
     providers = []

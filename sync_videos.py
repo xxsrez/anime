@@ -572,6 +572,12 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
     page_url = yummy_page_url(anime_ref)
     stats["titles_checked"] += 1
     item, detail, episodes, providers = parse_yummy_detail_for_sync(page_url, args)
+    for number, count in (detail.get("unsupported_episode_numbers") or {}).items():
+        stats["unsupported_episode_videos_skipped"] += count
+        print(json.dumps({
+            "event": "unsupported_episode_number", "source": "yummyanime",
+            "source_id": item.get("source_id"), "number": number, "videos_skipped": count,
+        }, ensure_ascii=False))
     new_title = not anime_row_exists(con, item["id"])
     providers = [provider for provider in providers if provider_has_embed(provider)]
     selected = selected_episodes(episodes, args.episode_limit)
@@ -582,6 +588,14 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
 
     writes = []
     for episode in selected:
+        existing_episode = con.execute(
+            "select anime_id, number from episodes where id = ?", (episode["id"],)
+        ).fetchone()
+        if existing_episode is not None and (
+            existing_episode["anime_id"] != item["id"]
+            or str(existing_episode["number"]) != str(episode["number"])
+        ):
+            raise ValueError(f"YummyAni episode ID collision: {episode['id']} for anime {item['id']}")
         episode_providers = providers_for_episode(providers, episode)
         known_provider_identities = {
             identity
@@ -632,7 +646,7 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
         stats["known_skipped"] += 1
         return
 
-    if new_title and not any(providers for _, providers, _, _ in writes):
+    if new_title and not any(providers for _, providers, _ in writes):
         stats["known_skipped"] += 1
         return
 
