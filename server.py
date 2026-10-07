@@ -5145,6 +5145,10 @@ def sanitize_watch_metadata(payload):
     metadata.pop("playback_ended", None)
     if payload.get("playback_ended") is True:
         metadata["playback_ended"] = True
+    for field in ("playback_position_seconds", "playback_duration_seconds"):
+        metadata.pop(field, None)
+        if payload.get(field) is not None:
+            metadata[field] = payload[field]
     cleaned = sanitize_client_error_value(metadata)
     encoded = json.dumps(cleaned, ensure_ascii=False, sort_keys=True)
     if len(encoded.encode("utf-8")) > MAX_WATCH_METADATA_BYTES:
@@ -5772,6 +5776,8 @@ def record_watch_event(payload, db_path=None, user_id=None):
     playback_ended = optional_json_boolean(payload, "playback_ended") == 1
     if playback_ended and event_type != "session_end":
         raise ValueError("playback_ended requires session_end")
+    playback_position = optional_json_integer(payload, "playback_position_seconds", minimum=0, maximum=86400)
+    playback_duration = optional_json_integer(payload, "playback_duration_seconds", minimum=1, maximum=86400)
 
     client_session_id = bounded_text(payload.get("client_session_id"), 120)
     if not client_session_id:
@@ -5949,6 +5955,18 @@ def record_watch_event(payload, db_path=None, user_id=None):
             """,
             (user_id, anime_id, episode["id"], client_session_id),
         ).fetchone())
+        # Wall-clock watch time is shorter at increased playback speed, and
+        # viewers often leave during credits without an ended message. Accept
+        # the final 5% only with real engagement in this same player session.
+        if (event_type in {"heartbeat", "session_end", "page_hidden"}
+                and playback_duration is not None and playback_position is not None
+                and playback_duration * 0.95 <= playback_position <= playback_duration + 2):
+            session_seconds = con.execute(
+                """select coalesce(sum(engaged_seconds), 0) from user_watch_events
+                   where user_id = ? and anime_id = ? and episode_id = ? and client_session_id = ?""",
+                (user_id, anime_id, episode["id"], client_session_id),
+            ).fetchone()[0]
+            completion_verified = completion_verified or session_seconds >= min(60, playback_duration * 0.5)
         episode_state = upsert_episode_watch_state(
             con,
             user_id=user_id,

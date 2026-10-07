@@ -97,6 +97,23 @@ class WatchResumeTest(unittest.TestCase):
         self.event(22, "session_end", engaged_seconds=10)
         self.assertEqual(self.target()["episode_number"], "23")
 
+    def test_near_end_position_completes_without_ended_or_eighteen_minutes(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        result = self.event(22, "session_end", playback_position_seconds=1320, playback_duration_seconds=1380)
+        self.assertIsNotNone(result["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "23")
+
+    def test_position_alone_or_old_session_does_not_complete(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        self.event(22, "session_end", playback_position_seconds=1200, playback_duration_seconds=1380)
+        self.assertIsNone(self.fixture.episode_state(901, 22)["completed_at"])
+        self.event(22, "session_end", session="new-seek", playback_position_seconds=1370, playback_duration_seconds=1380)
+        self.assertIsNone(self.fixture.episode_state(901, 22)["completed_at"])
+        with self.assertRaises(ValueError):
+            self.event(22, "heartbeat", playback_position_seconds=True, playback_duration_seconds=1380)
+
     def set_release_status(self, status, total="23"):
         con = server.connect(self.db)
         con.execute("update anime set status = ?, episodes_text = ? where id = 901", (status, total))

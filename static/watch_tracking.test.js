@@ -44,6 +44,20 @@ assert.equal(requests[0].playback_ended, undefined);
 message("kodik_player_video_ended");
 assert.equal(requests.length, 2, "ended survives an earlier pause");
 assert.deepEqual(requests[1], { event_type: "session_end", engaged_seconds: 0, playback_ended: true });
+message("kodik_player_duration_update", {data: {key: "kodik_player_duration_update", value: 1380}});
+assert.equal(session.providerDurationSeconds, 1380);
+assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: 0}), null);
+assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: "bad"}), null);
+const payloadContext = vm.createContext({
+  state: {detail: {id: 1, watch_status: "watching"}, anime: []},
+  WATCH_MAX_DELTA_SECONDS: 300, document: {hidden: false},
+  playerHasPlaybackEvidence: () => true, effectiveWatchStatus: item => item.watch_status,
+});
+vm.runInContext(block("function watchPayloadForSession(", "function animeStateRevision("), payloadContext);
+const positioned = payloadContext.watchPayloadForSession({animeId: 1, providerPositionSeconds: 1320.4, providerDurationSeconds: 1380.2}, "heartbeat", 30);
+assert.equal(positioned.playback_position_seconds, 1320);
+assert.equal(positioned.playback_duration_seconds, 1381);
+assert.equal(payloadContext.watchPayloadForSession({animeId: 1}, "heartbeat", 30).playback_position_seconds, undefined);
 
 const episodes = Array.from({ length: 23 }, (_, i) => ({ id: i + 1, number: String(i + 1), source_count: 1 }));
 const selection = vm.createContext({

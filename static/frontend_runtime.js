@@ -349,6 +349,12 @@
           ? { provider: "kodik", type: "time_update", positionSeconds }
           : null;
       }
+      if (kodikKey === "kodik_player_duration_update") {
+        const durationSeconds = Number(data.value);
+        return Number.isFinite(durationSeconds) && durationSeconds > 0
+          ? { provider: "kodik", type: "duration_update", durationSeconds }
+          : null;
+      }
       return null;
     }
 

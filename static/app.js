@@ -3877,6 +3877,10 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     page_visible: !document.hidden,
     player_focused: playerHasPlaybackEvidence(session),
     picture_in_picture: Boolean(session.pictureInPictureActive),
+    ...(Number.isFinite(session.providerPositionSeconds) && Number.isFinite(session.providerDurationSeconds) ? {
+      playback_position_seconds: Math.floor(session.providerPositionSeconds),
+      playback_duration_seconds: Math.ceil(session.providerDurationSeconds),
+    } : {}),
     library_watch_status: effectiveWatchStatus(libraryState),
     library_watch_status_updated_at: libraryState?.watch_status_updated_at ?? null,
     metadata: session.metadata || {},
@@ -4271,6 +4275,8 @@ function handlePlayerMessage(event) {
     handleProviderPlaybackStarted(message.provider);
   } else if (message.type === "time_update") {
     handleProviderPlaybackStarted(message.provider, message.positionSeconds);
+  } else if (message.type === "duration_update") {
+    if (state.watchSession) state.watchSession.providerDurationSeconds = message.durationSeconds;
   } else if (["playback_paused", "playback_ended"].includes(message.type)) {
     handleProviderPlaybackStopped({ ended: message.type === "playback_ended" });
   } else if (message.type === "pip_entered") {
