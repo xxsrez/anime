@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
 import re
 import time
@@ -96,7 +97,14 @@ def modern_source_id(source_id):
 
 
 def internal_episode_id(anime_id, number):
-    return anime_id * 1000 + int(number)
+    number = Decimal(str(number))
+    if number == number.to_integral_value():
+        return anime_id * 1000 + int(number)
+    # Keep every existing integer ID. Fractions use a separate positive,
+    # JavaScript-safe namespace; sync checks ownership before any write.
+    canonical = format(number.normalize(), "f")
+    digest = hashlib.sha256(f"yummy-episode:{anime_id}:{canonical}".encode()).digest()
+    return (1 << 52) | (int.from_bytes(digest[:8], "big") & ((1 << 52) - 1))
 
 
 def parse_slug(url):
@@ -429,13 +437,14 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
             number = Decimal(raw_number)
         except InvalidOperation:
             number = Decimal("NaN")
-        # Fractional specials need a separate identity/progress model. Never
-        # truncate them into a regular episode or fail the whole title.
-        if not number.is_finite() or number <= 0 or number != number.to_integral_value():
+        if (
+            not number.is_finite() or number <= 0 or number > 2**53 - 1
+            or Decimal(str(float(number))) != number
+        ):
             skipped_numbers[raw_number] = skipped_numbers.get(raw_number, 0) + 1
             continue
-        videos.append({**video, "number": str(int(number))})
-    videos.sort(key=lambda item: (int(item["number"]), item.get("index") or 0))
+        videos.append({**video, "number": format(number.normalize(), "f")})
+    videos.sort(key=lambda item: (Decimal(item["number"]), item.get("index") or 0))
     other_titles = anime.get("other_titles") or []
 
     episode_count = int(episode_info.get("count") or episode_info.get("aired") or 1)
@@ -511,7 +520,10 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
         "unsupported_episode_numbers": skipped_numbers,
     }
     # Feeds can expose a newly aired episode before updating the total count.
-    episode_numbers = sorted(set(range(1, episode_count + 1)) | {int(video["number"]) for video in videos})
+    episode_numbers = sorted(
+        {str(number) for number in range(1, episode_count + 1)} | {video["number"] for video in videos},
+        key=Decimal,
+    )
     episodes = [
         {
             "id": internal_episode_id(anime_id, number),
@@ -523,6 +535,8 @@ def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
         }
         for number in episode_numbers
     ]
+    if len({episode["id"] for episode in episodes}) != len(episodes):
+        raise ValueError(f"YummyAni episode ID collision within anime {anime_id}")
 
     providers = []
     for video in videos:

@@ -585,6 +585,11 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
 
 
 def upsert_episode(con, anime_id, episode, has_video, unavailable_reason, scraped_at):
+    existing = con.execute("select anime_id, number from episodes where id = ?", (episode["id"],)).fetchone()
+    if existing is not None and (
+        existing[0] != anime_id or str(existing[1]) != str(episode.get("number"))
+    ):
+        raise ValueError(f"Episode ID collision: {episode['id']} for anime {anime_id}")
     con.execute(
         """
         insert into episodes (

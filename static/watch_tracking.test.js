@@ -66,6 +66,28 @@ assert.equal(selection.state.selectedEpisodeId, 15, "a newer explicit navigation
 selection.applyDetailLinkState({ episodeId: 3 });
 assert.equal(selection.state.selectedEpisodeId, 3, "explicit deep link still wins");
 
+vm.runInContext(block("function numberFrom(", "function effectiveWatchStatus("), selection);
+const fractionalEpisodes = [
+  { id: 1168, number: "1168", source_count: 1 },
+  { id: 5426890758783440, number: "1168.5", source_count: 1 },
+  { id: 1169, number: "1169", source_count: 1 },
+];
+selection.state.detail = {
+  episodes: fractionalEpisodes,
+  progress_episode_number: 1168.5,
+  last_watch: { progress_episode_number: 1168.5, last_seen_at: "2026-10-07" },
+};
+selection.applyDetailLinkState();
+assert.equal(selection.state.selectedEpisodeId, 5426890758783440, "resume preserves fractional identity");
+selection.state.detail.last_watch.completed_at = "2026-10-07";
+selection.applyDetailLinkState();
+assert.equal(selection.state.selectedEpisodeId, 1169, "completed special advances to next regular episode");
+assert.equal(runtime.nextEpisodeIdAfterProgress(fractionalEpisodes, 1168), 5426890758783440);
+assert.equal(runtime.episodeNumberValue("1168.50"), 1168.5);
+for (const bad of [NaN, Infinity, true, "1168junk"]) assert.equal(runtime.episodeNumberValue(bad), null);
+assert.equal(runtime.parseKodikSerialUrl("https://kodikplayer.com/serial/1/hash/720p?season=1&episode=1168.5").episodeNumber, 1168.5);
+assert.equal(runtime.normalizePlayerMessage({key:"kodik_player_current_episode",value:{episode:1168.5,season:1}}).episodeNumber,1168.5);
+
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));
 } else {

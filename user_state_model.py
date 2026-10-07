@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 
 WATCH_STATUSES = ("none", "watching", "completed")
 WATCH_STATUS_SET = frozenset(WATCH_STATUSES)
@@ -19,6 +21,14 @@ USER_STATE_FIELDS = frozenset(
         "not_interested",
     }
 )
+
+
+def validate_progress_number(value):
+    if value is not None and (
+        type(value) not in (int, float) or not 0 <= value <= 2**53 - 1 or not math.isfinite(value)
+    ):
+        raise ValueError("progress_episode_number must be a finite non-negative number or null")
+    return value
 
 
 def row_value(row, key, default=None):
@@ -93,9 +103,7 @@ def validate_patch(patch):
 
     if "progress_episode_number" in patch:
         value = patch["progress_episode_number"]
-        if value is not None and (type(value) is not int or value < 0):
-            raise ValueError("progress_episode_number must be a non-negative integer or null")
-        validated["progress_episode_number"] = value
+        validated["progress_episode_number"] = validate_progress_number(value)
 
     if "watch_status" in patch:
         value = patch["watch_status"]

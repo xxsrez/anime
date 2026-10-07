@@ -276,6 +276,13 @@
     return number;
   }
 
+  function episodeNumberValue(value, { minimum = 0 } = {}) {
+    if (value == null || typeof value === "boolean") return null;
+    if (typeof value === "string" && !value.trim()) return null;
+    const number = Number(value);
+    return Number.isFinite(number) && number >= minimum && number <= Number.MAX_SAFE_INTEGER ? number : null;
+  }
+
   function parseKodikSerialUrl(value) {
     try {
       const safeUrl = safeHttpsUrl(value, ["kodikplayer.com"]);
@@ -288,7 +295,7 @@
         serialId: parts[serialIndex + 1],
         serialHash: parts[serialIndex + 2].toLocaleLowerCase("en-US"),
         seasonNumber: integerValue(url.searchParams.get("season"), { minimum: 0 }),
-        episodeNumber: integerValue(url.searchParams.get("episode"), { minimum: 1 }),
+        episodeNumber: episodeNumberValue(url.searchParams.get("episode")),
       };
     } catch (error) {
       return null;
@@ -312,7 +319,7 @@
       if (kodikKey === "kodik_player_current_episode") {
         const value = data.value;
         if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-        const episodeNumber = integerValue(value.episode, { minimum: 1 });
+        const episodeNumber = episodeNumberValue(value.episode);
         if (episodeNumber == null) return null;
         return {
           provider: "kodik",
@@ -428,7 +435,7 @@
     episodeNumber,
     seasonNumber = null,
   } = {}) {
-    const reportedEpisode = integerValue(episodeNumber, { minimum: 1 });
+    const reportedEpisode = episodeNumberValue(episodeNumber);
     const reportedSeason = integerValue(seasonNumber, { minimum: 0 });
     const currentIdentity = parseKodikSerialUrl(currentSource?.embed_url);
     if (reportedEpisode == null || !currentIdentity) return null;
@@ -465,7 +472,7 @@
     });
 
     const exactEpisode = episodeList.find(episode => (
-      integerValue(episode.number, { minimum: 1 }) === reportedEpisode
+      episodeNumberValue(episode.number) === reportedEpisode
     )) || null;
     const mappedRow = matchingRows[0] || null;
     if (
@@ -604,6 +611,7 @@
   }
 
   const api = {
+    episodeNumberValue,
     hostnameMatches,
     safeHttpsUrl,
     parseKodikSerialUrl,

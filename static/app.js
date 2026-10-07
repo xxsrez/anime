@@ -1154,8 +1154,7 @@ function adjacentAvailableEpisode(episodes, currentIndex, direction) {
 }
 
 function numberFrom(value) {
-  const match = String(value || "").match(/\d+/);
-  return match ? Number.parseInt(match[0], 10) : null;
+  return frontendRuntime.episodeNumberValue(value);
 }
 
 function effectiveWatchStatus(item) {

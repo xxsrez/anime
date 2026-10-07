@@ -1389,10 +1389,14 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             item, detail, episodes, providers = scrape_yummyanime.parse_modern_detail(
                 "https://ru.yummyani.me/catalog/item/long-running",
             )
-        self.assertEqual([p["episode_number"] for p in providers], ["1168", "1169"])
-        self.assertEqual([e["number"] for e in episodes][-2:], ["1168", "1169"])
-        self.assertEqual(episodes[-2]["id"], 20000015 * 1000 + 1168)
-        self.assertEqual(detail["unsupported_episode_numbers"], {"1168.5": 1, "NaN": 1, "special": 1})
+        self.assertEqual([p["episode_number"] for p in providers], ["1168", "1168.5", "1169"])
+        self.assertEqual([e["number"] for e in episodes][-3:], ["1168", "1168.5", "1169"])
+        self.assertEqual(episodes[-3]["id"], 20000015 * 1000 + 1168)
+        self.assertEqual(episodes[-2]["id"], scrape_yummyanime.internal_episode_id(20000015, "1168.50"))
+        self.assertGreaterEqual(episodes[-2]["id"], 2**52)
+        self.assertLess(episodes[-2]["id"], 2**53)
+        self.assertNotEqual(episodes[-2]["id"], scrape_yummyanime.internal_episode_id(20000016, "1168.5"))
+        self.assertEqual(detail["unsupported_episode_numbers"], {"NaN": 1, "special": 1})
         self.assertEqual(detail["fields"]["Эпизоды"], "1168")
 
     def test_modern_yummyani_source_id_is_namespaced(self):

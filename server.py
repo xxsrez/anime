@@ -4702,7 +4702,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
             left join video_sources vs on vs.episode_id = e.id and vs.embed_url is not null
             where e.anime_id in ({member_sql})
             group by e.id
-            order by cast(e.number as integer), e.id
+            order by cast(e.number as real), e.id
             """,
             member_ids,
         ).fetchall()
@@ -4730,7 +4730,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
             where vs.anime_id in ({member_sql})
               and vs.embed_url is not null
             order by
-                cast(e.number as integer),
+                cast(e.number as real),
                 vs.episode_id,
                 case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
                 vs.translation_title,
@@ -5059,7 +5059,15 @@ def watch_event_confidence(
 
 
 def episode_progress_number(value):
-    return int_from_value(value)
+    if value in (None, "") or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number is None or not math.isfinite(number) or not 0 <= number <= 2**53 - 1:
+        return None
+    return int(number) if number.is_integer() else number
 
 
 def load_event_episode(con, member_ids, payload):
@@ -5078,22 +5086,22 @@ def load_event_episode(con, member_ids, payload):
             return row
         raise ValueError("episode_id is invalid for this title")
 
-    progress_number = optional_json_integer(payload, "progress_episode_number", minimum=0)
+    progress_number = user_state_model.validate_progress_number(payload.get("progress_episode_number"))
     if progress_number is None:
         progress_number = episode_progress_number(payload.get("episode_number"))
     if progress_number is None:
         raise ValueError("episode_id or episode_number is required")
-    row = con.execute(
+    rows = con.execute(
         f"""
         select *
         from episodes
         where anime_id in ({sql_placeholders(member_ids)})
-          and cast(number as integer) = ?
+          and cast(number as real) = ?
         order by anime_id, id
-        limit 1
         """,
         (*member_ids, progress_number),
-    ).fetchone()
+    ).fetchall()
+    row = next((row for row in rows if episode_progress_number(row["number"]) == progress_number), None)
     if not row:
         raise ValueError("episode_number is invalid for this title")
     return row
@@ -5131,7 +5139,7 @@ def load_episode_for_progress(con, member_ids, progress_episode_number, target_i
     if progress_episode_number is None:
         return None
     target_id = target_id if target_id is not None else member_ids[0]
-    row = con.execute(
+    rows = con.execute(
         f"""
         select
             e.*,
@@ -5141,18 +5149,17 @@ def load_episode_for_progress(con, member_ids, progress_episode_number, target_i
         join anime a on a.id = e.anime_id
         left join video_sources vs on vs.episode_id = e.id and vs.embed_url is not null
         where e.anime_id in ({sql_placeholders(member_ids)})
-          and cast(e.number as integer) = ?
+          and cast(e.number as real) = ?
         group by e.id
         order by
             case when e.anime_id = ? then 0 else 1 end,
             case a.source when 'animego' then 0 when 'yummyanime' then 1 else 9 end,
             case when count(vs.id) > 0 then 0 else 1 end,
             e.id
-        limit 1
         """,
-        (*member_ids, int(progress_episode_number), target_id),
-    ).fetchone()
-    return row
+        (*member_ids, progress_episode_number, target_id),
+    ).fetchall()
+    return next((row for row in rows if episode_progress_number(row["number"]) == progress_episode_number), None)
 
 
 def load_preferred_video_source_for_progress(
@@ -5191,7 +5198,7 @@ def load_preferred_video_source_for_progress(
         source = dict(raw_row)
         episode_bucket = episode_number_key(source.get("episode_number"), source.get("episode_id"))
         by_episode.setdefault(episode_bucket, []).append(source)
-        if episode_progress_number(source.get("episode_number")) == int(progress_episode_number):
+        if episode_progress_number(source.get("episode_number")) == progress_episode_number:
             candidates.append(source)
 
     if not candidates:
@@ -5257,7 +5264,7 @@ def apply_watch_progress_to_user_state(
     next_state = user_state_model.apply_patch(
         current,
         {
-            "progress_episode_number": max(0, int(progress_episode_number)),
+            "progress_episode_number": user_state_model.validate_progress_number(progress_episode_number),
             "watch_status": "watching",
             **({"not_interested": False} if explicit_resume else {}),
         },
@@ -5696,11 +5703,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
             if actual_progress_number is not None and supplied_progress_number != actual_progress_number:
                 raise ValueError("episode_number does not match episode_id")
         episode_number = bounded_text(episode["number"], 40)
-        progress_episode_number = optional_json_integer(
-            payload,
-            "progress_episode_number",
-            minimum=0,
-        )
+        progress_episode_number = user_state_model.validate_progress_number(payload.get("progress_episode_number"))
         if progress_episode_number is None:
             progress_episode_number = actual_progress_number
         elif actual_progress_number is not None and progress_episode_number != actual_progress_number:
