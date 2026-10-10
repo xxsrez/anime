@@ -7,7 +7,7 @@
   "summary": "Киберпанковая франшиза об идентичности, технологиях и работе спецподразделений в обществе, где человеческое сознание тесно связано с сетью.",
   "guide": "Это несколько самостоятельных непрерывностей. Можно начать с фильма 1995 года или с сериала Stand Alone Complex; Arise и SAC_2045 относятся к другим этапам и лучше смотреть отдельными ветками.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/43/e2475d6735ae6c4bee4b2d164bbef57c.jpeg",
-  "updated_at": "2026-07-14",
+  "updated_at": "2026-10-10",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/43",
@@ -43,7 +43,9 @@
         "shikimori": [
           43
         ],
-        "sources": [],
+        "sources": [
+          "animego:3461"
+        ],
         "anidb": []
       }
     },
@@ -166,7 +168,9 @@
         "shikimori": [
           468
         ],
-        "sources": [],
+        "sources": [
+          "animego:3462"
+        ],
         "anidb": []
       }
     },
@@ -480,7 +484,9 @@
         "shikimori": [
           17187
         ],
-        "sources": [],
+        "sources": [
+          "animego:3468"
+        ],
         "anidb": []
       }
     },
@@ -553,7 +559,9 @@
         "shikimori": [
           19191
         ],
-        "sources": [],
+        "sources": [
+          "animego:3469"
+        ],
         "anidb": []
       }
     },
@@ -602,7 +610,9 @@
         "shikimori": [
           19193
         ],
-        "sources": [],
+        "sources": [
+          "animego:3470"
+        ],
         "anidb": []
       }
     },
@@ -626,7 +636,9 @@
         "shikimori": [
           19195
         ],
-        "sources": [],
+        "sources": [
+          "animego:3471"
+        ],
         "anidb": []
       }
     },
@@ -651,7 +663,9 @@
         "shikimori": [
           29325
         ],
-        "sources": [],
+        "sources": [
+          "animego:3465"
+        ],
         "anidb": []
       }
     },
@@ -675,7 +689,9 @@
         "shikimori": [
           27411
         ],
-        "sources": [],
+        "sources": [
+          "animego:3463"
+        ],
         "anidb": []
       }
     },

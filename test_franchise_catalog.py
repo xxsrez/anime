@@ -448,6 +448,49 @@ class FranchiseCatalogTest(unittest.TestCase):
 
         self.assertEqual([item["id"] for item in candidates], [2540])
 
+    def test_explicit_provider_id_connects_both_directions_without_aliases(self):
+        con = server.connect(self.db_path)
+        self.add_title(con, 20024452, 'yummyanime', 'yummyani:24452', 'Монолог фармацевта 3', 'Онгоинг')
+        con.execute("update anime set subtitle='Kusuriya no Hitorigoto 3rd Season', year='2026' where id=20024452")
+        con.execute("insert into anime_fields values (20024452, 'Shikimori ID', '61987')")
+        con.commit()
+        con.close()
+        server.invalidate_catalog_cache(self.db_path)
+        detail = server.get_anime_detail(20024452, self.db_path)
+        self.assertEqual(detail['franchise']['slug'], 'apothecary-diaries')
+        franchise = server.get_franchise_detail('apothecary-diaries', self.db_path)
+        entry = next(e for e in franchise['entries'] if e['id'] == 'shikimori-61987')
+        self.assertEqual(entry['catalog_item']['id'], 20024452)
+        self.assertEqual(entry['status'], 'releasing')
+        self.assertNotIn('status_note', entry)
+
+    def test_ratings_and_other_namespaces_do_not_become_shikimori_ids(self):
+        con = server.connect(self.db_path)
+        for label, value in [('Shikimori', '61987'), ('MyAnimeList ID', '61987'), ('Shikimori ID', '0')]:
+            con.execute('insert into anime_fields values (2540, ?, ?)', (label, value))
+        self.assertEqual(franchise_catalog.external_refs_by_anime_id(con, {2540}), {})
+        con.close()
+
+    def test_primary_source_is_kept_when_variants_contain_only_secondary(self):
+        con = server.connect(self.db_path)
+        context = franchise_catalog.group_match_context(con, {
+            'id': 2540, 'source': 'animego', 'source_id': '2540',
+            'source_variants': [{'id': 10002222, 'source': 'yummyanime', 'source_id': '2222'}],
+        })
+        self.assertEqual(context['source_keys'], {'animego:2540', 'yummyanime:2222'})
+        con.close()
+
+    def test_verified_identity_merges_spelling_variants_but_not_conflicting_years(self):
+        items = [
+            {'id': 2019, 'title': 'Аоаси', 'subtitle': 'Ao Ashi', 'year': '2022', 'source': 'animego', 'source_id': '2019', '_canonical_external_refs': ['shikimori:49052']},
+            {'id': 10001304, 'title': 'Ао Аси', 'subtitle': 'Ao Ashi', 'year': '2022', 'source': 'yummyanime', 'source_id': '1304', '_canonical_external_refs': ['shikimori:49052']},
+        ]
+        merged = server.canonicalize_items(items)
+        self.assertEqual(len(merged), 1)
+        self.assertEqual(set(merged[0]['source_member_ids']), {2019, 10001304})
+        items[1]['year'] = '2023'
+        self.assertEqual(len(server.canonicalize_items(items)), 2)
+
     def test_ambiguous_catalog_match_is_rejected_instead_of_ranked(self):
         with self.assertRaisesRegex(
             franchise_catalog.FranchiseDataError,

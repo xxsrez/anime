@@ -2277,6 +2277,7 @@ def merge_canonical_items(items):
     merged["can_mark_completed"] = not title_is_ongoing(merged)
 
     merged.pop("_canonical_aliases", None)
+    merged.pop("_canonical_external_refs", None)
     return aggregate_item_state(merged, sorted_items)
 
 
@@ -2320,6 +2321,7 @@ def canonical_component_metadata(items):
         "titles": {normalize_match_title(item.get("title")) for item in items},
         "subtitles": {normalize_match_title(item.get("subtitle")) for item in items},
         "shared_names": set.intersection(*(canonical_names(item) for item in items)),
+        "shared_external_refs": set.intersection(*(set(item.get("_canonical_external_refs") or []) for item in items)),
     }
 
 
@@ -2334,7 +2336,7 @@ def canonical_component_metadata_is_coherent(metadata):
     subtitles = metadata["subtitles"]
     shares_title = len(titles) == 1 and "" not in titles
     shares_subtitle = len(subtitles) == 1 and "" not in subtitles
-    return shares_title or shares_subtitle or bool(metadata.get("shared_names"))
+    return shares_title or shares_subtitle or bool(metadata.get("shared_names")) or bool(metadata.get("shared_external_refs"))
 
 
 def canonical_component_is_coherent(bucket):
@@ -2382,6 +2384,7 @@ def union_canonical_components(parent, components, left, right):
         "titles": left_component["titles"] | right_component["titles"],
         "subtitles": left_component["subtitles"] | right_component["subtitles"],
         "shared_names": left_component["shared_names"] & right_component["shared_names"],
+        "shared_external_refs": left_component["shared_external_refs"] & right_component["shared_external_refs"],
     }
     if canonical_component_metadata_is_coherent(candidate):
         parent[right_root] = left_root
@@ -2432,6 +2435,13 @@ def union_merge_alias_indices(items, parent, components):
 def canonicalize_items(items):
     parent = list(range(len(items)))
     components = [canonical_component_metadata([item]) for item in items]
+    # Explicit identity can bridge spelling differences; year and source
+    # namespace guards still prevent conflicting releases from collapsing.
+    for namespace in ("shikimori", "anidb"):
+        def identity_key(item, namespace=namespace):
+            refs = [ref for ref in item.get("_canonical_external_refs") or [] if ref.startswith(namespace + ":")]
+            return refs[0] if len(refs) == 1 else None
+        union_merge_indices(items, identity_key, source_namespaces_are_unique, parent, components)
     merge_rules = (
         (canonical_subtitle_match_key, can_auto_merge_by_subtitle),
         (canonical_title_match_key, can_auto_merge_by_title),
@@ -3604,6 +3614,13 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
     ).fetchall()
 
     items = rows_to_dicts(rows)
+    external_refs = franchise_catalog.external_refs_by_anime_id(con)
+    for item in items:
+        item["_canonical_external_refs"] = [
+            f"{namespace}:{identifier}"
+            for namespace, identifiers in external_refs.get(item["id"], {}).items()
+            for identifier in sorted(identifiers)
+        ]
     apply_external_ratings(items, load_external_ratings(con))
     search_fields_by_anime_id = load_catalog_search_fields(con) if include_search_fields else {}
     canonical_aliases_by_anime_id = load_canonical_match_aliases(con)
@@ -3921,13 +3938,7 @@ def franchise_external_groups(con, items, definition):
         }
         for namespace in ("anidb", "shikimori")
     }
-    clauses = []
-    values = []
-    for namespace, identifiers in requested.items():
-        for identifier in sorted(identifiers):
-            clauses.append("source_ref like ?")
-            values.append(f"{namespace}:{identifier}:%")
-    if not clauses:
+    if not any(requested.values()):
         return {}
 
     group_by_member_id = {
@@ -3936,23 +3947,14 @@ def franchise_external_groups(con, items, definition):
         for member_id in item.get("source_member_ids") or [item.get("id")]
         if member_id is not None
     }
-    rows = con.execute(
-        f"""
-        select distinct anime_id, source_ref
-        from anime_title_aliases
-        where source_ref is not null
-          and ({' or '.join(clauses)})
-        """,
-        values,
-    ).fetchall()
     groups = {}
-    for row in rows:
-        match = franchise_catalog.EXTERNAL_REF_RE.match(row["source_ref"] or "")
-        group = group_by_member_id.get(int(row["anime_id"]))
-        if not match or not group:
+    for anime_id, refs in franchise_catalog.external_refs_by_anime_id(con).items():
+        group = group_by_member_id.get(anime_id)
+        if not group:
             continue
-        key = (match.group(1), match.group(2))
-        groups.setdefault(key, {})[group["id"]] = group
+        for namespace, identifiers in refs.items():
+            for identifier in identifiers & requested.get(namespace, set()):
+                groups.setdefault((namespace, identifier), {})[group["id"]] = group
     return groups
 
 
@@ -4012,8 +4014,11 @@ def franchise_entry_payload(entry, catalog_group=None, current_group_id=None):
         payload["cover_url"] = catalog_item.get("cover_url") or payload.get("cover_url")
         payload["release_year"] = payload.get("release_year") or catalog_item.get("year")
         payload["release_date"] = payload.get("release_date") or catalog_item.get("date_published")
+        catalog_status = franchise_status_from_catalog(catalog_item.get("status"))
+        if catalog_status and catalog_status != payload.get("status"):
+            payload.pop("status_note", None)
         payload["status"] = (
-            franchise_status_from_catalog(catalog_item.get("status"))
+            catalog_status
             or payload.get("status")
             or "unknown"
         )

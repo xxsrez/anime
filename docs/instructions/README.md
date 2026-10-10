@@ -10,6 +10,7 @@ This directory contains project working rules and operational process.
 | `Environment_Rules.md` | Short environment map and dev/prod boundary. |
 | `Code_Style_Instructions.md` | Coding style, scraper rules, UI rules, and verification expectations. |
 | `Testing_Plan.md` | Shared browser, mobile, dev/prod, and release testing checklist for agents. |
+| `Card_Editorial_Review.md` | Required card checks, franchise links in both directions, and duplicate identity verification before approval. |
 
 Add new files here when the repo gains a durable rule or process that future
 work should follow.

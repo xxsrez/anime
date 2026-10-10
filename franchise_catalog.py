@@ -339,6 +339,36 @@ def get_definition(slug, directory=None):
     )
 
 
+def external_refs_by_anime_id(con, member_ids=None):
+    """Use explicit provider IDs as well as historical alias provenance.
+
+    A rating named Shikimori and a MyAnimeList ID are not Shikimori IDs.
+    Keep conflicting references visible so callers reject ambiguous matches.
+    """
+    refs = {}
+    suffix = ""
+    params = ()
+    if member_ids is not None:
+        params = tuple(sorted(member_ids))
+        if not params:
+            return refs
+        suffix = f" and anime_id in ({','.join('?' for _ in params)})"
+    for anime_id, source_ref in con.execute(
+        "select anime_id, source_ref from anime_title_aliases where source_ref is not null" + suffix, params
+    ):
+        match = EXTERNAL_REF_RE.match(source_ref or "")
+        if match:
+            refs.setdefault(anime_id, {}).setdefault(match[1], set()).add(match[2])
+    for anime_id, label, value in con.execute(
+        "select anime_id, label, value from anime_fields where label in ('Shikimori ID', 'AniDB ID')" + suffix, params
+    ):
+        value = str(value or '').strip()
+        if re.fullmatch(r"[1-9][0-9]*", value):
+            namespace = 'shikimori' if label == 'Shikimori ID' else 'anidb'
+            refs.setdefault(anime_id, {}).setdefault(namespace, set()).add(value)
+    return refs
+
+
 def group_match_context(con, group):
     member_ids = {
         int(value)
@@ -346,29 +376,16 @@ def group_match_context(con, group):
         if value is not None
     }
     source_keys = set()
-    for variant in group.get("source_variants") or [group]:
+    for variant in [group, *(group.get("source_variants") or [])]:
         source = str(variant.get("source") or "").strip()
         source_id = str(variant.get("source_id") or "").strip()
         if source and source_id:
             source_keys.add(f"{source}:{source_id}")
 
     refs = {"anidb": set(), "shikimori": set()}
-    if member_ids:
-        placeholders = ",".join("?" for _ in member_ids)
-        rows = con.execute(
-            f"""
-            select source_ref
-            from anime_title_aliases
-            where anime_id in ({placeholders})
-              and source_ref is not null
-            """,
-            tuple(sorted(member_ids)),
-        ).fetchall()
-        for row in rows:
-            source_ref = row["source_ref"] if hasattr(row, "keys") else row[0]
-            match = EXTERNAL_REF_RE.match(source_ref or "")
-            if match:
-                refs[match.group(1)].add(match.group(2))
+    for member_refs in external_refs_by_anime_id(con, member_ids).values():
+        for namespace, values in member_refs.items():
+            refs[namespace].update(values)
     return {
         "member_ids": member_ids,
         "source_keys": source_keys,

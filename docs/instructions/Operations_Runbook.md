@@ -5,6 +5,8 @@ Railway production, and releasing code or database changes.
 
 ## Golden Rules
 
+- Before approving a catalog card, follow [Card_Editorial_Review.md](Card_Editorial_Review.md), including bidirectional franchise links and duplicate checks.
+
 - Dev/test/scratch is `http://127.0.0.1:8765/`.
 - Production is Railway `anime-local` / environment `production` / service
   `web` at `https://anime-srez.up.railway.app`.
