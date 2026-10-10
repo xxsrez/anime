@@ -1,0 +1,59 @@
+{
+  "slug": "blue-box",
+  "title": "Голубая шкатулка",
+  "summary": "Школьная история о спортивных целях и чувствах Тайки, Тинацу и Хины.",
+  "guide": "Смотрите сезоны по порядку выхода.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/61323",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-57181",
+      "title": "Голубая шкатулка",
+      "subtitle": "Ao no Hako",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          57181
+        ],
+        "sources": [
+          "animego:2649"
+        ]
+      },
+      "release_date": "2024-10-03",
+      "release_year": 2024,
+      "release_label": "3 октября 2024",
+      "episode_count": 25,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-61323",
+      "title": "Голубая шкатулка 2",
+      "subtitle": "Ao no Hako Season 2",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          61323
+        ],
+        "sources": [
+          "animego:3806"
+        ]
+      },
+      "release_date": "2026-10-04",
+      "release_year": 2026,
+      "release_label": "4 октября 2026",
+      "episode_count": 12,
+      "watch_order": 2
+    }
+  ]
+}

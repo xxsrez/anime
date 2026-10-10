@@ -16,7 +16,7 @@
   },
   "guide": "Начинайте с основного сериала 1999 года и смотрите арки последовательно. Большинство фильмов и спецвыпусков необязательны; их лучше включать после ближайшей по дате арки, чтобы не встретить героев раньше времени.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/21/75a07947be55983ce14917f57e96555f.jpeg",
-  "updated_at": "2026-07-14",
+  "updated_at": "2026-10-10",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/21",
@@ -1482,7 +1482,7 @@
       "key": "shikimori-58663",
       "title": "Ван-Пис: Дневник вражды! Соломенные шляпы против Сайфер Пола",
       "subtitle": "One Piece: Innen no Log! Mugiwara no Ichimi to Cipher Pol",
-      "summary": "Краткое переизложение уже вышедших событий франшизы.",
+      "summary": "Специальный выпуск «Ван-Писа», посвящённый противостоянию команды Соломенной Шляпы и CP9. Это пересказ прежних событий, выпущенный во время арки «Яйцеголовый», а не новый сезон.",
       "kind": "ТВ-спецвыпуск",
       "status": "finished",
       "release_date": "2024-04-14",
@@ -1492,14 +1492,15 @@
       "release_order": 60,
       "watch_order": 60,
       "story_role": "recap",
-      "watch_note": "Необязательно: можно пропустить, если хорошо помните предыдущие события.",
+      "watch_note": "Необязательный пересказ уже показанных событий.",
       "cover_url": "https://shikimori.io/uploads/poster/animes/58663/b8ecf03f1006d52b002064c15a0b6376.jpeg",
       "match": {
         "shikimori": [
           58663
         ],
         "sources": [
-          "yummyanime:4846"
+          "yummyanime:4846",
+          "yummyanime:yummyani:12351"
         ],
         "anidb": []
       }

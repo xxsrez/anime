@@ -1,0 +1,60 @@
+{
+  "slug": "returners-magic",
+  "title": "Магия вернувшегося должна быть особенной",
+  "summary": "Вернувшийся в прошлое маг готовит друзей к катастрофе, которую однажды не смог остановить.",
+  "guide": "Второй сезон продолжает первый.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/57612",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-54852",
+      "title": "Магия вернувшегося должна быть особенной",
+      "subtitle": "Kikansha no Mahou wa Tokubetsu desu",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          54852
+        ],
+        "sources": [
+          "animego:2423",
+          "yummyanime:yummyani:10655"
+        ]
+      },
+      "release_date": "2023-10-08",
+      "release_year": 2023,
+      "release_label": "8 октября 2023",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-57612",
+      "title": "Магия вернувшегося должна быть особенной 2",
+      "subtitle": "Kikansha no Mahou wa Tokubetsu desu 2nd Season",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          57612
+        ],
+        "sources": [
+          "animego:4066",
+          "yummyanime:yummyani:11568"
+        ]
+      },
+      "release_date": "2026-10-08",
+      "release_year": 2026,
+      "release_label": "8 октября 2026",
+      "watch_order": 2
+    }
+  ]
+}

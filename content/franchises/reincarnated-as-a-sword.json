@@ -1,0 +1,59 @@
+{
+  "slug": "reincarnated-as-a-sword",
+  "title": "О моём перерождении в меч",
+  "summary": "Приключения Фран и разумного меча, который становится её учителем.",
+  "guide": "Смотрите первый сезон, затем второй.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/53913",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-49891",
+      "title": "О моём перерождении в меч",
+      "subtitle": "Tensei shitara Ken deshita",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          49891
+        ],
+        "sources": [
+          "animego:2130"
+        ]
+      },
+      "release_date": "2022-10-05",
+      "release_year": 2022,
+      "release_label": "5 октября 2022",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-53913",
+      "title": "О моём перерождении в меч 2",
+      "subtitle": "Tensei shitara Ken deshita II",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          53913
+        ],
+        "sources": [
+          "animego:3805"
+        ]
+      },
+      "release_date": "2026-10-08",
+      "release_year": 2026,
+      "release_label": "8 октября 2026",
+      "episode_count": 12,
+      "watch_order": 2
+    }
+  ]
+}

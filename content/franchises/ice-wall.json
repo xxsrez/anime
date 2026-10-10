@@ -1,0 +1,58 @@
+{
+  "slug": "ice-wall",
+  "title": "Ледяная стена",
+  "summary": "История четырёх школьников, которым трудно открыто говорить о своих чувствах.",
+  "guide": "Смотрите сезоны последовательно.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/64534",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-60852",
+      "title": "Ледяная стена",
+      "subtitle": "Koori no Jouheki",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          60852
+        ],
+        "sources": [
+          "animego:3223"
+        ]
+      },
+      "release_date": "2026-04-02",
+      "release_year": 2026,
+      "release_label": "2 апреля 2026",
+      "episode_count": 14,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-64534",
+      "title": "Ледяная стена 2",
+      "subtitle": "Koori no Jouheki 2nd Season",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          64534
+        ],
+        "sources": [
+          "animego:3814"
+        ]
+      },
+      "release_date": "2026-10-02",
+      "release_year": 2026,
+      "release_label": "2 октября 2026",
+      "watch_order": 2
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "detective-is-already-dead",
+  "title": "Детектив уже мёртв",
+  "summary": "Бывший помощник детектива разбирается с делами и тайнами, оставшимися после её смерти.",
+  "guide": "Второй сезон продолжает первый; начинайте с первого сезона.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/52480",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-46471",
+      "title": "Детектив уже мёртв",
+      "subtitle": "Tantei wa Mou, Shindeiru.",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          46471
+        ],
+        "sources": [
+          "animego:1825"
+        ]
+      },
+      "release_date": "2021-07-04",
+      "release_year": 2021,
+      "release_label": "4 июля 2021",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-52480",
+      "title": "Детектив уже мёртв 2",
+      "subtitle": "Tantei wa Mou, Shindeiru. Season 2",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          52480
+        ],
+        "sources": [
+          "animego:3812"
+        ]
+      },
+      "release_date": "2026-10-07",
+      "release_year": 2026,
+      "release_label": "7 октября 2026",
+      "episode_count": 13,
+      "watch_order": 2
+    }
+  ]
+}

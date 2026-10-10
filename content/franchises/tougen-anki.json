@@ -1,0 +1,77 @@
+{
+  "slug": "tougen-anki",
+  "title": "Тёмный демон",
+  "summary": "Потомки они учатся управлять своей силой и противостоят наследникам Момотаро.",
+  "guide": "Сначала смотрите «Тёмного демона», затем арку «Водопад Кэгон в Никко» и её вторую часть по мере выхода.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/65023",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-58811",
+      "title": "Тёмный демон",
+      "subtitle": "Tougen Anki",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          58811
+        ],
+        "sources": []
+      },
+      "release_date": "2025-07-11",
+      "release_year": 2025,
+      "release_label": "11 июля 2025",
+      "episode_count": 24,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-63181",
+      "title": "Тёмный демон: Водопад Кэгон в Никко",
+      "subtitle": "Tougen Anki: Nikko Kegon no Taki-hen",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          63181
+        ],
+        "sources": [
+          "animego:4088"
+        ]
+      },
+      "release_date": "2026-10-02",
+      "release_year": 2026,
+      "release_label": "2 октября 2026",
+      "episode_count": 12,
+      "watch_order": 2
+    },
+    {
+      "key": "shikimori-65023",
+      "title": "Тёмный демон: Водопад Кэгон в Никко. Часть 2",
+      "subtitle": "Tougen Anki: Nikko Kegon no Taki-hen Part 2",
+      "kind": "Сериал",
+      "status": "announced",
+      "release_order": 3,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          65023
+        ],
+        "sources": []
+      },
+      "release_date": "2027-04-01",
+      "release_year": 2027,
+      "release_label": "1 апреля 2027",
+      "episode_count": 12,
+      "watch_order": 3
+    }
+  ]
+}

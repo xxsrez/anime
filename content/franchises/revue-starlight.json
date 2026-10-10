@@ -1,0 +1,60 @@
+{
+  "slug": "revue-starlight",
+  "title": "Девичья опера: Свет ревю",
+  "summary": "Ученицы театральной академии стремятся выйти на сцену и проходят необычные испытания.",
+  "guide": "Сначала смотрите основной сериал, затем дополнительные короткие эпизоды. Эта подборка связывает сериал со спецвыпусками, а не перечисляет все фильмы франшизы.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/38050",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-35503",
+      "title": "Девичья опера: Свет ревю",
+      "subtitle": "Shoujo☆Kageki Revue Starlight",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          35503
+        ],
+        "sources": [
+          "yummyanime:yummyani:8987"
+        ]
+      },
+      "release_date": "2018-07-13",
+      "release_year": 2018,
+      "release_label": "13 июля 2018",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-38050",
+      "title": "Девичья опера: Свет ревю — Спецвыпуски",
+      "subtitle": "Shoujo☆Kageki Revue Starlight Specials",
+      "kind": "Спецвыпуск",
+      "status": "finished",
+      "release_order": 2,
+      "story_role": "optional",
+      "match": {
+        "shikimori": [
+          38050
+        ],
+        "sources": [
+          "yummyanime:yummyani:13902"
+        ]
+      },
+      "release_date": "2018-10-24",
+      "release_year": 2018,
+      "release_label": "24 октября 2018",
+      "episode_count": 3,
+      "watch_order": 2,
+      "watch_note": "Дополнение к сериалу, необязательное для основной истории."
+    }
+  ]
+}

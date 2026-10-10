@@ -1,0 +1,103 @@
+{
+  "slug": "magic-knight-rayearth",
+  "title": "Рыцари магии",
+  "summary": "Разные экранизации манги CLAMP о трёх девушках, перенесённых в иной мир.",
+  "guide": "Сериал 1994 года и его второй сезон образуют одну историю. OVA и сериал 2026 года — альтернативные версии; новая экранизация не является третьим сезоном старой.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/59204",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-435",
+      "title": "Рыцари магии",
+      "subtitle": "Magic Knight Rayearth",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          435
+        ],
+        "sources": [
+          "animego:3823",
+          "yummyanime:yummyani:8581"
+        ]
+      },
+      "release_date": "1994-10-17",
+      "release_year": 1994,
+      "release_label": "17 октября 1994",
+      "episode_count": 20
+    },
+    {
+      "key": "shikimori-1563",
+      "title": "Рыцари магии II",
+      "subtitle": "Magic Knight Rayearth II",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          1563
+        ],
+        "sources": [
+          "animego:3825"
+        ]
+      },
+      "release_date": "1995-04-10",
+      "release_year": 1995,
+      "release_label": "10 апреля 1995",
+      "episode_count": 29
+    },
+    {
+      "key": "shikimori-1954",
+      "title": "Рыцари магии OVA",
+      "subtitle": "Rayearth",
+      "kind": "OVA",
+      "status": "finished",
+      "release_order": 3,
+      "story_role": "optional",
+      "match": {
+        "shikimori": [
+          1954
+        ],
+        "sources": [
+          "animego:3824",
+          "yummyanime:yummyani:8530"
+        ]
+      },
+      "release_date": "1997-07-25",
+      "release_year": 1997,
+      "release_label": "25 июля 1997",
+      "episode_count": 3,
+      "watch_note": "Альтернативная экранизация; не продолжение предыдущего сериала."
+    },
+    {
+      "key": "shikimori-59204",
+      "title": "Рыцари магии (2026)",
+      "subtitle": "Magic Knight Rayearth (2026)",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 4,
+      "story_role": "optional",
+      "match": {
+        "shikimori": [
+          59204
+        ],
+        "sources": [
+          "animego:3822",
+          "yummyanime:yummyani:24644"
+        ]
+      },
+      "release_date": "2026-10-07",
+      "release_year": 2026,
+      "release_label": "7 октября 2026",
+      "watch_note": "Альтернативная экранизация; не продолжение предыдущего сериала."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "westward-asura",
+  "title": "Путешествие на Запад: Безумный король",
+  "summary": "Отдельная история Асуры во вселенной «Путешествия на Запад».",
+  "guide": "Смотрите два сезона «Безумного короля» последовательно. Это отдельная ветка «Путешествия на Запад», поэтому номер сезона относится именно к ней.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/65141",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-58001",
+      "title": "Путешествие на Запад: Безумный король",
+      "subtitle": "Kuang Wang",
+      "kind": "ONA",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          58001
+        ],
+        "sources": [
+          "yummyanime:yummyani:11824"
+        ]
+      },
+      "release_date": "2024-02-28",
+      "release_year": 2024,
+      "release_label": "28 февраля 2024",
+      "episode_count": 9,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-65141",
+      "title": "Путешествие на Запад: Безумный король 2",
+      "subtitle": "Kuang Wang 2",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          65141
+        ],
+        "sources": [
+          "yummyanime:yummyani:30787"
+        ]
+      },
+      "release_date": "2026-10-08",
+      "release_year": 2026,
+      "release_label": "8 октября 2026",
+      "episode_count": 14,
+      "watch_order": 2
+    }
+  ]
+}

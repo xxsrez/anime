@@ -1,0 +1,58 @@
+{
+  "slug": "wild-last-boss",
+  "title": "Шальной последний босс явился!",
+  "summary": "Луфас возвращается в изменившийся фэнтезийный мир и собирает своих прежних соратников.",
+  "guide": "Смотрите сезоны последовательно.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/63140",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-59644",
+      "title": "Шальной последний босс явился!",
+      "subtitle": "Yasei no Last Boss ga Arawareta!",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          59644
+        ],
+        "sources": [
+          "animego:2858"
+        ]
+      },
+      "release_date": "2025-10-04",
+      "release_year": 2025,
+      "release_label": "4 октября 2025",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-63140",
+      "title": "Шальной последний босс явился! 2",
+      "subtitle": "Yasei no Last Boss ga Arawareta! 2nd Season",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          63140
+        ],
+        "sources": [
+          "animego:4031"
+        ]
+      },
+      "release_date": "2026-10-03",
+      "release_year": 2026,
+      "release_label": "3 октября 2026",
+      "watch_order": 2
+    }
+  ]
+}

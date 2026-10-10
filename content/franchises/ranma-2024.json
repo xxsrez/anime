@@ -1,0 +1,81 @@
+{
+  "slug": "ranma-2024",
+  "title": "Ранма 1/2 — экранизация 2024 года",
+  "summary": "Новая экранизация истории Ранмы, его необычного проклятия и помолвки с Аканэ.",
+  "guide": "Смотрите три сезона этой экранизации по порядку. Сериал 1989 года — другая версия истории; перед новой экранизацией он не требуется.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/63801",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-59145",
+      "title": "Ранма 1/2 (2024)",
+      "subtitle": "Ranma ½ (2024)",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          59145
+        ],
+        "sources": [
+          "yummyanime:4808"
+        ]
+      },
+      "release_date": "2024-10-06",
+      "release_year": 2024,
+      "release_label": "6 октября 2024",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-60564",
+      "title": "Ранма 1/2 (2024) 2",
+      "subtitle": "Ranma ½ (2024) 2nd Season",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          60564
+        ],
+        "sources": [
+          "animego:3630",
+          "yummyanime:8210"
+        ]
+      },
+      "release_date": "2025-10-05",
+      "release_year": 2025,
+      "release_label": "5 октября 2025",
+      "episode_count": 12,
+      "watch_order": 2
+    },
+    {
+      "key": "shikimori-63801",
+      "title": "Ранма 1/2 (2024) 3",
+      "subtitle": "Ranma ½ (2024) 3rd Season",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 3,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          63801
+        ],
+        "sources": [
+          "animego:3816"
+        ]
+      },
+      "release_date": "2026-10-04",
+      "release_year": 2026,
+      "release_label": "4 октября 2026",
+      "watch_order": 3
+    }
+  ]
+}

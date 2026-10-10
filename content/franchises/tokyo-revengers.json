@@ -6,7 +6,7 @@
   "summary": "Криминальная драма о путешествиях во времени, подростковых бандах и попытках изменить трагическое будущее, исправляя решения прошлого.",
   "guide": "Смотрите сюжетные сезоны и арки по порядку выхода. Комедийные короткометражки Chibi Revenger необязательны и лучше подходят после первого сезона.",
   "cover_url": "https://shikimori.io/uploads/poster/animes/42249/6754c20060bd5d0581974d0bd769db81.jpeg",
-  "updated_at": "2026-07-14",
+  "updated_at": "2026-10-10",
   "source": {
     "title": "Shikimori: карточки и граф связей релизов",
     "url": "https://shikimori.io/animes/42249",
@@ -164,7 +164,7 @@
       "subtitle": "Tokyo Revengers: Santen Sensou-hen",
       "summary": "Продолжение основной сюжетной линии франшизы.",
       "kind": "Сериал",
-      "status": "announced",
+      "status": "releasing",
       "release_date": "2026-10-03",
       "release_year": 2026,
       "release_label": "3 октября 2026",
@@ -178,9 +178,12 @@
         "shikimori": [
           59088
         ],
-        "sources": [],
+        "sources": [
+          "animego:3811"
+        ],
         "anidb": []
-      }
+      },
+      "episode_count": 13
     }
   ],
   "announcements": [],

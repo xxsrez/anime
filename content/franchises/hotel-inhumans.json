@@ -1,0 +1,59 @@
+{
+  "slug": "hotel-inhumans",
+  "title": "Отель для нелюдей",
+  "summary": "Консьержи необычного отеля принимают гостей, чья работа связана с убийствами.",
+  "guide": "Начинайте с первого сезона, затем переходите ко второму.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/62590",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-60260",
+      "title": "Отель для нелюдей",
+      "subtitle": "Hotel Inhumans",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          60260
+        ],
+        "sources": [
+          "animego:2847"
+        ]
+      },
+      "release_date": "2025-07-06",
+      "release_year": 2025,
+      "release_label": "6 июля 2025",
+      "episode_count": 13,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-62590",
+      "title": "Отель для нелюдей 2",
+      "subtitle": "Hotel Inhumans 2nd Season",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          62590
+        ],
+        "sources": [
+          "animego:3996"
+        ]
+      },
+      "release_date": "2026-10-04",
+      "release_year": 2026,
+      "release_label": "4 октября 2026",
+      "episode_count": 13,
+      "watch_order": 2
+    }
+  ]
+}

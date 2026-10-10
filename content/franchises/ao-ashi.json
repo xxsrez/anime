@@ -1,0 +1,59 @@
+{
+  "slug": "ao-ashi",
+  "title": "Ао Аси",
+  "summary": "Юный футболист Асито пытается закрепиться в молодёжной команде профессионального клуба.",
+  "guide": "Смотрите первый сезон, затем второй.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/61603",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-49052",
+      "title": "Ао Аси",
+      "subtitle": "Ao Ashi",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          49052
+        ],
+        "sources": [
+          "animego:2019"
+        ]
+      },
+      "release_date": "2022-04-09",
+      "release_year": 2022,
+      "release_label": "9 апреля 2022",
+      "episode_count": 24,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-61603",
+      "title": "Ао Аси 2",
+      "subtitle": "Ao Ashi Season 2",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          61603
+        ],
+        "sources": [
+          "animego:3813"
+        ]
+      },
+      "release_date": "2026-10-04",
+      "release_year": 2026,
+      "release_label": "4 октября 2026",
+      "episode_count": 24,
+      "watch_order": 2
+    }
+  ]
+}

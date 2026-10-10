@@ -1,0 +1,104 @@
+{
+  "slug": "swallowed-star",
+  "title": "Пожиратель звёзд",
+  "summary": "В мире после эпидемии людям приходится защищаться от мутировавших чудовищ.",
+  "guide": "Здесь приведены первые четыре сезона в нумерации источников. Смотрите их последовательно; третья карточка не является началом истории.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/56524",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-44218",
+      "title": "Пожиратель звёзд",
+      "subtitle": "Tunshi Xingkong",
+      "kind": "ONA",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          44218
+        ],
+        "sources": [
+          "yummyanime:yummyani:6292"
+        ]
+      },
+      "release_date": "2020-11-29",
+      "release_year": 2020,
+      "release_label": "29 ноября 2020",
+      "episode_count": 26,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-49571",
+      "title": "Пожиратель звёзд 2",
+      "subtitle": "Tunshi Xingkong 2nd Season",
+      "kind": "ONA",
+      "status": "finished",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          49571
+        ],
+        "sources": [
+          "yummyanime:5193",
+          "yummyanime:yummyani:4708"
+        ]
+      },
+      "release_date": "2021-12-29",
+      "release_year": 2021,
+      "release_label": "29 декабря 2021",
+      "episode_count": 26,
+      "watch_order": 2
+    },
+    {
+      "key": "shikimori-56523",
+      "title": "Пожиратель звёзд 3",
+      "subtitle": "Tunshi Xingkong 3rd Season",
+      "kind": "ONA",
+      "status": "finished",
+      "release_order": 3,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          56523
+        ],
+        "sources": [
+          "yummyanime:yummyani:11554"
+        ]
+      },
+      "release_date": "2022-09-14",
+      "release_year": 2022,
+      "release_label": "14 сентября 2022",
+      "episode_count": 33,
+      "watch_order": 3
+    },
+    {
+      "key": "shikimori-56524",
+      "title": "Пожиратель звёзд 4",
+      "subtitle": "Tunshi Xingkong 4th Season",
+      "kind": "ONA",
+      "status": "releasing",
+      "release_order": 4,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          56524
+        ],
+        "sources": [
+          "yummyanime:yummyani:11555"
+        ]
+      },
+      "release_date": "2023-10-03",
+      "release_year": 2023,
+      "release_label": "3 октября 2023",
+      "episode_count": 175,
+      "watch_order": 4
+    }
+  ]
+}

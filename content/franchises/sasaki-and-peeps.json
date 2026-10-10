@@ -1,0 +1,61 @@
+{
+  "slug": "sasaki-and-peeps",
+  "title": "Сасаки и Пи",
+  "summary": "Офисный работник и волшебная птица путешествуют между современным и фэнтезийным мирами.",
+  "guide": "Смотрите первый сезон, затем второй.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/58518",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-52482",
+      "title": "Сасаки и Пи",
+      "subtitle": "Sasaki to Pii-chan",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          52482
+        ],
+        "sources": [
+          "animego:2467",
+          "yummyanime:yummyani:10966"
+        ]
+      },
+      "release_date": "2024-01-05",
+      "release_year": 2024,
+      "release_label": "5 января 2024",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-58518",
+      "title": "Сасаки и Пи 2",
+      "subtitle": "Sasaki to Pii-chan Season 2",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          58518
+        ],
+        "sources": [
+          "animego:4028",
+          "yummyanime:yummyani:12095"
+        ]
+      },
+      "release_date": "2026-10-07",
+      "release_year": 2026,
+      "release_label": "7 октября 2026",
+      "episode_count": 12,
+      "watch_order": 2
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "wounded-saint",
+  "title": "Возмездие раненой святой",
+  "summary": "Преданная целительница Луа заключает союз с принцем Свеном и добивается справедливости.",
+  "guide": "Второй сезон продолжает события первого.",
+  "schema_version": 1,
+  "updated_at": "2026-10-10",
+  "source": {
+    "title": "Shikimori: карточки и связи релизов",
+    "url": "https://shikimori.io/animes/64180",
+    "updated_at": "2026-10-10"
+  },
+  "entries": [
+    {
+      "key": "shikimori-59961",
+      "title": "Возмездие раненой святой",
+      "subtitle": "Kizu darake Seijo yori Houfuku wo Komete",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          59961
+        ],
+        "sources": [
+          "animego:2836"
+        ]
+      },
+      "release_date": "2025-07-10",
+      "release_year": 2025,
+      "release_label": "10 июля 2025",
+      "episode_count": 12,
+      "watch_order": 1
+    },
+    {
+      "key": "shikimori-64180",
+      "title": "Возмездие раненой святой  2",
+      "subtitle": "Kizu darake Seijo yori Houfuku wo Komete Season 2",
+      "kind": "Сериал",
+      "status": "releasing",
+      "release_order": 2,
+      "story_role": "main",
+      "match": {
+        "shikimori": [
+          64180
+        ],
+        "sources": [
+          "animego:3840"
+        ]
+      },
+      "release_date": "2026-10-02",
+      "release_year": 2026,
+      "release_label": "2 октября 2026",
+      "watch_order": 2
+    }
+  ]
+}
