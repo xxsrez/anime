@@ -629,6 +629,14 @@
 
   // Source payloads also contain API URLs, IDs, counters and stale player data.
   // Keep those available to search/import, but show a stable editorial summary.
+  function releaseStatusLabel(status) {
+    const key = String(status || "").trim().toLocaleLowerCase("ru-RU");
+    if (["вышел", "released", "finished", "completed"].includes(key)) return "Выпуск завершён";
+    if (["онгоинг", "ongoing", "airing"].includes(key)) return "Выходит";
+    if (["анонс", "anons", "announced", "upcoming"].includes(key)) return "Анонсировано";
+    return status || "Статус не указан";
+  }
+
   function titleMetadataFields(detail) {
     const clean = value => String(value ?? "").replace(/\s+/g, " ").trim();
     const meaningful = value => value && !/^(?:[-—–?]|нет|неизвестно|null|none)$/i.test(value);
@@ -658,6 +666,7 @@
   }
 
   const api = {
+    releaseStatusLabel,
     titleGenres,
     titleMetadataFields,
     episodeNumberValue,

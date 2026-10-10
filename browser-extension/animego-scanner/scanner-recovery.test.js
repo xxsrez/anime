@@ -9,7 +9,7 @@ async function scannerHarness({ stored = null, fetch, discovery = false }) {
   const element = () => ({
     children: [], style: {}, append() {}, prepend() {}, setAttribute() {}, addEventListener() {},
   });
-  const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture" }] };
+  const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture", url: "https://animego.me/anime/fixture-100" }] };
   if (discovery) { payload.discovery = true; payload.tasks = []; }
   let storage = stored || {
     payload, checkpoint: { job_id: "1", status: "paused" },
@@ -78,6 +78,7 @@ test("a failed delivery survives reload and retries the exact collected result",
     throw new TypeError("Failed to fetch");
   } });
   first.driver.collect(async () => [{ episode: { id: 10001 }, providers: [{ provider_id: "fixture" }] }]);
+  first.driver.upstream(async () => "<h1>Fixture</h1>");
   await first.driver.run();
   assert.equal(first.driver.state.status, "error");
   assert.equal(first.driver.state.next_index, 0);
@@ -99,6 +100,20 @@ test("a failed delivery survives reload and retries the exact collected result",
   assert.equal(resumed.driver.state.checked_items, 1);
   assert.equal(resumed.driver.state.pending_result, null);
   assert.deepEqual(paths, ["/api/animego-scans/1/results", "/api/animego-scans/1/complete"]);
+});
+
+test("existing titles send metadata even without new episodes", async () => {
+  let body;
+  const harness = await scannerHarness({ fetch: async (url, options) => {
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return response({ checked_items: 1 });
+  } });
+  harness.driver.collect(async () => []);
+  harness.driver.upstream(async () => "<h1>Completed title</h1>");
+  await harness.driver.run();
+  assert.equal(harness.driver.state.status, "completed");
+  assert.equal(body.detail_html, "<h1>Completed title</h1>");
+  assert.deepEqual(body.episodes, []);
 });
 
 test("a failed stop can be retried without reloading the extension", async () => {

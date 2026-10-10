@@ -268,6 +268,31 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertEqual(con.execute("select title, description, editorial_status from anime where id=701").fetchone(), ("Edited title", "Edited description", "ready"))
         con.close()
 
+    def test_ready_release_facts_advance_without_erasing_editorial_work(self):
+        con = scrape_animego.init_db(self.db_path)
+        item = scrape_animego.parse_listing(self.listing_html(701))[0]
+        detail = scrape_animego.parse_detail('<h1>Source title</h1>')
+        detail['fields'] = {'Статус': 'Онгоинг', 'Эпизоды': '1 / 12'}
+        scrape_animego.upsert_anime(con, item, detail, 'before', authoritative_metadata=True)
+        con.execute("update anime set editorial_status='ready', title='Edited', description='Curated' where id=701")
+        detail['fields'] = {'Статус': 'Вышел', 'Эпизоды': '12', 'Время': '24 мин.'}
+        scrape_animego.upsert_anime(con, item, detail, 'after', authoritative_metadata=True)
+        self.assertEqual(con.execute("select title,description,editorial_status,status,episodes_text,duration from anime where id=701").fetchone(), ('Edited', 'Curated', 'ready', 'Вышел', '12', '24 мин.'))
+        self.assertEqual(json.loads(con.execute("select fields_json from anime where id=701").fetchone()[0])['Статус'], 'Вышел')
+        detail['fields'] = {}
+        scrape_animego.upsert_anime(con, item, detail, 'later', authoritative_metadata=True)
+        self.assertEqual(con.execute("select status from anime where id=701").fetchone()[0], 'Вышел')
+        con.close()
+
+    def test_scan_refreshes_existing_title_without_new_episodes(self):
+        self.add_title(701, playable=True)
+        job = self.create_job()
+        body = {'anime_id': 701, 'episodes': [], 'detail_html': '<h1>Source title</h1><div class="entity-field grid"><div class="text-body-tertiary">Статус</div><div class="text-break">Вышел</div></div>'}
+        animego_scans.submit_scan_result(self.db_path, job['job']['id'], job['token'], body, server.PLAYER_HOSTS)
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute('select status from anime where id=701').fetchone()[0], 'Вышел')
+            self.assertEqual(con.execute('select count(*) from episodes where anime_id=701').fetchone()[0], 1)
+
     def request(self, method, path, *, headers=None, body=None):
         httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.AnimeHandler)
         httpd.db_path = str(self.db_path)

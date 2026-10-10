@@ -548,7 +548,7 @@ async function processTask(task, index, runGeneration) {
     const episodes = await collectTitle(task, runGeneration);
     if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
     body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
-    if (task.selection_reason === "discovery" && episodes.length) {
+    if (task.selection_reason !== "discovery" || episodes.length) {
       const url = new URL(task.url);
       if (url.origin !== UPSTREAM_BASE || !url.pathname.startsWith("/anime/")) {
         throw new UpstreamError("Некорректный адрес карточки AnimeGo.");

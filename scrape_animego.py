@@ -451,11 +451,37 @@ def ensure_columns(con, table, columns):
             con.execute(f"alter table {table} add column {column} {definition}")
 
 
+def refresh_release_metadata(con, anime_id, detail, scraped_at):
+    """Refresh source facts without replacing editorial text or curated relations."""
+    row = con.execute("select fields_json from anime where id=?", (anime_id,)).fetchone()
+    if row is None:
+        return
+    fields = detail.get("fields") or {}
+    stored = json.loads(row[0] or "{}")
+    for label, column in (("Статус", "status"), ("Эпизоды", "episodes_text"), ("Выпуск", "release_text")):
+        value = fields.get(label)
+        if not value or not str(value).strip():
+            continue
+        con.execute(f"update anime set {column}=? where id=?", (value, anime_id))
+        con.execute("insert or replace into anime_fields(anime_id,label,value) values (?,?,?)", (anime_id, label, value))
+        stored[label] = value
+    # Older Yummy imports use 'Время'. Fill gaps without replacing edited facts.
+    for column, value in (
+        ("duration", fields.get("Длительность") or fields.get("Время")),
+        ("studio", fields.get("Студия")),
+        ("season", fields.get("Сезон")),
+    ):
+        if value and str(value).strip():
+            con.execute(f"update anime set {column}=? where id=? and nullif(trim({column}), '') is null", (value, anime_id))
+    con.execute("update anime set fields_json=?, scraped_at=? where id=?", (json.dumps(stored, ensure_ascii=False, sort_keys=True), scraped_at, anime_id))
+
+
 def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
-    # Editorial approval is explicit. Imports must never overwrite an approved card.
+    # Approval protects editorial work, but release facts must keep advancing.
     ensure_columns(con, "anime", {"editorial_status": "text not null default 'legacy'"})
     existing = con.execute("select editorial_status from anime where id = ?", (item["id"],)).fetchone()
     if existing and existing[0] == "ready":
+        refresh_release_metadata(con, item["id"], detail, scraped_at)
         return
     fields = detail["fields"]
     published = str(detail.get("date_published") or "")
@@ -554,7 +580,7 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
             fields.get("Выпуск"),
             detail.get("content_rating") or fields.get("Рейтинг"),
             fields.get("Возраст"),
-            fields.get("Длительность"),
+            fields.get("Длительность") or fields.get("Время"),
             fields.get("Студия"),
             fields.get("Сезон"),
             detail["description"] or item.get("listing_description"),

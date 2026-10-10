@@ -74,7 +74,7 @@ function scannerHarness({
   };
   const state = {
     animeGoScannerReady: ready,
-    animeGoScannerVersion: null,
+    animeGoScannerVersion: "0.4.0",
     animeGoScannerUpstreamReady: upstreamReady,
     animeGoScanPhase: "idle",
     animeGoScanJobId: null,
@@ -182,6 +182,14 @@ function scannerHarness({
       await callback();
     },
   };
+}
+
+async function testOldScannerRequiresUpdate() {
+  const harness = scannerHarness();
+  harness.state.animeGoScannerVersion = "0.3.0";
+  await harness.context.startAnimeGoScan("partial");
+  assert.equal(harness.requests.length, 0);
+  assert.equal(harness.events.some(event => event.type === "animego-scan-start"), false);
 }
 
 async function testPartialScanDispatch() {
@@ -382,6 +390,7 @@ assert.match(indexSource, /data-scan-mode="full"/);
 assert.match(indexSource, /href="\/scanner-setup"/);
 
 Promise.resolve()
+  .then(testOldScannerRequiresUpdate)
   .then(testPartialScanDispatch)
   .then(testNoExtensionShowsSetup)
   .then(testPermissionIsGrantedBeforeCreatingJob)

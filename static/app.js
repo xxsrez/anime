@@ -780,9 +780,8 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
   }
   const normalizedMode = mode === "full" ? "full" : "partial";
   const scannerVersion = String(state.animeGoScannerVersion || "").split(".").map(Number);
-  if (normalizedMode === "full" && state.animeGoScannerVersion &&
-      !(scannerVersion[0] > 0 || scannerVersion[1] >= 3)) {
-    showAppStatus("Для поиска новых тайтлов обновите расширение сканера до версии 0.3.0 или новее", "warn");
+  if (!(scannerVersion[0] > 0 || scannerVersion[1] >= 4)) {
+    showAppStatus("Для обновления статусов и метаданных обновите расширение сканера до версии 0.4.0 или новее", "warn");
     showAnimeGoScannerSetup();
     return;
   }
@@ -2195,9 +2194,9 @@ function renderList() {
     if (isRecommendationView()) {
       const recScore = formatRecommendationScore(item.recommendation_score);
       const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
-      meta.textContent = [recScore, confidence, `${available} видео`, score, source].filter(Boolean).join(" · ");
+      meta.textContent = [recScore, confidence, frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source].filter(Boolean).join(" · ");
     } else {
-      meta.textContent = [text(item.kind, "тайтл"), `${available} видео`, score, source, watch].filter(Boolean).join(" · ");
+      meta.textContent = [text(item.kind, "тайтл"), frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source, watch].filter(Boolean).join(" · ");
     }
 
     body.append(titleRow, meta);
@@ -3410,7 +3409,7 @@ function renderDetail() {
   el.poster.src = detail.cover_url || "";
   el.poster.alt = detail.title || "";
   const scoreText = ratingText(detail);
-  el.meta.textContent = [detail.editorial_status === "needs_review" ? "Требует оформления" : null, detail.kind, detail.status, scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
+  el.meta.textContent = [detail.editorial_status === "needs_review" ? "Требует оформления" : null, detail.kind, frontendRuntime.releaseStatusLabel(detail.status), scoreText, sourceLabelList(detail)].filter(Boolean).join(" · ");
   el.title.textContent = detail.title || "";
   el.subtitle.textContent = detail.subtitle || "";
   renderFranchiseOpen(detail);

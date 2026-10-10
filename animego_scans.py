@@ -1343,6 +1343,15 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                     },
                 }
 
+            # Older extension versions omit HTML; preserve compatibility without
+            # claiming that their episode-only scans refreshed metadata.
+            if payload.get("detail_html"):
+                html = validated_text(payload["detail_html"], "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
+                detail = animego.parse_detail(html)
+                if not detail["title"]:
+                    raise ValueError("detail page contains no title")
+                animego.upsert_anime(con, dict(anime_row), detail, checked_at, authoritative_metadata=False)
+
             new_episodes = 0
             new_providers = 0
             for snapshot in normalized["episodes"]:

@@ -2,6 +2,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const runtime = require("./frontend_runtime.js");
+assert.equal(runtime.releaseStatusLabel("Вышел"), "Выпуск завершён");
+assert.equal(runtime.releaseStatusLabel("вышел"), "Выпуск завершён");
+assert.equal(runtime.releaseStatusLabel("Онгоинг"), "Выходит");
+assert.equal(runtime.releaseStatusLabel("анонс"), "Анонсировано");
+assert.equal(runtime.releaseStatusLabel(null), "Статус не указан");
 
 // API imports and older scraped cards must produce the same compact summary.
 const importedDetail = {
