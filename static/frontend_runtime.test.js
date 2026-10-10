@@ -3,6 +3,55 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const runtime = require("./frontend_runtime.js");
 
+// API imports and older scraped cards must produce the same compact summary.
+const importedDetail = {
+  year: 2026,
+  rating: "PG-13 (от 13 лет)",
+  fields: [
+    { label: "API URL", value: "https://api.example.test/anime/1" },
+    { label: "Source ID", value: "1" },
+    { label: "MyAnimeList ID", value: "2" },
+    { label: "Shikimori ID", value: "2" },
+    { label: "Возраст", value: "PG-13 (от 13 лет)" },
+    { label: "Год выхода", value: "2026" },
+    { label: "Длительность", value: "24 мин." },
+    { label: "Режиссёр", value: "Имя режиссёра" },
+    { label: "Студия", value: "OLM" },
+    { label: "Статус", value: "онгоинг" },
+    { label: "Эпизоды", value: "1 / 12" },
+    { label: "Следующий эпизод", value: "ожидается выход 1 серии" },
+    { label: "Рейтинг аниме", value: "9.33 (421)" },
+  ],
+};
+const importedSnapshot = JSON.stringify(importedDetail);
+assert.deepEqual(runtime.titleMetadataFields(importedDetail), [
+  ["Выпуск", "2026"],
+  ["Длительность", "24 мин."],
+  ["Возраст", "PG-13 (от 13 лет)"],
+  ["Студия", "OLM"],
+  ["Режиссёр", "Имя режиссёра"],
+]);
+assert.equal(JSON.stringify(importedDetail), importedSnapshot);
+assert.deepEqual(runtime.titleMetadataFields({
+  date_published: "2026-07-03", rating: "8.7", duration: "-",
+  fields: [
+    { label: "Время", value: "24 мин." },
+    { label: "Режиссер", value: "Имя режиссёра" },
+    { label: "СТУДИЯ", value: " OLM  " },
+    { label: "Неизвестное поле", value: "служебные данные" },
+  ],
+}), [
+  ["Выпуск", "03.07.2026"], ["Длительность", "24 мин."],
+  ["Студия", "OLM"], ["Режиссёр", "Имя режиссёра"],
+]);
+assert.deepEqual(runtime.titleMetadataFields({
+  date_published: "2026-07-03", age: "18+", rating: "R-17",
+  fields: [{ label: "Выпуск", value: "3 июля 2026 — 18 декабря 2026" }],
+}), [["Выпуск", "3 июля 2026 — 18 декабря 2026"], ["Возраст", "18+"]]);
+assert.deepEqual(runtime.titleMetadataFields({}), []);
+assert.deepEqual(runtime.titleGenres(["Исэкай", "Фэнтези", "Исекай", " фэнтези ", "", null]), ["Исэкай", "Фэнтези"]);
+assert.deepEqual(runtime.titleGenres(), []);
+
 async function testClientErrorReporter() {
   const listeners = new Map();
   const requests = [];

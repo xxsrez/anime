@@ -3420,7 +3420,7 @@ function renderDetail() {
   renderRecentUpdates(detail);
   renderFields(detail);
 
-  el.genres.replaceChildren(...(detail.genres || []).map(genre => {
+  el.genres.replaceChildren(...frontendRuntime.titleGenres(detail.genres).map(genre => {
     const chip = document.createElement("span");
     chip.className = "chip";
     chip.textContent = genre;
@@ -3523,17 +3523,8 @@ function renderRecentUpdates(detail) {
 }
 
 function renderFields(detail) {
-  const skip = new Set(["Жанры"]);
-  const fields = [];
-  if (detail.rating) fields.push(["Рейтинг", detail.rating]);
-  if (detail.date_published) fields.push(["Дата", detail.date_published]);
-  for (const item of detail.fields || []) {
-    if (skip.has(item.label)) continue;
-    if (fields.some(([label]) => label === item.label)) continue;
-    fields.push([item.label, item.value]);
-  }
-
-  el.fields.replaceChildren(...fields.slice(0, 18).map(([label, value]) => {
+  const fields = frontendRuntime.titleMetadataFields(detail);
+  el.fields.replaceChildren(...fields.map(([label, value]) => {
     const node = document.createElement("div");
     node.className = "field-item";
     const key = document.createElement("span");

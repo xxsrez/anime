@@ -616,7 +616,50 @@
     return { enqueue, pending };
   }
 
+  function titleGenres(genres) {
+    const unique = new Map();
+    for (const genre of genres || []) {
+      let label = String(genre || "").replace(/\s+/g, " ").trim();
+      if (/^ис[еэ]кай$/i.test(label)) label = "Исэкай";
+      const key = label.toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
+      if (key && !unique.has(key)) unique.set(key, label);
+    }
+    return [...unique.values()];
+  }
+
+  // Source payloads also contain API URLs, IDs, counters and stale player data.
+  // Keep those available to search/import, but show a stable editorial summary.
+  function titleMetadataFields(detail) {
+    const clean = value => String(value ?? "").replace(/\s+/g, " ").trim();
+    const meaningful = value => value && !/^(?:[-—–?]|нет|неизвестно|null|none)$/i.test(value);
+    const fields = new Map();
+    for (const item of detail.fields || []) {
+      const key = clean(item.label).toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
+      const value = clean(item.value);
+      if (meaningful(value) && !fields.has(key)) fields.set(key, value);
+    }
+    const pick = (...values) => values.map(clean).find(meaningful) || "";
+    const field = (...labels) => pick(...labels.map(label => fields.get(label)));
+    let release = pick(field("выпуск"), detail.date_published, field("дата"), detail.year, field("год выхода"));
+    const iso = release.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+    if (iso) release = `${iso[3]}.${iso[2]}.${iso[1]}`;
+    const ageRating = pick(detail.rating, field("рейтинг"));
+    const age = pick(detail.age, field("возраст"), /^(?:G|PG|R|NC|\d+\s*\+)/i.test(ageRating) ? ageRating : "");
+    return [
+      ["Выпуск", release],
+      ["Сезон", pick(detail.season, field("сезон"))],
+      ["Длительность", pick(detail.duration, field("длительность", "время"))],
+      ["Возраст", age],
+      ["Студия", pick(detail.studio, field("студия"))],
+      ["Первоисточник", field("первоисточник")],
+      ["Режиссёр", field("режиссер")],
+      ["Автор оригинала", field("автор оригинала")],
+    ].filter(([, value]) => meaningful(value));
+  }
+
   const api = {
+    titleGenres,
+    titleMetadataFields,
     episodeNumberValue,
     hostnameMatches,
     safeHttpsUrl,
