@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const extensionApi = globalThis.browser ?? globalThis.chrome;
+  const extensionApi = globalThis.browser?.runtime ? globalThis.browser : globalThis.chrome;
+  const RELOAD_MESSAGE = "Связь с расширением потеряна. Обновите страницу Anime Catalog и повторите сканирование.";
   const ALLOWED_ORIGINS = new Set([
     "http://127.0.0.1:8765",
     "https://anime-srez.up.railway.app",
@@ -14,13 +15,36 @@
   ]);
 
   function announceReady() {
+    let manifest;
+    try {
+      manifest = extensionApi?.runtime?.getManifest();
+    } catch (_error) {
+      return;
+    }
+    if (!manifest) return;
     document.dispatchEvent(
       new CustomEvent("animego-scanner-ready", {
         detail: {
-          version: extensionApi.runtime.getManifest().version,
+          version: manifest.version,
         },
       }),
     );
+  }
+
+  // Reloading an unpacked extension invalidates content scripts in open tabs.
+  // An async boundary also catches synchronous sendMessage failures.
+  async function sendMessage(message) {
+    try {
+      const runtime = extensionApi?.runtime;
+      if (!runtime?.sendMessage) throw new Error(RELOAD_MESSAGE);
+      runtime.getManifest();
+      return await runtime.sendMessage(message);
+    } catch (error) {
+      if (/Extension context invalidated/i.test(error?.message || "")) {
+        throw new Error(RELOAD_MESSAGE);
+      }
+      throw error;
+    }
   }
 
   function plainClone(value) {
@@ -36,8 +60,7 @@
     if (!ALLOWED_ORIGINS.has(location.origin)) {
       return;
     }
-    extensionApi.runtime
-      .sendMessage({ type: "animego-scanner-prepare" })
+    sendMessage({ type: "animego-scanner-prepare" })
       .then((response) => {
         if (response?.ok === false) {
           throw new Error(response.error || "Не удалось проверить доступ к AnimeGo.");
@@ -63,8 +86,7 @@
     if (!ALLOWED_ORIGINS.has(location.origin)) {
       return;
     }
-    extensionApi.runtime
-      .sendMessage({ type: "animego-scanner-open" })
+    sendMessage({ type: "animego-scanner-open" })
       .then((response) => {
         if (response?.ok === false) {
           throw new Error(response.error || "Не удалось открыть сканер.");
@@ -91,8 +113,7 @@
       );
       return;
     }
-    extensionApi.runtime
-      .sendMessage({ type: "animego-scan-start", detail })
+    sendMessage({ type: "animego-scan-start", detail })
       .then((response) => {
         if (response?.ok === false) {
           throw new Error(response.error || "Не удалось запустить расширение.");
@@ -107,7 +128,7 @@
       });
   });
 
-  extensionApi.runtime.onMessage.addListener((message) => {
+  extensionApi?.runtime?.onMessage?.addListener((message) => {
     if (!message || !FORWARDED_EVENTS.has(message.type)) {
       return;
     }

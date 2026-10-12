@@ -448,7 +448,7 @@ def task_payloads(con, selected):
     tasks = []
     for anime_id, selection_reason in selected:
         row = con.execute(
-            "select id, title from anime where id = ? and source = 'animego'",
+            "select id, title, url from anime where id = ? and source = 'animego'",
             (int(anime_id),),
         ).fetchone()
         if row is None:
@@ -457,6 +457,7 @@ def task_payloads(con, selected):
             {
                 "anime_id": int(row["id"]),
                 "title": row["title"],
+                "url": row["url"],
                 "known_episode_ids": known_playable_episode_ids(con, row["id"]),
                 "selection_reason": selection_reason,
             }

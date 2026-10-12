@@ -16,6 +16,12 @@ import server
 
 
 class AnimeGoScansTest(unittest.TestCase):
+    def test_task_payload_includes_card_url_for_metadata_refresh(self):
+        self.add_title(701)
+        with closing(server.connect(self.db_path)) as con:
+            tasks = animego_scans.task_payloads(con, [(701, "stale")])
+        self.assertEqual(tasks[0]["url"], "https://animego.me/anime/scan-701-701")
+
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.db_path = Path(self.tmpdir.name) / "anime.sqlite"

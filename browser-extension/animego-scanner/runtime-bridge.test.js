@@ -137,8 +137,7 @@ test("Safari content bridge reports permission state to the catalog page", async
     { filename: "content-script.js" },
   );
   document.dispatchEvent(new CustomEvent("animego-scanner-prepare"));
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
 
   const state = events.find(event => event.type === "animego-scanner-permission-state");
   assert.equal(state?.detail?.granted, false);

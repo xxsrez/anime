@@ -187,7 +187,9 @@ function render() {
 
   elements.subtitle.textContent =
     checkpoint.status === "completed"
-      ? "Каталог обновлён. Результаты уже доступны всем пользователям."
+      ? checkpoint.error_count > 0
+        ? `Сканирование завершено с ошибками: ${checkpoint.error_count} из ${total} тайтлов. Подробности ниже.`
+        : "Сканирование завершено. Результаты проверки сохранены."
       : "Расширение проверяет AnimeGo через ваш браузер. Можно оставить эту вкладку в фоне.";
   elements.mode.textContent = modeLabel(payload.mode);
   elements["current-title"].textContent = checkpoint.current?.title || statusText(checkpoint.status);
@@ -548,7 +550,11 @@ async function processTask(task, index, runGeneration) {
     const episodes = await collectTitle(task, runGeneration);
     if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
     body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
-    if (task.selection_reason !== "discovery" || episodes.length) {
+    if (!task.url && task.selection_reason !== "discovery") {
+      // Older servers omit card URLs. Keep episode delivery working while
+      // metadata refresh waits for the server contract update.
+      log("Сервер не передал адрес карточки: отправляем результат проверки серий без обновления метаданных.");
+    } else if (task.selection_reason !== "discovery" || episodes.length) {
       const url = new URL(task.url);
       if (url.origin !== UPSTREAM_BASE || !url.pathname.startsWith("/anime/")) {
         throw new UpstreamError("Некорректный адрес карточки AnimeGo.");
@@ -626,7 +632,7 @@ async function finishScan() {
   render();
   log(
     `Готово: новых серий ${checkpoint.new_episode_count}, ошибок ${checkpoint.error_count}.`,
-    "success",
+    checkpoint.error_count > 0 ? "error" : "success",
   );
   notifyApp("animego-scan-complete", { message: "Сканирование завершено" });
 }

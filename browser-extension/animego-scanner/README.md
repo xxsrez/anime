@@ -25,6 +25,9 @@ and may fill a previously null player URL.
 
 ## Recovery behavior
 
+- After reloading/updating the extension, refresh open Anime Catalog tabs too.
+  Their old content scripts lose access to the extension runtime. The bridge
+  reports this as a page-refresh instruction instead of leaving Scan waiting.
 - Progress is checkpointed in WebExtension local storage after every title.
 - Collected results are also saved before delivery. If delivery fails, Resume resends the saved result, including after a scanner reload, without scraping the title again.
 - A failed Stop can be retried; reloading during Stop restores a controllable job. The server rejects normal completion while titles remain pending.

@@ -5,11 +5,13 @@ import vm from "node:vm";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, fetch, discovery = false }) {
+async function scannerHarness({ stored = null, fetch, discovery = false, legacy = false }) {
   const element = () => ({
     children: [], style: {}, append() {}, prepend() {}, setAttribute() {}, addEventListener() {},
   });
+  const elements = new Map();
   const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture", url: "https://animego.me/anime/fixture-100" }] };
+  if (legacy) delete payload.tasks[0].url;
   if (discovery) { payload.discovery = true; payload.tasks = []; }
   let storage = stored || {
     payload, checkpoint: { job_id: "1", status: "paused" },
@@ -22,7 +24,10 @@ async function scannerHarness({ stored = null, fetch, discovery = false }) {
     } },
   };
   const context = vm.createContext({
-    document: { getElementById: element, createElement: element },
+    document: { getElementById(id) {
+      if (!elements.has(id)) elements.set(id, element());
+      return elements.get(id);
+    }, createElement: element },
     resolveExtensionApi: () => browser, fetch, URL, AbortController, DOMException,
     setTimeout, queueMicrotask, console, shouldRestartAfterReload: () => false,
   });
@@ -38,7 +43,7 @@ async function scannerHarness({ stored = null, fetch, discovery = false }) {
     };
   `, context, { filename: "scanner.js" });
   await new Promise(resolve => setImmediate(resolve));
-  return { driver: context.driver, snapshot: () => structuredClone(storage) };
+  return { driver: context.driver, elements, snapshot: () => structuredClone(storage) };
 }
 
 function response(job) {
@@ -114,6 +119,31 @@ test("existing titles send metadata even without new episodes", async () => {
   assert.equal(harness.driver.state.status, "completed");
   assert.equal(body.detail_html, "<h1>Completed title</h1>");
   assert.deepEqual(body.episodes, []);
+});
+
+test("legacy server tasks without a card URL still deliver collected episodes", async () => {
+  let body;
+  const harness = await scannerHarness({ legacy: true, fetch: async (url, options) => {
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return response({ checked_items: 1, new_episode_count: 1, error_count: 0 });
+  } });
+  harness.driver.collect(async () => [{ episode: { id: 10001 }, providers: [{ provider_id: "fixture" }] }]);
+  harness.driver.upstream(async () => { throw new Error("No card URL supplied"); });
+  await harness.driver.run();
+  assert.equal(harness.driver.state.status, "completed");
+  assert.equal(harness.driver.state.error_count, 0);
+  assert.equal(body.episodes[0].episode.id, 10001);
+  assert.equal(body.error, undefined);
+  assert.equal(body.detail_html, undefined);
+});
+
+test("completed scans with failed titles do not claim the catalog was updated", async () => {
+  const harness = await scannerHarness({ fetch: async () => response({ checked_items: 1, error_count: 1 }) });
+  harness.driver.collect(async () => { throw new Error("AnimeGo ответил HTTP 404."); });
+  await harness.driver.run();
+  assert.equal(harness.driver.state.status, "completed");
+  assert.match(harness.elements.get("subtitle").textContent, /с ошибками: 1 из 1/);
+  assert.doesNotMatch(harness.elements.get("subtitle").textContent, /Каталог обновлён/);
 });
 
 test("a failed stop can be retried without reloading the extension", async () => {
