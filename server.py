@@ -2261,6 +2261,7 @@ def merge_canonical_items(items):
     merged["source_count"] = sum((item.get("source_count") or 0) for item in sorted_items)
     merged["available_episode_count"] = max((item.get("available_episode_count") or 0) for item in sorted_items)
     merged["episode_count"] = max((item.get("episode_count") or 0) for item in sorted_items)
+    merged["available_episode_numbers"] = unique_values(sorted_items, lambda item: item.get("available_episode_numbers") or [])
     merged["genres"] = unique_values(sorted_items, lambda item: item.get("genres") or [])
     merged["search_fields"] = unique_structured_search_fields(
         field
@@ -3554,7 +3555,8 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
                 group by anime_id
             ),
             available_episode_counts as (
-                select e.anime_id, count(distinct e.id) as available_episode_count
+                select e.anime_id, count(distinct e.id) as available_episode_count,
+                       json_group_array(distinct e.number) as available_episode_numbers
                 from episodes e
                 join video_sources vs on vs.episode_id = e.id
                 where vs.embed_url is not null
@@ -3600,6 +3602,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             us.not_interested_updated_at,
             coalesce(ec.episode_count, 0) as episode_count,
             coalesce(aec.available_episode_count, 0) as available_episode_count,
+            aec.available_episode_numbers,
             coalesce(sc.source_count, 0) as source_count,
             gl.genres
         from anime a
@@ -3628,6 +3631,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
         item["available_episode_count"] = item["available_episode_count"] or 0
+        item["available_episode_numbers"] = json.loads(item.get("available_episode_numbers") or "[]")
         item["search_fields"] = [dict(field) for field in search_fields_by_anime_id.get(item["id"], [])]
         item["_canonical_aliases"] = list(canonical_aliases_by_anime_id.get(item["id"], []))
     return items
@@ -3773,12 +3777,20 @@ def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
                 int(user_id),
             ),
         ).fetchall()
+        states = {row["anime_id"]: dict(row) for row in rows}
+        for row in con.execute(
+            """select anime_id, progress_episode_number, completed_at, last_seen_at
+               from user_episode_state where user_id = ? and started_at is not null""",
+            (int(user_id),),
+        ):
+            if row["anime_id"] in states:
+                states[row["anime_id"]].setdefault("_episode_states", []).append(dict(row))
+        return states
     except sqlite3.OperationalError:
         return {}
     finally:
         if owns_connection:
             con.close()
-    return {row["anime_id"]: dict(row) for row in rows}
 
 
 def catalog_item_user_state(item, user_state_by_source_id):
@@ -3789,7 +3801,13 @@ def catalog_item_user_state(item, user_state_by_source_id):
         for source_id in item.get("source_member_ids") or [item.get("id")]
         if source_id in user_state_by_source_id
     ]
-    return aggregate_state_rows(rows)
+    state = aggregate_state_rows(rows)
+    progress = numeric(state.get("progress_episode_number"))
+    current = [episode for row in rows for episode in row.get("_episode_states", [])
+               if progress is not None and numeric(episode["progress_episode_number"]) == progress]
+    if current:
+        state["last_watch"] = max(current, key=lambda episode: episode.get("last_seen_at") or "")
+    return state
 
 
 def clone_catalog_item(item, include_search_fields=False, user_state_by_source_id=None):
@@ -3819,6 +3837,8 @@ def compact_catalog_variant(variant):
 
 
 CATALOG_API_ITEM_FIELDS = (
+    "available_episode_numbers",
+    "last_watch",
     "editorial_status",
     "id",
     "slug",

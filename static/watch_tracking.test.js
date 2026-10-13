@@ -119,6 +119,47 @@ newTitle.watch_status = "completed";
 assert.equal(updatesContext.contentUpdateItemIsPriority(newTitle), false);
 assert.equal(updatesContext.contentUpdateItemIsPriority({watch_status:"watching", report:{episode_numbers:[]}}), false);
 
+const shelf = vm.createContext({
+  state: {viewMode: "progress", anime: [], sortDir: "desc"},
+  el: {search: {value: ""}, resetFilters: {}},
+  INITIAL_RENDER_LIMIT: 100,
+  filterDefinitions: [],
+  effectiveWatchStatus: runtime.effectiveWatchStatus,
+  numericValue: runtime.episodeNumberValue,
+  catalogSearch: {searchQuery: () => ({tokens: []})},
+  baseItemsForView() { return shelf.state.anime; },
+  isRecommendationView: () => false, isUpdatesView: () => false,
+  itemMatchesView: () => true, activeFilterDefinitions: () => [],
+  sortDefinition: () => ({type: "number", value: item => item.recency}),
+  renderList() {}, renderActiveFilters() {}, hasActiveCatalogTools: () => false,
+});
+vm.runInContext([
+  block("function contentUpdateHasUnseenEpisode(", "function contentUpdateItemsForView("),
+  block("function compareAnime(", "function favoriteWatchStatusRank("),
+  block("function applyFilter(", "async function loadSearchFields("),
+].join("\n"), shelf);
+const caughtUp = {id: 1, watch_status: "watching", progress_episode_number: 3,
+  available_episode_numbers: ["1", "2", "3"], recency: 100};
+const pending = {...caughtUp, id: 2, progress_episode_number: 2, recency: 10};
+const unfinished = {...caughtUp, id: 3, recency: 20,
+  last_watch: {progress_episode_number: 3, completed_at: null}};
+shelf.state.anime = [caughtUp, pending, unfinished];
+shelf.applyFilter();
+assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [3, 2, 1]);
+unfinished.last_watch.completed_at = "2026-10-13";
+shelf.applyFilter();
+assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [2, 1, 3]);
+shelf.state.sortDir = "asc";
+shelf.applyFilter();
+assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [2, 3, 1]);
+shelf.state.viewMode = "all";
+shelf.state.sortDir = "desc";
+shelf.applyFilter();
+assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [1, 3, 2]);
+assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, available_episode_numbers: []}), false);
+assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, available_episode_numbers: ["3.5"]}), true);
+assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, progress_episode_number: null}), true);
+
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));
 } else {

@@ -55,6 +55,33 @@ class FractionalEpisodesTest(unittest.TestCase):
             "page_visible": True, "player_focused": True,
         }
 
+    def test_catalog_exposes_playable_numbers_and_current_completion(self):
+        def catalog():
+            return next(server.catalog_api_item(item) for item in server.get_anime_list(
+                self.db, user_id=self.user) if item["id"] == self.anime_id)
+
+        self.assertEqual(set(catalog()["available_episode_numbers"]), {"1168", "1168.5", "1169"})
+        server.record_watch_event(self.payload(1168.5), self.db, self.user)
+        self.assertEqual(catalog()["last_watch"]["progress_episode_number"], 1168.5)
+        self.assertIsNone(catalog()["last_watch"]["completed_at"])
+        server.record_watch_event({**self.payload(1168.5), "event_type": "heartbeat",
+                                   "engaged_seconds": 10}, self.db, self.user)
+        server.record_watch_event({**self.payload(1168.5), "event_type": "session_end",
+                                   "playback_ended": True}, self.db, self.user)
+        self.assertIsNotNone(catalog()["last_watch"]["completed_at"])
+        anonymous = next(server.catalog_api_item(item) for item in server.get_anime_list(
+            self.db) if item["id"] == self.anime_id)
+        self.assertNotIn("last_watch", anonymous)
+        con = server.connect(self.db)
+        try:
+            con.execute("delete from video_sources where episode_id = ?",
+                        (self.payload(1169)["episode_id"],))
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db)
+        self.assertEqual(set(catalog()["available_episode_numbers"]), {"1168", "1168.5"})
+
     def test_import_keeps_distinct_ids_and_is_idempotent(self):
         self.assertEqual([e["number"] for e in self.detail["episodes"]], ["1168", "1168.5", "1169"])
         ids = [e["id"] for e in self.detail["episodes"]]

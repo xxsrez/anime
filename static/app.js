@@ -1612,6 +1612,13 @@ function contentUpdateItemIsPriority(item) {
   return effectiveWatchStatus(item) === "watching" && contentUpdateHasUnseenEpisode(item);
 }
 
+function watchingHasUnseenEpisode(item) {
+  return contentUpdateHasUnseenEpisode({
+    ...item,
+    update_episode_numbers: item.available_episode_numbers || [],
+  });
+}
+
 function contentUpdateItemsForView() {
   const catalogById = new Map(state.anime.map(item => [String(item.id), item]));
   return (state.contentUpdates?.items || []).map(update => {
@@ -3950,7 +3957,7 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
         : false;
       if (result?.episode_state && requestRevision === animeStateRevision(session.animeId)) {
         applyLocalUserStatePatch(session.animeId, { last_watch: result.episode_state });
-        if (isUpdatesView()) applyFilter({ selectFirst: false });
+        if (isUpdatesView() || state.viewMode === "progress") applyFilter({ selectFirst: false });
       }
       if (result?.recommendation_signal_changed && !semanticChanged) {
         invalidateRecommendations();
@@ -4666,6 +4673,10 @@ function applyFilter({ selectFirst = false } = {}) {
     }
     if (state.viewMode === "favorites") {
       const priorityResult = compareFavoritePriority(left.item, right.item);
+      if (priorityResult !== 0) return priorityResult;
+    }
+    if (state.viewMode === "progress") {
+      const priorityResult = Number(watchingHasUnseenEpisode(right.item)) - Number(watchingHasUnseenEpisode(left.item));
       if (priorityResult !== 0) return priorityResult;
     }
     if (query.tokens.length && left.searchScore !== right.searchScore) {
