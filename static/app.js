@@ -1613,10 +1613,18 @@ function contentUpdateItemIsPriority(item) {
 }
 
 function watchingHasUnseenEpisode(item) {
-  return contentUpdateHasUnseenEpisode({
+  return effectiveWatchStatus(item) === "watching" && contentUpdateHasUnseenEpisode({
     ...item,
-    update_episode_numbers: item.available_episode_numbers || [],
+    update_episode_numbers: item?.available_episode_numbers || [],
   });
+}
+
+function appendWatchingBadge(parent, item) {
+  if (!watchingHasUnseenEpisode(item)) return;
+  const badge = document.createElement("span");
+  badge.className = "watching-available-badge";
+  badge.textContent = "Есть что смотреть";
+  parent.append(badge);
 }
 
 function contentUpdateItemsForView() {
@@ -2206,7 +2214,9 @@ function renderList() {
       meta.textContent = [text(item.kind, "тайтл"), frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source, watch].filter(Boolean).join(" · ");
     }
 
-    body.append(titleRow, meta);
+    body.append(titleRow);
+    appendWatchingBadge(body, item);
+    body.append(meta);
     if (isRecommendationView()) {
       const note = document.createElement("span");
       note.className = "recommendation-note";
@@ -2582,7 +2592,9 @@ function renderContentUpdateRows(parent, items) {
       `${item.report?.event_count || item.events?.length || 0} событий`,
       updateClockLabel(item.latest_update_at),
     ].filter(Boolean).join(" · ");
-    body.append(title, details, meta);
+    body.append(title);
+    appendWatchingBadge(body, item);
+    body.append(details, meta);
     row.append(img, body);
     group.append(row);
   }
@@ -3150,6 +3162,7 @@ function renderFranchiseTimelineEntry(franchise, entry, index) {
   const watchStatus = effectiveWatchStatus(catalogItem || {});
   if (watchStatus === "watching") appendFranchiseBadge(badges, "Смотрю", "status-ongoing");
   if (watchStatus === "completed") appendFranchiseBadge(badges, "Просмотрено", "status-completed");
+  appendWatchingBadge(badges, catalogItem);
   if (!franchiseEntryIsMain(entry)) appendFranchiseBadge(badges, "Ответвление");
   if (!available) appendFranchiseBadge(badges, "Нет в каталоге");
   if (badges.childElementCount) body.append(badges);
@@ -3957,7 +3970,7 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
         : false;
       if (result?.episode_state && requestRevision === animeStateRevision(session.animeId)) {
         applyLocalUserStatePatch(session.animeId, { last_watch: result.episode_state });
-        if (isUpdatesView() || state.viewMode === "progress") applyFilter({ selectFirst: false });
+        applyFilter({ selectFirst: false });
       }
       if (result?.recommendation_signal_changed && !semanticChanged) {
         invalidateRecommendations();

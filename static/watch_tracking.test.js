@@ -159,6 +159,22 @@ assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [1, 3, 2]);
 assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, available_episode_numbers: []}), false);
 assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, available_episode_numbers: ["3.5"]}), true);
 assert.equal(shelf.watchingHasUnseenEpisode({...caughtUp, progress_episode_number: null}), true);
+assert.equal(shelf.watchingHasUnseenEpisode({...pending, watch_status: "none"}), false);
+assert.equal(shelf.watchingHasUnseenEpisode({...pending, watch_status: "completed"}), false);
+assert.equal(shelf.watchingHasUnseenEpisode(null), false);
+shelf.document = {createElement: () => ({})};
+for (const mode of ["all", "favorites", "progress", "updates", "recommendations"]) {
+  shelf.state.viewMode = mode;
+  const badges = [];
+  const parent = {append: badge => badges.push(badge)};
+  for (const item of [pending, caughtUp, {...pending, watch_status: "none"},
+    {...pending, watch_status: "completed"}, {...caughtUp, last_watch: {progress_episode_number: 3}}]) {
+    shelf.appendWatchingBadge(parent, item);
+  }
+  assert.equal(badges.length, 2, `${mode}: only watching titles with something left receive badges`);
+  assert.ok(badges.every(badge => badge.textContent === "Есть что смотреть"
+    && badge.className === "watching-available-badge"));
+}
 
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));

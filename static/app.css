@@ -860,6 +860,27 @@ select {
   white-space: nowrap;
 }
 
+.watching-available-badge,
+.anime-item .watching-available-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid rgba(108, 211, 159, 0.45);
+  border-radius: 999px;
+  background: rgba(108, 211, 159, 0.12);
+  color: #bdebd2;
+  padding: 3px 7px;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.franchise-entry-badges .watching-available-badge {
+  margin-top: 0;
+}
+
 .title-tooltip {
   position: fixed;
   z-index: 50;
