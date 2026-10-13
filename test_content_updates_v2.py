@@ -363,6 +363,41 @@ class ContentUpdatesV2Test(unittest.TestCase):
         item["last_watch"]["completed_at"] = server.now_iso()
         self.assertFalse(server.content_update_item_has_unseen_episode(item,["1168.5"]))
 
+    def test_dormant_source_variant_does_not_override_completed_episode(self):
+        con = server.connect(self.db_path)
+        try:
+            user = server.upsert_google_user(con, {
+                "sub": "completed-viewer", "email": "completed@example.test",
+                "email_verified": True, "name": "Completed Viewer", "picture": None,
+            })
+            now = server.now_iso()
+            for anime_id in (101, 102):
+                con.execute("insert into episodes(id,anime_id,number,has_video,scraped_at) values(?,?,'8',1,?)",
+                            (anime_id * 1000, anime_id, now))
+                con.execute("insert into video_sources(anime_id,episode_id,provider_id,embed_url,scraped_at) values(?,?,'test','https://player.test/8',?)",
+                            (anime_id, anime_id * 1000, now))
+            con.execute("insert into user_title_state(user_id,anime_id,progress_episode_number,watch_status,updated_at) values(?,101,8,'watching',?)",
+                        (user["id"], now))
+            for anime_id, started, completed, seen in (
+                (101, now, now, now), (102, None, None, "2099-01-01T00:00:00+00:00"),
+            ):
+                con.execute("""insert into user_episode_state
+                    (user_id,anime_id,episode_id,episode_number,progress_episode_number,
+                     first_seen_at,last_seen_at,started_at,completed_at,last_event_type,updated_at)
+                    values(?,?,?,'8',8,?,?,?,?, 'player_loaded',?)""",
+                    (user["id"], anime_id, anime_id * 1000, now, seen, started, completed, seen))
+            con.commit()
+        finally:
+            con.close()
+        server.invalidate_catalog_cache(self.db_path)
+        items = server.get_content_updates(self.db_path, user_id=user["id"])["items"]
+        item = next(item for item in items if item["title"] == "Shared Update")
+        self.assertEqual(item["last_watch"]["completed_at"], now)
+        self.assertFalse(item["is_priority"])
+        catalog = next(item for item in server.get_anime_list(self.db_path, user_id=user["id"])
+                       if item["title"] == "Shared Update")
+        self.assertEqual(catalog["last_watch"]["completed_at"], now)
+
     def test_report_keeps_all_change_types_and_groups_translation_episodes(self):
         now = server.now_iso()
         events = [

@@ -3968,7 +3968,9 @@ function sendWatchEvent(eventType, { engagedSeconds = 0, beacon = false, session
       const semanticChanged = result?.state
         ? applyWatchState(result.state, session.animeId, requestRevision)
         : false;
-      if (result?.episode_state && requestRevision === animeStateRevision(session.animeId)) {
+      // Loading another provider is not a new watch. Its dormant episode row
+      // must not replace a completed watch from a different catalog source.
+      if (result?.episode_state?.started_at && requestRevision === animeStateRevision(session.animeId)) {
         applyLocalUserStatePatch(session.animeId, { last_watch: result.episode_state });
         applyFilter({ selectFirst: false });
       }

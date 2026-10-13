@@ -176,6 +176,38 @@ for (const mode of ["all", "favorites", "progress", "updates", "recommendations"
     && badge.className === "watching-available-badge"));
 }
 
+async function verifyDormantProviderDoesNotUndoCompletion() {
+  for (const progress of [1, 2]) {
+    const completed = {progress_episode_number: progress, started_at: "2026-10-07",
+      completed_at: "2026-10-07", engaged_seconds: 1300};
+    const item = {watch_status: "watching", progress_episode_number: progress,
+      available_episode_numbers: Array.from({length: progress}, (_, i) => String(i + 1)),
+      last_watch: completed};
+    let response = {episode_state: {progress_episode_number: progress, started_at: null,
+      completed_at: null, engaged_seconds: 0}};
+    const ctx = vm.createContext({
+      state: {watchSession: {animeId: 1}},
+      watchPayloadForSession: () => ({}), animeStateRevision: () => 0,
+      postWatchPayload: async () => response,
+      applyLocalUserStatePatch: (_id, patch) => Object.assign(item, patch),
+      applyFilter() {}, reportClientError(error) {throw error;},
+    });
+    vm.runInContext(block("function sendWatchEvent(", "function consumeWatchEngagedSeconds("), ctx);
+    for (const event of ["player_loaded", "source_selected", "session_end"]) {
+      await ctx.sendWatchEvent(event);
+      assert.equal(item.last_watch, completed, `${progress} episodes: ${event} preserves completed watch`);
+      assert.equal(shelf.watchingHasUnseenEpisode(item), false);
+    }
+    response = {episode_state: {...completed, completed_at: null}};
+    await ctx.sendWatchEvent("player_engaged");
+    assert.equal(shelf.watchingHasUnseenEpisode(item), true, "real unfinished playback still updates the badge");
+    response = {episode_state: completed};
+    await ctx.sendWatchEvent("session_end");
+    assert.equal(shelf.watchingHasUnseenEpisode(item), false, "completion removes the badge");
+  }
+}
+verifyDormantProviderDoesNotUndoCompletion().catch(error => {console.error(error); process.exitCode = 1;});
+
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));
 } else {

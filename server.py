@@ -3025,7 +3025,7 @@ def get_content_updates(
         if user_id is not None:
             for row in con.execute(
                 """select anime_id, progress_episode_number, completed_at, last_seen_at
-                   from user_episode_state where user_id = ?""", (user_id,),
+                   from user_episode_state where user_id = ? and started_at is not null""", (user_id,),
             ):
                 episode_states.setdefault(row["anime_id"], []).append(dict(row))
         grouped = {}
