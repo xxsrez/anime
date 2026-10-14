@@ -4566,7 +4566,7 @@ def reconcile_completed_titles(con, user_id, groups=None):
         groups = list({cache["id_map"][aid]["id"]: cache["id_map"][aid]
                        for aid in ids if aid in cache["id_map"]}.values())
     groups = [group for group in groups if str(group.get("status") or "").strip().casefold()
-              in {"вышел", "завершён", "завершен", "finished", "released", "completed"}]
+              in {"вышел", "завершён", "завершен", "выпуск завершён", "выпуск завершен", "finished", "released", "completed"}]
     if not groups:
         return []
     owns_transaction = not con.in_transaction

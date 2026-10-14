@@ -65,7 +65,7 @@ class ManualCompletionTest(unittest.TestCase):
         self.assertEqual(server.get_continue_watching(self.db, self.user)['item']['episode_number'], '4')
 
     def test_final_episode_finished_vs_ongoing(self):
-        for status, expected in [('Онгоинг', 'watching'), ('Вышел', 'completed')]:
+        for status, expected in [('Онгоинг', 'watching'), ('Вышел', 'completed'), ('Выпуск завершён', 'completed')]:
             con = server.connect(self.db)
             con.execute('update anime set status = ? where id = 901', (status,))
             con.commit()
