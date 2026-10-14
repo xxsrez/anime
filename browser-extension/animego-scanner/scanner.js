@@ -311,6 +311,10 @@ async function loadSession({ announce = true } = {}) {
   render();
   if (announce) {
     log(`Загружено задание: ${session.payload.tasks.length} тайтлов.`);
+    for (const error of checkpoint.errors) {
+      const task = session.payload.tasks.find(item => item.anime_id === error.anime_id);
+      log(`${taskTitle(task || error)}: ${error.message}`, "error");
+    }
   }
   if (checkpoint.status === "running") {
     runScan();

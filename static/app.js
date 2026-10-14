@@ -780,9 +780,10 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
   }
   const normalizedMode = mode === "full" ? "full" : "partial";
   const scannerVersion = String(state.animeGoScannerVersion || "").split(".").map(Number);
-  if (!(scannerVersion[0] > 0 || scannerVersion[1] >= 4)) {
-    showAppStatus("Для обновления статусов и метаданных обновите расширение сканера до версии 0.4.0 или новее", "warn");
+  if (!(scannerVersion[0] > 0 || (scannerVersion[0] === 0
+    && (scannerVersion[1] > 5 || (scannerVersion[1] === 5 && scannerVersion[2] >= 1))))) {
     showAnimeGoScannerSetup();
+    showAppStatus("Обновите сканер до версии 0.5.1 или новее: в старых версиях не запускаются задания с Kinogoo", "warn");
     return;
   }
   if (normalizedMode === "full" && !fullConfirmed) {

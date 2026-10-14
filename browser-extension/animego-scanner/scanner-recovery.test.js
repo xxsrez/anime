@@ -7,7 +7,10 @@ import vm from "node:vm";
 // browser APIs and collection at the upstream boundary are substituted.
 async function scannerHarness({ stored = null, fetch, discovery = false, legacy = false }) {
   const element = () => ({
-    children: [], style: {}, append() {}, prepend() {}, setAttribute() {}, addEventListener() {},
+    children: [], style: {},
+    append(...items) { this.children.push(...items); },
+    prepend(...items) { this.children.unshift(...items); },
+    setAttribute() {}, addEventListener() {},
   });
   const elements = new Map();
   const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture", url: "https://animego.me/anime/fixture-100" }] };
@@ -144,6 +147,9 @@ test("completed scans with failed titles do not claim the catalog was updated", 
   assert.equal(harness.driver.state.status, "completed");
   assert.match(harness.elements.get("subtitle").textContent, /с ошибками: 1 из 1/);
   assert.doesNotMatch(harness.elements.get("subtitle").textContent, /Каталог обновлён/);
+  const reopened = await scannerHarness({ stored: harness.snapshot(), fetch: async () => { throw new Error("Completed job must not restart"); } });
+  const messages = reopened.elements.get("log").children.map(item => item.children[1].textContent);
+  assert.ok(messages.some(message => message.includes("Fixture: AnimeGo ответил HTTP 404.")));
 });
 
 test("a failed stop can be retried without reloading the extension", async () => {

@@ -46,8 +46,11 @@ function validateStart(detail, origin) {
   }
   for (const task of detail.tasks) {
     const animeId = task?.anime_id;
-    if (!Number.isSafeInteger(animeId) || animeId <= 0 || animeId >= 10_000_000) {
-      throw new Error("В задании найден некорректный AnimeGo id.");
+    const source = task?.source || "animego";
+    if (!["animego", "kinogoo"].includes(source)
+      || !Number.isSafeInteger(animeId) || animeId <= 0
+      || (source === "animego" && animeId >= 10_000_000)) {
+      throw new Error("В задании найден некорректный id или источник тайтла.");
     }
     if (!Array.isArray(task.known_episode_ids) || task.known_episode_ids.length > 10000) {
       throw new Error(`Некорректный список известных серий для AnimeGo ${animeId}.`);

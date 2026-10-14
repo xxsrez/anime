@@ -25,6 +25,39 @@ function storageMock() {
   };
 }
 
+test("start validation accepts mixed AnimeGO and Kinogoo catalog ids", () => {
+  const source = fs.readFileSync(new URL("background.js", import.meta.url), "utf8");
+  const context = vm.createContext({
+    URL,
+    chrome: {
+      runtime: { onMessage: { addListener() {} } },
+      action: { onClicked: { addListener() {} } },
+    },
+  });
+  vm.runInContext(source, context);
+  const validate = vm.runInContext("validateStart", context);
+  const detail = {
+    origin: new URL(APP_URL).origin,
+    job_id: 128,
+    token: "test-token-not-a-real-credential",
+    tasks: [
+      { anime_id: 3998, source: "animego", known_episode_ids: [] },
+      { anime_id: 30004037, source: "kinogoo", known_episode_ids: [] },
+      { anime_id: 40006902, source: "kinogoo", known_episode_ids: [] },
+    ],
+  };
+  assert.doesNotThrow(() => validate(detail, detail.origin));
+  for (const task of [
+    { anime_id: 30004037, source: "animego" },
+    { anime_id: 1, source: "unknown" },
+    { anime_id: -1, source: "kinogoo" },
+    { anime_id: 1.5, source: "kinogoo" },
+    { anime_id: Number.MAX_SAFE_INTEGER + 1, source: "kinogoo" },
+  ]) {
+    assert.throws(() => validate({ ...detail, tasks: [{ ...task, known_episode_ids: [] }] }, detail.origin));
+  }
+});
+
 test("Safari background bridge prepares optional access without windows API", async () => {
   const source = fs.readFileSync(new URL("background.js", import.meta.url), "utf8");
   const storage = storageMock();
