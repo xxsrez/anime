@@ -2176,6 +2176,7 @@ button.recent-update-row:focus-visible {
 }
 
 .source-panel {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2192,7 +2193,8 @@ button.recent-update-row:focus-visible {
   text-transform: uppercase;
 }
 
-.source-panel-toolbar { display: flex; justify-content: flex-end; margin: -8px -6px -8px 0; }
+.source-panel-toolbar { position: absolute; top: 7px; right: 8px; }
+.source-panel > label:first-of-type > span { padding-right: 36px; }
 .player-actions-menu { position: relative; }
 .player-actions-menu summary { cursor: pointer; padding: 3px 10px; list-style: none; font-size: 22px; line-height: 1; border-radius: 4px; }
 .player-actions-menu summary::-webkit-details-marker { display: none; }
