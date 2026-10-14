@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "slug": "mediator",
+  "title": "Медиатор",
+  "summary": "Сезоны сериала «Медиатор» в порядке просмотра.",
+  "guide": "Смотрите сезоны по порядку.",
+  "updated_at": "2026-10-14",
+  "source": {"title": "Kinogoo: список сезонов в плеере", "url": "https://kinogoo.fm/1892-mediator-1-3-sezon.html", "updated_at": "2026-10-14"},
+  "entries": [
+    {"key": "season-1", "title": "Медиатор 1 сезон", "kind": "Сериал", "status": "unknown", "release_order": 1, "watch_order": 1, "story_role": "main", "match": {"sources": ["kinogoo:1892"]}},
+    {"key": "season-2", "title": "Медиатор 2 сезон", "kind": "Сериал", "status": "unknown", "release_order": 2, "watch_order": 2, "story_role": "main", "match": {"sources": ["kinogoo:1892:season:2"]}},
+    {"key": "season-3", "title": "Медиатор 3 сезон", "kind": "Сериал", "status": "unknown", "release_order": 3, "watch_order": 3, "story_role": "main", "match": {"sources": ["kinogoo:1892:season:3"]}}
+  ]
+}

@@ -4,6 +4,14 @@ import { kinogooEpisodes } from "./kinogoo.js";
 
 const embed = "https://api.nextembed.ws/embed/kp/123?host=kinogoo.fm&geoBlock=RU%2CEE";
 const html = entries => `makePlayer({playlist:{seasons:${JSON.stringify(entries)}}});`;
+test("Kinogoo skips zero-numbered extras without losing the main episodes", () => {
+  for (const zero of [0, "0"]) {
+    const episodes = [{ id: 7, episode: zero, hls: "x" }, { id: 8, episode: "1", hls: "x" }];
+    const result = kinogooEpisodes(html([{ season: 2, episodes }]), embed, 2);
+    assert.deepEqual(result.map(x => x.episode.number), ["1"]);
+    assert.throws(() => kinogooEpisodes(html([{ season: 2, episodes: episodes.slice(0, 1) }]), embed, 2));
+  }
+});
 test("Kinogoo uses playable playlist entries of one season, retaining geo restrictions", () => {
   const result = kinogooEpisodes(html([
     { season: 1, episodes: [{ id: 7, episode: "1", hls: "https://example.test/video" }, { id: 8, episode: "2" }] },

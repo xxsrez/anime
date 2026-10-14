@@ -62,6 +62,9 @@ def parse_episodes(html, embed, season):
                 continue
             raw_id = ep.get("id")
             number = str(ep.get("episode", ""))
+            # Unnumbered extras are not part of the season's main episode list.
+            if number == "0":
+                continue
             if type(raw_id) is not int or not 0 < raw_id < 500_000_000 or not re.fullmatch(r"[1-9]\d*", number):
                 raise ValueError("Invalid playlist episode")
             episode_id = EPISODE_OFFSET + raw_id

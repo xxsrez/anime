@@ -37,6 +37,8 @@ export function kinogooEpisodes(html, embed, season) {
     for (const ep of entry.episodes || []) {
       if (ep.blocked || !(ep.hls || ep.dash)) continue;
       const number = String(ep.episode);
+      // Unnumbered extras are not part of the season's main episode list.
+      if (number === "0") continue;
       if (!Number.isInteger(ep.id) || ep.id <= 0 || ep.id >= 500000000 || !/^[1-9]\d*$/.test(number)) throw new Error("Некорректная серия Kinogoo");
       const id = 1500000000 + ep.id;
       if (seen.has(id)) throw new Error("Повтор серии Kinogoo");

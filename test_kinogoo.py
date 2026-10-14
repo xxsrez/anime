@@ -59,6 +59,17 @@ class KinogooParserTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 kinogoo.page_id(url)
 
+    def test_zero_numbered_extra_does_not_break_main_episodes(self):
+        for zero in (0, "0"):
+            episodes = [{"id": 10, "episode": zero, "hls": "x"},
+                        {"id": 11, "episode": "1", "hls": "x"}]
+            html = "seasons:" + json.dumps([{"season": 2, "episodes": episodes}])
+            result = kinogoo.parse_episodes(html, "https://api.nextembed.ws/embed/kp/123", 2)
+            self.assertEqual([x["episode"]["number"] for x in result], ["1"])
+            with self.assertRaises(ValueError):
+                kinogoo.parse_episodes("seasons:" + json.dumps([{"season": 2, "episodes": episodes[:1]}]),
+                                      "https://api.nextembed.ws/embed/kp/123", 2)
+
 
 class KinogooScanTest(unittest.TestCase):
     setUp = fixtures.AnimeGoScansTest.setUp

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "slug": "kiberderevnya",
+  "title": "Кибердеревня",
+  "summary": "Сезоны сериала «Кибердеревня» в порядке просмотра.",
+  "guide": "Смотрите сезоны по порядку.",
+  "updated_at": "2026-10-14",
+  "source": {"title": "Kinogoo: список сезонов в плеере", "url": "https://kinogoo.fm/69-kiberderevnja.html", "updated_at": "2026-10-14"},
+  "entries": [
+    {"key": "season-1", "title": "Кибердеревня 1 сезон", "kind": "Сериал", "status": "unknown", "release_order": 1, "watch_order": 1, "story_role": "main", "match": {"sources": ["kinogoo:69"]}},
+    {"key": "season-2", "title": "Кибердеревня 2 сезон", "kind": "Сериал", "status": "unknown", "release_order": 2, "watch_order": 2, "story_role": "main", "match": {"sources": ["kinogoo:69:season:2"]}}
+  ]
+}
