@@ -1,6 +1,43 @@
 (function scannerSetupModule(globalScope) {
   "use strict";
 
+  function versionMessage(installed, available) {
+    const valid = value => typeof value === "string" && /^\d+(\.\d+){2,3}$/.test(value);
+    const current = valid(installed) ? installed : null;
+    const latest = valid(available) ? available : null;
+    const parts = [current ? `Установлена: ${current}.` : "Расширение не ответило. Перезагрузите его и обновите вкладку.",
+      latest ? `Доступна: ${latest}.` : "Доступную версию проверить не удалось. Войдите в каталог и обновите страницу."];
+    if (current && latest) {
+      const a = current.split(".").map(Number);
+      const b = latest.split(".").map(Number);
+      let comparison = 0;
+      for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+        comparison = (a[i] || 0) - (b[i] || 0);
+        if (comparison) break;
+      }
+      parts.push(comparison < 0 ? "Доступно обновление." : comparison === 0 ? "Версия актуальна." : "Установлена более новая версия.");
+    }
+    return parts.join(" ");
+  }
+
+  function trackVersions(documentObject, environment) {
+    const status = documentObject.getElementById("scanner-version-state");
+    if (!status) return;
+    let installed = null;
+    let available = null;
+    const render = () => { status.textContent = versionMessage(installed, available); };
+    documentObject.addEventListener("animego-scanner-ready", event => {
+      installed = event.detail?.version;
+      render();
+    });
+    documentObject.dispatchEvent(new environment.CustomEvent("animego-scanner-ping"));
+    environment.fetch("/api/app-config", { cache: "no-store" })
+      .then(response => { if (!response.ok) throw new Error("Config unavailable"); return response.json(); })
+      .then(config => { available = config.scanner_version; render(); })
+      .catch(render);
+    environment.setTimeout(render, 1500);
+  }
+
   function detectBrowser(userAgent = "") {
     const safari = /Safari\//i.test(userAgent);
     const anotherBrowser = /(Chrome|Chromium|CriOS|Edg|EdgiOS|EdgA|OPR|OPiOS|Firefox|FxiOS|SamsungBrowser|Android)/i
@@ -72,7 +109,10 @@
     return tabController;
   }
 
-  const api = { createBrowserTabs, detectBrowser, initScannerSetup };
+  const api = { createBrowserTabs, detectBrowser, initScannerSetup, versionMessage, trackVersions };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
-  if (globalScope.document) initScannerSetup(globalScope.document, globalScope.navigator || {});
+  if (globalScope.document) {
+    initScannerSetup(globalScope.document, globalScope.navigator || {});
+    trackVersions(globalScope.document, globalScope);
+  }
 })(typeof globalThis === "undefined" ? this : globalThis);

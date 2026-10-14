@@ -237,6 +237,12 @@ select {
   background: #14181c;
 }
 
+.scanner-setup-link {
+  margin-left: auto;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .animego-scan-split {
   position: relative;
   display: inline-grid;

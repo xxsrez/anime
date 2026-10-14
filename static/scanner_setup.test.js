@@ -2,7 +2,38 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const fs = require("node:fs");
 
-const { createBrowserTabs, detectBrowser } = require("./scanner-setup.js");
+const { createBrowserTabs, detectBrowser, versionMessage, trackVersions } = require("./scanner-setup.js");
+
+test("version status compares numeric components and never suggests a downgrade", () => {
+  assert.match(versionMessage("0.4.2", "0.5.0"), /Доступно обновление/);
+  assert.match(versionMessage("0.5.0", "0.5.0"), /Версия актуальна/);
+  assert.match(versionMessage("0.10.0", "0.5.0"), /более новая/);
+  assert.match(versionMessage("0.5.0.0", "0.5.0"), /Версия актуальна/);
+  assert.doesNotMatch(versionMessage(null, "0.5.0"), /Версия актуальна/);
+  assert.doesNotMatch(versionMessage("invalid", "0.5.0"), /Версия актуальна/);
+});
+
+test("version detection handles extension reply before or after config and leaves download available", async () => {
+  for (const immediate of [true, false]) {
+    const status = { textContent: "" };
+    let ready;
+    const doc = {
+      getElementById: () => status,
+      addEventListener: (name, callback) => { ready = callback; },
+      dispatchEvent: () => { if (immediate) ready({ detail: { version: "0.4.2" } }); },
+    };
+    trackVersions(doc, {
+      CustomEvent: class {},
+      fetch: async () => ({ ok: true, json: async () => ({ scanner_version: "0.5.0" }) }),
+      setTimeout: () => {},
+    });
+    await new Promise(resolve => setImmediate(resolve));
+    if (!immediate) ready({ detail: { version: "0.4.2" } });
+    assert.match(status.textContent, /Установлена: 0.4.2/);
+    assert.match(status.textContent, /Доступна: 0.5.0/);
+    assert.match(status.textContent, /Доступно обновление/);
+  }
+});
 
 function interactiveElement(dataset) {
   const attributes = new Map();

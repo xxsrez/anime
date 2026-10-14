@@ -21,9 +21,22 @@
       </div>
 
       <p class="lede">
-        Расширение делает запросы к AnimeGo через ваш браузер и отправляет в каталог
-        только найденные новые серии. Выберите браузер — Safari определится автоматически.
+        Расширение проверяет AnimeGo и Kinogoo через ваш браузер и обновляет каталог.
+        Выберите браузер — Safari определится автоматически.
       </p>
+
+      <p id="scanner-version-state" role="status" aria-live="polite">Проверяем версии сканера…</p>
+      <a class="primary-button" href="/api/animego-scanner-extension" download="animego-scanner.zip">Скачать последнюю версию ZIP</a>
+      <h2>Обновление установленного расширения</h2>
+      <ol class="setup-steps">
+        <li><strong>Дождитесь завершения текущего сканирования</strong></li>
+        <li><strong>Скачайте ZIP и распакуйте его</strong>
+          <span>Скачивание доступно и при установленном расширении. Для скачивания нужно войти в каталог.</span></li>
+        <li><strong>Замените содержимое прежней папки расширения</strong>
+          <span>В Chrome путь указан в карточке расширения на <code>chrome://extensions</code> (Loaded from). Сохраните копию старой папки. Файл <code>manifest.json</code> должен лежать прямо в прежней папке, без вложенной папки <code>animego-scanner</code>.</span></li>
+        <li><strong>Перезагрузите расширение и эту страницу</strong>
+          <span>В Chrome нажмите кнопку перезагрузки на карточке расширения. В Safari повторно добавьте новый ZIP или обновлённую папку через <q>Add Temporary Extension…</q>. Затем обновите вкладку каталога и проверьте установленную версию здесь.</span></li>
+      </ol>
 
       <div class="browser-tabs" role="tablist" aria-label="Инструкции для браузера" aria-orientation="horizontal">
         <button
@@ -143,7 +156,7 @@
       </section>
 
       <aside class="permission-note">
-        Расширение запрашивает доступ только к <code>animego.me</code>, локальному dev
+        Расширение запрашивает доступ к <code>animego.me</code>, <code>kinogoo.fm</code>, <code>api.nextembed.ws</code>, локальному dev
         и production Anime Catalog. Оно не читает историю браузера и не скачивает видео.
       </aside>
 

@@ -8239,7 +8239,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/app-config":
-            self.send_json({"player_hosts": list(PLAYER_HOSTS)})
+            manifest = json.loads((SCANNER_EXTENSION_DIR / "manifest.json").read_text(encoding="utf-8"))
+            self.send_json({"player_hosts": list(PLAYER_HOSTS), "scanner_version": manifest["version"]})
             return
 
         if path == "/api/animego-scanner-extension":

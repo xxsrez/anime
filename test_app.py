@@ -3371,6 +3371,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             )
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["player_hosts"], list(server.PLAYER_HOSTS))
+        manifest = json.loads((server.SCANNER_EXTENSION_DIR / "manifest.json").read_text())
+        self.assertEqual(json.loads(body)["scanner_version"], manifest["version"])
 
         con = server.connect()
         try:
