@@ -2,12 +2,12 @@
   "schema_version": 1,
   "slug": "volshebny-uchastok",
   "title": "Волшебный участок",
-  "summary": "Сезоны сериала «Волшебный участок» в порядке просмотра.",
-  "guide": "Смотрите сезоны по порядку.",
+  "summary": "Игровая комедия с фэнтези о бывшем снайпере Лёхе, который устраивается в отдел по борьбе со сказочными преступлениями. Забота о племяннице сочетается для него со службой среди магии и персонажей русских сказок.",
+  "guide": "Смотрите первый сезон перед вторым: продолжение переносит работу отдела в Санкт-Петербург и опирается на знакомство с героями.",
   "updated_at": "2026-10-14",
   "source": {
-    "title": "Kinogoo: список сезонов в плеере",
-    "url": "https://kinogoo.fm/96-volshebnyj-uchastok-hd.html",
+    "title": "Официальная страница проекта",
+    "url": "https://okko.tv/serial/volshebnyjj-uchastok",
     "updated_at": "2026-10-14"
   },
   "entries": [
@@ -15,7 +15,7 @@
       "key": "season-1",
       "title": "Волшебный участок 1 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 1,
       "watch_order": 1,
       "story_role": "main",
@@ -23,13 +23,18 @@
         "sources": [
           "kinogoo:96"
         ]
-      }
+      },
+      "summary": "Бывший снайпер Лёха возвращается на службу, чтобы позаботиться о племяннице Василисе. Его новым местом работы становится отдел по борьбе со сказочными преступлениями. Здесь приходится расследовать дела, в которых обычные полицейские методы сталкиваются с магией и существами из сказок.",
+      "release_year": 2023,
+      "release_label": "2023",
+      "cover_url": "https://kinogoo.fm/uploads/posts/2023-12/1851-volshebnyj-uchastok.jpg",
+      "watch_note": "Начало основной истории."
     },
     {
       "key": "season-2",
       "title": "Волшебный участок 2 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 2,
       "watch_order": 2,
       "story_role": "main",
@@ -37,7 +42,14 @@
         "sources": [
           "kinogoo:96:season:2"
         ]
-      }
+      },
+      "summary": "После гибели оперативников в Санкт-Петербурге туда направляют московский отдел по борьбе со сказочными преступлениями. Лёха и его коллеги расследуют происшествия, связанные с местной нечистью. За отдельными делами постепенно проступает угроза самому отделу.",
+      "release_year": 2025,
+      "release_label": "2025",
+      "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/353442164766.jpg",
+      "watch_note": "Продолжение: смотрите после 1-го сезона."
     }
-  ]
+  ],
+  "official_url": "https://okko.tv/serial/volshebnyjj-uchastok",
+  "cover_url": "https://kinogoo.fm/uploads/posts/2023-12/1851-volshebnyj-uchastok.jpg"
 }

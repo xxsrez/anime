@@ -2,12 +2,12 @@
   "schema_version": 1,
   "slug": "offline",
   "title": "Оффлайн",
-  "summary": "Сезоны сериала «Оффлайн» в порядке просмотра.",
-  "guide": "Смотрите сезоны по порядку.",
+  "summary": "Игровой криминальный триллер о программисте Саше Белове, создавшем подпольное приложение BeHappy. Когда неизвестный получает доступ к данным пользователей, двойная жизнь разработчика и безопасность его семьи оказываются под угрозой.",
+  "guide": "Сначала первый сезон, затем второй. Продолжение развивает дело BeHappy и семейную историю Раста; начинать с него не стоит.",
   "updated_at": "2026-10-14",
   "source": {
-    "title": "Kinogoo: список сезонов в плеере",
-    "url": "https://kinogoo.fm/95-offlajn-1-2-sezon.html",
+    "title": "Официальная страница проекта",
+    "url": "https://okko.tv/serial/offlajjn",
     "updated_at": "2026-10-14"
   },
   "entries": [
@@ -15,7 +15,7 @@
       "key": "season-1",
       "title": "Оффлайн 1 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 1,
       "watch_order": 1,
       "story_role": "main",
@@ -23,13 +23,18 @@
         "sources": [
           "kinogoo:95"
         ]
-      }
+      },
+      "summary": "Программист Саша Белов ведёт двойную жизнь: под именем Раст он создал приложение BeHappy для торговли наркотиками. Неизвестный Анонимус получает данные пользователей и начинает им угрожать. Пока полиция ищет владельцев приложения, Раст пытается вычислить человека, который разрушает его систему и угрожает близким.",
+      "release_year": 2022,
+      "release_label": "2022",
+      "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/960413817583.jpg",
+      "watch_note": "Начало основной истории."
     },
     {
       "key": "season-2",
       "title": "Оффлайн 2 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 2,
       "watch_order": 2,
       "story_role": "main",
@@ -37,7 +42,14 @@
         "sources": [
           "kinogoo:95:season:2"
         ]
-      }
+      },
+      "summary": "Раст пытается защитить жену и вернуть похищенную дочь. Расследование дела BeHappy получает новый поворот, когда к нему подключается майор Зауров. За технологией приложения охотятся новые противники, и скрывать свою двойную жизнь становится всё труднее.",
+      "release_year": 2023,
+      "release_label": "2023",
+      "cover_url": "https://kinogoo.fm/uploads/posts/2023-12/560-offlajn-1-2-sezon.jpg",
+      "watch_note": "Продолжение: смотрите после 1-го сезона."
     }
-  ]
+  ],
+  "official_url": "https://okko.tv/serial/offlajjn",
+  "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/960413817583.jpg"
 }

@@ -2,12 +2,12 @@
   "schema_version": 1,
   "slug": "vampiry-sredney-polosy",
   "title": "Вампиры средней полосы",
-  "summary": "Сезоны сериала «Вампиры средней полосы» в порядке просмотра.",
-  "guide": "Смотрите сезоны по порядку.",
+  "summary": "Игровой сериал, сочетающий детектив, комедию и фэнтези. Семья вампиров живёт в Смоленске по договору с людьми, но новые убийства угрожают её тайне и заставляют деда Славу защищать близких.",
+  "guide": "Смотрите три сезона по порядку: расследования связаны с общей историей семьи, Хранителей и других вампирских кланов.",
   "updated_at": "2026-10-14",
   "source": {
-    "title": "Kinogoo: список сезонов в плеере",
-    "url": "https://kinogoo.fm/3376-vampiry-srednej-polosy-1-3-sezon.html",
+    "title": "Официальная страница проекта",
+    "url": "https://start.ru/watch/vampiry-sredney-polosy",
     "updated_at": "2026-10-14"
   },
   "entries": [
@@ -15,7 +15,7 @@
       "key": "season-1",
       "title": "Вампиры средней полосы 1 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 1,
       "watch_order": 1,
       "story_role": "main",
@@ -23,13 +23,18 @@
         "sources": [
           "kinogoo:3376"
         ]
-      }
+      },
+      "summary": "Семья вампиров во главе с дедом Славой живёт в Смоленске и соблюдает договор, запрещающий убивать людей. Когда неподалёку находят обескровленные тела, подозрение падает на них. Чтобы избежать наказания Хранителей, семье приходится искать настоящего убийцу.",
+      "release_year": 2021,
+      "release_label": "2021",
+      "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/284102494188.jpg",
+      "watch_note": "Начало основной истории."
     },
     {
       "key": "season-2",
       "title": "Вампиры средней полосы 2 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 2,
       "watch_order": 2,
       "story_role": "main",
@@ -37,13 +42,18 @@
         "sources": [
           "kinogoo:3376:season:2"
         ]
-      }
+      },
+      "summary": "Семья деда Славы пытается восстановить привычную жизнь, но новые преступления вновь ставят её под угрозу. Анна встречает загадочную девочку и привозит её в Смоленск. За ребёнком следуют представители другого вампирского клана, а Хранители преследуют собственные интересы.",
+      "release_year": 2022,
+      "release_label": "2022–2023",
+      "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/477354439706.jpg",
+      "watch_note": "Продолжение: смотрите после 1-го сезона."
     },
     {
       "key": "season-3",
       "title": "Вампиры средней полосы 3 сезон",
       "kind": "Сериал",
-      "status": "unknown",
+      "status": "finished",
       "release_order": 3,
       "watch_order": 3,
       "story_role": "main",
@@ -51,7 +61,14 @@
         "sources": [
           "kinogoo:3376:season:3"
         ]
-      }
+      },
+      "summary": "Противостояние смоленских и уральских вампиров продолжается. Дед Слава пытается защитить семью, пока в городе исчезают люди, Анне всё труднее скрывать свою тайну, а Хранители теряют единство. Старые противники готовятся к новой встрече.",
+      "release_year": 2025,
+      "release_label": "2025–2026",
+      "cover_url": "https://kinogoo.fm/uploads/posts/2025-11/1224067_1763329883.webp",
+      "watch_note": "Продолжение: смотрите после 2-го сезона."
     }
-  ]
+  ],
+  "official_url": "https://start.ru/watch/vampiry-sredney-polosy",
+  "cover_url": "https://static.kinoafisha.info/k/series_seasons/canvas/220/upload/series/seasons/284102494188.jpg"
 }

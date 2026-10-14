@@ -2,12 +2,54 @@
   "schema_version": 1,
   "slug": "kiberderevnya",
   "title": "Кибердеревня",
-  "summary": "Сезоны сериала «Кибердеревня» в порядке просмотра.",
-  "guide": "Смотрите сезоны по порядку.",
+  "summary": "Игровая фантастическая комедия о фермере Николае с Марса и корпорации, угрожающей его дому. Роботы, космические перелёты и технологии будущего здесь соседствуют с деревенским бытом.",
+  "guide": "Начните с первого сезона, затем переходите ко второму: это продолжение приключений Николая и Робогозина.",
   "updated_at": "2026-10-14",
-  "source": {"title": "Kinogoo: список сезонов в плеере", "url": "https://kinogoo.fm/69-kiberderevnja.html", "updated_at": "2026-10-14"},
+  "source": {
+    "title": "Официальная страница проекта",
+    "url": "https://www.kinopoisk.ru/series/5019944/",
+    "updated_at": "2026-10-14"
+  },
   "entries": [
-    {"key": "season-1", "title": "Кибердеревня 1 сезон", "kind": "Сериал", "status": "unknown", "release_order": 1, "watch_order": 1, "story_role": "main", "match": {"sources": ["kinogoo:69"]}},
-    {"key": "season-2", "title": "Кибердеревня 2 сезон", "kind": "Сериал", "status": "unknown", "release_order": 2, "watch_order": 2, "story_role": "main", "match": {"sources": ["kinogoo:69:season:2"]}}
-  ]
+    {
+      "key": "season-1",
+      "title": "Кибердеревня 1 сезон",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:69"
+        ]
+      },
+      "summary": "Николай живёт с семьёй на Марсе и ведёт хозяйство с помощью роботов. Его ферме угрожает корпорация Барагозина, решившая построить на её месте завод. Чтобы сохранить дом, фермер отправляется в путешествие, где ему приходится иметь дело и с космическими технологиями, и с вполне земными проблемами.",
+      "release_year": 2023,
+      "release_label": "2023",
+      "cover_url": "https://static.kinoafisha.info/k/series_posters/480/upload/series/seasons/857509244468.jpg",
+      "watch_note": "Начало основной истории."
+    },
+    {
+      "key": "season-2",
+      "title": "Кибердеревня 2 сезон",
+      "kind": "Сериал",
+      "status": "finished",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:69:season:2"
+        ]
+      },
+      "summary": "После прежних приключений Николай оказывается в заключении, а Робогозин остаётся без человеческого тела. Друзьям предстоит вновь объединиться, чтобы противостоять Гале, захватившей власть в корпорации. Их путь проходит через новые уголки Солнечной системы, где технологии будущего соседствуют со знакомыми бытовыми порядками.",
+      "release_year": 2025,
+      "release_label": "2025",
+      "cover_url": "https://static.kinoafisha.info/k/series_posters/480/upload/series/seasons/583307244252.jpg",
+      "watch_note": "Продолжение: смотрите после 1-го сезона."
+    }
+  ],
+  "official_url": "https://www.kinopoisk.ru/series/5019944/",
+  "cover_url": "https://static.kinoafisha.info/k/series_posters/480/upload/series/seasons/857509244468.jpg"
 }
