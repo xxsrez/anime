@@ -1,5 +1,8 @@
 import json
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch, Mock
 
 import kinogoo
 import animego_scans
@@ -8,6 +11,36 @@ import test_animego_scans as fixtures
 
 
 class KinogooParserTest(unittest.TestCase):
+    def test_multi_season_import_is_separate_and_idempotent(self):
+        page = '<h1>Example 1-2 сезон (2022)</h1><iframe src="https://api.nextembed.ws/embed/kp/123"></iframe>'
+        playlist = 'seasons:' + json.dumps([
+            {'season': 1, 'episodes': [{'id': 41, 'episode': '1', 'hls': 'x'}]},
+            {'season': 2, 'episodes': [{'id': 42, 'episode': '1', 'hls': 'x'}]},
+        ])
+        with tempfile.TemporaryDirectory() as tmp, patch('kinogoo.requests.get') as get:
+            get.side_effect = lambda url, **kwargs: Mock(text=playlist if 'nextembed' in url else page)
+            db = Path(tmp) / 'catalog.sqlite'
+            first = kinogoo.import_title(db, 'https://kinogoo.fm/123-example.html', 1)
+            second = kinogoo.import_title(db, 'https://kinogoo.fm/123-example.html', 2)
+            self.assertEqual(first['id'], 30000123)
+            self.assertNotEqual(first['id'], second['id'])
+            kinogoo.import_title(db, 'https://kinogoo.fm/123-example.html', 2)
+            con = server.connect(db)
+            try:
+                self.assertEqual(con.execute('select count(*) from anime').fetchone()[0], 2)
+                self.assertEqual(con.execute('select count(*) from episodes').fetchone()[0], 2)
+                self.assertIsNone(con.execute('select year from anime where id=?', (second['id'],)).fetchone()[0])
+                task = animego_scans.task_payloads(con, [(second['id'], 'full')])[0]
+                self.assertEqual(task['season'], 2)
+                self.assertEqual(task['known_episode_ids'], [1500000042])
+            finally:
+                con.close()
+
+    def test_invalid_season(self):
+        for season in (0, 100, -1, True, '2'):
+            with self.assertRaises(ValueError):
+                kinogoo.title_identity(123, season)
+
     def test_playlist_not_page_counter(self):
         html = 'seasons:' + json.dumps([{'season': 1, 'episodes': [
             {'id': 10, 'episode': '1', 'hls': 'https://example.test/a'},

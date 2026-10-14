@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "slug": "vampiry-sredney-polosy",
+  "title": "Вампиры средней полосы",
+  "summary": "Сезоны сериала «Вампиры средней полосы» в порядке просмотра.",
+  "guide": "Смотрите сезоны по порядку.",
+  "updated_at": "2026-10-14",
+  "source": {
+    "title": "Kinogoo: список сезонов в плеере",
+    "url": "https://kinogoo.fm/3376-vampiry-srednej-polosy-1-3-sezon.html",
+    "updated_at": "2026-10-14"
+  },
+  "entries": [
+    {
+      "key": "season-1",
+      "title": "Вампиры средней полосы 1 сезон",
+      "kind": "Сериал",
+      "status": "unknown",
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:3376"
+        ]
+      }
+    },
+    {
+      "key": "season-2",
+      "title": "Вампиры средней полосы 2 сезон",
+      "kind": "Сериал",
+      "status": "unknown",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:3376:season:2"
+        ]
+      }
+    },
+    {
+      "key": "season-3",
+      "title": "Вампиры средней полосы 3 сезон",
+      "kind": "Сериал",
+      "status": "unknown",
+      "release_order": 3,
+      "watch_order": 3,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:3376:season:3"
+        ]
+      }
+    }
+  ]
+}

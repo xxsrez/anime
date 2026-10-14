@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "slug": "offline",
+  "title": "Оффлайн",
+  "summary": "Сезоны сериала «Оффлайн» в порядке просмотра.",
+  "guide": "Смотрите сезоны по порядку.",
+  "updated_at": "2026-10-14",
+  "source": {
+    "title": "Kinogoo: список сезонов в плеере",
+    "url": "https://kinogoo.fm/95-offlajn-1-2-sezon.html",
+    "updated_at": "2026-10-14"
+  },
+  "entries": [
+    {
+      "key": "season-1",
+      "title": "Оффлайн 1 сезон",
+      "kind": "Сериал",
+      "status": "unknown",
+      "release_order": 1,
+      "watch_order": 1,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:95"
+        ]
+      }
+    },
+    {
+      "key": "season-2",
+      "title": "Оффлайн 2 сезон",
+      "kind": "Сериал",
+      "status": "unknown",
+      "release_order": 2,
+      "watch_order": 2,
+      "story_role": "main",
+      "match": {
+        "sources": [
+          "kinogoo:95:season:2"
+        ]
+      }
+    }
+  ]
+}

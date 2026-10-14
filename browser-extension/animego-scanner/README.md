@@ -34,8 +34,11 @@ local database from the repository root:
 ```
 
 The importer saves a draft card (`needs_review`), poster, source description,
-and only the requested season's playable playlist entries. Multi-season pages
-are rejected. The supported player is `api.nextembed.ws`; blocked entries and
+and only the requested season's playable playlist entries. For multi-season
+pages, repeat the command with each explicit `--season`: each season gets its
+own stable card and episode list. First-season IDs remain compatible with
+earlier imports. The page's series-level year and synopsis are not copied to
+later seasons. The supported player is `api.nextembed.ws`; blocked entries and
 entries without a stream are not added. Saved iframe URLs retain the source's
 region restrictions and select the exact season and episode. Stream URLs are
 not stored. Review the source description before approving a card.

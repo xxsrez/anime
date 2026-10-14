@@ -17,6 +17,14 @@ EPISODE_OFFSET = 1_500_000_000
 PLAYER_HOST = "api.nextembed.ws"
 
 
+def title_identity(source_id, season):
+    if type(season) is not int or not 1 <= season <= 99:
+        raise ValueError("Season must be between 1 and 99")
+    if season == 1:
+        return TITLE_OFFSET + source_id, str(source_id)
+    return 40_000_000 + source_id * 100 + season, f"{source_id}:season:{season}"
+
+
 def page_id(url):
     p = urlparse(url)
     match = re.fullmatch(r"/(\d+)-[a-z0-9-]+\.html", p.path)
@@ -76,6 +84,7 @@ def parse_episodes(html, embed, season):
 
 def import_title(db, url, season):
     source_id = page_id(url)
+    anime_id, source_key = title_identity(source_id, season)
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     html = response.text
@@ -90,29 +99,31 @@ def import_title(db, url, season):
     if not title or not year:
         raise ValueError("Missing title/year")
     title = title[:year.start()].strip()
-    # One catalog row is one season. Multi-season pages need explicit editorial
-    # splitting rather than silently flattening episode numbers.
-    if not re.search(rf"\b{season}\s+сезон$", title):
-        raise ValueError("Only single-season title pages are supported")
+    base_title = re.sub(r"\s+\d+(?:\s*[-–]\s*\d+)?\s+сезон(?:ы|ов)?$", "", title).strip()
+    title = f"{base_title} {season} сезон"
     poster = soup.select_one('meta[property="og:image"]')
     if not poster:
         poster = soup.select_one('.full-poster img, .fposter img, .poster img')
     cover = urljoin(url, poster.get("content") or poster.get("src")) if poster else None
-    anime_id = TITLE_OFFSET + source_id
     timestamp = dt.datetime.now(dt.timezone.utc).isoformat()
     with DatabaseOperationLock(db, operation="import Kinogoo title"):
         con = catalog.init_db(db)
         try:
             existing = con.execute("select source, source_id from anime where id=?", (anime_id,)).fetchone()
-            if existing and tuple(existing) != ("kinogoo", str(source_id)):
+            if existing and tuple(existing) != ("kinogoo", source_key):
                 raise ValueError("Title ID collision")
-            item = {"id": anime_id, "source": "kinogoo", "source_id": str(source_id),
-                    "slug": urlparse(url).path[1:-5], "url": url, "title": title, "year": year[1]}
+            item = {"id": anime_id, "source": "kinogoo", "source_id": source_key,
+                    "slug": urlparse(url).path[1:-5] + (f"-season-{season}" if season > 1 else ""),
+                    # The catalog requires unique URLs. A fragment distinguishes
+                    # seasons without changing the upstream HTTP request.
+                    "url": url + (f"#season-{season}" if season > 1 else ""),
+                    "title": title, "year": year[1] if season == 1 else None}
             description = soup.select_one('.kino-h-sub2 p')
             detail = {"title": title, "cover_url": cover,
-                      "description": description.get_text(" ", strip=True) if description else None,
+                      "description": description.get_text(" ", strip=True) if description and season == 1 else None,
                       "genres": [], "dubbings": [],
-                      "fields": {"Тип": "Сериал", "Kinogoo season": str(season), "Выпуск": year[1]}}
+                      "fields": {"Тип": "Сериал", "Kinogoo season": str(season),
+                                 **({"Выпуск": year[1]} if season == 1 else {})}}
             catalog.upsert_anime(con, item, detail, timestamp, authoritative_metadata=False)
             for snapshot in episodes:
                 ep = snapshot["episode"]
