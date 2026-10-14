@@ -1,4 +1,4 @@
-# AnimeGo Scanner extension
+# AnimeGo and Kinogoo Scanner extension
 
 Cross-browser Manifest V3 extension used by Anime Catalog to fetch AnimeGo
 player metadata through the user's Chrome or Safari connection. Safari 16.4+
@@ -22,6 +22,35 @@ until the user grants it.
 The extension sends only episodes that are not yet playable in the catalog,
 together with playable HTTPS providers. The server preserves existing metadata
 and may fill a previously null player URL.
+
+## Explicit Kinogoo series
+
+Version 0.5.0 also checks new episodes for explicitly imported Kinogoo titles.
+It does not crawl the Kinogoo catalog. Import a single-season page into the
+local database from the repository root:
+
+```sh
+.venv/bin/python kinogoo.py 'https://kinogoo.fm/4037-polden-1-sezon.html' --season 1
+```
+
+The importer saves a draft card (`needs_review`), poster, source description,
+and only the requested season's playable playlist entries. Multi-season pages
+are rejected. The supported player is `api.nextembed.ws`; blocked entries and
+entries without a stream are not added. Saved iframe URLs retain the source's
+region restrictions and select the exact season and episode. Stream URLs are
+not stored. Review the source description before approving a card.
+
+Both Partial and Full scans include imported Kinogoo cards. On the first
+Kinogoo task, the scanner pauses and requests optional access to
+`kinogoo.fm` and `api.nextembed.ws` through the access button. AnimeGo-only
+scans do not request those permissions. Reload the updated extension and the
+catalog tab before using this support. The existing checkpoint, replay, and
+additive server-write behavior also applies to Kinogoo.
+
+This command changes only the selected local database. Production deployment
+and catalog patches follow the [operations runbook](../../docs/instructions/Operations_Runbook.md)
+and require explicit authorization. Browser extension execution and playback
+must be verified separately from parser and server tests.
 
 ## Recovery behavior
 

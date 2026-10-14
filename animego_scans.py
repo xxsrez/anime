@@ -16,6 +16,7 @@ import zipfile
 
 import content_updates
 import scrape_animego as animego
+import kinogoo
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 
 
@@ -243,11 +244,11 @@ def scan_candidate_rows(con):
         from anime a
         left join episode_counts ec on ec.anime_id = a.id
         left join available_episode_counts aec on aec.anime_id = a.id
-        where a.source = 'animego'
+        where a.source in ('animego', 'kinogoo')
         order by cast(coalesce(a.year, '0') as integer) desc, a.id desc
         """
     ).fetchall()
-    return [row for row in rows if title_is_ongoing(row) or title_needs_player_backfill(row)]
+    return [row for row in rows if row['source'] == 'kinogoo' or title_is_ongoing(row) or title_needs_player_backfill(row)]
 
 
 def scan_state_by_anime_id(con, anime_ids):
@@ -448,7 +449,7 @@ def task_payloads(con, selected):
     tasks = []
     for anime_id, selection_reason in selected:
         row = con.execute(
-            "select id, title, url from anime where id = ? and source = 'animego'",
+            "select id, title, url, source, fields_json from anime where id = ? and source in ('animego', 'kinogoo')",
             (int(anime_id),),
         ).fetchone()
         if row is None:
@@ -458,6 +459,8 @@ def task_payloads(con, selected):
                 "anime_id": int(row["id"]),
                 "title": row["title"],
                 "url": row["url"],
+                "source": row["source"],
+                "season": int(json.loads(row["fields_json"] or "{}").get("Kinogoo season", 1)),
                 "known_episode_ids": known_playable_episode_ids(con, row["id"]),
                 "selection_reason": selection_reason,
             }
@@ -582,7 +585,7 @@ def create_scan_job(
             con,
             f"user-{mode}",
             "user-animego-scan",
-            ["animego"],
+            sorted({"animego"} | {task["source"] for task in tasks}),
             started_at=created_at,
         )
         job_status = "running" if tasks or mode == "full" else "completed"
@@ -902,6 +905,8 @@ def payload_sha256(payload):
 
 
 def title_scan_cooldown(row, changed, consecutive_no_change):
+    if row["source"] == "kinogoo":
+        return dt.timedelta(hours=18)
     if changed:
         return dt.timedelta(hours=6 if title_is_ongoing(row) else 24)
     if title_is_ongoing(row):
@@ -978,7 +983,7 @@ def insert_content_events(
     if not new_providers:
         return 0
     metadata = {
-        "reason": "user AnimeGO scan",
+        "reason": f"user {anime_row['source']} scan",
         "selection_reason": item["selection_reason"],
         "scan_job_id": int(job["id"]),
         "added_by_user_id": int(job["user_id"]),
@@ -991,7 +996,7 @@ def insert_content_events(
                 "new_episode",
                 int(anime_row["id"]),
                 episode_id=int(episode["id"]),
-                source="animego",
+                source=anime_row["source"],
                 source_id=str(anime_row["source_id"] or anime_row["id"]),
                 episode_number=episode.get("number"),
                 title=anime_row["title"],
@@ -1014,7 +1019,7 @@ def insert_content_events(
                     int(anime_row["id"]),
                     episode_id=int(episode["id"]),
                     video_source_id=video_source_id,
-                    source="animego",
+                    source=anime_row["source"],
                     source_id=str(anime_row["source_id"] or anime_row["id"]),
                     episode_number=episode.get("number"),
                     translation_title=provider["translation_title"],
@@ -1039,7 +1044,7 @@ def insert_content_events(
                     int(anime_row["id"]),
                     episode_id=int(episode["id"]),
                     video_source_id=video_source_id,
-                    source="animego",
+                    source=anime_row["source"],
                     source_id=str(anime_row["source_id"] or anime_row["id"]),
                     episode_number=episode.get("number"),
                     translation_title=provider["translation_title"],
@@ -1299,11 +1304,18 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 }
             normalized = validate_result_payload(payload, anime_id, allowed_hosts)
             anime_row = con.execute(
-                "select * from anime where id = ? and source = 'animego'",
+                "select * from anime where id = ? and source in ('animego', 'kinogoo')",
                 (anime_id,),
             ).fetchone()
             if anime_row is None:
                 raise ValueError("assigned AnimeGO title no longer exists")
+            if anime_row["source"] == "kinogoo":
+                for snapshot in normalized["episodes"]:
+                    if not kinogoo.EPISODE_OFFSET < snapshot["episode"]["id"] < 2_000_000_000:
+                        raise ValueError("Invalid Kinogoo episode namespace")
+                    for provider in snapshot["providers"]:
+                        if provider["embed_host"] != kinogoo.PLAYER_HOST:
+                            raise ValueError("Invalid Kinogoo player host")
             checked_at_dt = now or now_utc()
             checked_at = iso_timestamp(checked_at_dt)
             if normalized["error"]:
@@ -1346,7 +1358,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
 
             # Older extension versions omit HTML; preserve compatibility without
             # claiming that their episode-only scans refreshed metadata.
-            if payload.get("detail_html"):
+            if payload.get("detail_html") and anime_row["source"] == "animego":
                 html = validated_text(payload["detail_html"], "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
                 detail = animego.parse_detail(html)
                 if not detail["title"]:

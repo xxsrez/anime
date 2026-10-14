@@ -42,7 +42,7 @@ test("checks and requests only the AnimeGo origin", async () => {
 
 test("manifest keeps app hosts required and AnimeGo access optional", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("manifest.json", import.meta.url), "utf8"));
-  assert.deepEqual(manifest.optional_host_permissions, [ANIMEGO_HOST_PERMISSION]);
+  assert.deepEqual(manifest.optional_host_permissions, [ANIMEGO_HOST_PERMISSION, "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]);
   assert.equal(manifest.host_permissions.includes(ANIMEGO_HOST_PERMISSION), false);
   assert.equal(manifest.browser_specific_settings.safari.strict_min_version, "16.4");
 });

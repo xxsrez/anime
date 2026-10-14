@@ -12,6 +12,7 @@ import {
   resolveExtensionApi,
 } from "./permissions.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
+import { KINOGOO_ORIGINS, kinogooPlayer, kinogooEpisodes } from "./kinogoo.js";
 
 const extensionApi = resolveExtensionApi();
 const STORAGE_KEY = "animegoScannerSession";
@@ -160,7 +161,7 @@ function statusText(status) {
     {
       running: "Сканирование идёт",
       paused: "Сканирование на паузе",
-      permission: "Нужен доступ к AnimeGo",
+      permission: "Нужен доступ к источнику",
       blocked: "AnimeGo запросил проверку — сканирование остановлено",
       error: "Сканирование прервано ошибкой",
       stopping: "Останавливаем…",
@@ -433,6 +434,26 @@ function responseContent(response, label) {
 }
 
 async function collectTitle(task, runGeneration) {
+  if (task.source === "kinogoo") {
+    if (!(await extensionApi.permissions.contains({ origins: KINOGOO_ORIGINS }))) {
+      throw new PermissionError("Нужен доступ к kinogoo.fm и api.nextembed.ws");
+    }
+    async function read(url) {
+      await respectUpstreamDelay(runGeneration);
+      const controller = new AbortController();
+      currentRequest = controller;
+      const timer = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(url, { signal: controller.signal, credentials: "omit", redirect: "error" });
+        if (!response.ok) throw new UpstreamError(`Kinogoo: HTTP ${response.status}`);
+        return await response.text();
+      } finally { clearTimeout(timer); currentRequest = null; }
+    }
+    const embed = kinogooPlayer(await read(task.url), task.url);
+    const episodes = kinogooEpisodes(await read(embed), embed, task.season);
+    const known = new Set(task.known_episode_ids || []);
+    return episodes.filter(snapshot => !known.has(snapshot.episode.id));
+  }
   const animeId = task.anime_id;
   const initialResponse = await upstreamJson(`/player/${animeId}`, runGeneration);
   const initialContent = responseContent(initialResponse, `AnimeGo #${animeId}`);
@@ -550,7 +571,9 @@ async function processTask(task, index, runGeneration) {
     const episodes = await collectTitle(task, runGeneration);
     if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
     body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
-    if (!task.url && task.selection_reason !== "discovery") {
+    if (task.source === "kinogoo") {
+      // Kinogoo metadata is imported explicitly; AnimeGO HTML parsing does not apply.
+    } else if (!task.url && task.selection_reason !== "discovery") {
       // Older servers omit card URLs. Keep episode delivery working while
       // metadata refresh waits for the server contract update.
       log("Сервер не передал адрес карточки: отправляем результат проверки серий без обновления метаданных.");
@@ -793,16 +816,19 @@ async function grantAnimeGoAccess() {
   elements["grant-access"].disabled = true;
   elements.status.textContent = "Ожидаем разрешение браузера…";
   try {
-    const granted = await requestAnimeGoHostPermission(extensionApi);
+    const task = session?.payload?.tasks?.[checkpoint?.next_index || 0];
+    const granted = task?.source === "kinogoo"
+      ? await extensionApi.permissions.request({ origins: KINOGOO_ORIGINS })
+      : await requestAnimeGoHostPermission(extensionApi);
     if (!granted) {
       elements["grant-access"].disabled = false;
       elements.status.textContent = "Доступ не выдан. Можно повторить или остановить скан.";
       elements.status.className = "status error";
-      log("Браузер не выдал доступ к animego.me.", "error");
+      log("Браузер не выдал доступ к источнику.", "error");
       return;
     }
 
-    log("Доступ к AnimeGo выдан.", "success");
+    log("Доступ к источнику выдан.", "success");
     await extensionApi.runtime.sendMessage({ type: "animego-scanner-permission-granted" });
     if (session && checkpoint?.status === "permission") {
       checkpoint.status = "running";

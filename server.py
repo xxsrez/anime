@@ -82,6 +82,7 @@ PLAYER_HOSTS = (
     "yummyani.me",
     "aksor.tv",
     "vk.com",
+    "api.nextembed.ws",
 )
 PLAYER_FRAME_SOURCES = tuple(
     source
@@ -4398,15 +4399,15 @@ def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
 
 
 def animego_scan_variant_map(db_path=None, user_id=None):
-    """Map every visible canonical member to its AnimeGO source row."""
+    """Map every visible canonical member to a browser-scannable source row."""
     mapping = {}
     for group in get_catalog_cache(db_path, user_id)["items"]:
         variants = group.get("source_variants") or []
         animego_variant = next(
-            (variant for variant in variants if variant.get("source") == "animego"),
+            (variant for variant in variants if variant.get("source") in ("animego", "kinogoo")),
             None,
         )
-        if animego_variant is None and group.get("source") == "animego":
+        if animego_variant is None and group.get("source") in ("animego", "kinogoo"):
             animego_variant = group
         if animego_variant is None:
             continue

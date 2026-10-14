@@ -674,7 +674,7 @@ class AnimeGoScansTest(unittest.TestCase):
         source_manifest = json.loads((server.SCANNER_EXTENSION_DIR / "manifest.json").read_text())
         self.assertEqual(manifest["version"], source_manifest["version"])
         self.assertEqual(
-            manifest["optional_host_permissions"], ["https://animego.me/*"]
+                    manifest["optional_host_permissions"], ["https://animego.me/*", "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]
         )
         self.assertNotIn("https://animego.me/*", manifest["host_permissions"])
         self.assertEqual(

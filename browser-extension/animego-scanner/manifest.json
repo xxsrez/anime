@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Anime Catalog — сканер AnimeGo",
-  "version": "0.4.2",
-  "description": "Находит новые тайтлы и серии AnimeGo через браузер пользователя и передаёт их в Anime Catalog.",
+  "name": "Anime Catalog — сканер AnimeGo и Kinogoo",
+  "version": "0.5.0",
+  "description": "Находит тайтлы и серии AnimeGo и новые серии добавленных сериалов Kinogoo через браузер пользователя.",
   "permissions": [
     "storage",
     "tabs"
@@ -12,7 +12,9 @@
     "https://anime-srez.up.railway.app/*"
   ],
   "optional_host_permissions": [
-    "https://animego.me/*"
+    "https://animego.me/*",
+    "https://kinogoo.fm/*",
+    "https://api.nextembed.ws/*"
   ],
   "background": {
     "service_worker": "background.js",
