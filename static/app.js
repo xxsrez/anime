@@ -3306,6 +3306,7 @@ function renderFranchiseView() {
 }
 
 async function openFranchise(slug, options = {}) {
+  closeManualCompletion();
   const normalizedSlug = normalizeLinkValue(slug);
   if (!normalizedSlug) return false;
 
@@ -3571,6 +3572,7 @@ function createEpisodeNavButton(label, ariaLabel, episode) {
 }
 
 function renderEpisodes(detail) {
+  closeStaleManualCompletion();
   const episodes = detail.episodes || [];
   el.episodes.replaceChildren();
 
@@ -3629,7 +3631,130 @@ function renderEpisodes(detail) {
   const title = episodeTitleText(current);
   summary.textContent = title || episodeNumberLabel(current, currentIndex);
 
+  const actions = document.createElement("details");
+  actions.className = "episode-actions";
+  const toggle = document.createElement("summary");
+  toggle.textContent = "⋯";
+  toggle.setAttribute("aria-label", "Действия с серией");
+  const complete = document.createElement("button");
+  complete.type = "button";
+  complete.textContent = current.completed ? "Серия уже просмотрена" : "Уже посмотрел эту серию…";
+  complete.disabled = Boolean(current.completed) || manualCompletionBusy;
+  complete.addEventListener("click", () => {
+    actions.open = false;
+    openManualCompletion(detail, current);
+  });
+  actions.append(toggle, complete);
+  header.append(actions);
   el.episodes.append(header, row, summary);
+  if (manualCompletionUndo?.anime_id === detail.id) {
+    const undo = document.createElement("button");
+    undo.type = "button";
+    undo.textContent = "Отменить отметку просмотренной серии";
+    undo.disabled = manualCompletionBusy;
+    undo.addEventListener("click", () => submitManualCompletion({ ...manualCompletionUndo, action: "undo" }));
+    el.episodes.append(undo);
+  }
+}
+
+let manualCompletionTarget = null;
+let manualCompletionBusy = false;
+let manualCompletionUndo = null;
+
+function closeManualCompletion() {
+  document.getElementById("manual-completion-dialog")?.close();
+  manualCompletionTarget = null;
+}
+
+function closeStaleManualCompletion() {
+  if (manualCompletionTarget && (manualCompletionTarget.anime_id !== state.detail?.id
+    || String(manualCompletionTarget.episode_id) !== String(state.selectedEpisodeId))) closeManualCompletion();
+}
+
+function openManualCompletion(detail, episode) {
+  if (manualCompletionBusy || episode.completed) return;
+  let dialog = document.getElementById("manual-completion-dialog");
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "manual-completion-dialog";
+    dialog.className = "animego-scan-dialog";
+    dialog.setAttribute("aria-labelledby", "manual-completion-title");
+    const body = document.createElement("div");
+    body.className = "animego-scan-dialog-body";
+    const heading = document.createElement("h2");
+    heading.id = "manual-completion-title";
+    heading.textContent = "Отметить серию просмотренной?";
+    const text = document.createElement("p");
+    text.id = "manual-completion-description";
+    const buttons = document.createElement("div");
+    buttons.className = "animego-scan-dialog-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "Отмена";
+    cancel.autofocus = true;
+    cancel.addEventListener("click", closeManualCompletion);
+    const confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.textContent = "Отметить просмотренной";
+    confirm.className = "animego-scan-dialog-primary";
+    confirm.addEventListener("click", () => {
+      closeStaleManualCompletion();
+      if (manualCompletionTarget) submitManualCompletion(manualCompletionTarget);
+    });
+    dialog.addEventListener("cancel", () => { manualCompletionTarget = null; });
+    buttons.append(cancel, confirm);
+    body.append(heading, text, buttons);
+    dialog.append(body);
+    document.body.append(dialog);
+  }
+  manualCompletionTarget = {
+    anime_id: detail.id, episode_id: Number(episode.id), operation_id: crypto.randomUUID(), confirmed: true,
+  };
+  document.getElementById("manual-completion-description").textContent =
+    `${detail.title}${detail.subtitle ? ` (${detail.subtitle})` : ""} · ${episodeNumberLabel(episode, selectedEpisodeIndex(detail.episodes))}. `
+    + "Серия будет считаться полностью просмотренной. Отметку можно отменить, пока прогресс не изменился.";
+  dialog.showModal();
+  dialog.querySelector("button").focus();
+}
+
+async function submitManualCompletion(target) {
+  if (manualCompletionBusy) return;
+  manualCompletionBusy = true;
+  const dialog = document.getElementById("manual-completion-dialog");
+  dialog?.querySelectorAll("button").forEach(button => { button.disabled = true; });
+  try {
+    registerUserStateMutation(target.anime_id, {}, {});
+    if (state.detail?.id === target.anime_id) {
+      discardWatchSession();
+      clearPlayer("Выберите серию или источник, чтобы продолжить просмотр");
+    }
+    const result = await api("/api/manual-episode-completion", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(target),
+    });
+    closeManualCompletion();
+    manualCompletionUndo = result.operation_id && !result.undone ? { ...target, operation_id: result.operation_id } : null;
+    // Update metadata without selecting an episode or restarting its iframe.
+    const [catalog, detail, continuing] = await Promise.all([
+      api("/api/anime"), api(`/api/anime/${encodeURIComponent(target.anime_id)}`), api("/api/continue-watching"),
+    ]);
+    state.anime = catalog.items || [];
+    applyLoadedSearchFields(state.anime);
+    state.continueWatching = continuing.item || null;
+    state.recommendationsDirtyConfirmed = true;
+    applyFilter({ selectFirst: false });
+    if (state.detail?.id === target.anime_id) {
+      state.detail = detail;
+      renderWatchState(detail);
+      renderEpisodes(detail);
+    }
+    showAppStatus(result.undone ? "Отметка отменена" : "Серия отмечена просмотренной", "success");
+  } catch (error) {
+    showAppStatus(error.message, "error");
+  } finally {
+    manualCompletionBusy = false;
+    dialog?.querySelectorAll("button").forEach(button => { button.disabled = false; });
+    if (state.detail) renderEpisodes(state.detail);
+  }
 }
 
 function uniqueTranslations(sources) {
@@ -4406,6 +4531,7 @@ async function openPictureInPicture() {
 }
 
 async function selectAnime(id, options = {}) {
+  closeManualCompletion();
   const requestId = state.detailRequestId + 1;
   state.detailRequestId = requestId;
   state.detailRequestController?.abort();
@@ -4460,6 +4586,7 @@ async function selectAnime(id, options = {}) {
 }
 
 async function selectEpisode(id, { history = "push", remember = true } = {}) {
+  closeManualCompletion();
   if (!state.sourceSelectionPreference) {
     state.sourceSelectionPreference = frontendRuntime.sourcePreference(selectedSourceForEpisode());
   }

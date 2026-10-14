@@ -2826,3 +2826,7 @@ button.recent-update-row:focus-visible {
     width: 100%;
   }
 }
+.episode-actions { position: relative; margin-left: auto; }
+.episode-actions summary { cursor: pointer; padding: 4px 12px; list-style: none; }
+.episode-actions summary::-webkit-details-marker { display: none; }
+.episode-actions > button { position: absolute; right: 0; z-index: 10; width: 245px; max-width: 75vw; padding: 12px; }

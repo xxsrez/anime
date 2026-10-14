@@ -30,6 +30,7 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 import animego_scans
 import content_updates
 import franchise_catalog
+import manual_episode_completion
 import recommendation_model
 import user_state_model
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
@@ -1360,6 +1361,7 @@ def initialize_database(path):
         changed |= ensure_auth_schema(con)
         changed |= ensure_user_state_schema(con)
         changed |= ensure_watch_tracking_schema(con)
+        changed |= manual_episode_completion.ensure_schema(con)
         changed |= ensure_title_navigation_schema(con)
         changed |= clear_inactive_episode_starts(con)
         changed |= purge_orphaned_user_data(con)
@@ -4897,6 +4899,12 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     title_navigation = get_group_title_navigation(con, member_ids, user_id)
+    completed_episode_keys = set()
+    if user_id is not None:
+        completed_episode_keys = {episode_number_key(row['episode_number'], row['episode_id']) for row in con.execute(
+            f"select episode_number, episode_id from user_episode_state where user_id = ? and anime_id in ({member_sql}) and completed_at is not null",
+            (user_id, *member_ids),
+        )}
     latest_watch_row = None
     if user_id is not None and state.get("watch_status") == "watching":
         latest_watch_row = con.execute(
@@ -4931,6 +4939,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
             ),
         )[0]
         episode = dict(selected)
+        episode["completed"] = key in completed_episode_keys
         episode["source_count"] = 0
         episode.pop("anime_source", None)
         episode.pop("anime_source_id", None)
@@ -5475,7 +5484,7 @@ def apply_watch_progress_to_user_state(
 
 
 def watch_event_is_explicit_resume(event_type):
-    return event_type in {"player_engaged", "fullscreen_enter", "pip_open"}
+    return event_type in {"player_engaged", "fullscreen_enter", "pip_open", "manual_completed"}
 
 
 def watch_event_can_start_title(current, event_type):
@@ -8500,13 +8509,16 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 self.handle_performance_post(user)
             return
 
-        if path == "/api/watch-events":
+        if path in {"/api/watch-events", "/api/manual-episode-completion"}:
             user = self.require_user()
             if not user:
                 return
             try:
                 payload = self.read_json_body()
-                result = record_watch_event(payload, self.server.db_path, user["id"])
+                if path == "/api/manual-episode-completion":
+                    result = manual_episode_completion.record(payload, self.server.db_path, user["id"], sys.modules[__name__])
+                else:
+                    result = record_watch_event(payload, self.server.db_path, user["id"])
             except ClientErrorPayloadTooLarge:
                 self.send_json({"error": "payload too large"}, 413)
                 return
