@@ -2192,15 +2192,15 @@ button.recent-update-row:focus-visible {
   text-transform: uppercase;
 }
 
-.player-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 36px) minmax(0, 1fr);
-  gap: 8px;
-}
-
-.player-action {
-  font-size: 17px;
-}
+.source-panel-toolbar { display: flex; justify-content: flex-end; margin: -8px -6px -8px 0; }
+.player-actions-menu { position: relative; }
+.player-actions-menu summary { cursor: pointer; padding: 3px 10px; list-style: none; font-size: 22px; line-height: 1; border-radius: 4px; }
+.player-actions-menu summary::-webkit-details-marker { display: none; }
+.player-actions-menu summary:focus-visible { outline: 2px solid var(--focus); }
+.player-actions-popover { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; width: 260px; max-width: calc(100vw - 48px); display: grid; gap: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 8px 24px #0008; }
+.player-actions-popover button { text-align: left; padding: 10px; border: 0; border-radius: 4px; background: transparent; color: var(--text); cursor: pointer; }
+.player-actions-popover button:hover, .player-actions-popover button:focus-visible { background: var(--panel-2, #252b32); }
+.player-actions-popover button:disabled { opacity: .5; cursor: default; }
 
 .player-action-state {
   min-height: 18px;
@@ -2826,7 +2826,3 @@ button.recent-update-row:focus-visible {
     width: 100%;
   }
 }
-.episode-actions { position: relative; margin-left: auto; }
-.episode-actions summary { cursor: pointer; padding: 4px 12px; list-style: none; }
-.episode-actions summary::-webkit-details-marker { display: none; }
-.episode-actions > button { position: absolute; right: 0; z-index: 10; width: 245px; max-width: 75vw; padding: 12px; }

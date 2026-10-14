@@ -3573,6 +3573,9 @@ function createEpisodeNavButton(label, ariaLabel, episode) {
 
 function renderEpisodes(detail) {
   closeStaleManualCompletion();
+  const complete = document.getElementById("mark-episode-watched");
+  complete.disabled = true;
+  document.getElementById("player-actions-menu").open = false;
   const episodes = detail.episodes || [];
   el.episodes.replaceChildren();
 
@@ -3631,21 +3634,12 @@ function renderEpisodes(detail) {
   const title = episodeTitleText(current);
   summary.textContent = title || episodeNumberLabel(current, currentIndex);
 
-  const actions = document.createElement("details");
-  actions.className = "episode-actions";
-  const toggle = document.createElement("summary");
-  toggle.textContent = "⋯";
-  toggle.setAttribute("aria-label", "Действия с серией");
-  const complete = document.createElement("button");
-  complete.type = "button";
   complete.textContent = current.completed ? "Серия уже просмотрена" : "Уже посмотрел эту серию…";
   complete.disabled = Boolean(current.completed) || manualCompletionBusy;
-  complete.addEventListener("click", () => {
-    actions.open = false;
+  complete.onclick = () => {
+    document.getElementById("player-actions-menu").open = false;
     openManualCompletion(detail, current);
-  });
-  actions.append(toggle, complete);
-  header.append(actions);
+  };
   el.episodes.append(header, row, summary);
   if (manualCompletionUndo?.anime_id === detail.id) {
     const undo = document.createElement("button");
@@ -3908,6 +3902,7 @@ function setPlayer(source, episode) {
     loaded: navigatesPlayer ? false : (state.playerContext?.loaded ?? true),
   };
   if (navigatesPlayer) {
+    cancelPictureInPictureRequest();
     setPlayerActionState("");
     el.player.src = playerUrl;
   }
@@ -3915,7 +3910,7 @@ function setPlayer(source, episode) {
 }
 
 function updatePlayerDisplay(source, episode) {
-  el.pipToggle.hidden = playerMessageProvider(source) !== "kodik";
+  el.pipToggle.disabled = false;
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
   el.empty.textContent = "";
@@ -3938,7 +3933,8 @@ function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metada
 }
 
 function clearPlayer(message) {
-  el.pipToggle.hidden = true;
+  cancelPictureInPictureRequest();
+  el.pipToggle.disabled = true;
   clearWatchSession();
   state.playerContext = null;
   el.player.removeAttribute("src");
@@ -4418,6 +4414,8 @@ function handlePlayerMessage(event) {
   } else if (["playback_paused", "playback_ended"].includes(message.type)) {
     handleProviderPlaybackStopped({ ended: message.type === "playback_ended" });
   } else if (message.type === "pip_entered") {
+    cancelPictureInPictureRequest();
+    el.pipToggle.textContent = "Вернуть видео из отдельного окна";
     setPlayerActionState("Картинка в картинке включена");
     const session = state.watchSession;
     if (session) {
@@ -4425,6 +4423,7 @@ function handlePlayerMessage(event) {
       markWatchEngaged("pip_open");
     }
   } else if (message.type === "pip_exited") {
+    cancelPictureInPictureRequest();
     setPlayerActionState("");
     const session = state.watchSession;
     if (session) {
@@ -4509,7 +4508,18 @@ function isFullscreenHotkey(event) {
   return event.code === "KeyF" || String(event.key || "").toLowerCase() === "f";
 }
 
+let pictureInPictureRequest = null;
+
+function cancelPictureInPictureRequest() {
+  if (pictureInPictureRequest) window.clearTimeout(pictureInPictureRequest.timer);
+  pictureInPictureRequest = null;
+  el.pipToggle.disabled = false;
+  el.pipToggle.textContent = "Картинка в картинке";
+}
+
 async function openPictureInPicture() {
+  document.getElementById("player-actions-menu").open = false;
+  if (pictureInPictureRequest) return;
   if (!el.player.getAttribute("src")) {
     setPlayerActionState("Нет активного видео", "warn");
     return;
@@ -4518,16 +4528,37 @@ async function openPictureInPicture() {
   const context = state.playerContext;
   if (context?.messageProvider === "kodik" && context.playerOrigin && el.player.contentWindow) {
     const exiting = Boolean(state.watchSession?.pictureInPictureActive);
+    if (!exiting && !state.watchSession?.providerPlaybackActive) {
+      setPlayerActionState("Сначала запустите видео, затем включите картинку в картинке.", "warn");
+      return;
+    }
     // Ask the existing player to use its native PiP implementation (including
     // Safari's webkitSetPresentationMode). Never clone or reload the iframe.
-    el.player.contentWindow.postMessage({
-      key: "kodik_player_api",
-      value: { method: exiting ? "exit_pip" : "enter_pip" },
-    }, context.playerOrigin);
-    // Only the provider's pip_entered event confirms success.
-    setPlayerActionState("");
+    const request = { context, timer: null };
+    pictureInPictureRequest = request;
+    el.pipToggle.disabled = true;
+    setPlayerActionState(exiting ? "Возвращаем видео…" : "Открываем видео в отдельном окне…");
+    request.timer = window.setTimeout(() => {
+      if (pictureInPictureRequest !== request) return;
+      cancelPictureInPictureRequest();
+      if (state.playerContext !== context) return;
+      setPlayerActionState(exiting
+        ? "Плеер не подтвердил выход. Закройте отдельное окно средствами браузера."
+        : "Плеер не подтвердил открытие окна. Нажмите кнопку «Картинка в картинке» внутри видео или в меню браузера: для стороннего плеера может требоваться нажатие прямо в нём.", "warn");
+    }, 4000);
+    try {
+      el.player.contentWindow.postMessage({
+        key: "kodik_player_api",
+        value: { method: exiting ? "exit_pip" : "enter_pip" },
+      }, context.playerOrigin);
+    } catch (error) {
+      cancelPictureInPictureRequest();
+      setPlayerActionState("Не удалось связаться с плеером. Используйте кнопку «Картинка в картинке» внутри видео.", "warn");
+      reportClientError(error, { action: "picture in picture request" });
+    }
     return;
   }
+  setPlayerActionState("Этот плеер не поддерживает включение отдельного окна из каталога. Используйте «Картинка в картинке» внутри видео или в меню браузера, если эта функция там доступна.", "warn");
 }
 
 async function selectAnime(id, options = {}) {
@@ -5351,6 +5382,16 @@ el.provider.addEventListener("change", event => {
 });
 el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(reportActionError("picture in picture button"));
+});
+document.addEventListener("click", event => {
+  const menu = document.getElementById("player-actions-menu");
+  if (!menu.contains(event.target)) menu.open = false;
+});
+document.getElementById("player-actions-menu").addEventListener("keydown", event => {
+  if (event.key !== "Escape") return;
+  event.currentTarget.open = false;
+  event.currentTarget.querySelector("summary").focus();
+  event.preventDefault();
 });
 el.player.addEventListener("load", handlePlayerLoaded);
 el.player.addEventListener("focus", handlePlayerEngaged);
