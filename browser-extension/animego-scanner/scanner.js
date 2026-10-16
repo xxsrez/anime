@@ -12,7 +12,7 @@ import {
   resolveExtensionApi,
 } from "./permissions.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
-import { KINOGOO_ORIGINS, kinogooPlayer, kinogooEpisodes } from "./kinogoo.js";
+import { KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes } from "./kinogoo.js";
 
 const extensionApi = resolveExtensionApi();
 const STORAGE_KEY = "animegoScannerSession";
@@ -448,9 +448,7 @@ async function collectTitle(task, runGeneration) {
       currentRequest = controller;
       const timer = setTimeout(() => controller.abort(), 30000);
       try {
-        const response = await fetch(url, { signal: controller.signal, credentials: "omit", redirect: "error" });
-        if (!response.ok) throw new UpstreamError(`Kinogoo: HTTP ${response.status}`);
-        return await response.text();
+        return await fetchKinogooHtml(url, controller.signal);
       } finally { clearTimeout(timer); currentRequest = null; }
     }
     const embed = kinogooPlayer(await read(task.url), task.url);

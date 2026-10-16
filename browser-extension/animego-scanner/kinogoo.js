@@ -2,6 +2,41 @@ import { redactEmbedUrl } from "./parser.js";
 
 export const KINOGOO_ORIGINS = ["https://kinogoo.fm/*", "https://api.nextembed.ws/*"];
 
+export async function fetchKinogooHtml(url, signal, fetcher = globalThis.fetch) {
+  const requested = new URL(url);
+  const titleId = requested.origin === "https://kinogoo.fm"
+    && /^\/(\d+)-[a-z0-9-]+\.html$/.exec(requested.pathname)?.[1];
+  const isPlayer = requested.origin === "https://api.nextembed.ws"
+    && /^\/embed\/kp\/\d+$/.test(requested.pathname);
+  if ((!titleId && !isPlayer) || requested.username || requested.password) {
+    throw new Error("Некорректный адрес Kinogoo");
+  }
+  // Kinogoo changes title slugs and redirects old links. Player redirects
+  // remain forbidden; page responses must still identify the same title.
+  const label = `Kinogoo (${titleId ? "страница сериала" : "плейлист"}, ${requested.origin}${requested.pathname})`;
+  let response;
+  try {
+    response = await fetcher(url, {
+      signal, credentials: "omit", redirect: titleId ? "follow" : "error",
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    throw new Error(`${label}: запрос не выполнен: ${error?.message || String(error)}. Подробная причина — в Console Chrome.`, { cause: error });
+  }
+  if (!response.ok) throw new Error(`Kinogoo: HTTP ${response.status}`);
+  const resolved = new URL(response.url);
+  if (resolved.origin !== requested.origin || resolved.username || resolved.password
+      || (titleId && /^\/(\d+)-[a-z0-9-]+\.html$/.exec(resolved.pathname)?.[1] !== titleId)) {
+    throw new Error("Kinogoo перенаправил запрос на неподдерживаемый адрес");
+  }
+  try {
+    return await response.text();
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    throw new Error(`${label}: не удалось прочитать ответ: ${error?.message || String(error)}`, { cause: error });
+  }
+}
+
 export function kinogooPlayer(html, page, Parser = globalThis.DOMParser) {
   const url = new URL(page);
   if (url.origin !== "https://kinogoo.fm" || !/^\/\d+-[a-z0-9-]+\.html$/.test(url.pathname)) {
