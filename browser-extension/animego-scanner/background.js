@@ -41,7 +41,7 @@ function validateStart(detail, origin) {
   if (typeof detail.token !== "string" || detail.token.length < 16 || detail.token.length > 8192) {
     throw new Error("Задание сканирования не содержит корректный token.");
   }
-  if (!Array.isArray(detail.tasks) || detail.tasks.length > 2000) {
+  if (!Array.isArray(detail.tasks) || detail.tasks.length > 20000) {
     throw new Error("Некорректный список тайтлов для сканирования.");
   }
   for (const task of detail.tasks) {

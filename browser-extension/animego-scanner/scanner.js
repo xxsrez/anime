@@ -12,6 +12,7 @@ import {
   resolveExtensionApi,
 } from "./permissions.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
+import { upstreamHttpError } from "./upstream-errors.js";
 import { KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes } from "./kinogoo.js";
 
 const extensionApi = resolveExtensionApi();
@@ -389,7 +390,7 @@ async function upstreamJson(path, runGeneration, { html = false } = {}) {
         );
       }
       if (!response.ok) {
-        throw new UpstreamError(`AnimeGo ответил HTTP ${response.status}.`, {
+        throw new UpstreamError(upstreamHttpError(path, response.status), {
           retryable: response.status === 408 || response.status >= 500,
           status: response.status,
         });

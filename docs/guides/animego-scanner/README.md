@@ -13,8 +13,13 @@ replaces, the trusted AnimeGo push worker.
 
 | Mode | UI | Server selection |
 | --- | --- | --- |
-| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected supported title and every supported title in the user's favorites or Watching, including completed titles and ignoring cooldowns for this personal set. Then up to 8 other ongoing titles sampled without replacement, weighted toward older successful checks and recent content changes. No 6-personal/15-total truncation. |
-| Full | Choose `Full Scan` from the arrow menu and confirm. | Every current AnimeGo candidate, ignoring partial-scan cooldowns, followed by listing discovery of titles absent from the database. Existing candidates are ongoing titles plus titles whose known episodes lack playable coverage. |
+| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | Selected, favorite and Watching titles from AnimeGO/Kinogoo, excluding completed titles whose explicit release end date is more than 30 days ago. Unknown end dates are retained. Then up to 8 other ongoing titles sampled without replacement, weighted toward older successful checks and recent content changes. |
+| Full | Choose `Full Scan` from the arrow menu and confirm. | Every stored AnimeGO/Kinogoo title, including completed titles, ignoring cooldowns. All episodes are fetched again and existing provider URLs refreshed. AnimeGO listing discovery follows. YummyAnime uses its separate synchronizer. |
+
+Full jobs expire after 24 hours to allow the larger scan to finish. Extension
+0.5.3 accepts up to 20,000 initial tasks and reports the exact public URL and
+request stage for HTTP errors. A 404 is a failed check, not evidence that no
+new episodes exist; missing source cards are not deleted from the catalog.
 
 Full Scan creates substantially more AnimeGo requests. Prefer Partial Scan for
 routine use and Full Scan for an intentional broad catch-up.

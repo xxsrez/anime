@@ -472,7 +472,7 @@ class AnimeGoScansTest(unittest.TestCase):
             con.close()
         self.assertIn((10, "personal"), selected)
 
-    def test_full_selection_includes_ongoing_and_missing_playable_only(self):
+    def test_full_selection_includes_completed_and_rechecks_known_players(self):
         self.add_title(1, playable=True)
         self.add_title(2, status="Завершён", placeholder=True)
         self.add_title(3, status="Завершён", episodes_text="1", playable=True)
@@ -483,8 +483,30 @@ class AnimeGoScansTest(unittest.TestCase):
             )
         finally:
             con.close()
-        self.assertEqual({anime_id for anime_id, _ in selected}, {1, 2})
+        self.assertEqual({anime_id for anime_id, _ in selected}, {1, 2, 3})
         self.assertTrue(all(reason == "full" for _, reason in selected))
+        with closing(server.connect(self.db_path)) as con:
+            self.assertTrue(all(not task["known_episode_ids"] for task in animego_scans.task_payloads(con, selected)))
+
+    def test_partial_excludes_old_completed_even_when_personal_or_current(self):
+        now = dt.datetime(2026, 10, 16, tzinfo=dt.timezone.utc)
+        for anime_id, status, release in [
+            (1, "Вышел", "с 10 января 2025 по 4 июля 2025"),
+            (2, "Завершён", "с 1 января 2026 по 16 сентября 2026"),
+            (3, "Вышел", "с 1 января 2026"),
+            (4, "Онгоинг", "с 1 января 2025 по 4 июля 2025"),
+            (5, "Выпуск завершён", "с 1 января 2025 по 4 июля 2025"),
+        ]:
+            self.add_title(anime_id, status=status, source="kinogoo" if anime_id == 5 else "animego")
+            self.set_library_state(anime_id, watch_status="watching")
+            with closing(server.connect(self.db_path)) as con:
+                con.execute("insert into anime_fields(anime_id,label,value) values (?, 'Выпуск', ?)", (anime_id, release))
+                con.commit()
+        with closing(server.connect(self.db_path)) as con:
+            selected = animego_scans.select_scan_items(con, "partial", self.user["id"], current_anime_id=1, now=now)
+            full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
+        self.assertEqual({i for i, _ in selected}, {2, 3, 4})
+        self.assertEqual({i for i, _ in full}, {1, 2, 3, 4, 5})
 
     def test_global_lease_conflicts_until_job_completes(self):
         self.add_title(1)
@@ -637,6 +659,20 @@ class AnimeGoScansTest(unittest.TestCase):
         finally:
             con.close()
         self.assertEqual(episode["title"], "Original episode title")
+
+    def test_full_refreshes_existing_provider_without_counting_it_as_new(self):
+        self.add_title(8, playable=True)
+        job = self.create_job()
+        provider = self.provider("provider-8", 1)
+        result = animego_scans.submit_scan_result(
+            self.db_path, job["job"]["id"], job["token"],
+            self.result_payload(8, 801, provider=provider), server.PLAYER_HOSTS,
+        )
+        self.assertEqual(result["result"]["new_episode_count"], 0)
+        self.assertEqual(result["result"]["new_provider_count"], 0)
+        with closing(server.connect(self.db_path)) as con:
+            row = con.execute("select embed_url from video_sources where episode_id=801").fetchone()
+        self.assertEqual(row[0], provider["embed_url"])
 
     def test_unsafe_provider_is_rejected_without_consuming_item(self):
         self.add_title(9)

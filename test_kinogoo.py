@@ -32,7 +32,7 @@ class KinogooParserTest(unittest.TestCase):
                 self.assertIsNone(con.execute('select year from anime where id=?', (second['id'],)).fetchone()[0])
                 task = animego_scans.task_payloads(con, [(second['id'], 'full')])[0]
                 self.assertEqual(task['season'], 2)
-                self.assertEqual(task['known_episode_ids'], [1500000042])
+                self.assertEqual(task['known_episode_ids'], [])
             finally:
                 con.close()
 

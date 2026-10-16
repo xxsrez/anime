@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anime Catalog — сканер AnimeGo и Kinogoo",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Находит тайтлы и серии AnimeGo и новые серии добавленных сериалов Kinogoo через браузер пользователя.",
   "permissions": [
     "storage",

@@ -220,6 +220,25 @@ def title_needs_player_backfill(row):
     )
 
 
+def completed_over_month_ago(row, now):
+    if str(row["status"] or "").strip().casefold() not in {
+        "вышел", "завершён", "завершен", "выпуск завершён", "выпуск завершен",
+    }:
+        return False
+    # Only an explicit end date proves completion age; premiere/year and
+    # scraping timestamps cannot substitute for it.
+    release = str(row["release_period"] or "")
+    match = re.search(r"\bпо\s+(\d{1,2})\s+(\w+)\s+(\d{4})", release)
+    months = "января февраля марта апреля мая июня июля августа сентября октября ноября декабря".split()
+    if not match or match[2].casefold() not in months:
+        return False
+    try:
+        ended = dt.date(int(match[3]), months.index(match[2].casefold()) + 1, int(match[1]))
+    except ValueError:
+        return False
+    return (now.date() - ended).days > 30
+
+
 def scan_candidate_rows(con, *, include_completed=False):
     rows = con.execute(
         """
@@ -237,6 +256,8 @@ def scan_candidate_rows(con, *, include_completed=False):
         )
         select
             a.*,
+            (select value from anime_fields f where f.anime_id = a.id
+             and f.label = 'Выпуск') as release_period,
             (select max(occurred_at) from content_update_events e
              where e.anime_id = a.id and e.event_type != 'new_title') as last_content_change_at,
             coalesce(ec.episode_count, 0) as episode_count,
@@ -385,7 +406,9 @@ def select_scan_items(
     if mode not in SCAN_MODES:
         raise ValueError("mode must be 'partial' or 'full'")
     now = now or now_utc()
-    rows = scan_candidate_rows(con, include_completed=mode == "partial")
+    rows = scan_candidate_rows(con, include_completed=True)
+    if mode == "partial":
+        rows = [row for row in rows if not completed_over_month_ago(row, now)]
     row_by_id = {int(row["id"]): row for row in rows}
     if mode == "full":
         return [(anime_id, "full") for anime_id in row_by_id]
@@ -472,7 +495,7 @@ def task_payloads(con, selected):
                 "url": row["url"],
                 "source": row["source"],
                 "season": int(json.loads(row["fields_json"] or "{}").get("Kinogoo season", 1)),
-                "known_episode_ids": known_playable_episode_ids(con, row["id"]),
+                "known_episode_ids": [] if selection_reason == "full" else known_playable_episode_ids(con, row["id"]),
                 "selection_reason": selection_reason,
             }
         )
@@ -568,7 +591,7 @@ def create_scan_job(
     user_name = user["name"] if "name" in user_keys else None
     now = now or now_utc()
     created_at = iso_timestamp(now)
-    expires_at = iso_timestamp(now + dt.timedelta(seconds=JOB_TTL_SECONDS))
+    expires_at = iso_timestamp(now + dt.timedelta(seconds=24 * 60 * 60 if mode == "full" else JOB_TTL_SECONDS))
     token = secrets.token_urlsafe(32)
     con = connect(db_path)
     try:
@@ -1141,6 +1164,15 @@ def apply_episode_result(con, job, item, anime_row, snapshot, scraped_at):
         )
         if existing_provider is not None:
             if existing_provider["embed_url"]:
+                if job["mode"] == "full":
+                    con.execute(
+                        """update video_sources set provider_title = ?, translation_title = ?,
+                           embed_host = ?, embed_url = ?, embed_url_redacted = ?, scraped_at = ?
+                           where id = ?""",
+                        (provider.get("provider_title"), provider["translation_title"],
+                         provider["embed_host"], provider["embed_url"],
+                         provider["embed_url_redacted"], scraped_at, existing_provider["id"]),
+                    )
                 continue
             cursor = con.execute(
                 """
