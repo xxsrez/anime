@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import http.client
+import datetime as dt
 from contextlib import closing
 import io
 import json
@@ -324,7 +325,7 @@ class AnimeGoScansTest(unittest.TestCase):
         finally:
             con.close()
 
-    def test_partial_selection_combines_current_personal_stale_and_random(self):
+    def test_partial_selection_combines_current_personal_and_weighted_random(self):
         for anime_id in range(1, 21):
             self.add_title(anime_id)
         self.set_library_state(2, watch_status="watching")
@@ -344,12 +345,109 @@ class AnimeGoScansTest(unittest.TestCase):
 
         reasons = [reason for _, reason in selected]
         selected_ids = {anime_id for anime_id, _ in selected}
-        self.assertEqual(len(selected), 15)
+        self.assertEqual(len(selected), 11)
         self.assertEqual(selected[0], (1, "current"))
         self.assertTrue({2, 3} <= selected_ids)
         self.assertEqual(reasons.count("personal"), 2)
-        self.assertEqual(reasons.count("random"), 3)
-        self.assertGreaterEqual(reasons.count("stale"), 5)
+        self.assertEqual(reasons.count("random"), 8)
+
+    def test_partial_checks_entire_library_even_completed_and_recently_checked(self):
+        now = animego_scans.now_utc()
+        for anime_id in range(1, 25):
+            self.add_title(anime_id, status="Завершён", episodes_text="1", playable=True)
+            self.set_library_state(anime_id, favorite=anime_id <= 12,
+                                   watch_status="watching" if anime_id >= 12 else "not_watching")
+        self.add_title(25, status="Завершён", episodes_text="1", playable=True)
+        self.add_title(26, status="Завершён", episodes_text="1", playable=True)
+        self.set_library_state(26)  # A state timestamp alone is not a personal subscription.
+        for anime_id in range(100, 112):
+            self.add_title(anime_id)
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id in range(1, 25):
+                con.execute("insert into animego_title_scan_state(anime_id,next_eligible_at) values (?,?)",
+                            (anime_id, animego_scans.iso_timestamp(now + dt.timedelta(days=7))))
+            con.commit()
+            selected = animego_scans.select_scan_items(con, "partial", self.user["id"],
+                                                       current_anime_id=25, rng=random.Random(7), now=now)
+        self.assertEqual(selected[0], (25, "current"))
+        self.assertEqual({i for i, reason in selected if reason == "personal"}, set(range(1, 25)))
+        self.assertEqual(len(selected), 33)
+        self.assertEqual(len({i for i, _ in selected}), 33)
+        self.assertNotIn(26, dict(selected))
+
+    def test_partial_rotation_uses_shared_successful_checks_and_excludes_completed(self):
+        for anime_id in range(1, 21):
+            self.add_title(anime_id)
+        self.add_title(21, status="Завершён", placeholder=True)
+        self.add_title(30_000_022, source="kinogoo", status="Завершён")
+        first = self.create_job("partial", rng=random.Random(1))
+        first_ids = {task["anime_id"] for task in first["tasks"]}
+        self.assertEqual(len(first_ids), 8)
+        self.assertTrue(first_ids <= set(range(1, 21)))
+        for anime_id in first_ids:
+            animego_scans.submit_scan_result(self.db_path, first["job"]["id"], first["token"],
+                                            {"anime_id": anime_id, "episodes": []}, server.PLAYER_HOSTS)
+        animego_scans.complete_scan_job(self.db_path, first["job"]["id"], first["token"], {})
+        with closing(server.connect(self.db_path)) as con:
+            second = animego_scans.select_scan_items(con, "partial", self.user["id"] + 1,
+                                                     rng=random.Random(1))
+        self.assertEqual(len(second), 8)
+        self.assertTrue(first_ids.isdisjoint(dict(second)))
+
+    def test_weighted_selection_favors_old_successes_over_recent_checks(self):
+        now = animego_scans.now_utc()
+        for anime_id in range(1, 33):
+            self.add_title(anime_id)
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id in range(1, 33):
+                age = 30 if anime_id <= 16 else 1
+                con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (?,?)",
+                            (anime_id, animego_scans.iso_timestamp(now - dt.timedelta(days=age))))
+            con.commit()
+            old_count = sum(i <= 16 for seed in range(100) for i, _ in
+                            animego_scans.select_scan_items(con, "partial", self.user["id"],
+                                                          now=now, rng=random.Random(seed)))
+        self.assertGreater(old_count, 640)  # >80% from the older half, not uniform selection.
+
+    def test_recent_content_changes_raise_weight_without_erasing_age_priority(self):
+        now = animego_scans.now_utc()
+        def state(days):
+            return {"last_successful_at": animego_scans.iso_timestamp(now - dt.timedelta(days=days))}
+        plain = {"last_content_change_at": None}
+        updated = {"last_content_change_at": animego_scans.iso_timestamp(now)}
+        self.assertGreater(animego_scans.partial_scan_weight(updated, state(5), now),
+                           animego_scans.partial_scan_weight(plain, state(5), now))
+        self.assertGreater(animego_scans.partial_scan_weight(plain, state(30), now),
+                           animego_scans.partial_scan_weight(updated, state(1), now))
+
+    def test_rotation_reads_content_events_but_not_new_card_or_metadata_timestamps(self):
+        self.add_title(1)
+        self.add_title(2)
+        changed = animego_scans.iso_timestamp()
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id, event in [(1, "new_episode"), (2, "new_title")]:
+                con.execute("insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values (?,?,?,?)",
+                            (event, anime_id, changed, f"fixture-{anime_id}"))
+            rows = {row["id"]: row for row in animego_scans.scan_candidate_rows(con)}
+        self.assertEqual(rows[1]["last_content_change_at"], changed)
+        self.assertIsNone(rows[2]["last_content_change_at"])
+
+    def test_failed_attempt_does_not_become_successful_check(self):
+        self.add_title(1)
+        first = self.create_job("partial")
+        animego_scans.submit_scan_result(self.db_path, first["job"]["id"], first["token"],
+                                        {"anime_id": 1, "episodes": []}, server.PLAYER_HOSTS)
+        animego_scans.complete_scan_job(self.db_path, first["job"]["id"], first["token"], {})
+        with closing(server.connect(self.db_path)) as con:
+            success = animego_scans.scan_state_by_anime_id(con, [1])[1]["last_successful_at"]
+        later = animego_scans.now_utc() + dt.timedelta(days=2)
+        second = self.create_job("partial", now=later)
+        animego_scans.submit_scan_result(self.db_path, second["job"]["id"], second["token"],
+                                        {"anime_id": 1, "error": "network failure"}, server.PLAYER_HOSTS, now=later)
+        with closing(server.connect(self.db_path)) as con:
+            state = animego_scans.scan_state_by_anime_id(con, [1])[1]
+        self.assertEqual(state["last_successful_at"], success)
+        self.assertFalse(animego_scans.timestamp_is_due(state["next_eligible_at"], later))
 
     def test_personal_variant_maps_to_animego_source(self):
         self.add_title(10, title="Canonical scanner title")

@@ -13,7 +13,7 @@ replaces, the trusted AnimeGo push worker.
 
 | Mode | UI | Server selection |
 | --- | --- | --- |
-| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | Up to 15 current AnimeGo candidates: the selected title when applicable, up to 6 titles from the user's favorites/watching/recent activity, up to 5 least-recently checked titles, and up to 3 random titles. Remaining room is filled from stale candidates. Per-title cooldowns can make the result smaller. |
+| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected supported title and every supported title in the user's favorites or Watching, including completed titles and ignoring cooldowns for this personal set. Then up to 8 other ongoing titles sampled without replacement, weighted toward older successful checks and recent content changes. No 6-personal/15-total truncation. |
 | Full | Choose `Full Scan` from the arrow menu and confirm. | Every current AnimeGo candidate, ignoring partial-scan cooldowns, followed by listing discovery of titles absent from the database. Existing candidates are ongoing titles plus titles whose known episodes lack playable coverage. |
 
 Full Scan creates substantially more AnimeGo requests. Prefer Partial Scan for
@@ -56,12 +56,41 @@ where editorial_status = 'needs_review'
 order by id;
 ```
 
-Except for an eligible title currently open in the UI, Partial Scan honors
+Only the additional random portion of Partial Scan honors
 `animego_title_scan_state.next_eligible_at`. A changed ongoing title becomes
 eligible again after 6 hours; a changed non-ongoing title after 24 hours. An
 unchanged ongoing title backs off from 18 to at most 54 hours after repeated
 no-change checks, an unchanged non-ongoing title waits 7 days, and a title-level
-error retries after 30 minutes. Full Scan ignores these cooldowns.
+error retries after 30 minutes. Kinogoo waits 18 hours after a successful
+check. Full Scan ignores these cooldowns.
+
+### Weighted extra selection
+
+Personal selection is the union of favorites and Watching, not every title
+with past activity. The current title is included once, even when personal.
+Supported sources remain AnimeGO and explicitly imported Kinogoo. A merged
+card resolves to its supported source variant; YummyAnime-only titles remain
+the responsibility of the separate YummyAnime sync. This change does not
+expand Full Scan or add another source adapter.
+
+For each other ongoing title that is due, the weight is
+`(1 + age_days) * (1 + max(0, 1 - change_age_days / 14))`.
+`age_days` is time since the last successful user scan, capped at 90 days;
+never-successfully-checked titles start with 30 days. Failed attempts do not
+reset this age. `change_age_days` uses the latest scanner addition or recorded
+content-update event (episodes/providers/translations, excluding new-card
+events), including changes discovered by background sync. Editing card
+metadata does not boost the weight. The change bonus is bounded at 2x.
+
+Exponential-race sampling draws up to eight unique titles using these weights.
+Recently checked titles are excluded until their cooldown expires; completed
+titles never enter the extra pool, even when their player coverage is incomplete.
+State is shared across users and keyed by the source-specific anime ID. Existing
+scan state and successful job items supply the history; no separate queue or
+schema migration is needed. Selection is probabilistic: it does not promise
+strictly disjoint consecutive sets after cooldown expiry or a bounded coverage
+deadline. Large personal libraries take longer; the existing job expiry and
+extension transport limits still apply.
 
 ## Browser Setup
 

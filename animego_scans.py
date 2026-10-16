@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import io
 import json
+import math
 import random
 import re
 import secrets
@@ -23,10 +24,7 @@ from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 SCAN_MODES = {"partial", "full"}
 ACTIVE_JOB_STATUS = "running"
 JOB_TTL_SECONDS = 2 * 60 * 60
-PARTIAL_SCAN_LIMIT = 15
-PARTIAL_PERSONAL_LIMIT = 6
-PARTIAL_STALE_LIMIT = 5
-PARTIAL_RANDOM_LIMIT = 3
+PARTIAL_EXTRA_LIMIT = 8
 MAX_RESULT_BODY_BYTES = 2 * 1024 * 1024
 MAX_COMPLETE_BODY_BYTES = 256 * 1024
 MAX_RESULT_EPISODES = 500
@@ -222,7 +220,7 @@ def title_needs_player_backfill(row):
     )
 
 
-def scan_candidate_rows(con):
+def scan_candidate_rows(con, *, include_completed=False):
     rows = con.execute(
         """
         with episode_counts as (
@@ -239,6 +237,8 @@ def scan_candidate_rows(con):
         )
         select
             a.*,
+            (select max(occurred_at) from content_update_events e
+             where e.anime_id = a.id and e.event_type != 'new_title') as last_content_change_at,
             coalesce(ec.episode_count, 0) as episode_count,
             coalesce(aec.available_episode_count, 0) as available_episode_count
         from anime a
@@ -248,7 +248,7 @@ def scan_candidate_rows(con):
         order by cast(coalesce(a.year, '0') as integer) desc, a.id desc
         """
     ).fetchall()
-    return [row for row in rows if row['source'] == 'kinogoo' or title_is_ongoing(row) or title_needs_player_backfill(row)]
+    return rows if include_completed else [row for row in rows if row['source'] == 'kinogoo' or title_is_ongoing(row) or title_needs_player_backfill(row)]
 
 
 def scan_state_by_anime_id(con, anime_ids):
@@ -256,7 +256,11 @@ def scan_state_by_anime_id(con, anime_ids):
         return {}
     placeholders = ",".join("?" for _ in anime_ids)
     rows = con.execute(
-        f"select * from animego_title_scan_state where anime_id in ({placeholders})",
+        f"""select s.*, case when s.last_error is null then s.last_checked_at
+            else (select max(i.checked_at) from animego_scan_job_items i
+                  where i.anime_id = s.anime_id and i.status = 'completed')
+            end as last_successful_at
+            from animego_title_scan_state s where s.anime_id in ({placeholders})""",
         tuple(anime_ids),
     ).fetchall()
     return {int(row["anime_id"]): dict(row) for row in rows}
@@ -327,7 +331,7 @@ def personal_candidate_ids(con, user_id, variant_map, candidate_ids):
     eligible = [
         profile
         for profile in profiles.values()
-        if profile["watching"] or profile["favorite"] or profile["last_seen_at"]
+        if profile["watching"] or profile["favorite"]
         if not profile["not_interested"] or profile["watching"] or profile["favorite"]
     ]
     eligible.sort(
@@ -347,6 +351,27 @@ def personal_candidate_ids(con, user_id, variant_map, candidate_ids):
     return [profile["anime_id"] for profile in eligible]
 
 
+def scan_age_days(value, now, *, default):
+    if not value:
+        return default
+    try:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        return max(0.0, (now - parsed).total_seconds() / 86400)
+    except ValueError:
+        return default
+
+
+def partial_scan_weight(row, state, now):
+    # Successful checks, not attempts, reset priority. Unseen titles start
+    # with 30 days of age; cap stale priority at 90 days to retain exploration.
+    age = min(90.0, scan_age_days(state.get("last_successful_at"), now, default=30.0))
+    changes = [state.get("last_changed_at"), row["last_content_change_at"]]
+    change_age = min(scan_age_days(value, now, default=14.0) for value in changes)
+    return (1.0 + age) * (1.0 + max(0.0, 1.0 - change_age / 14.0))
+
+
 def select_scan_items(
     con,
     mode,
@@ -360,7 +385,7 @@ def select_scan_items(
     if mode not in SCAN_MODES:
         raise ValueError("mode must be 'partial' or 'full'")
     now = now or now_utc()
-    rows = scan_candidate_rows(con)
+    rows = scan_candidate_rows(con, include_completed=mode == "partial")
     row_by_id = {int(row["id"]): row for row in rows}
     if mode == "full":
         return [(anime_id, "full") for anime_id in row_by_id]
@@ -390,38 +415,24 @@ def select_scan_items(
             raise ValueError("current_anime_id must be a positive integer")
         add(variant_map.get(current_id, current_id), "current")
 
-    personal_added = 0
     for anime_id in personal_candidate_ids(con, user_id, variant_map, set(row_by_id)):
-        if anime_id not in due_ids:
+        add(anime_id, "personal")
+
+    # Exponential races implement weighted sampling without replacement.
+    # Sorting IDs first also makes seeded tests reproducible across processes.
+    picker = rng or random.SystemRandom()
+    ranked = []
+    for anime_id in sorted(due_ids - selected.keys()):
+        row = row_by_id[anime_id]
+        if not title_is_ongoing(row):
             continue
-        if add(anime_id, "personal"):
-            personal_added += 1
-        if personal_added >= PARTIAL_PERSONAL_LIMIT:
-            break
+        weight = partial_scan_weight(row, states.get(anime_id) or {}, now)
+        key = -math.log(max(1e-15, 1.0 - picker.random())) / weight
+        ranked.append((key, anime_id))
+    for _, anime_id in sorted(ranked)[:PARTIAL_EXTRA_LIMIT]:
+        add(anime_id, "random")
 
-    def stale_key(anime_id):
-        state = states.get(anime_id) or {}
-        return (str(state.get("last_checked_at") or ""), anime_id)
-
-    remaining_due = [
-        anime_id for anime_id in sorted(due_ids, key=stale_key) if anime_id not in selected
-    ]
-    for anime_id in remaining_due[:PARTIAL_STALE_LIMIT]:
-        add(anime_id, "stale")
-
-    random_pool = [anime_id for anime_id in remaining_due if anime_id not in selected]
-    random_count = min(PARTIAL_RANDOM_LIMIT, len(random_pool))
-    if random_count:
-        picker = rng or random.SystemRandom()
-        for anime_id in picker.sample(random_pool, random_count):
-            add(anime_id, "random")
-
-    for anime_id in remaining_due:
-        if len(selected) >= PARTIAL_SCAN_LIMIT:
-            break
-        add(anime_id, "stale")
-
-    return list(selected.items())[:PARTIAL_SCAN_LIMIT]
+    return list(selected.items())
 
 
 def known_playable_episode_ids(con, anime_id):
