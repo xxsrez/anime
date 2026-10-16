@@ -58,6 +58,8 @@ const positioned = payloadContext.watchPayloadForSession({animeId: 1, providerPo
 assert.equal(positioned.playback_position_seconds, 1320);
 assert.equal(positioned.playback_duration_seconds, 1381);
 assert.equal(payloadContext.watchPayloadForSession({animeId: 1}, "heartbeat", 30).playback_position_seconds, undefined);
+assert.equal(payloadContext.watchPayloadForSession({animeId: 1, providerDurationSeconds: 2586}, "fullscreen_enter")
+  .playback_duration_seconds, 2586, "known duration survives a pause that cleared the position");
 
 const episodes = Array.from({ length: 23 }, (_, i) => ({ id: i + 1, number: String(i + 1), source_count: 1 }));
 const selection = vm.createContext({

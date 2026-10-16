@@ -5197,6 +5197,9 @@ def sanitize_watch_metadata(payload):
     metadata.pop("playback_ended", None)
     if payload.get("playback_ended") is True:
         metadata["playback_ended"] = True
+    metadata.pop("provider_progress", None)
+    if payload.get("provider_progress") is True:
+        metadata["provider_progress"] = True
     for field in ("playback_position_seconds", "playback_duration_seconds"):
         metadata.pop(field, None)
         if payload.get(field) is not None:
@@ -5681,6 +5684,7 @@ def upsert_episode_watch_state(
     provider_title,
     embed_host,
     playback_ended=False,
+    playback_duration_seconds=None,
 ):
     existing = con.execute(
         """
@@ -5702,7 +5706,8 @@ def upsert_episode_watch_state(
     started_at = existing["started_at"] if existing and existing["started_at"] else (timestamp if started else None)
     completed_at = existing["completed_at"] if existing and existing["completed_at"] else None
     completion_confidence = existing["completion_confidence"] if existing and existing["completion_confidence"] else None
-    if started_at and not completed_at and total_engaged >= WATCH_LIKELY_COMPLETED_SECONDS:
+    if (started_at and not completed_at and playback_duration_seconds is None
+            and total_engaged >= WATCH_LIKELY_COMPLETED_SECONDS):
         completed_at = timestamp
         completion_confidence = 0.7
     if started_at and playback_ended:
@@ -5860,8 +5865,15 @@ def record_watch_event(payload, db_path=None, user_id=None):
         page_visible = optional_json_boolean(payload, "page_visible")
         player_focused = optional_json_boolean(payload, "player_focused")
         picture_in_picture = optional_json_boolean(payload, "picture_in_picture")
+        provider_progress = (
+            optional_json_boolean(payload, "provider_progress") == 1
+            and video_source is not None
+            and video_source["embed_host"] == "api.nextembed.ws"
+            and playback_position is not None and playback_duration is not None
+            and playback_position <= playback_duration + 2
+        )
         if event_type == "heartbeat" and not (
-            (page_visible == 1 and player_focused == 1) or picture_in_picture == 1
+            (page_visible == 1 and player_focused == 1) or picture_in_picture == 1 or provider_progress
         ):
             engaged_seconds = 0
         confidence = watch_event_confidence(
@@ -5873,6 +5885,8 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 bool(picture_in_picture) if picture_in_picture is not None else None
             ),
         )
+        if event_type == "heartbeat" and provider_progress and engaged_seconds > 0:
+            confidence = 0.8
 
         actual_progress_number = episode_progress_number(episode["number"])
         supplied_episode_number = payload.get("episode_number")
@@ -6009,10 +6023,11 @@ def record_watch_event(payload, db_path=None, user_id=None):
         ).fetchone())
         # Wall-clock watch time is shorter at increased playback speed, and
         # viewers often leave during credits without an ended message. Accept
-        # the final 5% only with real engagement in this same player session.
+        # the final two minutes (at most 10%) with engagement in this session.
         if (event_type in {"heartbeat", "session_end", "page_hidden"}
                 and playback_duration is not None and playback_position is not None
-                and playback_duration * 0.95 <= playback_position <= playback_duration + 2):
+                and max(playback_duration * 0.9, playback_duration - 120)
+                <= playback_position <= playback_duration + 2):
             session_seconds = con.execute(
                 """select coalesce(sum(engaged_seconds), 0) from user_watch_events
                    where user_id = ? and anime_id = ? and episode_id = ? and client_session_id = ?""",
@@ -6041,6 +6056,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
             provider_title=provider_title,
             embed_host=embed_host,
             playback_ended=completion_verified,
+            playback_duration_seconds=playback_duration,
         )
 
         title_state = None

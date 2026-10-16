@@ -4010,8 +4010,11 @@ function watchPayloadForSession(session, eventType, engagedSeconds = 0) {
     page_visible: !document.hidden,
     player_focused: playerHasPlaybackEvidence(session),
     picture_in_picture: Boolean(session.pictureInPictureActive),
-    ...(Number.isFinite(session.providerPositionSeconds) && Number.isFinite(session.providerDurationSeconds) ? {
+    provider_progress: Boolean(session.verifiedProviderProgress),
+    ...(Number.isFinite(session.providerPositionSeconds) ? {
       playback_position_seconds: Math.floor(session.providerPositionSeconds),
+    } : {}),
+    ...(Number.isFinite(session.providerDurationSeconds) ? {
       playback_duration_seconds: Math.ceil(session.providerDurationSeconds),
     } : {}),
     library_watch_status: effectiveWatchStatus(libraryState),
@@ -4242,6 +4245,7 @@ function ensureWatchSession(source, episode, { videoSourceId = source?.id, metad
     evidenceExpiresAt: 0,
     providerPlaybackActive: false,
     providerPositionSeconds: null,
+    providerDurationSeconds: null,
     providerPositionObservedAt: null,
     pendingProviderSeconds: 0,
     pictureInPictureActive: false,
@@ -4277,13 +4281,15 @@ function handleProviderPlaybackStarted(provider, positionSeconds = null) {
     session.metadata = { ...session.metadata, reported_by: reportedBy };
   }
   const observedAt = performanceNow();
+  const sparseProgress = provider === "nextembed";
   const engagedSeconds = positionSeconds != null ? frontendRuntime.providerPlaybackEngagedSeconds({
     previousPosition: session.providerPositionSeconds,
     currentPosition: positionSeconds,
     previousObservedAt: session.providerPositionObservedAt,
     currentObservedAt: observedAt,
-    pageHidden: document.hidden,
+    pageHidden: sparseProgress ? false : document.hidden,
     pictureInPicture: session.pictureInPictureActive,
+    ...(sparseProgress ? { maximumStepSeconds: 180, maximumWallStepSeconds: 90 } : {}),
   }) : 0;
   if (positionSeconds != null && Number.isFinite(Number(positionSeconds))) {
     session.providerPositionSeconds = Number(positionSeconds);
@@ -4293,6 +4299,17 @@ function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   // provider-independent proof that playback actually advanced.
   if (!(engagedSeconds > 0)) return;
   session.pendingProviderSeconds += engagedSeconds;
+  if (sparseProgress) {
+    // Nextembed has no PiP notification. Its bounded media advancement is
+    // evidence even while the parent tab is hidden. Flush on the message so
+    // background timer throttling cannot discard a whole minute of playback.
+    session.verifiedProviderProgress = true;
+    if (!session.engaged) markWatchEngaged("player_engaged", { providerPlayback: true });
+    session.evidenceExpiresAt = observedAt + WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS;
+    sendWatchEvent("heartbeat", { engagedSeconds: consumeWatchEngagedSeconds() }).catch(() => {});
+    session.verifiedProviderProgress = false;
+    return;
+  }
   if (session.providerPlaybackActive && session.engaged) {
     session.evidenceExpiresAt = performanceNow() + WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS;
     startWatchHeartbeat();
@@ -4323,14 +4340,34 @@ function playerMessageMatchesContext(event) {
   return event.origin === context.playerOrigin;
 }
 
+function nextembedEpisodeTarget(message, source) {
+  let currentUrl;
+  try { currentUrl = new URL(source?.embed_url); } catch { return null; }
+  const season = Number(currentUrl.searchParams.get("season") || 1);
+  if (message.seasonNumber == null || message.seasonNumber !== season) return null;
+  const episode = state.detail.episodes.find(item => numericValue(item.number) === message.episodeNumber);
+  if (!episode) return null;
+  const sources = state.detail.sources_by_episode?.[String(episode.id)] || [];
+  const nextSource = sources.find(item => {
+    if (item.embed_host !== source.embed_host) return false;
+    try {
+      const url = new URL(item.embed_url);
+      return url.origin === currentUrl.origin && url.pathname === currentUrl.pathname
+        && Number(url.searchParams.get("season") || 1) === season
+        && Number(url.searchParams.get("episode")) === message.episodeNumber;
+    } catch { return false; }
+  });
+  return nextSource ? { episode, source: nextSource } : null;
+}
+
 function applyPlayerEpisodeChange(message) {
-  if (message?.provider !== "kodik" || !state.detail || !state.playerContext) return false;
+  if (!["kodik", "nextembed"].includes(message?.provider) || !state.detail || !state.playerContext) return false;
   const source = state.playerContext.source;
   // A `/seria/` embed still provides reliable playback messages, but it does
   // not contain the serial identity needed to remap an internal episode
   // switch. Treat the message as informational instead of reporting an error.
-  if (!frontendRuntime.parseKodikSerialUrl(source?.embed_url)) return true;
-  const target = frontendRuntime.findKodikEpisodeTarget({
+  if (message.provider === "kodik" && !frontendRuntime.parseKodikSerialUrl(source?.embed_url)) return true;
+  const target = message.provider === "nextembed" ? nextembedEpisodeTarget(message, source) : frontendRuntime.findKodikEpisodeTarget({
     episodes: state.detail.episodes,
     sourcesByEpisode: state.detail.sources_by_episode,
     currentSource: source,
@@ -4338,6 +4375,7 @@ function applyPlayerEpisodeChange(message) {
     seasonNumber: message.seasonNumber,
   });
   if (!target?.episode) {
+    if (message.provider === "nextembed") clearWatchSession();
     reportClientError(new Error("Unable to map player episode"), {
       action: "sync player episode",
       provider: message.provider,
@@ -4409,6 +4447,9 @@ function handlePlayerMessage(event) {
   } else if (message.type === "playback_started") {
     handleProviderPlaybackStarted(message.provider);
   } else if (message.type === "time_update") {
+    if (state.watchSession && message.durationSeconds != null) {
+      state.watchSession.providerDurationSeconds = message.durationSeconds;
+    }
     handleProviderPlaybackStarted(message.provider, message.positionSeconds);
   } else if (message.type === "duration_update") {
     if (state.watchSession) state.watchSession.providerDurationSeconds = message.durationSeconds;

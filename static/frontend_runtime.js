@@ -314,6 +314,26 @@
   function normalizePlayerMessage(data) {
     if (!data || typeof data !== "object" || Array.isArray(data)) return null;
 
+    // api.nextembed.ws/js/listen-player.js: progress is emitted roughly once
+    // per minute, with media time and duration in seconds.
+    if (data.event === "viewProgress") {
+      const positionSeconds = typeof data.time === "number" ? data.time : NaN;
+      const durationSeconds = typeof data.duration === "number" ? data.duration : NaN;
+      return Number.isFinite(positionSeconds) && positionSeconds >= 0
+        && Number.isFinite(durationSeconds) && durationSeconds > 0
+        && positionSeconds <= durationSeconds + 2
+        ? { provider: "nextembed", type: "time_update", positionSeconds, durationSeconds }
+        : null;
+    }
+    if (["ended", "endedSoon"].includes(data.event)) {
+      return { provider: "nextembed", type: "playback_ended" };
+    }
+    if (data.event === "changeEpisode") {
+      const episodeNumber = episodeNumberValue(data.episode);
+      return episodeNumber == null ? null : { provider: "nextembed", type: "episode_changed",
+        episodeNumber, seasonNumber: integerValue(data.season, { minimum: 0 }) };
+    }
+
     const kodikKey = String(data.key || "");
     if (kodikKey.startsWith("kodik_player_")) {
       if (kodikKey === "kodik_player_current_episode") {
@@ -389,6 +409,7 @@
   }
 
   function playerMessageProvider(source) {
+    if (source?.embed_host === "api.nextembed.ws") return "nextembed";
     if (hostnameMatches(source?.embed_host, "kodikplayer.com")) return "kodik";
     if (hostnameMatches(source?.embed_host, "aniboom.one")) return "aniboom";
     return null;

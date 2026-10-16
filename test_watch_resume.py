@@ -114,6 +114,48 @@ class WatchResumeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.event(22, "heartbeat", playback_position_seconds=True, playback_duration_seconds=1380)
 
+    def test_knight_stopped_at_credits_completes(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        result = self.event(22, "session_end", playback_position_seconds=1307, playback_duration_seconds=1422)
+        self.assertIsNotNone(result["episode_state"]["completed_at"])
+
+    def test_credits_position_without_session_engagement_does_not_complete(self):
+        self.event(22)
+        result = self.event(22, "session_end", playback_position_seconds=1307, playback_duration_seconds=1422)
+        self.assertIsNone(result["episode_state"]["completed_at"])
+
+    def test_nextembed_progress_counts_in_hidden_tab(self):
+        source = next(item for item in self.detail["sources_by_episode"][self.detail["episodes"][21]["id"]]
+                      if item["translation_title"] == "AniDUB")
+        con = server.connect(self.db)
+        con.execute("update video_sources set embed_host = 'api.nextembed.ws' where id = ?", (source["id"],))
+        con.commit()
+        con.close()
+        source["embed_host"] = "api.nextembed.ws"
+        self.event(22)
+        result = self.event(22, "heartbeat", page_visible=False, player_focused=False,
+                            provider_progress=True, engaged_seconds=61,
+                            playback_position_seconds=2470, playback_duration_seconds=2586)
+        self.assertEqual(result["episode_state"]["engaged_seconds"], 61)
+        self.assertIsNotNone(result["episode_state"]["completed_at"])
+
+    def test_other_provider_cannot_claim_nextembed_hidden_progress(self):
+        self.event(22)
+        result = self.event(22, "heartbeat", page_visible=False, player_focused=False,
+                            provider_progress=True, engaged_seconds=61,
+                            playback_position_seconds=2470, playback_duration_seconds=2586)
+        self.assertEqual(result["episode_state"]["engaged_seconds"], 0)
+        self.assertIsNone(result["episode_state"]["completed_at"])
+
+    def test_known_long_duration_does_not_complete_after_eighteen_minutes(self):
+        self.event(22)
+        for position in range(300, 1501, 300):
+            result = self.event(22, "heartbeat", engaged_seconds=300,
+                                playback_position_seconds=position, playback_duration_seconds=2586)
+        self.assertEqual(result["episode_state"]["engaged_seconds"], 1500)
+        self.assertIsNone(result["episode_state"]["completed_at"])
+
     def set_release_status(self, status, total="23"):
         con = server.connect(self.db)
         con.execute("update anime set status = ?, episodes_text = ? where id = 901", (status, total))

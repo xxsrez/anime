@@ -3511,7 +3511,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('window.addEventListener("message", handlePlayerMessage)', js)
         self.assertIn("event.source !== el.player.contentWindow", js)
         self.assertIn("event.origin === context.playerOrigin", js)
-        self.assertIn('message?.provider !== "kodik"', js)
+        self.assertIn('["kodik", "nextembed"].includes(message?.provider)', js)
         self.assertIn("frontendRuntime.playerMessageProvider(source)", js)
         self.assertIn("providerPlaybackEngagedSeconds", js)
         self.assertIn("WATCH_FALLBACK_ENGAGEMENT_DELAY_MS", js)
