@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import zipfile
 
 import content_updates
+import scrape_yummyanime as yummy
 import scrape_animego as animego
 import kinogoo
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
@@ -279,7 +280,7 @@ def scan_state_by_anime_id(con, anime_ids):
     rows = con.execute(
         f"""select s.*, case when s.last_error is null then s.last_checked_at
             else (select max(i.checked_at) from animego_scan_job_items i
-                  where i.anime_id = s.anime_id and i.status = 'completed')
+                  where i.anime_id = s.anime_id and i.status = 'completed' and i.error is null)
             end as last_successful_at
             from animego_title_scan_state s where s.anime_id in ({placeholders})""",
         tuple(anime_ids),
@@ -864,7 +865,7 @@ def validated_provider(provider, allowed_hosts):
     }
 
 
-def validate_result_payload(payload, assigned_anime_id, allowed_hosts):
+def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_episode_id=2_000_000_000):
     if not isinstance(payload, dict):
         raise ValueError("payload must be an object")
     anime_id = payload.get("anime_id")
@@ -887,7 +888,7 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts):
             raise ValueError("episode snapshot must contain an episode object")
         episode = snapshot["episode"]
         episode_id = episode.get("id")
-        if type(episode_id) is not int or not 0 < episode_id < 2_000_000_000:
+        if type(episode_id) is not int or not 0 < episode_id < max_episode_id:
             raise ValueError("episode id must be a positive integer")
         if episode_id in episode_ids:
             raise ValueError(f"duplicate episode id: {episode_id}")
@@ -1284,7 +1285,55 @@ def apply_episode_result(con, job, item, anime_row, snapshot, scraped_at):
     return int(became_playable), len(new_providers)
 
 
-def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None):
+def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, resolver, now=None):
+    """Fetch an existing canonical alternative outside the database write lock.
+
+    Neither the alternative ID nor its URL is accepted from the client.
+    Authentication and assignment checks precede all source network requests.
+    """
+    if not resolver or not isinstance(payload, dict) or payload.get("upstream_status") != 404 or not payload.get("error"):
+        return None
+    con = connect(db_path)
+    try:
+        job = authenticate_job(con, job_id, token, require_running=True, now=now)
+        item = con.execute("select * from animego_scan_job_items where job_id=? and anime_id=?", (job_id, payload.get("anime_id"))).fetchone()
+        if item is None or item["status"] != "pending":
+            return None
+        source = con.execute("select source from anime where id=?", (item["anime_id"],)).fetchone()
+        if source is None or source["source"] != "animego":
+            return None
+        validate_result_payload(payload, item["anime_id"], allowed_hosts)
+        user_id = job["user_id"]
+    finally:
+        con.close()
+    alternative = resolver(db_path, user_id, payload["anime_id"])
+    if not alternative:
+        return None
+    try:
+        if alternative["source"] != "yummyanime" or not yummy.is_modern_yummyani_url(alternative["url"]):
+            return None
+        fetched, _detail, episodes, providers = yummy.parse_modern_detail(alternative["url"])
+        if int(fetched["id"]) != int(alternative["id"]):
+            raise ValueError("alternate source identity changed")
+        snapshots = []
+        for episode in episodes:
+            matches = [p for p in providers if p.get("episode_number") == str(episode.get("number"))]
+            if matches:
+                if episode["id"] != yummy.internal_episode_id(alternative["id"], episode["number"]):
+                    raise ValueError("alternate episode identity mismatch")
+                snapshots.append({"episode": episode, "providers": matches})
+        if not snapshots:
+            raise ValueError("alternate source has no playable episodes")
+        normalized = validate_result_payload({"anime_id": alternative["id"], "episodes": snapshots}, alternative["id"], allowed_hosts, max_episode_id=2**53)
+        return {"anime_id": alternative["id"], "url": alternative["url"], "episodes": normalized["episodes"]}
+    except Exception as exc:
+        # Keep the original failed result and report the alternative failure.
+        # Do not expose upstream URLs containing player tokens or response bodies.
+        return {"error": f"YummyAnime recovery failed ({type(exc).__name__})"}
+
+
+def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None, fallback_resolver=None):
+    recovery = prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, fallback_resolver, now)
     try:
         lock = DatabaseOperationLock(
             db_path,
@@ -1341,6 +1390,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                     "result": {
                         "anime_id": anime_id,
                         "status": "already_processed",
+                        "recovered_source": "YummyAnime" if str(item["error"] or "").startswith("Recovered via YummyAnime #") else None,
                         "new_episode_count": int(item["new_episode_count"] or 0),
                         "new_provider_count": int(item["new_provider_count"] or 0),
                     },
@@ -1361,6 +1411,16 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                             raise ValueError("Invalid Kinogoo player host")
             checked_at_dt = now or now_utc()
             checked_at = iso_timestamp(checked_at_dt)
+            original_source_error = normalized["error"]
+            if recovery and recovery.get("error"):
+                normalized["error"] = f"{normalized['error']} {recovery['error']}"[:MAX_ERROR_TEXT]
+            elif recovery:
+                alternate_row = con.execute("select * from anime where id=? and source='yummyanime' and url=?", (recovery["anime_id"], recovery["url"])).fetchone()
+                if alternate_row is None:
+                    raise ValueError("alternate source changed while checking")
+                update_title_scan_state(con, anime_row, job["user_id"], job_id, error=original_source_error, checked_at=checked_at_dt)
+                anime_row = alternate_row
+                normalized = {"anime_id": anime_row["id"], "error": None, "episodes": recovery["episodes"]}
             if normalized["error"]:
                 con.execute(
                     """
@@ -1420,10 +1480,12 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 """
                 update animego_scan_job_items
                 set status = 'completed', checked_at = ?,
-                    new_episode_count = ?, new_provider_count = ?, error = null
+                    new_episode_count = ?, new_provider_count = ?, error = ?
                 where job_id = ? and anime_id = ?
                 """,
-                (checked_at, new_episodes, new_providers, int(job_id), anime_id),
+                (checked_at, new_episodes, new_providers,
+                 f"Recovered via YummyAnime #{anime_row['id']}; {original_source_error}" if recovery else None,
+                 int(job_id), anime_id),
             )
             con.execute(
                 """
@@ -1450,6 +1512,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 "result": {
                     "anime_id": anime_id,
                     "status": "completed",
+                    "recovered_source": "YummyAnime" if recovery else None,
                     "new_episode_count": new_episodes,
                     "new_provider_count": new_providers,
                 },

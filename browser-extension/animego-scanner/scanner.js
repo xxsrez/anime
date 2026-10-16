@@ -616,18 +616,24 @@ async function submitTaskResult(body, index, runGeneration = generation) {
   checkpoint.current = null;
   checkpoint.pending_result = null;
   await saveCheckpoint();
+  return response;
 }
 
 async function recordOrdinaryError(task, index, error) {
   const message = error?.message || String(error);
-  await submitTaskResult(
+  const response = await submitTaskResult(
     {
       anime_id: task.anime_id,
       episodes: [],
       error: message.slice(0, 1000),
+      upstream_status: error instanceof UpstreamError ? error.status : null,
       selection_reason: task.selection_reason || null,
     }, index,
   );
+  if (response?.result?.recovered_source) {
+    log(`${taskTitle(task)}: AnimeGO недоступен; проверено и обновлено через ${response.result.recovered_source}.`, "success");
+    return;
+  }
   checkpoint.errors.push({
     anime_id: task.anime_id,
     message: message.slice(0, 1000),
@@ -745,7 +751,7 @@ async function runScan() {
           await saveCheckpoint();
           render();
           notifyApp("animego-scan-progress", {
-            message: `Ошибка: ${error?.message || String(error)}`,
+            message: "Проверка тайтла завершена; подробности в журнале сканера",
           });
         } catch (submitError) {
           checkpoint.status = "error";

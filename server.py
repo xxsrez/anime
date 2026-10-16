@@ -4400,6 +4400,23 @@ def canonical_group_for_anime_ref(con, anime_ref, user_id=None):
     return get_catalog_cache(db_path, user_id, connection=con)["slug_map"].get(value)
 
 
+def animego_scan_fallback(db_path, user_id, anime_id):
+    """Use only an existing alternative in the catalog's canonical group."""
+    group = get_catalog_cache(db_path, user_id)["id_map"].get(int(anime_id))
+    if not group:
+        return None
+    member_ids = group.get("source_member_ids") or [group.get("id")]
+    con = connect(db_path)
+    try:
+        for member_id in member_ids:
+            row = con.execute("select id, source, url from anime where id=? and source='yummyanime'", (member_id,)).fetchone()
+            if row and urlparse(row["url"]).hostname == "ru.yummyani.me":
+                return dict(row)
+    finally:
+        con.close()
+    return None
+
+
 def animego_scan_variant_map(db_path=None, user_id=None):
     """Map every visible canonical member to a browser-scannable source row."""
     mapping = {}
@@ -8437,6 +8454,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
                         self.bearer_request_token(),
                         payload,
                         PLAYER_HOSTS,
+                        fallback_resolver=animego_scan_fallback,
                     )
                     result_stats = result.get("result") or {}
                     if result_stats.get("new_episode_count") or result_stats.get("new_provider_count"):

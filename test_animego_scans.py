@@ -9,6 +9,7 @@ import random
 import tempfile
 import threading
 import unittest
+from unittest.mock import Mock, patch
 import zipfile
 
 import animego_scans
@@ -17,6 +18,49 @@ import server
 
 
 class AnimeGoScansTest(unittest.TestCase):
+    def test_404_recovers_canonical_alternative_without_mixing_source_ids(self):
+        self.add_title(3998)
+        self.add_title(20026525, source="yummyanime")
+        url = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=? where id=20026525", (url,))
+            con.commit()
+        resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": url})
+        job = self.create_job()
+        payload = {"anime_id": 3998, "episodes": [], "error": "AnimeGO HTTP 404", "upstream_status": 404}
+        episode = {"id": 20026525002, "number": "2", "title": "2 серия"}
+        provider = {**self.provider(), "episode_number": "2"}
+        with patch.object(animego_scans.yummy, "parse_modern_detail", return_value=({"id": 20026525}, {}, [episode], [provider])) as fetch:
+            with self.assertRaises(animego_scans.ScanAuthenticationError):
+                animego_scans.submit_scan_result(self.db_path, job["job"]["id"], "wrong", payload, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            fetch.assert_not_called()
+            result = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], payload, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            replay = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], payload, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(result["result"]["recovered_source"], "YummyAnime")
+        self.assertEqual(result["job"]["error_count"], 0)
+        self.assertEqual(result["result"]["new_episode_count"], 1)
+        self.assertEqual(replay["result"]["recovered_source"], "YummyAnime")
+        self.assertEqual(replay["job"]["checked_items"], 1)
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select anime_id from episodes where id=20026525002").fetchone()[0], 20026525)
+            self.assertEqual(con.execute("select count(*) from episodes where anime_id=3998").fetchone()[0], 0)
+            original = con.execute("select last_error from animego_title_scan_state where anime_id=3998").fetchone()[0]
+            self.assertIn("404", original)
+            audit = con.execute("select error from animego_scan_job_items where job_id=?", (job["job"]["id"],)).fetchone()[0]
+            self.assertIn("Recovered via YummyAnime #20026525", audit)
+
+    def test_404_recovery_rejects_changed_identity_and_preserves_failure(self):
+        self.add_title(3998)
+        resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": "https://ru.yummyani.me/catalog/item/fixture"})
+        job = self.create_job()
+        payload = {"anime_id": 3998, "episodes": [], "error": "AnimeGO HTTP 404", "upstream_status": 404}
+        with patch.object(animego_scans.yummy, "parse_modern_detail", return_value=({"id": 20000001}, {}, [], [])):
+            result = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], payload, server.PLAYER_HOSTS, fallback_resolver=resolver)
+        self.assertEqual(result["job"]["error_count"], 1)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertIn("recovery failed", result["job"]["last_error"])
+
     def test_task_payload_includes_card_url_for_metadata_refresh(self):
         self.add_title(701)
         with closing(server.connect(self.db_path)) as con:

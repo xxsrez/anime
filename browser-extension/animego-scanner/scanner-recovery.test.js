@@ -41,6 +41,7 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
       get state() { return checkpoint; },
       collect(fn) { collectTitle = fn; },
       upstream(fn) { upstreamJson = fn; },
+      upstreamError(message, status) { return new UpstreamError(message, { status }); },
       async run() { checkpoint.status = "running"; await runScan(); },
       stop: stopScan,
     };
@@ -52,6 +53,23 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
 function response(job) {
   return { ok: true, status: 200, text: async () => JSON.stringify({ job }) };
 }
+
+test("a verified alternate-source recovery is not reported as a failed title", async () => {
+  let posted;
+  const harness = await scannerHarness({fetch: async (url, options) => {
+    if (url.pathname.endsWith('/results')) {
+      posted = JSON.parse(options.body);
+      return {ok: true, status: 200, text: async () => JSON.stringify({job: {checked_items: 1, error_count: 0}, result: {recovered_source: 'YummyAnime'}})};
+    }
+    return response({checked_items: 1, error_count: 0});
+  }});
+  harness.driver.collect(async () => { throw harness.driver.upstreamError('Missing source', 404); });
+  await harness.driver.run();
+  assert.equal(posted.upstream_status, 404);
+  assert.equal(harness.driver.state.status, 'completed');
+  assert.equal(harness.driver.state.errors.length, 0);
+  assert.equal(harness.driver.state.error_count, 0);
+});
 
 test("discovered tasks and metadata survive reload after an uncertain delivery", async () => {
   const task = { anime_id: 701, title: "New title", url: "https://animego.me/anime/new-701", known_episode_ids: [], selection_reason: "discovery" };

@@ -21,6 +21,15 @@ Full jobs expire after 24 hours to allow the larger scan to finish. Extension
 request stage for HTTP errors. A 404 is a failed check, not evidence that no
 new episodes exist; missing source cards are not deleted from the catalog.
 
+Extension 0.5.4 submits the upstream HTTP status. For an AnimeGO 404 the server
+can recover through an existing modern YummyAnime member of the same canonical
+catalog group. It authenticates the job and assigned title before fetching,
+resolves the alternative itself (never from a client URL), verifies its source
+identity, and saves playable episodes under the YummyAnime IDs. The original
+404 is retained in source health and the job item's recovery audit. Failed or
+empty alternatives remain failures. Replaying a recovered result is idempotent.
+This does not discover or import unrelated alternative titles.
+
 Full Scan creates substantially more AnimeGo requests. Prefer Partial Scan for
 routine use and Full Scan for an intentional broad catch-up.
 
