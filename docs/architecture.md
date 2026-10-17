@@ -394,7 +394,21 @@ Explicit URLs and browser history remain authoritative; opening a title or a
 service page does not replace the remembered tab. Without storage, the current
 page retains the choice in memory; a fresh browser defaults each section to All.
 
-`static/navigation.js` defines the list URL contract. `static/redesign.css`
+`static/navigation.js` defines the list URL contract.
+List URLs omit default sorting, descending direction, empty filters, and the
+default New interval/type. The default catalog is `/`; public view names are
+`recommendations`, `new`, `library`, `watching`, `favorites`, `completed`, and
+`maintenance`. Legacy `all`, `updates`, `library-all`, and `progress` names remain
+readable and normalize when rendering the list. Internal view/storage identifiers
+remain stable. A direction override is restored even when sort is omitted.
+
+Title slugs use the transliterated title without an ID suffix unless the name
+collides with another title, a reserved route, a numeric ID, or an existing legacy
+address. Canonical groups are assigned in ID order for deterministic collisions.
+Legacy title and source-variant slugs with base36 ID suffixes remain lookup aliases;
+the title response returns the clean canonical slug without changing episode IDs.
+
+`static/redesign.css`
 defines the shared layout and light/dark palette; existing component styles use
 theme variables. `static/theme.js` initializes the theme before first paint,
 defaults to the OS preference, and stores an explicit choice in `anime-theme`.

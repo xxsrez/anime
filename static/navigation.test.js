@@ -74,13 +74,35 @@ test("all catalog filters, Cyrillic query and ordering survive URL round trip", 
     const parsed = navigation.read(new URL(url, "https://anime.test").search);
     assert.equal(parsed.view, viewMode);
     assert.equal(parsed.query, "Монолог & Фрирен");
-    assert.equal(parsed.sortBy, "title");
-    assert.equal(parsed.sortDir, "asc");
+    const fixedSort = ["recommendations", "updates", "maintenance"].includes(viewMode);
+    assert.equal(parsed.sortBy, fixedSort ? "" : "title");
+    assert.equal(parsed.sortDir, fixedSort ? "desc" : "asc");
     assert.deepEqual(parsed.filters, filters);
     if (viewMode === "updates") { assert.equal(parsed.days, "30"); assert.equal(parsed.updateType, "new_episode"); }
   }
   assert.equal(navigation.read("?view=invalid&days=-1").view, "all");
   assert.equal(navigation.read("?days=-1").days, "7");
+});
+
+test("list URLs omit defaults and preserve meaningful overrides with legacy aliases", () => {
+  const cases = [
+    ["all", "rating_best", "/"],
+    ["progress", "watch_recent", "/?view=watching"],
+    ["library-all", "rating_best", "/?view=library"],
+    ["favorites", "favorite_added", "/?view=favorites"],
+    ["completed", "watch_completed", "/?view=completed"],
+    ["updates", "rating_best", "/?view=new"],
+    ["recommendations", "rating_best", "/?view=recommendations"],
+  ];
+  for (const [viewMode, sortBy, expected] of cases) {
+    assert.equal(navigation.url({ viewMode, sortBy, sortDir: "desc", filters: { video: "any" }, contentUpdateDays: "7", contentUpdateType: "all" }), expected);
+    assert.equal(navigation.read(new URL(expected, "https://anime.test").search).view, viewMode);
+    assert.equal(navigation.read(`?view=${viewMode}`).view, viewMode);
+  }
+  assert.equal(navigation.read("?view=catalog").view, "all");
+  assert.equal(navigation.url({viewMode: "progress", sortBy: "watch_recent", sortDir: "asc"}), "/?view=watching&dir=asc");
+  assert.equal(navigation.url({viewMode: "progress", sortBy: "title", sortDir: "desc"}), "/?view=watching&sort=title");
+  assert.equal(navigation.url({viewMode: "updates", contentUpdateDays: "30", contentUpdateType: "new_episode"}), "/?view=new&days=30&event=new_episode");
 });
 
 test("clean title URL keeps return criteria and source selection in browser history", () => {

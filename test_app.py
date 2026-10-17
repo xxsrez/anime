@@ -331,7 +331,9 @@ class LocalAppTest(unittest.TestCase):
         slugs = [item["slug"] for item in items]
         self.assertEqual(len(slugs), len(set(slugs)))
         self.assertTrue(all(item["internal_id"] == item["slug"] for item in items))
-        self.assertTrue(all("-" in item["slug"] for item in items))
+        self.assertEqual(len({item["slug"] for item in items}), len(items))
+        for item in items:
+            self.assertRegex(item["slug"], r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
     def test_frontend_search_scorer_handles_typos_and_variant_titles(self):
         script = r"""
@@ -652,6 +654,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertEqual(detail["id"], item["id"])
         self.assertEqual(detail["slug"], item["slug"])
         self.assertEqual(detail["internal_id"], item["slug"])
+        legacy_detail = server.get_anime_detail(server.legacy_slug_for_item(item))
+        self.assertEqual(legacy_detail["id"], item["id"])
+        self.assertEqual(legacy_detail["slug"], item["slug"])
 
     def test_detail_contains_episode_sources(self):
         anime = next(item for item in server.get_anime_list() if item["source_count"] > 0)
@@ -4030,7 +4035,7 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(items[0]["id"], 3623)
             self.assertEqual(set(items[0]["source_member_ids"]), {3623, 20027421})
 
-            old_yummy_slug = server.canonical_slug_for_item(
+            old_yummy_slug = server.legacy_slug_for_item(
                 {"id": 20027421, "title": rows[1][3], "subtitle": rows[1][4]}
             )
             self.assertEqual(server.get_anime_detail(old_yummy_slug, db_path)["id"], 3623)

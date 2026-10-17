@@ -9,12 +9,7 @@ const DEFAULT_FILTERS = {
 };
 const DEFAULT_SORT_BY = "rating_best";
 const DEFAULT_SORT_DIR = "desc";
-const VIEW_SORT_DEFAULTS = {
-  all: { by: DEFAULT_SORT_BY, dir: DEFAULT_SORT_DIR },
-  favorites: { by: "favorite_added", dir: "desc" },
-  progress: { by: "watch_recent", dir: "desc" },
-  completed: { by: "watch_completed", dir: "desc" },
-};
+const VIEW_SORT_DEFAULTS = catalogNavigation.sortDefaults;
 const USER_STATE_RESPONSE_FIELDS = [
   "is_favorite",
   "watched",
@@ -5572,7 +5567,7 @@ function restoreCatalogCriteria() {
   const allowedSorts = sortDefinitionsForView();
   const fallback = viewSortDefault();
   state.sortBy = allowedSorts.some(sort => sort.id === route.sortBy) ? route.sortBy : fallback.by;
-  state.sortDir = route.sortBy ? route.sortDir : fallback.dir;
+  state.sortDir = route.sortDir;
   state.viewSorts[state.viewMode] = { by: state.sortBy, dir: state.sortDir };
   state.contentUpdateDays = route.days;
   state.contentUpdateType = CONTENT_UPDATE_TYPES.some(type => type.id === route.updateType) ? route.updateType : "all";

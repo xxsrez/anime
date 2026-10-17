@@ -5,7 +5,7 @@
   rail.setAttribute("aria-label", "Основные разделы");
   const brand = document.createElement("a");
   brand.className = "wordmark";
-  brand.href = "/?view=all";
+  brand.href = "/";
   brand.append("ANIME ");
   const suffix = document.createElement("span");
   suffix.textContent = "CATALOG";
@@ -26,8 +26,8 @@
     parent.append(node);
     return node;
   }
-  link(main, "Каталог", "/?view=all").dataset.section = "catalog";
-  link(main, "Библиотека", "/?view=library-all").dataset.section = "library";
+  link(main, "Каталог", "/").dataset.section = "catalog";
+  link(main, "Библиотека", "/?view=library").dataset.section = "library";
   link(services, "Обновление каталога", "/?view=maintenance", service === "scanner");
   if (service === "admin") link(services, "Администрирование", "/admin", true);
   else fetch("/api/me").then(response => response.ok ? response.json() : null).then(data => {

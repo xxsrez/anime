@@ -1981,8 +1981,29 @@ def slugify_text(value, max_length=72):
 
 
 def canonical_slug_for_item(item):
+    return slugify_text(item.get("title") or item.get("subtitle") or "anime")
+
+
+def legacy_slug_for_item(item):
     base = slugify_text(item.get("title") or item.get("subtitle") or "anime")
     return f"{base}-{base36(item.get('id'))}"
+
+
+def assign_catalog_slugs(groups):
+    # Reserve published addresses before assigning clean names, so a new title
+    # cannot take over an older title's suffixed link.
+    owners = {}
+    for group in groups:
+        for item in [group, *(group.get("source_variants") or [])]:
+            owners[legacy_slug_for_item(item)] = group["id"]
+    for group in sorted(groups, key=lambda item: item["id"]):
+        base = canonical_slug_for_item(group)
+        reserved = base.isdigit() or base in {"login", "admin", "scanner-setup", "api", "static", "franchises"}
+        collision = base in owners and owners[base] != group["id"]
+        slug = legacy_slug_for_item(group) if reserved or collision else base
+        owners[slug] = group["id"]
+        group["slug"] = slug
+        group["internal_id"] = slug
 
 
 def best_score(item):
@@ -2464,10 +2485,7 @@ def canonicalize_items(items):
         buckets.setdefault(find(index), []).append(item)
     groups = [merge_canonical_items(bucket) for bucket in buckets.values()]
 
-    for group in groups:
-        slug = canonical_slug_for_item(group)
-        group["slug"] = slug
-        group["internal_id"] = slug
+    assign_catalog_slugs(groups)
     groups.sort(key=lambda item: ((numeric(item.get("source_count")) or 0) <= 0, -(item.get("id") or 0)))
     return groups
 
@@ -4272,9 +4290,10 @@ def build_catalog_cache_snapshot(path):
             )
         slug_map[item["slug"]] = item
         slug_map[item["internal_id"]] = item
+        slug_map[legacy_slug_for_item(item)] = item
         for variant in item.get("source_variants") or []:
             id_map[int(variant["id"])] = item
-            slug_map[canonical_slug_for_item(variant)] = item
+            slug_map[legacy_slug_for_item(variant)] = item
 
     return {
         "items": items,
