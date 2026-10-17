@@ -552,6 +552,52 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertEqual({i for i, _ in selected}, {2, 3, 4})
         self.assertEqual({i for i, _ in full}, {1, 2, 3, 4, 5})
 
+    def test_partial_handles_completed_release_formats_from_job_140(self):
+        now = dt.datetime(2026, 10, 17, tzinfo=dt.timezone.utc)
+        cases = [
+            ("2021", "Сериал", True),
+            ("2022–2023", "Сериал", True),
+            ("2022 - 2023", "Сериал", True),
+            ("2022—2023", "Сериал", True),
+            ("27 февраля 2020", "Спешл", True),
+            ("27 марта 2024", "Спешл", True),
+            ("6 октября 2023", "Фильм", True),
+            ("27 февраля 2026", "Фильм", True),
+            ("с 4 июля 2026 по 19 сентября 2026", "TV Сериал", False),
+            ("17 сентября 2026", "Фильм", False),
+            ("16 сентября 2026", "Фильм", True),
+            ("2026", "Сериал", False),
+            ("2027", "Сериал", False),
+            ("2023–2022", "Сериал", False),
+            ("0000", "Сериал", False),
+            ("2022–", "Сериал", False),
+            ("с 1 января 2020", "Спешл", False),
+            ("1 января 2020", "TV Сериал", False),
+            ("31 февраля 2020", "Фильм", False),
+            ("", "Фильм", False),
+        ]
+        retained = set()
+        for anime_id, (release, kind, excluded) in enumerate(cases, 1):
+            self.add_title(anime_id, status="Вышел")
+            self.set_library_state(anime_id, watch_status="watching")
+            with closing(server.connect(self.db_path)) as con:
+                con.execute("update anime set kind=? where id=?", (kind, anime_id))
+                con.execute("insert into anime_fields(anime_id,label,value) values (?, 'Выпуск', ?)", (anime_id, release))
+                con.commit()
+            if not excluded:
+                retained.add(anime_id)
+        with closing(server.connect(self.db_path)) as con:
+            partial = animego_scans.select_scan_items(con, "partial", self.user["id"], current_anime_id=1, now=now)
+            full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
+        self.assertEqual({i for i, _ in partial}, retained)
+        self.assertEqual(len(full), len(cases))
+        for release in ["2021", "2022–2023", "27 февраля 2020"]:
+            self.assertFalse(animego_scans.completed_over_month_ago(
+                {"status": "Онгоинг", "release_period": release, "kind": "Фильм"}, now))
+        row = {"status": "Выпуск завершён", "release_period": "2025", "kind": "Сериал"}
+        self.assertFalse(animego_scans.completed_over_month_ago(row, dt.datetime(2026, 1, 30)))
+        self.assertTrue(animego_scans.completed_over_month_ago(row, dt.datetime(2026, 1, 31)))
+
     def test_global_lease_conflicts_until_job_completes(self):
         self.add_title(1)
         first = self.create_job()

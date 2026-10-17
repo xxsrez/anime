@@ -226,10 +226,20 @@ def completed_over_month_ago(row, now):
         "вышел", "завершён", "завершен", "выпуск завершён", "выпуск завершен",
     }:
         return False
-    # Only an explicit end date proves completion age; premiere/year and
-    # scraping timestamps cannot substitute for it.
-    release = str(row["release_period"] or "")
+    # A release period expressed in years has a conservative upper bound:
+    # December 31 of its final year. Do not substitute the premiere year column.
+    release = str(row["release_period"] or "").strip()
+    years = re.fullmatch(r"(\d{4})(?:\s*[-–—]\s*(\d{4}))?", release)
+    if years:
+        first, last = int(years[1]), int(years[2] or years[1])
+        if not 1 <= first <= last <= 9999:
+            return False
+        return (now.date() - dt.date(last, 12, 31)).days > 30
     match = re.search(r"\bпо\s+(\d{1,2})\s+(\w+)\s+(\d{4})", release)
+    # A standalone date on films and specials is their release date. On a
+    # series it can be only the premiere, so retain series without an end date.
+    if not match and str(row["kind"] or "").strip().casefold() in {"фильм", "спешл", "спецвыпуск"}:
+        match = re.fullmatch(r"(\d{1,2})\s+(\w+)\s+(\d{4})", release)
     months = "января февраля марта апреля мая июня июля августа сентября октября ноября декабря".split()
     if not match or match[2].casefold() not in months:
         return False
