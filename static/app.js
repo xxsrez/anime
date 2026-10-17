@@ -1180,6 +1180,7 @@ function nextUnwatchedEpisodeId(detail) {
 }
 
 function sourceLabel(source) {
+  if (source === "kinogo") return "Kinogo";
   if (source === "kinogoo") return "Kinogoo";
   if (source === "yummyanime") return "YummyAnime";
   if (source === "animego") return "AnimeGO";
