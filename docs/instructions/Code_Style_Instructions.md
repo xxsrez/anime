@@ -51,19 +51,26 @@
 - Keep filtering/sorting client-side while the catalog remains small.
 - Normalize Russian search text enough for practical lookup, for example
   `исекай` matching `Исэкай`.
-- When filters change and the selected title is no longer visible, select the
-  first title in the new filtered list.
+- Catalog filtering never opens a title or starts a player. List views and
+  title/franchise screens are independent; browser history restores the view,
+  query, filters, and sorting.
 
 ## CSS And UI
 
 - Keep the app compact and work-focused.
-- Prefer dense controls in the sidebar over large decorative areas.
-- Use restrained dark UI colors already present in the project.
+- The navigation rail contains Catalog, Library, and service links. Catalog has
+  All, Recommendations, and New; Library has All, Watching, Favorites, and
+  Completed. Favorites are independent of watch status; Library All is their
+  deduplicated union with Watching and Completed.
+- Use the restrained light/dark palettes in `static/redesign.css`. Theme choice
+  persists across catalog, title, franchise, login, admin, and scanner setup.
 - Keep controls at stable heights so filtering/sorting does not shift layout
   unexpectedly.
 - Avoid nested cards. Use panels only for genuinely framed tools such as the
   player source selector.
-- Keep mobile behavior simple: sidebar above detail, player controls stacked.
+- Use one document scroll on mobile, with navigation above the active screen.
+  Keep the player full width, compact episode/source selectors below it, and
+  favorite/status/share actions together above it. Description stays expanded.
 
 ## Tests And Verification
 
@@ -99,9 +106,9 @@ For UI changes, also verify in a browser:
 - Filters narrow the list.
 - Sorting changes order.
 - Reset restores the full list.
-- Detail view stays synchronized with the filtered list.
+- List filters never auto-select another title. Back restores list criteria.
 - At least one known video title still opens a player iframe.
-- The `Советы` tab loads 20 ranked recommendations with reasons.
+- The `Рекомендации` tab loads 20 ranked recommendations with reasons.
 - Fullscreen and Picture-in-Picture controls show a clear state or fallback.
 - Fast user-state changes do not drop queued updates.
 

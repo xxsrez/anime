@@ -8,6 +8,7 @@
   --accent: #ff685d;
   --accent-2: #74c69d;
   --focus: #f4b860;
+  --danger: #ffabab;
 }
 
 * {
@@ -40,7 +41,7 @@ a {
   width: min(740px, 100%);
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #171a1e;
+  background: var(--panel);
   padding: clamp(20px, 4vw, 34px);
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.36);
 }
@@ -96,7 +97,7 @@ h2 {
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #111417;
+  background: var(--bg);
 }
 
 .browser-tab {
@@ -112,7 +113,7 @@ h2 {
 .browser-tab[aria-selected="true"] {
   border-color: rgba(116, 198, 157, 0.44);
   background: rgba(116, 198, 157, 0.12);
-  color: #d3f4e2;
+  color: var(--accent-2);
 }
 
 .browser-panel {
@@ -147,7 +148,7 @@ h2 {
 
 code,
 kbd {
-  color: #d3f4e2;
+  color: var(--accent-2);
   overflow-wrap: anywhere;
 }
 
@@ -155,7 +156,7 @@ kbd {
   padding: 1px 5px;
   border: 1px solid var(--line);
   border-radius: 4px;
-  background: #111417;
+  background: var(--bg);
   font: inherit;
   font-size: 0.9em;
 }
@@ -175,7 +176,7 @@ kbd {
   padding: 10px 14px;
   border-color: rgba(116, 198, 157, 0.56);
   background: rgba(116, 198, 157, 0.13);
-  color: #d3f4e2;
+  color: var(--accent-2);
   font-weight: 800;
 }
 
@@ -192,7 +193,7 @@ kbd {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #111417;
+  background: var(--bg);
 }
 
 .copy-row button {
@@ -212,13 +213,13 @@ kbd {
 .temporary-note {
   border-left: 3px solid var(--accent);
   background: rgba(255, 104, 93, 0.08);
-  color: #ffd0cb;
+  color: var(--danger);
 }
 
 .permission-note {
   border-left: 3px solid var(--focus);
   background: rgba(244, 184, 96, 0.08);
-  color: #f4dfba;
+  color: var(--focus);
 }
 
 .secondary-button {

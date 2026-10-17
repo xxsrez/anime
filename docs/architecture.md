@@ -339,14 +339,16 @@ ZIP/folder temporarily for development. The setup UI is `/scanner-setup`.
    back through `/login?...auth_complete=1` so the login page can recover from
    delayed cookie visibility without manual refresh.
 6. `static/app.js` loads `/api/me`, `/api/anime`, and
-   `/api/continue-watching`, renders the sidebar, and fetches detail JSON when a
-   title is selected. Recommendations remain lazy-loaded when the `Советы` view
+   `/api/continue-watching`, renders the active list, and fetches detail JSON when a
+   title is selected. Recommendations remain lazy-loaded when the `Рекомендации` view
    needs them.
 7. The user can choose the source variant, translation, and provider; the player
    iframe receives the selected provider's `embed_url`.
-8. The browser URL is synchronized with the right-pane state using the canonical
-   title slug in the path and query params for `episode`, `source`,
-   `translation`, and `provider`.
+8. List URLs use `/?view=...`, with optional search, sort, and filter parameters.
+   Title URLs use the canonical slug and optional `episode`; franchise URLs use
+   `/franchises/<slug>`. Browser history retains the return list and the chosen
+   source/translation/provider without putting those technical choices in shared
+   links. Older links containing these query parameters remain supported.
 9. Favorites, the three-state viewing status, and manual progress corrections
    are written back through `PATCH /api/anime/<id>/state`.
 10. Automatic watch signals are written through `POST /api/watch-events`, which
@@ -361,6 +363,44 @@ ZIP/folder temporarily for development. The setup UI is `/scanner-setup`.
     validates assigned IDs and allowed HTTPS player URLs, applies only new
     episodes/providers under the database-operation lock, writes
     attribution/content-update rows, and invalidates the catalog cache.
+
+## Navigation And Themes
+
+The 2026-10-17 redesign has two primary sections:
+
+- Catalog: `all`, `recommendations`, `updates`.
+- Library: `library-all`, `progress`, `favorites`, `completed`.
+- Services: `maintenance` for scanner controls, `/scanner-setup` for installation,
+  and `/admin` for authorized administrators.
+
+`library-all` includes each canonical title once when it is favorite, watching,
+or completed. Favorites include all watch statuses. Watching groups prioritize
+the most recently watched available continuation, recent new episodes, other
+unwatched episodes, and titles waiting for more episodes. Source/translation-only
+updates do not create a new-episode priority. Sorting still applies within these
+groups. Completed defaults to the viewing-status timestamp, and existing sorts
+remain available.
+
+Changing filters never auto-selects a title. Each view remembers its criteria
+within the current page session; the active view's URL restores its criteria on
+reload or back/forward. Player navigation and tracking keep their existing API
+contracts. Shared episode links retain exact episode IDs, including special and
+fractional episodes; they do not guess episode identity from display numbers.
+
+`static/navigation.js` defines the list URL contract. `static/redesign.css`
+defines the shared layout and light/dark palette; existing component styles use
+theme variables. `static/theme.js` initializes the theme before first paint,
+defaults to the OS preference, and stores an explicit choice in `anime-theme`.
+`static/service-shell.js` provides the navigation rail on admin/scanner pages.
+The external provider owns its embedded player appearance and fullscreen/PiP.
+
+The title screen places favorite/status/share above a full-width player,
+episode/source/translation/provider selectors below it, and expanded description
+and metadata further down. Legacy list/detail split panes are no longer shown.
+
+Regression checks include `node --test static/*.test.js`, especially
+`navigation.test.js` and the unchanged watch-state scenarios in
+`watch_tracking.test.js`, plus the Python integration suite.
 
 ## Scraper Notes
 

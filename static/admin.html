@@ -8,16 +8,19 @@
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="/favicon.ico" type="image/svg+xml">
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/redesign.css">
+  <script src="/static/theme.js"></script>
   <script src="/static/client_errors.js"></script>
 </head>
-<body class="admin-page">
+<body class="admin-page" data-service="admin">
   <main class="admin-shell">
     <header class="admin-header">
       <div class="admin-title">
-        <h1>Админка</h1>
+        <h1>Администрирование</h1>
         <p id="admin-account"></p>
       </div>
       <div class="admin-actions">
+        <button type="button" data-theme-toggle>Светлая тема</button>
         <a class="icon-button icon-link" href="/" aria-label="Каталог" title="Каталог">▦</a>
         <button id="admin-logout" class="icon-button" type="button" aria-label="Выйти" title="Выйти">↪</button>
       </div>
@@ -75,6 +78,7 @@
 
     <p id="admin-state" class="admin-state" aria-live="polite"></p>
   </main>
+  <script src="/static/service-shell.js"></script>
   <script src="/static/admin.js"></script>
 </body>
 </html>

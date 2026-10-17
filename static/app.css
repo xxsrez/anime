@@ -9,6 +9,7 @@
   --accent: #ff685d;
   --accent-2: #74c69d;
   --focus: #f4b860;
+  --danger: #ffabab;
 }
 
 * {
@@ -57,7 +58,7 @@ select {
   width: min(420px, 100%);
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #171a1e;
+  background: var(--panel);
   padding: 24px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.34);
 }
@@ -132,7 +133,7 @@ select {
 
 .sidebar {
   border-right: 1px solid var(--line);
-  background: #171a1e;
+  background: var(--panel);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -176,7 +177,7 @@ select {
   align-items: center;
   padding: 12px 20px;
   border-bottom: 1px solid var(--line);
-  background: #14181c;
+  background: var(--panel);
 }
 
 .account-row[hidden] {
@@ -188,7 +189,7 @@ select {
   height: 38px;
   border: 1px solid rgba(116, 198, 157, 0.42);
   border-radius: 50%;
-  background: #111417 center / cover no-repeat;
+  background: var(--bg) center / cover no-repeat;
   color: var(--accent-2);
   display: grid;
   place-items: center;
@@ -234,7 +235,7 @@ select {
   min-width: 0;
   padding: 10px 20px;
   border-bottom: 1px solid var(--line);
-  background: #14181c;
+  background: var(--panel);
 }
 
 .scanner-setup-link {
@@ -255,7 +256,7 @@ select {
   min-height: 34px;
   border: 1px solid rgba(116, 198, 157, 0.58);
   background: rgba(116, 198, 157, 0.12);
-  color: #d8f3e6;
+  color: var(--accent-2);
   cursor: pointer;
   font-weight: 700;
 }
@@ -278,7 +279,7 @@ select {
 .animego-scan-menu-toggle:hover,
 .animego-scan-menu-toggle[aria-expanded="true"] {
   background: rgba(116, 198, 157, 0.22);
-  color: #f0fff7;
+  color: var(--text);
 }
 
 .animego-scan-button:disabled,
@@ -294,9 +295,9 @@ select {
   left: 0;
   width: min(250px, calc(100vw - 40px));
   overflow: hidden;
-  border: 1px solid #46505b;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #1a1f24;
+  background: var(--panel);
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.44);
 }
 
@@ -378,7 +379,7 @@ select {
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--text);
   padding: 8px 10px;
   outline: none;
@@ -440,19 +441,19 @@ select {
 }
 
 .app-status[data-tone="warn"] {
-  color: #ffe1a8;
+  color: var(--focus);
 }
 
 .app-status[data-tone="ok"] {
   border-color: rgba(116, 198, 157, 0.5);
-  color: #c9f1dd;
+  color: var(--accent-2);
 }
 
 .animego-scan-dialog {
   width: min(460px, calc(100vw - 32px));
-  border: 1px solid #46505b;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #1a1f24;
+  background: var(--panel);
   color: var(--text);
   padding: 0;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
@@ -474,7 +475,7 @@ select {
 
 .animego-scan-dialog p {
   margin: 12px 0 0;
-  color: #d5dbe1;
+  color: var(--text);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -494,7 +495,7 @@ select {
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--text);
   padding: 7px 12px;
   font-size: 13px;
@@ -510,7 +511,7 @@ select {
 .animego-scan-dialog-actions .animego-scan-dialog-primary {
   border-color: rgba(116, 198, 157, 0.62);
   background: rgba(116, 198, 157, 0.16);
-  color: #dcf7ea;
+  color: var(--accent-2);
 }
 
 .animego-scan-dialog-actions button:hover,
@@ -569,7 +570,7 @@ select {
   min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--text);
   padding: 0;
   cursor: pointer;
@@ -616,7 +617,7 @@ select {
 
 .add-filter-field select:disabled {
   cursor: default;
-  color: #626a73;
+  color: var(--muted);
 }
 
 .active-filters {
@@ -634,7 +635,7 @@ select {
   border: 1px solid rgba(116, 198, 157, 0.45);
   border-radius: 999px;
   background: rgba(116, 198, 157, 0.1);
-  color: #dfe5ec;
+  color: var(--text);
   padding: 4px 8px;
   cursor: pointer;
   font-size: 12px;
@@ -660,7 +661,7 @@ select {
   min-height: 50px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--muted);
   cursor: pointer;
   overflow: hidden;
@@ -669,9 +670,9 @@ select {
 }
 
 .view-tabs button:hover {
-  border-color: #46505b;
-  background: #1c2127;
-  color: #dfe5ec;
+  border-color: var(--line);
+  background: var(--panel-2);
+  color: var(--text);
 }
 
 .view-tabs button.active {
@@ -721,7 +722,7 @@ select {
   border: 1px solid rgba(116, 198, 157, 0.28);
   border-radius: 999px;
   background: rgba(116, 198, 157, 0.08);
-  color: #c7d7ce;
+  color: var(--muted);
   padding: 4px 8px;
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -788,7 +789,7 @@ select {
   margin-top: 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--muted);
   cursor: pointer;
   font-size: 13px;
@@ -809,7 +810,7 @@ select {
   height: 72px;
   border-radius: 6px;
   object-fit: cover;
-  background: #0d0f11;
+  background: var(--panel-2);
 }
 
 .anime-item strong,
@@ -844,7 +845,7 @@ select {
 }
 
 .anime-item .recommendation-note {
-  color: #c7d7ce;
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -857,7 +858,7 @@ select {
   border: 1px solid rgba(255, 104, 93, 0.44);
   border-radius: 999px;
   background: rgba(255, 104, 93, 0.12);
-  color: #ffd6d2;
+  color: var(--danger);
   padding: 2px 7px;
   margin-top: 0;
   font-size: 11px;
@@ -874,7 +875,7 @@ select {
   border: 1px solid rgba(108, 211, 159, 0.45);
   border-radius: 999px;
   background: rgba(108, 211, 159, 0.12);
-  color: #bdebd2;
+  color: var(--accent-2);
   padding: 3px 7px;
   margin-top: 6px;
   font-size: 11px;
@@ -1181,7 +1182,7 @@ select {
   border: 1px solid rgba(116, 198, 157, 0.28);
   border-radius: 999px;
   padding: 5px 8px;
-  color: #dfe5ec;
+  color: var(--text);
   background: rgba(17, 20, 23, 0.5);
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -1208,7 +1209,7 @@ select {
 }
 
 .recent-updates-header strong {
-  color: #ffd6d2;
+  color: var(--danger);
   font-size: 15px;
 }
 
@@ -1302,7 +1303,7 @@ button.recent-update-row:focus-visible {
   height: 7px;
   overflow: hidden;
   border-radius: 999px;
-  background: #111417;
+  background: var(--bg);
 }
 
 .franchise-loading-bar::after {
@@ -1344,7 +1345,7 @@ button.recent-update-row:focus-visible {
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #111417;
+  background: var(--bg);
   color: var(--text);
   padding: 8px 11px;
   cursor: pointer;
@@ -1363,7 +1364,7 @@ button.recent-update-row:focus-visible {
 .franchise-back:hover,
 .franchise-segment:hover,
 .franchise-entry-action:hover {
-  border-color: #56616d;
+  border-color: var(--line);
   background: var(--panel-2);
 }
 
@@ -1405,7 +1406,7 @@ button.recent-update-row:focus-visible {
 .franchise-summary {
   max-width: 900px;
   margin: 0;
-  color: #d2d7dc;
+  color: var(--muted);
   font-size: 15px;
   line-height: 1.55;
   overflow-wrap: anywhere;
@@ -1419,13 +1420,13 @@ button.recent-update-row:focus-visible {
   border-radius: 10px;
   background: rgba(116, 198, 157, 0.055);
   padding: 11px 12px;
-  color: #d8dde2;
+  color: var(--text);
   font-size: 13px;
   line-height: 1.55;
 }
 
 .franchise-history strong {
-  color: #bfe7d3;
+  color: var(--accent-2);
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1448,7 +1449,7 @@ button.recent-update-row:focus-visible {
   border-left: 3px solid rgba(244, 184, 96, 0.68);
   background: rgba(244, 184, 96, 0.065);
   padding: 9px 11px;
-  color: #d8dde2;
+  color: var(--text);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -1475,7 +1476,7 @@ button.recent-update-row:focus-visible {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(17, 20, 23, 0.64);
-  color: #dfe5ec;
+  color: var(--text);
   padding: 4px 9px;
   font-size: 12px;
   line-height: 1.2;
@@ -1485,21 +1486,21 @@ button.recent-update-row:focus-visible {
 .franchise-fact.status-ongoing {
   border-color: rgba(255, 104, 93, 0.52);
   background: rgba(255, 104, 93, 0.12);
-  color: #ffd6d2;
+  color: var(--danger);
 }
 
 .franchise-entry-badge.status-upcoming,
 .franchise-fact.status-upcoming {
   border-color: rgba(244, 184, 96, 0.52);
   background: rgba(244, 184, 96, 0.11);
-  color: #ffe2b6;
+  color: var(--focus);
 }
 
 .franchise-entry-badge.status-completed,
 .franchise-fact.status-completed {
   border-color: rgba(116, 198, 157, 0.45);
   background: rgba(116, 198, 157, 0.1);
-  color: #ccebdc;
+  color: var(--accent-2);
 }
 
 .franchise-source {
@@ -1667,7 +1668,7 @@ button.recent-update-row:focus-visible {
   height: 36px;
   border: 1px solid var(--line);
   border-radius: 50%;
-  background: #171a1e;
+  background: var(--panel);
   color: var(--muted);
   font-size: 12px;
   font-weight: 850;
@@ -1676,7 +1677,7 @@ button.recent-update-row:focus-visible {
 .franchise-timeline-item.is-current .franchise-timeline-marker {
   border-color: rgba(255, 104, 93, 0.72);
   background: rgba(255, 104, 93, 0.18);
-  color: #fff0ee;
+  color: var(--text);
 }
 
 .franchise-entry-card {
@@ -1686,7 +1687,7 @@ button.recent-update-row:focus-visible {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #171a1e;
+  background: var(--panel);
   padding: 10px;
 }
 
@@ -1704,7 +1705,7 @@ button.recent-update-row:focus-visible {
   width: 82px;
   aspect-ratio: 5 / 7;
   border-radius: 7px;
-  background: #0d0f11;
+  background: var(--panel-2);
 }
 
 .franchise-entry-poster {
@@ -1715,7 +1716,7 @@ button.recent-update-row:focus-visible {
 .franchise-entry-poster-placeholder {
   display: grid;
   place-items: center;
-  color: #69727c;
+  color: var(--muted);
   font-size: 22px;
   font-weight: 850;
 }
@@ -1753,7 +1754,7 @@ button.recent-update-row:focus-visible {
 .franchise-entry-summary {
   max-width: 760px;
   margin: 0;
-  color: #c8ced5;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -1843,7 +1844,7 @@ button.recent-update-row:focus-visible {
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111417;
+  background: var(--bg);
   color: var(--muted);
   padding: 7px 10px;
   cursor: pointer;
@@ -1852,8 +1853,8 @@ button.recent-update-row:focus-visible {
 }
 
 .updates-segment:hover {
-  border-color: #46505b;
-  color: #dfe5ec;
+  border-color: var(--line);
+  color: var(--text);
 }
 
 .updates-segment.active {
@@ -1876,7 +1877,7 @@ button.recent-update-row:focus-visible {
   border: 1px solid rgba(116, 198, 157, 0.28);
   border-radius: 999px;
   background: rgba(116, 198, 157, 0.08);
-  color: #c7d7ce;
+  color: var(--muted);
   padding: 5px 9px;
   font-size: 13px;
 }
@@ -1932,7 +1933,7 @@ button.recent-update-row:focus-visible {
   align-items: start;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #171a1e;
+  background: var(--panel);
   color: var(--text);
   padding: 9px;
   text-align: left;
@@ -1953,7 +1954,7 @@ button.recent-update-row:focus-visible {
   height: 62px;
   border-radius: 6px;
   object-fit: cover;
-  background: #0d0f11;
+  background: var(--panel-2);
 }
 
 .content-update-row strong,
@@ -1970,7 +1971,7 @@ button.recent-update-row:focus-visible {
 
 .content-update-title {
   margin-top: 5px;
-  color: #ffd6d2;
+  color: var(--danger);
   font-size: 13px;
   font-weight: 700;
 }
@@ -2018,14 +2019,14 @@ button.recent-update-row:focus-visible {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 5px 9px;
-  color: #dfe5ec;
+  color: var(--text);
   background: var(--panel);
   font-size: 13px;
   overflow-wrap: anywhere;
 }
 
 .description {
-  color: #d2d7dc;
+  color: var(--muted);
   max-width: 980px;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -2117,7 +2118,7 @@ button.recent-update-row:focus-visible {
 
 .episode-nav:disabled {
   cursor: default;
-  color: #626a73;
+  color: var(--muted);
   opacity: 0.55;
 }
 
@@ -2357,7 +2358,7 @@ button.recent-update-row:focus-visible {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #171a1e;
+  background: var(--panel);
   overflow: hidden;
 }
 
@@ -2441,7 +2442,7 @@ button.recent-update-row:focus-visible {
   border: 1px solid rgba(116, 198, 157, 0.35);
   border-radius: 999px;
   background: rgba(116, 198, 157, 0.08);
-  color: #c7d7ce;
+  color: var(--muted);
   padding: 3px 7px;
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -2456,7 +2457,7 @@ button.recent-update-row:focus-visible {
 .admin-pill.muted {
   border-color: rgba(169, 176, 184, 0.35);
   background: rgba(169, 176, 184, 0.08);
-  color: #d5d9de;
+  color: var(--muted);
 }
 
 .admin-pill.quiet {

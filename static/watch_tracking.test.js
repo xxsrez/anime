@@ -133,9 +133,11 @@ const shelf = vm.createContext({
   isRecommendationView: () => false, isUpdatesView: () => false,
   itemMatchesView: () => true, activeFilterDefinitions: () => [],
   sortDefinition: () => ({type: "number", value: item => item.recency}),
+  recentUpdateSummary: item => item.recent_update_summary,
   renderList() {}, renderActiveFilters() {}, hasActiveCatalogTools: () => false,
 });
 vm.runInContext([
+  block("function dateValue(", "function viewSortDefault("),
   block("function contentUpdateHasUnseenEpisode(", "function contentUpdateItemsForView("),
   block("function compareAnime(", "function favoriteWatchStatusRank("),
   block("function applyFilter(", "async function loadSearchFields("),
@@ -209,6 +211,27 @@ async function verifyDormantProviderDoesNotUndoCompletion() {
   }
 }
 verifyDormantProviderDoesNotUndoCompletion().catch(error => {console.error(error); process.exitCode = 1;});
+
+vm.runInContext(block("function dateValue(", "function viewSortDefault("), shelf);
+shelf.sortDefinition = () => ({type: "number", value: shelf.watchRecency});
+shelf.state.viewMode = "progress";
+shelf.state.sortDir = "desc";
+const olderWatch = {...pending, id: 10, watch_last_seen_at: "2026-10-10T10:00:00Z"};
+const recentWatch = {...pending, id: 11, watch_last_seen_at: "2026-10-11T10:00:00Z"};
+const currentWatch = {...olderWatch, id: 12,
+  last_watch: {progress_episode_number: 2, started_at: "2026-10-13T10:00:00Z", last_seen_at: "2026-10-13T10:01:00Z"}};
+const noWatch = {...pending, id: 13, updated_at: "2099-01-01", watch_status_updated_at: "2099-01-01"};
+const caughtUpToday = {...caughtUp, id: 14, watch_last_seen_at: "2026-10-13T11:00:00Z"};
+shelf.state.anime = [olderWatch, recentWatch, currentWatch, noWatch, caughtUpToday];
+shelf.applyFilter();
+assert.deepEqual(Array.from(shelf.state.filtered, item => item.id), [12, 11, 10, 13, 14],
+  "available episodes first, then most recent actual watch, including current-session events");
+assert.equal(shelf.watchRecency({...olderWatch,
+  last_watch: {started_at: null, last_seen_at: "2099-01-01"}}), Date.parse(olderWatch.watch_last_seen_at),
+  "opening an idle player does not promote the title");
+olderWatch.last_watch = {started_at: "2026-10-13T12:00:00Z", last_seen_at: "2026-10-13T12:01:00Z"};
+shelf.applyFilter();
+assert.equal(shelf.state.filtered[0].id, 10, "latest playback moves to the front without reloading");
 
 if (process.argv.includes("--payloads")) {
   console.log(JSON.stringify([{ event_type: "player_engaged", engaged_seconds: 0 }, ...requests]));

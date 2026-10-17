@@ -7,9 +7,12 @@
   <title>AnimeGo Scanner · Anime Catalog</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/scanner-setup.css">
+  <link rel="stylesheet" href="/static/redesign.css">
+  <script src="/static/theme.js"></script>
   <script src="/static/client_errors.js"></script>
 </head>
-<body>
+<body data-service="scanner">
+  <button class="theme-service-toggle" type="button" data-theme-toggle>Светлая тема</button>
   <main class="setup-shell">
     <section class="setup-panel">
       <div class="setup-heading">
@@ -164,6 +167,7 @@
       <p id="setup-state" class="setup-state" role="status" aria-live="polite"></p>
     </section>
   </main>
+  <script src="/static/service-shell.js"></script>
   <script src="/static/scanner-setup.js"></script>
 </body>
 </html>

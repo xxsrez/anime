@@ -8,14 +8,28 @@
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="/favicon.ico" type="image/svg+xml">
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/redesign.css">
+  <script src="/static/theme.js"></script>
   <script src="/static/client_errors.js"></script>
 </head>
 <body>
   <main class="app-shell">
+    <nav class="navigation-rail" aria-label="Основные разделы">
+      <a class="wordmark" href="/?view=all">ANIME <span>CATALOG</span></a>
+      <div class="navigation-main">
+        <a href="/?view=all" data-section="catalog">Каталог</a>
+        <a href="/?view=library-all" data-section="library">Библиотека</a>
+      </div>
+      <div class="navigation-service" id="service-navigation">
+        <span class="navigation-caption">Служебное</span>
+        <a href="/?view=maintenance" data-section="maintenance">Обновление каталога</a>
+      </div>
+      <div class="navigation-footer"><button type="button" data-theme-toggle>Светлая тема</button></div>
+    </nav>
     <aside class="sidebar">
       <div class="brand-row">
         <div>
-          <h1>Anime Catalog</h1>
+          <h1 id="section-title">Каталог</h1>
           <p id="catalog-count">0 тайтлов</p>
         </div>
         <span class="status-dot" aria-hidden="true"></span>
@@ -91,7 +105,7 @@
         </button>
         <button id="view-favorites" type="button" data-view="favorites" aria-label="Избранное" aria-pressed="false" title="Избранное">
           <span class="view-tab-icon" aria-hidden="true">★</span>
-          <span class="view-tab-label">Избр.</span>
+          <span class="view-tab-label">Избранное</span>
         </button>
         <button id="view-progress" type="button" data-view="progress" aria-label="Прогресс просмотра" aria-pressed="false" title="Прогресс просмотра">
           <span class="view-tab-icon" aria-hidden="true">▶</span>
@@ -103,14 +117,17 @@
         </button>
         <button id="view-recommendations" type="button" data-view="recommendations" aria-label="Рекомендации" aria-pressed="false" title="Рекомендации">
           <span class="view-tab-icon" aria-hidden="true">✦</span>
-          <span class="view-tab-label">Советы</span>
+          <span class="view-tab-label">Рекомендации</span>
         </button>
+        <button type="button" data-view="library-all" aria-pressed="false">Все</button>
+        <button type="button" data-view="completed" aria-pressed="false">Просмотрено</button>
       </div>
       <div id="recommendation-meta" class="recommendation-meta" hidden></div>
       <div id="anime-list" class="anime-list"></div>
     </aside>
 
     <section class="detail">
+      <button id="back-to-results" class="back-to-results" type="button">← К списку</button>
       <section id="updates-view" class="updates-view" hidden></section>
       <section id="franchise-detail-view" class="franchise-detail-view" hidden></section>
 
@@ -131,27 +148,17 @@
             </a>
             <div class="library-controls">
               <button id="favorite-toggle" class="favorite-toggle" type="button" aria-pressed="false">☆ В избранное</button>
-              <fieldset id="watch-status-control" class="watch-status-control">
-                <legend class="visually-hidden">Статус просмотра</legend>
-                <label class="watch-status-option" data-watch-status="none">
-                  <input type="radio" name="watch-status" value="none" checked>
-                  <span>○ Не смотрю</span>
-                </label>
-                <label class="watch-status-option" data-watch-status="watching">
-                  <input type="radio" name="watch-status" value="watching">
-                  <span>▶ Смотрю</span>
-                </label>
-                <label class="watch-status-option" data-watch-status="completed">
-                  <input type="radio" name="watch-status" value="completed">
-                  <span>✓ Просмотрено</span>
-                </label>
-              </fieldset>
+              <select id="watch-status-select" aria-label="Статус просмотра">
+                <option value="none">Не смотрю</option>
+                <option value="watching">Смотрю</option>
+                <option value="completed">Просмотрено</option>
+              </select>
+              <button id="share-title" type="button" aria-label="Поделиться" title="Поделиться"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/></svg></button>
             </div>
             <div id="recommendation-context" class="recommendation-context" hidden></div>
             <div id="recent-updates" class="recent-updates" hidden></div>
             <div id="genres" class="chip-row"></div>
             <p id="description" class="description"></p>
-            <button id="description-toggle" class="description-toggle" type="button" hidden aria-expanded="false">Показать полностью</button>
             <div id="fields" class="field-grid"></div>
           </div>
         </div>
@@ -212,7 +219,21 @@
         </div>
       </div>
     </section>
+    <section id="maintenance-view" class="maintenance-view" hidden>
+      <h1>Обновление каталога</h1>
+      <p>Проверка тайтлов и доступных видео через установленное расширение.</p>
+      <div id="maintenance-controls"></div>
+    </section>
   </main>
+  <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-heading">
+    <h2 id="share-heading">Поделиться</h2>
+    <label>Ссылка на тайтл<input id="share-title-url" readonly></label>
+    <button type="button" data-copy-link="share-title-url">Копировать ссылку на тайтл</button>
+    <label>Ссылка на текущую серию<input id="share-episode-url" readonly></label>
+    <button type="button" data-copy-link="share-episode-url">Копировать ссылку на серию</button>
+    <p id="share-status" role="status"></p>
+    <form method="dialog"><button>Закрыть</button></form>
+  </dialog>
   <div id="app-status" class="app-status" role="status" aria-live="polite" hidden></div>
   <dialog id="animego-scan-dialog" class="animego-scan-dialog" aria-labelledby="animego-scan-dialog-title">
     <div class="animego-scan-dialog-body">
@@ -227,6 +248,7 @@
   </dialog>
   <script src="/static/search.js"></script>
   <script src="/static/frontend_runtime.js"></script>
+  <script src="/static/navigation.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

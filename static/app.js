@@ -13,6 +13,7 @@ const VIEW_SORT_DEFAULTS = {
   all: { by: DEFAULT_SORT_BY, dir: DEFAULT_SORT_DIR },
   favorites: { by: "favorite_added", dir: "desc" },
   progress: { by: "watch_recent", dir: "desc" },
+  completed: { by: "watch_completed", dir: "desc" },
 };
 const USER_STATE_RESPONSE_FIELDS = [
   "is_favorite",
@@ -148,9 +149,6 @@ const state = {
   userStateFieldRevisions: new Map(),
   detailRequestId: 0,
   detailRequestController: null,
-  descriptionExpanded: false,
-  descriptionCanExpand: false,
-  descriptionMeasureId: 0,
   urlSyncSuspended: false,
   watchSession: null,
   watchHeartbeatTimer: null,
@@ -207,12 +205,11 @@ const el = {
   franchiseOpenTitle: document.getElementById("franchise-open-title"),
   franchiseOpenMeta: document.getElementById("franchise-open-meta"),
   favoriteToggle: document.getElementById("favorite-toggle"),
-  watchStatusInputs: document.querySelectorAll('input[name="watch-status"]'),
+  watchStatusSelect: document.getElementById("watch-status-select"),
   recommendationContext: document.getElementById("recommendation-context"),
   recentUpdates: document.getElementById("recent-updates"),
   genres: document.getElementById("genres"),
   description: document.getElementById("description"),
-  descriptionToggle: document.getElementById("description-toggle"),
   fields: document.getElementById("fields"),
   episodes: document.getElementById("episodes"),
   contentSource: document.getElementById("content-source"),
@@ -460,10 +457,10 @@ function renderAdminLink() {
     link.id = "admin-link";
     link.className = "icon-button icon-link admin-link";
     link.href = "/admin";
-    link.setAttribute("aria-label", "Админка");
-    link.title = "Админка";
-    link.textContent = "⚙";
-    el.logoutButton.before(link);
+    link.setAttribute("aria-label", "Администрирование");
+    link.title = "Администрирование";
+    link.textContent = "Администрирование";
+    document.getElementById("service-navigation").append(link);
     el.adminLink = link;
   }
 }
@@ -892,12 +889,7 @@ function setItemSearchFields(item, searchFields) {
   clearSearchIndex(item);
 }
 
-function isMobileLayout() {
-  return window.matchMedia?.("(max-width: 980px)").matches;
-}
-
 function scrollDetailIntoViewForMobile() {
-  if (!isMobileLayout()) return;
   requestAnimationFrame(() => {
     document.querySelector(".detail")?.scrollIntoView({ block: "start" });
   });
@@ -1006,9 +998,9 @@ function readLinkState() {
     animeId,
     franchiseSlug: route.type === "franchise" ? route.franchiseSlug : null,
     episodeId: normalizeLinkValue(params.get("episode")),
-    contentSource: normalizeLinkValue(params.get("source")),
-    translation: normalizeLinkValue(params.get("translation")),
-    provider: normalizeLinkValue(params.get("provider")),
+    contentSource: normalizeLinkValue(params.get("source") || history.state?.source),
+    translation: normalizeLinkValue(params.get("translation") || history.state?.translation),
+    provider: normalizeLinkValue(params.get("provider") || history.state?.provider),
   };
 }
 
@@ -1025,24 +1017,25 @@ function syncUrlFromDetail({ replace = true } = {}) {
   if (state.urlSyncSuspended || !state.selectedAnimeId) return;
 
   const url = new URL(window.location.href);
+  const catalogUrl = catalogNavigation.url({ ...state, query: el.search.value.trim() });
+  url.search = "";
+  url.hash = "";
   const params = url.searchParams;
-  params.delete("anime");
   setOptionalParam(params, "episode", state.selectedEpisodeId);
-  setOptionalParam(params, "source", state.selectedContentSource);
-  setOptionalParam(params, "translation", state.selectedTranslation);
-  setOptionalParam(params, "provider", state.selectedSourceId);
   const slug = state.detail?.slug || state.detail?.internal_id || state.selectedAnimeId;
   url.pathname = slug ? `/${encodeURIComponent(slug)}` : "/";
 
   const next = `${url.pathname}${url.search}${url.hash}`;
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (next === current) return;
-
   const statePayload = {
+    catalogUrl,
     anime: slug,
-    ...Object.fromEntries(LINK_PARAM_KEYS.map(key => [key, params.get(key)])),
+    episode: state.selectedEpisodeId,
+    source: state.selectedContentSource,
+    translation: state.selectedTranslation,
+    provider: state.selectedSourceId,
   };
-  window.history[replace ? "replaceState" : "pushState"](statePayload, "", next);
+  window.history[replace || next === current ? "replaceState" : "pushState"](statePayload, "", next);
 }
 
 function syncUrlFromFranchise(slug, { replace = true } = {}) {
@@ -1050,6 +1043,8 @@ function syncUrlFromFranchise(slug, { replace = true } = {}) {
   if (state.urlSyncSuspended || !normalizedSlug) return;
 
   const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
   url.pathname = `/franchises/${encodeURIComponent(normalizedSlug)}`;
   url.searchParams.delete("anime");
   for (const key of LINK_PARAM_KEYS) url.searchParams.delete(key);
@@ -1057,7 +1052,7 @@ function syncUrlFromFranchise(slug, { replace = true } = {}) {
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (next === current) return;
   window.history[replace ? "replaceState" : "pushState"](
-    { franchise: normalizedSlug },
+    { franchise: normalizedSlug, catalogUrl: catalogNavigation.url({ ...state, query: el.search.value.trim() }) },
     "",
     next,
   );
@@ -1629,6 +1624,12 @@ function appendWatchingBadge(parent, item) {
   parent.append(badge);
 }
 
+function watchingGroup(item) {
+  if (!watchingHasUnseenEpisode(item)) return 3;
+  if (String(item.id) === String(state.resumeTitleId)) return 0;
+  return Number(recentUpdateSummary(item)?.event_counts?.new_episode) > 0 ? 1 : 2;
+}
+
 function contentUpdateItemsForView() {
   const catalogById = new Map(state.anime.map(item => [String(item.id), item]));
   return (state.contentUpdates?.items || []).map(update => {
@@ -1663,6 +1664,8 @@ function itemMatchesView(item, mode = state.viewMode) {
   if (mode === "favorites") return Boolean(item.is_favorite);
   const status = effectiveWatchStatus(item);
   if (mode === "progress") return status === "watching";
+  if (mode === "completed") return status === "completed";
+  if (mode === "library-all") return catalogNavigation.inLibrary(item, status);
   return true;
 }
 
@@ -1678,6 +1681,7 @@ function currentShelfCountLabel(total) {
   const labels = {
     favorites: "избранных",
     progress: "в просмотре",
+    completed: "просмотренных",
   };
   if (isRecommendationView()) return `${state.filtered.length} из ${total} советов`;
   if (isUpdatesView()) return `${state.filtered.length} из ${total} обновл.`;
@@ -1777,6 +1781,13 @@ const filterDefinitions = [
 
 const sortDefinitions = [
   {
+    id: "watch_completed",
+    label: "Недавно завершённые",
+    defaultDir: "desc",
+    type: "number",
+    value: item => dateValue(item.watch_status_updated_at),
+  },
+  {
     id: "favorite_added",
     label: "Добавлено",
     defaultDir: "desc",
@@ -1788,12 +1799,7 @@ const sortDefinitions = [
     label: "Недавно смотрел",
     defaultDir: "desc",
     type: "number",
-    value: item => dateValue(
-      item.watch_last_seen_at
-      || item.last_watch?.last_seen_at
-      || item.watch_status_updated_at
-      || item.updated_at
-    ),
+    value: item => watchRecency(item),
   },
   {
     id: "rating_best",
@@ -1852,6 +1858,14 @@ function dateValue(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function watchRecency(item) {
+  const times = [
+    dateValue(item.watch_last_seen_at),
+    item.last_watch?.started_at === null ? null : dateValue(item.last_watch?.last_seen_at),
+  ].filter(value => value != null);
+  return times.length ? Math.max(...times) : null;
+}
+
 function viewSortDefault(mode = state.viewMode) {
   return VIEW_SORT_DEFAULTS[mode] || VIEW_SORT_DEFAULTS.all;
 }
@@ -1876,8 +1890,9 @@ function sortDefinitionsForView(mode = state.viewMode) {
   const shelfSort = {
     favorites: "favorite_added",
     progress: "watch_recent",
+    completed: "watch_completed",
   }[mode];
-  const shelfOnly = new Set(["favorite_added", "watch_recent"]);
+  const shelfOnly = new Set(["favorite_added", "watch_recent", "watch_completed"]);
   return sortDefinitions.filter(definition => definition.id === shelfSort || !shelfOnly.has(definition.id));
 }
 
@@ -2128,6 +2143,7 @@ function resetCatalogTools() {
 }
 
 function renderList() {
+  renderViewTabs();
   const focusedId = el.list.contains(document.activeElement)
     ? document.activeElement?.dataset?.id || null
     : null;
@@ -2158,13 +2174,20 @@ function renderList() {
     return;
   }
 
-  const selectedIndex = state.filtered.findIndex(item => String(item.id) === String(state.selectedAnimeId));
   const visibleItems = state.filtered.slice(0, state.renderLimit);
-  if (selectedIndex >= state.renderLimit) {
-    visibleItems.unshift(state.filtered[selectedIndex]);
-  }
 
+  let previousGroup = null;
   for (const item of visibleItems) {
+    if (state.viewMode === "progress") {
+      const group = ["Продолжить просмотр", "Новые серии", "Есть что смотреть", "Жду продолжения"][watchingGroup(item)];
+      if (group !== previousGroup) {
+        const heading = document.createElement("h2");
+        heading.className = "library-group-heading";
+        heading.textContent = group;
+        el.list.append(heading);
+        previousGroup = group;
+      }
+    }
     const button = document.createElement("button");
     button.className = "anime-item";
     button.type = "button";
@@ -2612,11 +2635,10 @@ function renderContentUpdatesView() {
   const header = document.createElement("div");
   header.className = "updates-header";
   const heading = document.createElement("h2");
-  heading.textContent = "Новое в базе";
+  heading.textContent = "Обновления";
   const meta = document.createElement("span");
   meta.textContent = [
     state.contentUpdates?.period?.label,
-    contentUpdateRunLabel(state.contentUpdates?.latest_run),
   ].filter(Boolean).join(" · ");
   header.append(heading, meta);
   el.updatesView.append(header);
@@ -2657,7 +2679,13 @@ function renderContentUpdatesView() {
   }
   el.updatesView.append(summary);
 
-  renderContentUpdateStats(el.updatesView, totals);
+  const statistics = document.createElement("details");
+  statistics.className = "updates-statistics";
+  const statisticsLabel = document.createElement("summary");
+  statisticsLabel.textContent = "Сводка обновлений";
+  statistics.append(statisticsLabel);
+  renderContentUpdateStats(statistics, totals);
+  el.updatesView.append(statistics);
   renderContentUpdateRows(el.updatesView, items);
   renderContentUpdatePagination(el.updatesView);
 }
@@ -3308,6 +3336,7 @@ function renderFranchiseView() {
 
 async function openFranchise(slug, options = {}) {
   closeManualCompletion();
+  showScreen("franchise");
   const normalizedSlug = normalizeLinkValue(slug);
   if (!normalizedSlug) return false;
 
@@ -3366,32 +3395,9 @@ async function openFranchise(slug, options = {}) {
   }
 }
 
-function descriptionIsClampedLayout() {
-  return Boolean(window.matchMedia?.("(max-width: 640px)").matches);
-}
-
-function updateDescriptionToggle() {
-  el.descriptionToggle.hidden = !descriptionIsClampedLayout() || !state.descriptionCanExpand;
-  el.descriptionToggle.textContent = state.descriptionExpanded ? "Свернуть" : "Показать полностью";
-  el.descriptionToggle.setAttribute("aria-expanded", state.descriptionExpanded ? "true" : "false");
-}
-
 function renderDescription(detail) {
-  const description = detail?.description || "";
-  const measureId = state.descriptionMeasureId + 1;
-  state.descriptionMeasureId = measureId;
-  el.description.textContent = description;
-  el.description.classList.toggle("expanded", state.descriptionExpanded);
-  updateDescriptionToggle();
-  if (!descriptionIsClampedLayout() || state.descriptionExpanded || !description) return;
-
-  // Line-clamp exposes the full content through scrollHeight, so measure the
-  // rendered box instead of guessing from character count.
-  window.requestAnimationFrame(() => {
-    if (measureId !== state.descriptionMeasureId || state.detail !== detail) return;
-    state.descriptionCanExpand = el.description.scrollHeight > el.description.clientHeight + 1;
-    updateDescriptionToggle();
-  });
+  el.description.textContent = detail?.description || "";
+  el.description.classList.add("expanded");
 }
 
 function renderFranchiseOpen(detail) {
@@ -3414,6 +3420,7 @@ function renderFranchiseOpen(detail) {
 }
 
 function renderDetail() {
+  if (state.screen === "list" || state.screen === "maintenance") return;
   if (isUpdatesView()) {
     renderContentUpdatesView();
     return;
@@ -3459,16 +3466,10 @@ function renderWatchState(detail) {
   el.favoriteToggle.setAttribute("aria-pressed", detail.is_favorite ? "true" : "false");
   el.favoriteToggle.textContent = detail.is_favorite ? "★ В избранном" : "☆ В избранное";
   const status = effectiveWatchStatus(detail);
-  for (const input of el.watchStatusInputs) {
-    input.checked = input.value === status;
-    const unavailable = input.value === "completed" && !canMarkTitleCompleted(detail);
-    input.disabled = unavailable;
-    const option = input.closest(".watch-status-option");
-    if (option) {
-      option.setAttribute("aria-disabled", unavailable ? "true" : "false");
-      option.title = unavailable ? "Недоступно, пока тайтл выходит" : "";
-    }
-  }
+  const selector = el.watchStatusSelect;
+  selector.value = status;
+  selector.querySelector('[value="completed"]').disabled = !canMarkTitleCompleted(detail);
+  selector.querySelector('[value="completed"]').title = canMarkTitleCompleted(detail) ? "" : "Недоступно, пока тайтл выходит";
 }
 
 function renderRecommendationContext(detail) {
@@ -3905,7 +3906,7 @@ function setPlayer(source, episode) {
   if (navigatesPlayer) {
     cancelPictureInPictureRequest();
     setPlayerActionState("");
-    el.player.src = playerUrl;
+    replacePlayerFrame(playerUrl);
   }
   updatePlayerDisplay(source, episode);
 }
@@ -3938,11 +3939,24 @@ function clearPlayer(message) {
   el.pipToggle.disabled = true;
   clearWatchSession();
   state.playerContext = null;
-  el.player.removeAttribute("src");
+  if (el.player.hasAttribute("src")) replacePlayerFrame(null);
   el.wrap.classList.add("empty");
   el.empty.textContent = message;
   el.host.textContent = "-";
   el.episodeState.textContent = "-";
+}
+
+function replacePlayerFrame(url) {
+  // A new browsing context avoids iframe navigations polluting the site's Back
+  // history. Bind tracking to the replacement; stale frames fail source checks.
+  const next = el.player.cloneNode(false);
+  next.removeAttribute("src");
+  if (url) next.setAttribute("src", url);
+  next.addEventListener("load", handlePlayerLoaded);
+  next.addEventListener("focus", handlePlayerEngaged);
+  next.addEventListener("pointerdown", handlePlayerEngaged);
+  el.player.replaceWith(next);
+  el.player = next;
 }
 
 function configurePlayerIframe(iframe = el.player) {
@@ -4605,6 +4619,7 @@ async function openPictureInPicture() {
 
 async function selectAnime(id, options = {}) {
   closeManualCompletion();
+  showScreen("title");
   const requestId = state.detailRequestId + 1;
   state.detailRequestId = requestId;
   state.detailRequestController?.abort();
@@ -4623,8 +4638,6 @@ async function selectAnime(id, options = {}) {
     state.rightPaneMode = "title";
     state.detail = detail;
     state.selectedAnimeId = detail.id;
-    state.descriptionExpanded = false;
-    state.descriptionCanExpand = false;
     if (!userStateSaveQueue.pending(String(detail.id))) {
       updateConfirmedUserState(detail.id, {
         is_favorite: Boolean(detail.is_favorite),
@@ -4864,6 +4877,9 @@ async function saveUserState(patch, animeId = state.selectedAnimeId) {
 function applyFilter({ selectFirst = false } = {}) {
   const query = catalogSearch.searchQuery(el.search.value.trim());
   const baseItems = baseItemsForView();
+  state.resumeTitleId = state.anime
+    .filter(item => watchingHasUnseenEpisode(item) && watchRecency(item) != null)
+    .sort((left, right) => watchRecency(right) - watchRecency(left))[0]?.id || null;
   state.renderLimit = INITIAL_RENDER_LIMIT;
   const fallbackCompare = isRecommendationView()
     ? compareRecommendations
@@ -4892,8 +4908,12 @@ function applyFilter({ selectFirst = false } = {}) {
       if (priorityResult !== 0) return priorityResult;
     }
     if (state.viewMode === "progress") {
-      const priorityResult = Number(watchingHasUnseenEpisode(right.item)) - Number(watchingHasUnseenEpisode(left.item));
+      const priorityResult = watchingGroup(left.item) - watchingGroup(right.item);
       if (priorityResult !== 0) return priorityResult;
+    }
+    if (state.viewMode === "library-all") {
+      const statusResult = favoriteWatchStatusRank(left.item) - favoriteWatchStatusRank(right.item);
+      if (statusResult !== 0) return statusResult;
     }
     if (query.tokens.length && left.searchScore !== right.searchScore) {
       return right.searchScore - left.searchScore;
@@ -4904,11 +4924,8 @@ function applyFilter({ selectFirst = false } = {}) {
   renderList();
   renderActiveFilters();
   el.resetFilters.hidden = !hasActiveCatalogTools();
-  if (isUpdatesView()) renderContentUpdatesView();
-
-  if (selectFirst && !isUpdatesView() && state.filtered.length && !state.filtered.some(item => item.id === state.selectedAnimeId)) {
-    selectAnime(titleRefForItem(state.filtered[0])).catch(reportActionError("select filtered anime"));
-  }
+  if (isUpdatesView() && state.screen === "list") renderContentUpdatesView();
+  if (state.screen === "list") syncCatalogUrl();
 }
 
 async function loadSearchFields() {
@@ -5160,23 +5177,52 @@ function loadContentUpdatesForView({ force = false } = {}) {
 }
 
 function renderViewTabs() {
+  const library = catalogNavigation.libraryViews.includes(state.viewMode);
+  document.getElementById("section-title").textContent = library ? "Библиотека" : "Каталог";
+  document.body.dataset.section = library ? "library" : "catalog";
   for (const item of el.viewTabs) {
+    item.hidden = catalogNavigation.libraryViews.includes(item.dataset.view) !== library;
     const active = item.dataset.view === state.viewMode;
     item.classList.toggle("active", active);
     item.setAttribute("aria-pressed", active ? "true" : "false");
+    if (catalogNavigation.libraryViews.includes(item.dataset.view)) {
+      let counter = item.querySelector(".view-count");
+      if (!counter) {
+        counter = document.createElement("span");
+        counter.className = "view-count";
+        item.append(counter);
+      }
+      counter.textContent = state.anime.filter(title => itemMatchesView(title, item.dataset.view)).length;
+    }
   }
 }
 
-function activateViewMode(mode, { selectFirst = true } = {}) {
+function activateViewMode(mode, { updateUrl = true } = {}) {
+  if (updateUrl && mode !== state.viewMode) {
+    state.viewCriteria ||= {};
+    state.viewCriteria[state.viewMode] = { query: el.search.value, filters: { ...state.filters }, activeFilterIds: [...state.activeFilterIds] };
+    const criteria = state.viewCriteria[mode];
+    el.search.value = criteria?.query || "";
+    state.filters = { ...DEFAULT_FILTERS, ...criteria?.filters };
+    state.activeFilterIds = [...(criteria?.activeFilterIds || [])];
+  }
   rememberCurrentViewSort();
-  state.viewMode = mode || "all";
+  state.viewMode = catalogNavigation.views.includes(mode) ? mode : "all";
   restoreViewSort();
+  state.detailRequestId += 1;
+  state.detailRequestController?.abort();
+  state.franchiseRequestId += 1;
+  state.franchiseRequestController?.abort();
+  clearPlayer("");
+  showScreen(state.viewMode === "maintenance" ? "maintenance" : "list");
+  if (updateUrl) syncCatalogUrl(false);
   renderViewTabs();
+  renderFilterControls();
   renderSortControls();
   loadRecommendationsForView();
   loadContentUpdatesForView();
-  applyFilter({ selectFirst: isUpdatesView() ? false : selectFirst });
-  renderDetail();
+  applyFilter();
+  if (updateUrl) window.scrollTo(0, 0);
 }
 
 function detailContainsUpdateEvent(event) {
@@ -5283,6 +5329,7 @@ document.addEventListener("animego-scan-error", handleAnimeGoScanError);
 pingAnimeGoScanner();
 
 el.search.addEventListener("input", () => {
+  if (state.screen === "list") syncCatalogUrl();
   if (searchInputTimer) window.clearTimeout(searchInputTimer);
   const query = el.search.value.trim();
   if (query.length >= 2) loadSearchFieldsInBackground();
@@ -5317,10 +5364,6 @@ el.addFilter.addEventListener("change", () => {
   applyFilter({ selectFirst: true });
 });
 el.resetFilters.addEventListener("click", resetCatalogTools);
-el.descriptionToggle.addEventListener("click", () => {
-  state.descriptionExpanded = !state.descriptionExpanded;
-  renderDescription(state.detail);
-});
 el.franchiseOpen.addEventListener("click", event => {
   if (!shouldHandleSpaNavigation(event)) return;
   const slug = state.detail?.franchise?.slug;
@@ -5340,10 +5383,9 @@ el.favoriteToggle.addEventListener("click", () => {
 el.logoutButton.addEventListener("click", () => {
   logout().catch(reportActionError("logout"));
 });
-for (const input of el.watchStatusInputs) {
-  input.addEventListener("change", () => {
-    if (!input.checked || !state.detail) return;
-    const status = input.value;
+el.watchStatusSelect.addEventListener("change", () => {
+    if (!state.detail) return;
+    const status = el.watchStatusSelect.value;
     if (status === effectiveWatchStatus(state.detail)) return;
     if (status === "completed" && !canMarkTitleCompleted(state.detail)) {
       renderWatchState(state.detail);
@@ -5372,8 +5414,7 @@ for (const input of el.watchStatusInputs) {
       } : {}),
       ...(state.detail.not_interested ? { not_interested: false } : {}),
     }).catch(reportActionError("set watch status"));
-  });
-}
+});
 el.contentSource.addEventListener("change", event => {
   const selectedContentSource = event.target.value || null;
   const selectedEpisodeId = nearestEpisodeIdForContentSource(selectedContentSource);
@@ -5465,8 +5506,6 @@ window.addEventListener("pagehide", event => {
 window.addEventListener("resize", () => {
   hideTitleTooltip();
   if (!state.detail) return;
-  if (!descriptionIsClampedLayout()) state.descriptionExpanded = false;
-  state.descriptionCanExpand = false;
   renderDescription(state.detail);
 });
 el.list.addEventListener("scroll", hideTitleTooltip);
@@ -5484,11 +5523,14 @@ el.list.addEventListener("keydown", event => {
   buttons[targetIndex].focus();
 });
 window.addEventListener("popstate", () => {
+  restoreCatalogCriteria();
   const linkState = readLinkState();
   if (linkState.franchiseSlug) {
     openFranchise(linkState.franchiseSlug, { updateUrl: false, scrollDetail: true }).catch(reportActionError("popstate franchise"));
   } else if (linkState.animeId) {
     selectAnime(linkState.animeId, { linkState, updateUrl: false, scrollDetail: true }).catch(reportActionError("popstate anime"));
+  } else {
+    activateViewMode(state.viewMode, { updateUrl: false });
   }
 });
 
@@ -5509,27 +5551,98 @@ async function selectInitialAnime() {
     }
   }
 
-  if (state.continueWatching?.anime_ref) {
-    const target = state.continueWatching;
-    try {
-      await selectAnime(target.anime_ref, {
-        linkState: {
-          episodeId: target.episode_id,
-          contentSource: target.source,
-          translation: target.translation_id,
-          provider: target.video_source_id,
-        },
-      });
-      return;
-    } catch (error) {
-      if (isAbortError(error)) return;
-      reportClientError(error, { action: "open continue watching", animeId: target.anime_id });
-      console.warn("Failed to open continue target", error);
-    }
-  }
+  activateViewMode(state.viewMode, { updateUrl: false });
+}
 
-  const first = state.filtered.find(item => item.source_count > 0) || state.filtered[0] || state.anime[0];
-  if (first) await selectAnime(titleRefForItem(first));
+function syncCatalogUrl(replace = true) {
+  if (state.urlSyncSuspended) return;
+  const next = catalogNavigation.url({ ...state, query: el.search.value.trim() });
+  if (`${location.pathname}${location.search}` !== next) {
+    history[replace ? "replaceState" : "pushState"]({}, "", next);
+  }
+}
+
+function restoreCatalogCriteria() {
+  const returnUrl = location.pathname !== "/" && history.state?.catalogUrl;
+  const route = catalogNavigation.read(returnUrl ? new URL(returnUrl, location.origin).search : location.search);
+  state.viewMode = route.view;
+  el.search.value = route.query;
+  state.filters = { ...DEFAULT_FILTERS, ...route.filters };
+  state.activeFilterIds = Object.keys(route.filters);
+  const allowedSorts = sortDefinitionsForView();
+  const fallback = viewSortDefault();
+  state.sortBy = allowedSorts.some(sort => sort.id === route.sortBy) ? route.sortBy : fallback.by;
+  state.sortDir = route.sortBy ? route.sortDir : fallback.dir;
+  state.viewSorts[state.viewMode] = { by: state.sortBy, dir: state.sortDir };
+  state.contentUpdateDays = route.days;
+  state.contentUpdateType = CONTENT_UPDATE_TYPES.some(type => type.id === route.updateType) ? route.updateType : "all";
+  renderViewTabs();
+  renderFilterControls();
+  renderSortControls();
+}
+
+function showScreen(screen) {
+  state.screen = screen;
+  document.body.dataset.screen = screen;
+  document.querySelector(".sidebar").hidden = screen !== "list";
+  document.querySelector(".detail").hidden = screen === "maintenance" || (screen === "list" && !isUpdatesView());
+  document.getElementById("maintenance-view").hidden = screen !== "maintenance";
+  document.getElementById("back-to-results").hidden = screen === "list";
+  for (const link of document.querySelectorAll("[data-section]")) {
+    const section = screen === "maintenance" ? "maintenance" : catalogNavigation.libraryViews.includes(state.viewMode) ? "library" : "catalog";
+    if (link.dataset.section === section) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+}
+
+function initializeRedesign() {
+  const sidebar = document.querySelector(".sidebar");
+  document.querySelector(".navigation-footer").prepend(el.accountRow);
+  document.getElementById("maintenance-controls").append(document.getElementById("animego-scan-control"));
+  const tabs = document.querySelector(".view-tabs");
+  for (const view of catalogNavigation.views) {
+    const button = tabs.querySelector(`[data-view="${view}"]`);
+    if (button) tabs.append(button);
+  }
+  sidebar.querySelector(".brand-row").after(tabs);
+  const details = document.createElement("section");
+  details.className = "title-information";
+  const heading = document.createElement("h3");
+  heading.textContent = "О тайтле";
+  details.append(heading, el.genres, el.description, el.fields, el.franchiseOpen, el.recommendationContext, el.recentUpdates);
+  el.titleDetailView.append(details);
+  document.querySelector(".source-panel").prepend(el.episodes);
+  document.getElementById("back-to-results").addEventListener("click", () => activateViewMode(state.viewMode));
+  document.querySelectorAll("[data-section]").forEach(link => link.addEventListener("click", event => {
+    if (!shouldHandleSpaNavigation(event)) return;
+    event.preventDefault();
+    const mode = catalogNavigation.read(new URL(link.href).search).view;
+    activateViewMode(mode);
+    window.scrollTo(0, 0);
+  }));
+  const dialog = document.getElementById("share-dialog");
+  document.getElementById("share-title").addEventListener("click", () => {
+    if (!state.detail) return;
+    const url = new URL(`/${encodeURIComponent(state.detail.slug || state.detail.internal_id || state.selectedAnimeId)}`, location.origin);
+    document.getElementById("share-title-url").value = url.href;
+    if (state.selectedEpisodeId != null) url.searchParams.set("episode", state.selectedEpisodeId);
+    document.getElementById("share-episode-url").value = url.href;
+    document.getElementById("share-status").textContent = "";
+    dialog.showModal();
+  });
+  dialog.querySelectorAll("[data-copy-link]").forEach(button => button.addEventListener("click", async () => {
+    const input = document.getElementById(button.dataset.copyLink);
+    try {
+      await navigator.clipboard.writeText(input.value);
+      document.getElementById("share-status").textContent = "Ссылка скопирована";
+    } catch {
+      input.focus(); input.select();
+      document.getElementById("share-status").textContent = "Скопируйте выделенную ссылку";
+    }
+  }));
+  restoreCatalogCriteria();
+  const route = readLinkState();
+  showScreen(route.animeId ? "title" : route.franchiseSlug ? "franchise" : state.viewMode === "maintenance" ? "maintenance" : "list");
 }
 
 async function boot() {
@@ -5556,8 +5669,12 @@ async function boot() {
   markPerformanceCheckpoint("recommendations_deferred");
   renderFilterControls();
   renderSortControls();
+  const suspend = state.urlSyncSuspended;
+  state.urlSyncSuspended = true;
   applyFilter();
+  state.urlSyncSuspended = suspend;
   markPerformanceCheckpoint("catalog_rendered", { filtered: state.filtered.length });
+  if (el.search.value.trim().length >= 2) loadSearchFieldsInBackground();
   try {
     await selectInitialAnime();
   } catch (error) {
@@ -5568,6 +5685,7 @@ async function boot() {
   reportHomePerformance("success");
 }
 
+initializeRedesign();
 boot().catch(error => {
   if (isAbortError(error)) return;
   markPerformanceCheckpoint("boot_failed");
