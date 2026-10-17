@@ -77,9 +77,11 @@ button:hover { background: var(--panel-2); }
 .icon-button, .player-actions-menu summary, .updates-segment, .franchise-order-button,
 .animego-scan-button, .animego-scan-menu-toggle { background: var(--panel); color: var(--text); }
 .meta-line { color: var(--muted); font-weight: 400; }
-.search-box { display: block; margin: 0 0 14px; padding: 0; }
+.search-box { display: grid; gap: 6px; margin: 0 0 18px; padding: 0; border: 0; }
 .search-box input { background: var(--panel); width: 100%; min-height: 44px; }
 .catalog-tools { padding: 0; margin: 0 0 22px; border: 0; }
+.recommendation-meta { padding: 0; margin: 0 0 18px; border: 0; background: transparent; gap: 8px; }
+.recommendation-meta span { background: transparent; border-color: var(--line); }
 .sort-row { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
 .tool-field { flex: 1 1 180px; }
 .sort-row select, .filter-grid select, .filter-grid input { background: var(--panel); }
@@ -168,7 +170,7 @@ body[data-service] .setup-panel { max-width: 900px; width: 100%; box-shadow: non
 /* Legacy components retain their structure; colors follow the same theme. */
 [data-theme="light"] .chip, [data-theme="light"] .recent-update-badge,
 [data-theme="light"] .watching-available-badge, [data-theme="light"] .recommendation-context,
-[data-theme="light"] .recommendation-meta, [data-theme="light"] .animego-scan-state,
+[data-theme="light"] .animego-scan-state,
 [data-theme="light"] .admin-table th, [data-theme="light"] .admin-table td,
 [data-theme="light"] .source-meta, [data-theme="light"] .field,
 [data-theme="light"] .franchise-entry, [data-theme="light"] .franchise-hero,
