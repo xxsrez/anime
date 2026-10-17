@@ -94,7 +94,7 @@ button:hover { background: var(--panel-2); }
 .anime-item.favorite:not(.active), .anime-item.recommended:not(.active), .anime-item.recently-updated:not(.active) { border-color: var(--line); background: var(--panel); box-shadow: none; }
 .anime-item img { width: 100%; height: 240px; object-fit: cover; border-radius: 0; background: var(--panel-2); }
 .anime-item > div { padding: 16px; min-width: 0; }
-.anime-item strong { font-size: 16px; line-height: 1.4; white-space: normal; display: block; overflow: visible; }
+.anime-item strong { font-size: 16px; line-height: 1.4; white-space: normal; display: block; overflow: visible; max-height: none; }
 .anime-item span { white-space: normal; color: var(--muted); line-height: 1.5; }
 .anime-title-row { flex-wrap: wrap; }
 .empty-list, .list-more { grid-column: 1 / -1; }
