@@ -221,6 +221,7 @@ const el = {
 };
 
 let listImageObserver = null;
+let listMoreObserver = null;
 let titleTooltip = null;
 let titleTooltipTarget = null;
 let appStatusTimer = 0;
@@ -2137,17 +2138,21 @@ function resetCatalogTools() {
   refreshRecommendationsForCriteria();
 }
 
-function renderList() {
+function renderList({ append = false } = {}) {
+  if (listMoreObserver) listMoreObserver.disconnect();
+  listMoreObserver = null;
+  const renderedCount = append ? el.list.querySelectorAll(".anime-item").length : 0;
+  el.list.querySelector(".list-more")?.remove();
   renderViewTabs();
   const focusedId = el.list.contains(document.activeElement)
     ? document.activeElement?.dataset?.id || null
     : null;
   hideTitleTooltip();
-  resetListImageObserver();
+  if (!append) resetListImageObserver();
   const total = currentShelfTotal();
   el.count.textContent = currentShelfCountLabel(total);
   renderRecommendationMeta();
-  el.list.replaceChildren();
+  if (!append) el.list.replaceChildren();
 
   if (!state.filtered.length) {
     const empty = document.createElement("div");
@@ -2169,12 +2174,16 @@ function renderList() {
     return;
   }
 
-  const visibleItems = state.filtered.slice(0, state.renderLimit);
+  // Without IntersectionObserver, expose the whole list rather than a dead end.
+  const limit = "IntersectionObserver" in window ? state.renderLimit : state.filtered.length;
+  const visibleItems = state.filtered.slice(renderedCount, limit);
 
-  let previousGroup = null;
+  const watchingGroups = ["Продолжить просмотр", "Новые серии", "Есть что смотреть", "Жду продолжения"];
+  let previousGroup = renderedCount && state.viewMode === "progress"
+    ? watchingGroups[watchingGroup(state.filtered[renderedCount - 1])] : null;
   for (const item of visibleItems) {
     if (state.viewMode === "progress") {
-      const group = ["Продолжить просмотр", "Новые серии", "Есть что смотреть", "Жду продолжения"][watchingGroup(item)];
+      const group = watchingGroups[watchingGroup(item)];
       if (group !== previousGroup) {
         const heading = document.createElement("h2");
         heading.className = "library-group-heading";
@@ -2260,17 +2269,22 @@ function renderList() {
     el.list.append(button);
   }
 
-  if (visibleItems.length < state.filtered.length) {
-    const more = document.createElement("button");
-    more.type = "button";
+  if (renderedCount + visibleItems.length < state.filtered.length) {
+    const more = document.createElement("div");
     more.className = "list-more";
-    const remaining = state.filtered.length - visibleItems.length;
-    more.textContent = `Показать ещё ${Math.min(RENDER_BATCH_SIZE, remaining)}`;
-    more.addEventListener("click", () => {
-      state.renderLimit += RENDER_BATCH_SIZE;
-      renderList();
-    });
+    more.textContent = "Загружаю тайтлы…";
+    more.setAttribute("role", "status");
     el.list.append(more);
+    const observer = new IntersectionObserver(entries => {
+      if (listMoreObserver !== observer || !more.isConnected
+        || !entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      listMoreObserver = null;
+      state.renderLimit += RENDER_BATCH_SIZE;
+      renderList({ append: true });
+    }, { rootMargin: "400px 0px" });
+    listMoreObserver = observer;
+    observer.observe(more);
   }
 
   if (focusedId) {
