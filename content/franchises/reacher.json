@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "slug": "reacher",
+  "title": "Джек Ричер",
+  "summary": "Детективный боевик о бывшем военном полицейском Джеке Ричере, который путешествует по США и оказывается в центре опасных расследований.",
+  "guide": "Смотрите сезоны по порядку выхода. Каждый посвящён отдельному расследованию.",
+  "updated_at": "2026-10-17",
+  "source": {"title": "Prime Video", "url": "https://www.primevideo.com/detail/0K16R3PLUFGC2JUE457C26O4OD", "updated_at": "2026-10-17"},
+  "entries": [
+    {"key": "season-1", "title": "Джек Ричер 1 сезон", "kind": "Сериал", "status": "finished", "release_order": 1, "watch_order": 1, "story_role": "main", "match": {"sources": ["kinogoo:1628"]}, "release_year": 2022, "release_label": "2022", "summary": "В городке Маргрейв бывшего военного полицейского Джека Ричера обвиняют в убийстве. Пытаясь доказать свою невиновность, он обнаруживает преступный заговор."},
+    {"key": "season-2", "title": "Джек Ричер 2 сезон", "kind": "Сериал", "status": "finished", "release_order": 2, "watch_order": 2, "story_role": "main", "match": {"sources": ["kinogoo:1628:season:2"]}, "release_year": 2023, "release_label": "2023–2024", "summary": "Бывшие сослуживцы Ричера становятся жертвами убийств. Он объединяется с уцелевшими участниками своего подразделения, чтобы найти тех, кто охотится на их команду."},
+    {"key": "season-3", "title": "Джек Ричер 3 сезон", "kind": "Сериал", "status": "finished", "release_order": 3, "watch_order": 3, "story_role": "main", "match": {"sources": ["kinogoo:1628:season:3"]}, "release_year": 2025, "release_label": "2025", "summary": "В штате Мэн Ричер проникает в окружение влиятельного предпринимателя. Расследование выводит его на преступную сеть и врага, связанного с его прошлым."},
+    {"key": "season-4", "title": "Джек Ричер 4 сезон", "kind": "Сериал", "status": "finished", "release_order": 4, "watch_order": 4, "story_role": "main", "match": {"sources": ["kinogoo:1628:season:4"]}, "release_year": 2026, "release_label": "2026", "summary": "Встреча с встревоженной незнакомкой в метро Филадельфии втягивает Ричера в опасное расследование. Его противниками становятся люди, связанные с высшими эшелонами власти."}
+  ]
+}
