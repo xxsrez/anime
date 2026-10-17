@@ -5583,6 +5583,8 @@ function restoreCatalogCriteria() {
 
 function showScreen(screen) {
   state.screen = screen;
+  if (screen === "list") catalogNavigation.rememberView(state.viewMode);
+  catalogNavigation.updateSectionLinks();
   document.body.dataset.screen = screen;
   document.querySelector(".sidebar").hidden = screen !== "list";
   document.querySelector(".detail").hidden = screen === "maintenance" || (screen === "list" && !isUpdatesView());
@@ -5616,7 +5618,7 @@ function initializeRedesign() {
   document.querySelectorAll("[data-section]").forEach(link => link.addEventListener("click", event => {
     if (!shouldHandleSpaNavigation(event)) return;
     event.preventDefault();
-    const mode = catalogNavigation.read(new URL(link.href).search).view;
+    const mode = catalogNavigation.rememberedView(link.dataset.section) || catalogNavigation.read(new URL(link.href).search).view;
     activateViewMode(mode);
     window.scrollTo(0, 0);
   }));

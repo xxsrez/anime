@@ -32,7 +32,32 @@
   function inLibrary(item, status) {
     return Boolean(item.is_favorite) || status === "watching" || status === "completed";
   }
-  const api = { views, libraryViews, read, url, inLibrary };
+  const sectionViews = { catalog: ["all", "recommendations", "updates"], library: libraryViews };
+  const lastViews = {};
+  function rememberedView(section, storage) {
+    const allowed = sectionViews[section];
+    if (!allowed) return null;
+    let saved;
+    try { saved = (storage || root.localStorage)?.getItem(`anime-last-view-${section}`); } catch { /* Storage may be unavailable. */ }
+    return allowed.includes(saved) ? saved : lastViews[section] || allowed[0];
+  }
+  function rememberView(view, storage) {
+    const section = Object.keys(sectionViews).find(key => sectionViews[key].includes(view));
+    if (!section) return;
+    lastViews[section] = view;
+    try { (storage || root.localStorage)?.setItem(`anime-last-view-${section}`, view); } catch { /* Keep the choice for this page session. */ }
+  }
+  function updateSectionLinks() {
+    for (const link of root.document?.querySelectorAll("a[data-section]") || []) {
+      const view = rememberedView(link.dataset.section);
+      if (view) link.setAttribute("href", `/?view=${view}`);
+    }
+  }
+  if (root.document) {
+    root.document.addEventListener("DOMContentLoaded", updateSectionLinks);
+    root.addEventListener("storage", updateSectionLinks);
+  }
+  const api = { views, libraryViews, read, url, inLibrary, rememberedView, rememberView, updateSectionLinks };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.catalogNavigation = api;
 })(typeof window === "undefined" ? globalThis : window);

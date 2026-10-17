@@ -387,6 +387,13 @@ reload or back/forward. Player navigation and tracking keep their existing API
 contracts. Shared episode links retain exact episode IDs, including special and
 fractional episodes; they do not guess episode identity from display numbers.
 
+Catalog and Library navigation links independently restore the last visited tab
+from browser localStorage (`anime-last-view-catalog` and `anime-last-view-library`).
+The same links are used on admin/scanner pages and support opening in a new tab.
+Explicit URLs and browser history remain authoritative; opening a title or a
+service page does not replace the remembered tab. Without storage, the current
+page retains the choice in memory; a fresh browser defaults each section to All.
+
 `static/navigation.js` defines the list URL contract. `static/redesign.css`
 defines the shared layout and light/dark palette; existing component styles use
 theme variables. `static/theme.js` initializes the theme before first paint,

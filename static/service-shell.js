@@ -24,9 +24,10 @@
     node.href = href;
     if (current) node.setAttribute("aria-current", "page");
     parent.append(node);
+    return node;
   }
-  link(main, "Каталог", "/?view=all");
-  link(main, "Библиотека", "/?view=library-all");
+  link(main, "Каталог", "/?view=all").dataset.section = "catalog";
+  link(main, "Библиотека", "/?view=library-all").dataset.section = "library";
   link(services, "Обновление каталога", "/?view=maintenance", service === "scanner");
   if (service === "admin") link(services, "Администрирование", "/admin", true);
   else fetch("/api/me").then(response => response.ok ? response.json() : null).then(data => {
@@ -38,4 +39,5 @@
   if (theme) { theme.classList.remove("theme-service-toggle"); footer.append(theme); }
   rail.append(brand, main, services, footer);
   document.body.prepend(rail);
+  window.catalogNavigation.updateSectionLinks();
 })();

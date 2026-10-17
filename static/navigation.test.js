@@ -8,6 +8,51 @@ function block(start, end) {
   return source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
 }
 
+test("section tabs persist independently across reloads without overriding explicit routes", () => {
+  const data = new Map();
+  const storage = { getItem: key => data.get(key), setItem: (key, value) => data.set(key, value) };
+  const load = () => {
+    const context = vm.createContext({ localStorage: storage, URLSearchParams });
+    vm.runInContext(fs.readFileSync(`${__dirname}/navigation.js`, "utf8"), context);
+    return context.catalogNavigation;
+  };
+  const first = load();
+  assert.equal(first.rememberedView("catalog"), "all");
+  assert.equal(first.rememberedView("library"), "library-all");
+  first.rememberView("recommendations");
+  first.rememberView("progress");
+  first.rememberView("maintenance");
+  const reloaded = load();
+  assert.equal(reloaded.rememberedView("catalog"), "recommendations");
+  assert.equal(reloaded.rememberedView("library"), "progress");
+  assert.equal(reloaded.read("?view=favorites").view, "favorites");
+  reloaded.rememberView("favorites");
+  assert.equal(reloaded.rememberedView("library"), "favorites");
+  data.set("anime-last-view-library", "recommendations");
+  assert.equal(load().rememberedView("library"), "library-all");
+  const denied = { getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } };
+  reloaded.rememberView("completed", denied);
+  assert.equal(reloaded.rememberedView("library", denied), "completed");
+});
+
+test("title and service screens do not overwrite the last visited section tab", () => {
+  const remembered = [];
+  const context = vm.createContext({
+    state: { viewMode: "all" },
+    catalogNavigation: { libraryViews: navigation.libraryViews, rememberView: view => remembered.push(view), updateSectionLinks() {} },
+    document: { body: { dataset: {} }, querySelector: () => ({}), getElementById: () => ({}), querySelectorAll: () => [] },
+    isUpdatesView: () => false,
+  });
+  vm.runInContext(block("function showScreen(", "function initializeRedesign("), context);
+  context.showScreen("title");
+  context.showScreen("franchise");
+  context.showScreen("maintenance");
+  assert.deepEqual(remembered, []);
+  context.state.viewMode = "updates";
+  context.showScreen("list");
+  assert.deepEqual(remembered, ["updates"]);
+});
+
 test("library union and favorites cover all six favorite/status combinations", () => {
   const context = vm.createContext({
     state: { viewMode: "all" }, catalogNavigation: navigation,
