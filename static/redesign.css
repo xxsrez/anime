@@ -210,8 +210,9 @@ body[data-service] .setup-panel { max-width: 900px; width: 100%; box-shadow: non
   .mobile-layout-ready .navigation-rail > .wordmark,
   .mobile-layout-ready .navigation-rail > .navigation-service,
   .mobile-layout-ready .navigation-rail > .navigation-footer { display: none; }
-  .mobile-layout-ready .navigation-main { background: var(--panel); padding: 4px; border-radius: 10px; gap: 4px; }
-  .mobile-layout-ready .navigation-main a { padding: 8px; min-height: 44px; font-size: 13px; display: grid; place-items: center; }
+  .mobile-layout-ready .navigation-main { background: var(--panel-2); padding: 3px; border-radius: 10px; gap: 2px; height: 44px; align-items: stretch; }
+  .mobile-layout-ready .navigation-main a { flex: 1 1 0; padding: 0 10px; min-height: 38px; font-size: 13px; font-weight: 500; line-height: 20px; display: grid; place-items: center; border: 0; border-radius: 7px; }
+  .mobile-layout-ready .navigation-main a[aria-current="page"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px #00000012; font-weight: 600; }
   .mobile-control { display: grid; place-items: center; width: 44px; height: 44px; align-self: center; border-color: transparent; border-radius: 10px; }
   .mobile-control svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
   .mobile-control.has-filters { color: var(--accent); border-color: var(--accent); }
@@ -226,9 +227,12 @@ body[data-service] .setup-panel { max-width: 900px; width: 100%; box-shadow: non
   .mobile-layout-ready .brand-row > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; }
   .mobile-layout-ready .brand-row h1 { margin: 0; }
   .mobile-layout-ready .brand-row p { font-size: 11px; text-align: right; }
-  .mobile-layout-ready .view-tabs { margin: 0; padding: 0; border: 0; flex-wrap: nowrap; gap: 2px; }
-  .mobile-layout-ready .view-tabs button { flex: 1 1 auto; min-height: 44px; padding: 8px 5px; border-radius: 8px; }
-  .mobile-layout-ready .view-tab-label { font-size: 12px; }
+  .mobile-layout-ready .view-tabs { display: flex; margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 0; }
+  .mobile-layout-ready .view-tabs button { position: relative; display: flex; flex: 1 1 auto; flex-direction: row; align-items: center; justify-content: center; height: 44px; min-height: 44px; margin: 0; padding: 0 8px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); line-height: 20px; font-weight: 500; }
+  .mobile-layout-ready .view-tabs button.active { background: transparent; color: var(--text); box-shadow: none; }
+  .mobile-layout-ready .view-tabs button.active::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 2px; border-radius: 2px; background: var(--accent); }
+  .mobile-layout-ready .view-tabs button,
+  .mobile-layout-ready .view-tab-label { font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; }
   .mobile-layout-ready .view-count { display: none; }
   .mobile-layout-ready .library-group-heading { font-size: 14px; margin: 4px 0 0; }
   body[data-service] { display: block; }
