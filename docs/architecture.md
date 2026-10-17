@@ -394,9 +394,11 @@ defaults to the OS preference, and stores an explicit choice in `anime-theme`.
 `static/service-shell.js` provides the navigation rail on admin/scanner pages.
 The external provider owns its embedded player appearance and fullscreen/PiP.
 
-The title screen places favorite/status/share above a full-width player,
-episode/source/translation/provider selectors below it, and expanded description
-and metadata further down. Legacy list/detail split panes are no longer shown.
+The title screen places favorite/status/share above a centered player capped at
+960 px wide, using the available width on smaller screens. Below it, the episode
+selector occupies the first row and source/translation/provider the second;
+the actions menu sits independently at the panel's top right. Expanded description
+and metadata follow below. Legacy list/detail split panes are no longer shown.
 
 Regression checks include `node --test static/*.test.js`, especially
 `navigation.test.js` and the unchanged watch-state scenarios in
