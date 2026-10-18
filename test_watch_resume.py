@@ -120,6 +120,26 @@ class WatchResumeTest(unittest.TestCase):
         result = self.event(22, "session_end", playback_position_seconds=1307, playback_duration_seconds=1422)
         self.assertIsNotNone(result["episode_state"]["completed_at"])
 
+    def test_ninety_percent_boundary_for_short_episode_anime_and_movie(self):
+        for episode, (duration, position) in enumerate(((480, 432), (1440, 1296), (2850, 2565), (7200, 6480)), start=1):
+            with self.subTest(duration=duration, position=position):
+                self.event(episode, day=episode)
+                self.event(episode, "heartbeat", day=episode, engaged_seconds=60,
+                           playback_position_seconds=position - 1,
+                           playback_duration_seconds=duration)
+                self.assertIsNone(self.fixture.episode_state(901, episode)["completed_at"])
+                result = self.event(episode, "session_end", day=episode, playback_position_seconds=position,
+                                    playback_duration_seconds=duration)
+                self.assertIsNotNone(result["episode_state"]["completed_at"])
+                self.assertEqual(self.target()["episode_number"], str(episode + 1))
+
+    def test_reacher_saved_position_advances_to_episode_four(self):
+        self.event(3)
+        result = self.event(3, "heartbeat", engaged_seconds=61,
+                            playback_position_seconds=2656, playback_duration_seconds=2850)
+        self.assertIsNotNone(result["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "4")
+
     def test_credits_position_without_session_engagement_does_not_complete(self):
         self.event(22)
         result = self.event(22, "session_end", playback_position_seconds=1307, playback_duration_seconds=1422)

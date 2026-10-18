@@ -6042,10 +6042,10 @@ def record_watch_event(payload, db_path=None, user_id=None):
         ).fetchone())
         # Wall-clock watch time is shorter at increased playback speed, and
         # viewers often leave during credits without an ended message. Accept
-        # the final two minutes (at most 10%) with engagement in this session.
+        # reaching 90% of the duration with engagement in this session.
         if (event_type in {"heartbeat", "session_end", "page_hidden"}
                 and playback_duration is not None and playback_position is not None
-                and max(playback_duration * 0.9, playback_duration - 120)
+                and playback_duration * 0.9
                 <= playback_position <= playback_duration + 2):
             session_seconds = con.execute(
                 """select coalesce(sum(engaged_seconds), 0) from user_watch_events
