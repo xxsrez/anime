@@ -18,6 +18,74 @@ import server
 
 
 class AnimeGoScansTest(unittest.TestCase):
+    def test_retired_source_keeps_episodes_but_hides_link_and_prefers_live_variant(self):
+        self.add_title(701, title="Retired source fixture", playable=True)
+        self.add_title(20000701, title="Retired source fixture", source="yummyanime", playable=True)
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set source_retired_at='2026-10-19T00:00:00Z' where id=701")
+            con.execute("update anime set url='https://ru.yummyani.me/catalog/item/fixture',source_id='yummyani:701' where id=20000701")
+            con.commit()
+            task = animego_scans.task_payloads(con, [(701, "stale")])[0]
+            self.assertTrue(task["source_retired"])
+            self.assertIsNone(task["url"])
+            import sync_videos
+            import backfill_players
+            self.assertNotIn(701, [r["id"] for r in sync_videos.animego_ongoing_rows(con)])
+            self.assertNotIn(701, [r["id"] for r in backfill_players.playable_missing_rows(con)])
+        server.invalidate_catalog_cache(self.db_path)
+        detail = server.get_anime_detail(701, self.db_path)
+        self.assertEqual(detail["id"], 20000701)
+        self.assertEqual(set(detail["source_member_ids"]), {701, 20000701})
+        archived = next(v for v in detail["source_variants"] if v["id"] == 701)
+        self.assertIsNone(archived["url"])
+        self.assertTrue(archived["source_retired_at"])
+        self.assertTrue(any(s["source_anime_id"] == 701 for sources in detail["sources_by_episode"].values() for s in sources))
+
+    def test_browser_recovery_handshake_does_not_fetch_or_mark_item_checked(self):
+        self.add_title(3998)
+        self.add_title(20026525, source="yummyanime")
+        url = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=? where id=20026525", (url,))
+            con.commit()
+        resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": url})
+        job = self.create_job()
+        body = {"anime_id": 3998, "error": "AnimeGO HTTP 404", "upstream_status": 404, "episodes": [], "browser_recovery": True}
+        args = (self.db_path, job["job"]["id"], job["token"])
+        with patch.object(animego_scans.yummy, "parse_modern_detail", side_effect=AssertionError("No server network")):
+            result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            self.assertEqual(result["recovery_task"]["anime_id"], 20026525)
+            self.assertEqual(result["recovery_task"]["url"], "https://api.yani.tv/anime/fixture?need_videos=true")
+            with closing(server.connect(self.db_path)) as con:
+                self.assertEqual(con.execute("select checked_items from animego_scan_jobs where id=?", (job["job"]["id"],)).fetchone()[0], 0)
+            episode = {"id": 20026525002, "number": "2", "title": "2 серия"}
+            provider = {**self.provider(), "episode_number": "2"}
+            body["recovery_response"] = {"response": {"anime_id": 26525}}
+            with patch.object(animego_scans.yummy, "parse_modern_payload", return_value=({"id": 20026525}, {}, [episode], [provider])) as parse:
+                result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+                parse.assert_called_once_with({"anime_id": 26525}, url)
+            self.assertEqual(result["job"]["error_count"], 0)
+            self.assertEqual(result["result"]["recovered_source"], "YummyAnime")
+            replay = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            self.assertEqual(replay["job"]["checked_items"], 1)
+
+    def test_browser_recovery_rejects_substituted_source_and_reports_fetch_failure(self):
+        self.add_title(3998)
+        for raw in ({"response": {"anime_id": 1}}, {"response": {"anime_id": 26525, "episodes": {"count": 10**9}}}, None):
+            with self.subTest(raw=raw):
+                job = self.create_job()
+                resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": "https://ru.yummyani.me/catalog/item/fixture"})
+                body = {"anime_id": 3998, "error": "HTTP 404", "upstream_status": 404, "episodes": [], "browser_recovery": True}
+                if raw is None:
+                    body["recovery_error"] = True
+                else:
+                    body["recovery_response"] = raw
+                with patch.object(animego_scans.yummy, "parse_modern_detail", side_effect=AssertionError("No server network")):
+                    result = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+                self.assertEqual(result["result"]["status"], "failed")
+                self.assertEqual(result["job"]["error_count"], 1)
+                animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {"stopped": True})
+
     def test_404_recovers_canonical_alternative_without_mixing_source_ids(self):
         self.add_title(3998)
         self.add_title(20026525, source="yummyanime")
@@ -898,7 +966,7 @@ class AnimeGoScansTest(unittest.TestCase):
         source_manifest = json.loads((server.SCANNER_EXTENSION_DIR / "manifest.json").read_text())
         self.assertEqual(manifest["version"], source_manifest["version"])
         self.assertEqual(
-                    manifest["optional_host_permissions"], ["https://animego.me/*", "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]
+                    manifest["optional_host_permissions"], ["https://api.yani.tv/*", "https://animego.me/*", "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]
         )
         self.assertNotIn("https://animego.me/*", manifest["host_permissions"])
         self.assertEqual(

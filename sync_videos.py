@@ -966,6 +966,7 @@ def animego_ongoing_rows(con):
         select *
         from anime
         where source = 'animego'
+          and source_retired_at is null
         order by cast(coalesce(year, '0') as integer) desc, id desc
         """
     ).fetchall()

@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, fetch, discovery = false, legacy = false }) {
+async function scannerHarness({ stored = null, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false }) {
   const element = () => ({
     children: [], style: {},
     append(...items) { this.children.push(...items); },
@@ -15,12 +15,14 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
   const elements = new Map();
   const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture", url: "https://animego.me/anime/fixture-100" }] };
   if (legacy) delete payload.tasks[0].url;
+  if (retired) { payload.tasks[0].source_retired = true; payload.tasks[0].url = null; }
   if (discovery) { payload.discovery = true; payload.tasks = []; }
   let storage = stored || {
     payload, checkpoint: { job_id: "1", status: "paused" },
   };
   const browser = {
-    runtime: { sendMessage: async () => {}, onMessage: { addListener() {} } },
+    permissions: { contains: async () => permission },
+    runtime: { sendMessage, onMessage: { addListener() {} } },
     storage: { local: {
       get: async () => ({ animegoScannerSession: structuredClone(storage) }),
       set: async value => { storage = structuredClone(value.animegoScannerSession); },
@@ -32,7 +34,8 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
       return elements.get(id);
     }, createElement: element },
     resolveExtensionApi: () => browser, fetch, URL, AbortController, DOMException,
-    setTimeout, queueMicrotask, console, shouldRestartAfterReload: () => false,
+    setTimeout: fastTimers ? (fn, ms) => setTimeout(fn, ms >= 15000 ? 1 : ms) : setTimeout,
+    clearTimeout, queueMicrotask, console, shouldRestartAfterReload: () => false,
   });
   const source = fs.readFileSync(new URL("scanner.js", import.meta.url), "utf8")
     .replace(/^import[\s\S]*?from "[^"\n]+";\n/gm, "");
@@ -44,6 +47,7 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
       upstreamError(message, status) { return new UpstreamError(message, { status }); },
       async run() { checkpoint.status = "running"; await runScan(); },
       stop: stopScan,
+      start: startNewScan,
     };
   `, context, { filename: "scanner.js" });
   await new Promise(resolve => setImmediate(resolve));
@@ -53,6 +57,113 @@ async function scannerHarness({ stored = null, fetch, discovery = false, legacy 
 function response(job) {
   return { ok: true, status: 200, text: async () => JSON.stringify({ job }) };
 }
+
+test("retired AnimeGO source goes directly to recovery without requesting deleted URLs", async () => {
+  let body;
+  const h = await scannerHarness({ retired: true, fetch: async (url, options) => {
+    assert.equal(url.origin, "http://127.0.0.1:8765");
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return { ok: true, text: async () => JSON.stringify({ job: { checked_items: 1 }, result: { recovered_source: "YummyAnime" } }) };
+  } });
+  await h.driver.run();
+  assert.equal(body.browser_recovery, true);
+  assert.equal(body.upstream_status, 404);
+  assert.equal(h.driver.state.status, "completed");
+});
+
+test("404 recovery uses browser API and preserves source response for server validation", async () => {
+  let posted;
+  const h = await scannerHarness({ fetch: async (url, options) => {
+    if (url.origin === "https://api.yani.tv") return { ok: true, json: async () => ({ response: { anime_id: 26525 } }) };
+    const body = JSON.parse(options.body);
+    if (url.pathname.endsWith("/results") && !body.recovery_response) return {
+      ok: true, text: async () => JSON.stringify({ recovery_task: { anime_id: 20026525, url: "https://api.yani.tv/anime/fixture?need_videos=true" } }),
+    };
+    if (url.pathname.endsWith("/results")) {
+      posted = body;
+      return { ok: true, text: async () => JSON.stringify({ job: { checked_items: 1, error_count: 0 }, result: { recovered_source: "YummyAnime" } }) };
+    }
+    return response({ checked_items: 1, error_count: 0 });
+  } });
+  h.driver.collect(async () => { throw h.driver.upstreamError("Missing", 404); });
+  await h.driver.run();
+  assert.equal(h.driver.state.status, "completed");
+  assert.equal(posted.browser_recovery, true);
+  assert.equal(posted.recovery_response.response.anime_id, 26525);
+  assert.equal(h.driver.state.errors.length, 0);
+});
+
+test("missing recovery permission pauses without losing the original error; reload resumes it", async () => {
+  const first = await scannerHarness({ permission: false, fetch: async () => ({
+    ok: true, text: async () => JSON.stringify({ recovery_task: { anime_id: 20026525, url: "https://api.yani.tv/anime/fixture" } }),
+  }) });
+  first.driver.collect(async () => { throw first.driver.upstreamError("Missing", 404); });
+  await first.driver.run();
+  assert.equal(first.driver.state.status, "permission");
+  assert.equal(first.driver.state.next_index, 0);
+  assert.equal(first.snapshot().checkpoint.pending_result.upstream_status, 404);
+  const resumed = await scannerHarness({ stored: first.snapshot(), fetch: async () => ({
+    ok: true, text: async () => JSON.stringify({ job: { checked_items: 1 }, result: { recovered_source: "YummyAnime" } }),
+  }) });
+  resumed.driver.collect(async () => { throw new Error("Should replay pending error"); });
+  await resumed.driver.run();
+  assert.equal(resumed.driver.state.status, "completed");
+  assert.equal(resumed.driver.state.errors.length, 0);
+});
+
+test("server timeout retains collected result and permits retry instead of hanging", async () => {
+  const h = await scannerHarness({ fastTimers: true, fetch: async (_url, options) => new Promise((_resolve, reject) => {
+    options.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+  }) });
+  h.driver.collect(async () => []);
+  h.driver.upstream(async () => "<h1>Title</h1>");
+  await h.driver.run();
+  assert.equal(h.driver.state.status, "error");
+  assert.equal(h.driver.state.next_index, 0);
+  assert.equal(h.snapshot().checkpoint.pending_result.anime_id, 100);
+});
+
+test("recovery timeout reports a failed check and continues instead of claiming success", async () => {
+  let reported = false;
+  const h = await scannerHarness({ fastTimers: true, fetch: async (url, options) => {
+    if (url.origin === "https://api.yani.tv") return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    });
+    const body = JSON.parse(options.body);
+    if (url.pathname.endsWith("/results") && !body.recovery_error) return {
+      ok: true, text: async () => JSON.stringify({ recovery_task: { url: "https://api.yani.tv/anime/fixture" } }),
+    };
+    if (body.recovery_error) reported = true;
+    return response({ checked_items: 1, error_count: 1 });
+  } });
+  h.driver.collect(async () => { throw h.driver.upstreamError("Missing", 404); });
+  await h.driver.run();
+  assert.equal(reported, true);
+  assert.equal(h.driver.state.status, "completed");
+  assert.equal(h.driver.state.error_count, 1);
+  assert.equal(h.driver.state.errors.length, 1);
+});
+
+test("new scans are blocked while paused and available after completion, with duplicate clicks suppressed", async () => {
+  let requests = 0;
+  let resolve;
+  const harness = await scannerHarness({ fetch: async () => response({}), sendMessage: message => {
+    if (message.type !== "animego-scanner-create") return Promise.resolve();
+    requests++;
+    return new Promise(done => { resolve = done; });
+  } });
+  await harness.driver.start("partial");
+  assert.equal(requests, 0);
+  harness.driver.state.status = "completed";
+  const pending = harness.driver.start("full");
+  assert.equal(harness.elements.get("start-partial").disabled, true);
+  await harness.driver.start("partial");
+  assert.equal(requests, 1);
+  resolve({ ok: true, empty: true, message: "Каталог актуален" });
+  await pending;
+  assert.equal(harness.elements.get("start-full").disabled, false);
+  assert.equal(harness.elements.get("launch-status").textContent, "Каталог актуален");
+});
 
 test("a verified alternate-source recovery is not reported as a failed title", async () => {
   let posted;

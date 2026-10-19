@@ -90,3 +90,39 @@ test("missing extension API at injection does not announce readiness", async () 
   await page.emit("animego-scanner-prepare");
   assert.match(page.events.find(e => e.type === "animego-scanner-permission-state").detail.error, /Обновите страницу/);
 });
+
+for (const mode of ["partial", "full"]) {
+  test(`extension creates ${mode} job with the catalog session`, async () => {
+    let listener;
+    let request;
+    const api = runtime();
+    api.onMessage.addListener = fn => { listener = fn; };
+    bridge({ chrome: { runtime: api }, fetch: async (url, options) => {
+      request = { url, options };
+      return { ok: true, json: async () => ({
+        job: { id: 42 }, token: "fixture", tasks: [{ anime_id: 1 }], discovery: mode === "full",
+      }) };
+    } });
+    const result = await new Promise(resolve => {
+      assert.equal(listener({ type: "animego-scanner-create-job", mode }, {}, resolve), true);
+    });
+    assert.equal(request.url, "/api/animego-scans");
+    assert.equal(request.options.credentials, "same-origin");
+    assert.equal(JSON.parse(request.options.body).mode, mode);
+    assert.equal(result.detail.job_id, 42);
+    assert.equal(result.detail.origin, origin);
+    assert.equal(result.detail.mode, mode);
+  });
+}
+
+test("catalog authentication failure is reported to the scanner", async () => {
+  let listener;
+  const api = runtime();
+  api.onMessage.addListener = fn => { listener = fn; };
+  bridge({ chrome: { runtime: api }, fetch: async () => ({
+    ok: false, status: 401, json: async () => ({ error: "Войдите в аккаунт" }),
+  }) });
+  const result = await new Promise(resolve => listener({ type: "animego-scanner-create-job", mode: "partial" }, {}, resolve));
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Войдите/);
+});

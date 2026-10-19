@@ -385,6 +385,14 @@ def user_library_state_v1_satisfied(con):
 
 
 RUNTIME_SCHEMA_CONTRACTS = {
+    "retired-sources-v1": {
+        "path": "2026-10-19_retired-sources/00_source_retired_at.sql",
+        "canonical_file": DEFAULT_MIGRATIONS / "2026-10-19_retired-sources" / "00_source_retired_at.sql",
+        "checker": lambda con: any(
+            row[1] == "source_retired_at" and row[2].upper() == "TEXT"
+            for row in con.execute("pragma table_info(anime)")
+        ),
+    },
     "user-library-state-v1": {
         "path": "2026-07-09_zzzzz-user-library-state/00_add_user_library_state.sql",
         "canonical_file": DEFAULT_MIGRATIONS

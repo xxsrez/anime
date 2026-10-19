@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anime Catalog — сканер AnimeGo и Kinogoo",
-  "version": "0.5.4",
+  "version": "0.5.6",
   "description": "Находит тайтлы и серии AnimeGo и новые серии добавленных сериалов Kinogoo через браузер пользователя.",
   "permissions": [
     "storage",
@@ -12,6 +12,7 @@
     "https://anime-srez.up.railway.app/*"
   ],
   "optional_host_permissions": [
+    "https://api.yani.tv/*",
     "https://animego.me/*",
     "https://kinogoo.fm/*",
     "https://api.nextembed.ws/*"

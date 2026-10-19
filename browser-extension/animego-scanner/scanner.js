@@ -23,6 +23,9 @@ const APP_ORIGINS = new Set([
 ]);
 const UPSTREAM_BASE = "https://animego.me";
 const MAX_LOG_ENTRIES = 200;
+const YUMMY_ORIGIN = "https://api.yani.tv/*";
+const API_TIMEOUT_MS = 45000;
+const RECOVERY_TIMEOUT_MS = 15000;
 
 class BlockedError extends Error {
   constructor(message, status = null) {
@@ -74,6 +77,9 @@ const elements = Object.fromEntries(
     "status",
     "job-label",
     "log",
+    "start-partial",
+    "start-full",
+    "launch-status",
   ].map((id) => [id, document.getElementById(id)]),
 );
 
@@ -84,6 +90,30 @@ let currentRequest = null;
 let stopFinalization = null;
 let generation = 0;
 let lastUpstreamRequestAt = 0;
+let creatingScan = false;
+
+function renderLaunch() {
+  const busy = creatingScan || (checkpoint && !["completed", "stopped"].includes(checkpoint.status));
+  elements["start-partial"].disabled = Boolean(busy);
+  elements["start-full"].disabled = Boolean(busy);
+}
+
+async function startNewScan(mode) {
+  if (creatingScan || (checkpoint && !["completed", "stopped"].includes(checkpoint.status))) return;
+  creatingScan = true;
+  renderLaunch();
+  elements["launch-status"].textContent = "Готовим задание…";
+  try {
+    const response = await extensionApi.runtime.sendMessage({ type: "animego-scanner-create", mode });
+    if (!response?.ok) throw new Error(response?.error || "Не удалось запустить скан.");
+    elements["launch-status"].textContent = response.empty ? response.message : "";
+  } catch (error) {
+    elements["launch-status"].textContent = error.message;
+  } finally {
+    creatingScan = false;
+    renderLaunch();
+  }
+}
 
 function nowTime() {
   return new Intl.DateTimeFormat("ru", {
@@ -174,6 +204,7 @@ function statusText(status) {
 }
 
 function render() {
+  renderLaunch();
   if (!session || !checkpoint) {
     return;
   }
@@ -284,12 +315,12 @@ async function loadSession({ announce = true } = {}) {
   if (!validPayload(nextSession?.payload)) {
     const granted = await hasAnimeGoHostPermission(extensionApi);
     elements.subtitle.textContent = granted
-      ? "Доступ готов. Вернитесь в Anime Catalog, чтобы запустить скан."
+      ? "Выберите быстрый или полный скан. Вкладка Anime Catalog должна быть открыта."
       : "Сначала разрешите узкий доступ только к AnimeGo.";
     elements["grant-access"].hidden = granted;
     elements["grant-access"].disabled = granted;
     elements.status.textContent = granted
-      ? "Вернитесь в Anime Catalog — доступ к AnimeGo уже выдан."
+      ? "Готово к запуску"
       : "Разрешите доступ, затем скан запустится автоматически.";
     elements.status.className = granted ? "status success" : "status error";
     elements["current-title"].textContent = granted
@@ -297,7 +328,7 @@ async function loadSession({ announce = true } = {}) {
       : "Нужен доступ к AnimeGo";
     log(
       granted
-        ? "Доступ к AnimeGo уже выдан. Вернитесь в Anime Catalog."
+        ? "Доступ к AnimeGo уже выдан. Можно запустить скан здесь."
         : "Нажмите «Разрешить AnimeGo». Браузер запросит доступ только к animego.me.",
       granted ? "success" : "",
     );
@@ -439,6 +470,9 @@ function responseContent(response, label) {
 }
 
 async function collectTitle(task, runGeneration) {
+  if (task.source_retired) {
+    throw new UpstreamError("Исходная карточка удалена. Проверяем сохранённый альтернативный источник.", { status: 404 });
+  }
   if (task.source === "kinogoo") {
     if (!(await extensionApi.permissions.contains({ origins: KINOGOO_ORIGINS }))) {
       throw new PermissionError("Нужен доступ к kinogoo.fm и api.nextembed.ws");
@@ -499,6 +533,8 @@ async function collectTitle(task, runGeneration) {
 async function apiPost(path, body) {
   const controller = new AbortController();
   currentRequest = controller;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, API_TIMEOUT_MS);
   try {
     const response = await fetch(new URL(path, session.payload.origin), {
       method: "POST",
@@ -529,9 +565,11 @@ async function apiPost(path, body) {
     }
     return parsed;
   } catch (error) {
+    if (timedOut) throw new ApiError("Сервер не ответил за 45 секунд. Результат сохранён; нажмите «Продолжить» для повторной отправки.");
     if (error instanceof ApiError || error?.name === "AbortError") throw error;
     throw new ApiError(error?.message || "Не удалось отправить результат в Anime Catalog.");
   } finally {
+    clearTimeout(timer);
     if (currentRequest === controller) {
       currentRequest = null;
     }
@@ -588,7 +626,12 @@ async function processTask(task, index, runGeneration) {
       body.detail_html = await upstreamJson(url.pathname, runGeneration, { html: true });
     }
   }
-  await submitTaskResult(body, index, runGeneration);
+  const response = await submitTaskResult(body, index, runGeneration);
+  if (body.error) {
+    reportErrorResult(task, body.error, response);
+    render();
+    return;
+  }
   const episodes = body.episodes;
   if (episodes.length > 0) {
     log(`Добавлено новых серий: ${episodes.length}.`, "success");
@@ -607,14 +650,52 @@ async function submitTaskResult(body, index, runGeneration = generation) {
   checkpoint.pending_result = body;
   await saveCheckpoint();
   if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
-  const response = await apiPost(
+  let response = await apiPost(
     `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/results`, body,
   );
+  if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+    throw new DOMException("Остановлено", "AbortError");
+  }
+  if (response?.recovery_task) {
+    checkpoint.recovery_task = response.recovery_task;
+    await saveCheckpoint();
+    const url = new URL(response.recovery_task.url);
+    if (url.origin !== "https://api.yani.tv" || !url.pathname.startsWith("/anime/")) {
+      throw new ApiError("Сервер вернул недопустимый адрес запасного источника.");
+    }
+    if (!(await extensionApi.permissions.contains({ origins: [YUMMY_ORIGIN] }))) {
+      throw new PermissionError("Для проверки запасного источника разрешите доступ к api.yani.tv.");
+    }
+    log("AnimeGO вернул 404. Проверяем связанный тайтл на YummyAnime…");
+    elements.status.textContent = "Проверяем YummyAnime · до 15 секунд";
+    const controller = new AbortController();
+    currentRequest = controller;
+    const timer = setTimeout(() => controller.abort(), RECOVERY_TIMEOUT_MS);
+    try {
+      const upstream = await fetch(url, { signal: controller.signal, credentials: "omit", redirect: "error" });
+      if (!upstream.ok) throw new Error(`YummyAnime HTTP ${upstream.status}`);
+      body.recovery_response = await upstream.json();
+    } catch (error) {
+      if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) throw error;
+      body.recovery_error = true;
+      log("YummyAnime не ответил или вернул ошибку. Этот тайтл будет отмечен как непроверенный.", "error");
+    } finally {
+      clearTimeout(timer);
+      if (currentRequest === controller) currentRequest = null;
+    }
+    checkpoint.pending_result = body;
+    await saveCheckpoint();
+    if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+      throw new DOMException("Остановлено", "AbortError");
+    }
+    response = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/results`, body);
+  }
   if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
   updateCountersFromResponse(response, body.episodes);
   checkpoint.next_index = index + 1;
   checkpoint.current = null;
   checkpoint.pending_result = null;
+  checkpoint.recovery_task = null;
   await saveCheckpoint();
   return response;
 }
@@ -627,9 +708,14 @@ async function recordOrdinaryError(task, index, error) {
       episodes: [],
       error: message.slice(0, 1000),
       upstream_status: error instanceof UpstreamError ? error.status : null,
+      browser_recovery: true,
       selection_reason: task.selection_reason || null,
     }, index,
   );
+  reportErrorResult(task, message, response);
+}
+
+function reportErrorResult(task, message, response) {
   if (response?.result?.recovered_source) {
     log(`${taskTitle(task)}: AnimeGO недоступен; проверено и обновлено через ${response.result.recovered_source}.`, "success");
     return;
@@ -754,7 +840,8 @@ async function runScan() {
             message: "Проверка тайтла завершена; подробности в журнале сканера",
           });
         } catch (submitError) {
-          checkpoint.status = "error";
+          if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
+          checkpoint.status = submitError instanceof PermissionError ? "permission" : "error";
           checkpoint.current = null;
           await saveCheckpoint();
           render();
@@ -826,7 +913,9 @@ async function grantAnimeGoAccess() {
   elements.status.textContent = "Ожидаем разрешение браузера…";
   try {
     const task = session?.payload?.tasks?.[checkpoint?.next_index || 0];
-    const granted = task?.source === "kinogoo"
+    const granted = checkpoint?.recovery_task
+      ? await extensionApi.permissions.request({ origins: [YUMMY_ORIGIN] })
+      : task?.source === "kinogoo"
       ? await extensionApi.permissions.request({ origins: KINOGOO_ORIGINS })
       : await requestAnimeGoHostPermission(extensionApi);
     if (!granted) {
@@ -902,6 +991,10 @@ async function stopScan() {
   } finally {
     stopFinalization = null;
   }
+}
+
+for (const mode of ["partial", "full"]) {
+  elements[`start-${mode}`].addEventListener("click", () => startNewScan(mode));
 }
 
 elements.pause.addEventListener("click", () => {

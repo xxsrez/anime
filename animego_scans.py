@@ -494,7 +494,7 @@ def task_payloads(con, selected):
     tasks = []
     for anime_id, selection_reason in selected:
         row = con.execute(
-            "select id, title, url, source, fields_json from anime where id = ? and source in ('animego', 'kinogoo')",
+            "select id, title, url, source, fields_json, source_retired_at from anime where id = ? and source in ('animego', 'kinogoo')",
             (int(anime_id),),
         ).fetchone()
         if row is None:
@@ -503,7 +503,8 @@ def task_payloads(con, selected):
             {
                 "anime_id": int(row["id"]),
                 "title": row["title"],
-                "url": row["url"],
+                "url": None if row["source_retired_at"] else row["url"],
+                "source_retired": bool(row["source_retired_at"]),
                 "source": row["source"],
                 "season": int(json.loads(row["fields_json"] or "{}").get("Kinogoo season", 1)),
                 "known_episode_ids": [] if selection_reason == "full" else known_playable_episode_ids(con, row["id"]),
@@ -1322,7 +1323,29 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
     try:
         if alternative["source"] != "yummyanime" or not yummy.is_modern_yummyani_url(alternative["url"]):
             return None
-        fetched, _detail, episodes, providers = yummy.parse_modern_detail(alternative["url"])
+        if payload.get("browser_recovery") is True:
+            if "recovery_response" not in payload and not payload.get("recovery_error"):
+                slug = yummy.parse_modern_slug(alternative["url"])
+                return {"task": {
+                    "anime_id": alternative["id"],
+                    "url": f"{yummy.YUMMYANI_API_BASE}/anime/{yummy.quote(slug)}?need_videos=true",
+                }}
+            if payload.get("recovery_error"):
+                return {"error": "YummyAnime: браузер не смог получить данные; проверка не завершена."}
+            raw = payload["recovery_response"]
+            if not isinstance(raw, dict) or not isinstance(raw.get("response"), dict):
+                raise ValueError("invalid alternate API response")
+            data = raw["response"]
+            if yummy.internal_modern_anime_id(data.get("anime_id")) != int(alternative["id"]):
+                raise ValueError("alternate source identity changed")
+            counts = data.get("episodes") or {}
+            count = int(counts.get("count") or counts.get("aired") or 1)
+            videos = data.get("videos") or []
+            if not 0 < count <= MAX_RESULT_EPISODES or not isinstance(videos, list) or len(videos) > MAX_RESULT_PROVIDERS:
+                raise ValueError("alternate source payload exceeds scan limits")
+            fetched, _detail, episodes, providers = yummy.parse_modern_payload(data, alternative["url"])
+        else:
+            fetched, _detail, episodes, providers = yummy.parse_modern_detail(alternative["url"], timeout=3)
         if int(fetched["id"]) != int(alternative["id"]):
             raise ValueError("alternate source identity changed")
         snapshots = []
@@ -1344,6 +1367,8 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
 
 def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None, fallback_resolver=None):
     recovery = prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, fallback_resolver, now)
+    if recovery and recovery.get("task"):
+        return {"recovery_task": recovery["task"]}
     try:
         lock = DatabaseOperationLock(
             db_path,

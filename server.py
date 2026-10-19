@@ -2181,7 +2181,8 @@ def variant_from_item(item):
         "source_id": item.get("source_id"),
         "title": item.get("title"),
         "subtitle": item.get("subtitle"),
-        "url": item.get("url"),
+        "url": None if item.get("source_retired_at") else item.get("url"),
+        "source_retired_at": item.get("source_retired_at"),
         "year": item.get("year"),
         "scraped_at": item.get("scraped_at"),
         "source_count": item.get("source_count") or 0,
@@ -2191,6 +2192,7 @@ def variant_from_item(item):
 
 def source_sort_key(item):
     return (
+        bool(item.get("source_retired_at")),
         source_priority(item.get("source")),
         0 if (numeric(item.get("source_count")) or 0) > 0 else 1,
         -(best_score(item) or 0),
@@ -3603,6 +3605,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             a.cover_url,
             a.source,
             a.source_id,
+            a.source_retired_at,
             a.listing_score,
             a.aggregate_score,
             a.aggregate_count,
@@ -3638,6 +3641,9 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
     ).fetchall()
 
     items = rows_to_dicts(rows)
+    for item in items:
+        if item.get("source_retired_at"):
+            item["url"] = None
     external_refs = franchise_catalog.external_refs_by_anime_id(con)
     for item in items:
         item["_canonical_external_refs"] = [
@@ -3852,7 +3858,7 @@ def clone_catalog_item(item, include_search_fields=False, user_state_by_source_i
 def compact_catalog_variant(variant):
     return {
         key: variant.get(key)
-        for key in ("id", "source", "source_id", "title", "subtitle")
+        for key in ("id", "source", "source_id", "title", "subtitle", "source_retired_at")
         if variant.get(key) not in (None, "")
     }
 
@@ -5000,6 +5006,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
         sources.sort(key=lambda source: source_row_sort_key(source, source_ranking_context))
 
     detail = dict(anime)
+    if detail.get("source_retired_at"):
+        detail["url"] = None
     detail.update(state)
     detail["genres"] = [row["genre"] for row in genres]
     detail["dubbings"] = [row["dubbing"] for row in dubbings]

@@ -53,7 +53,7 @@ def absolute_url(url):
     return urljoin(BASE_URL, url) if url else None
 
 
-def fetch_text(url, referer=None, delay=0.0):
+def fetch_text(url, referer=None, delay=0.0, timeout=30):
     if delay:
         time.sleep(delay)
     headers = {"User-Agent": USER_AGENT}
@@ -63,7 +63,7 @@ def fetch_text(url, referer=None, delay=0.0):
     req = Request(target, headers=headers)
     with open_validated_url(
         req,
-        timeout=30,
+        timeout=timeout,
         allowed_hosts=(
             "yummyanime.tv",
             "yummyani.me",
@@ -75,8 +75,8 @@ def fetch_text(url, referer=None, delay=0.0):
         return response.read().decode("utf-8", "replace")
 
 
-def fetch_json(url, referer=None, delay=0.0):
-    return json.loads(fetch_text(url, referer=referer, delay=delay))
+def fetch_json(url, referer=None, delay=0.0, timeout=30):
+    return json.loads(fetch_text(url, referer=referer, delay=delay, timeout=timeout))
 
 
 def parse_yummy_source_id(url):
@@ -180,12 +180,12 @@ def modern_slug_candidates(slug):
         yield re.sub(r"-\d{4}-\d{2}-\d{2}$", "", slug)
 
 
-def fetch_modern_anime(slug, include_embed_urls, delay=0.0):
+def fetch_modern_anime(slug, include_embed_urls, delay=0.0, timeout=30):
     last_error = None
     for candidate in modern_slug_candidates(slug):
         api_url = f"{YUMMYANI_API_BASE}/anime/{quote(candidate)}?need_videos={'true' if include_embed_urls else 'false'}"
         try:
-            payload = fetch_json(api_url, delay=delay)
+            payload = fetch_json(api_url, delay=delay, timeout=timeout)
         except Exception as exc:
             last_error = exc
             continue
@@ -413,9 +413,16 @@ def expand_legacy_provider_urls(player, embed_url, page_url, episode_count, dela
     return [{"episode_number": episode_number, "embed_url": embed_url}]
 
 
-def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0):
+def parse_modern_detail(page_url, include_embed_urls=True, delay=0.0, timeout=30):
     slug = parse_modern_slug(page_url)
-    anime, api_url = fetch_modern_anime(slug, include_embed_urls, delay=delay)
+    anime, api_url = fetch_modern_anime(slug, include_embed_urls, delay=delay, timeout=timeout)
+    return parse_modern_payload(anime, page_url, api_url)
+
+
+def parse_modern_payload(anime, page_url, api_url=None):
+    """Parse the same public API payload fetched by a browser-side scanner."""
+    slug = parse_modern_slug(page_url)
+    api_url = api_url or f"{YUMMYANI_API_BASE}/anime/{quote(slug)}?need_videos=true"
     source_id = anime.get("anime_id")
     if source_id is None:
         raise ValueError(f"Cannot parse YummyAni id: {page_url}")

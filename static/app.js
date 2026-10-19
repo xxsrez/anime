@@ -1195,7 +1195,10 @@ function itemSources(item) {
 }
 
 function sourceLabelList(item) {
-  return itemSources(item).map(sourceLabel).filter(Boolean).join(" · ");
+  return itemSources(item).map(source => {
+    const variants = (item.source_variants || []).filter(variant => variant.source === source);
+    return sourceLabel(source) + (variants.length && variants.every(variant => variant.source_retired_at) ? " (архив)" : "");
+  }).filter(Boolean).join(" · ");
 }
 
 function sourceVariants(detail) {
@@ -3788,7 +3791,7 @@ function renderContentSourceOptions() {
     const option = document.createElement("option");
     option.value = variant.source;
     const available = variant.available_episode_count || 0;
-    option.textContent = `${sourceLabel(variant.source)} · ${available} видео`;
+    option.textContent = `${sourceLabel(variant.source)}${variant.source_retired ? " (архив)" : ""} · ${available} видео`;
     option.selected = variant.source === state.selectedContentSource;
     el.contentSource.append(option);
   }

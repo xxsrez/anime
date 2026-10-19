@@ -128,7 +128,33 @@
       });
   });
 
-  extensionApi?.runtime?.onMessage?.addListener((message) => {
+  extensionApi?.runtime?.onMessage?.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "animego-scanner-create-job") {
+      if (!ALLOWED_ORIGINS.has(location.origin) || !["partial", "full"].includes(message.mode)) {
+        sendResponse({ ok: false, error: "Некорректный запрос сканирования." });
+        return false;
+      }
+      (async () => {
+        const response = await fetch("/api/animego-scans", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: message.mode }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || payload.message || `Ошибка сервера: ${response.status}`);
+        const tasks = payload.tasks || payload.items || [];
+        if (!tasks.length && !payload.discovery) {
+          return { ok: true, empty: true, message: payload.message || "Сейчас нечего проверять — каталог актуален." };
+        }
+        return { ok: true, detail: {
+          job_id: payload.job_id ?? payload.job?.id ?? payload.job,
+          token: payload.token || payload.job_token,
+          tasks, discovery: payload.discovery === true,
+          origin: location.origin, mode: message.mode,
+        } };
+      })().then(sendResponse).catch(error => sendResponse({ ok: false, error: error.message }));
+      return true;
+    }
     if (!message || !FORWARDED_EVENTS.has(message.type)) {
       return;
     }

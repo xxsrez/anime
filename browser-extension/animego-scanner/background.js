@@ -184,7 +184,48 @@ async function forwardPermissionGranted(sender) {
   return { ok: true };
 }
 
+let creatingScan = false;
+
+async function createScan(message, sender) {
+  if (!isScannerPage(sender)) throw new Error("Некорректный источник запуска скана.");
+  if (!["partial", "full"].includes(message.mode)) throw new Error("Неизвестный режим скана.");
+  if (creatingScan) throw new Error("Задание уже создаётся.");
+  creatingScan = true;
+  try {
+    const stored = await extensionApi.storage.local.get([STORAGE_KEY, PERMISSION_SOURCE_KEY]);
+    const previous = stored[STORAGE_KEY];
+    if (previous?.checkpoint && !["completed", "stopped"].includes(previous.checkpoint.status)) {
+      throw new Error("Сначала завершите или остановите текущий скан.");
+    }
+    const origin = previous?.payload?.origin || stored[PERMISSION_SOURCE_KEY]?.origin;
+    const tabs = await extensionApi.tabs.query({});
+    const candidates = tabs.filter(tab => APP_ORIGINS.has(senderOrigin({ tab }))
+      && (!origin || senderOrigin({ tab }) === origin));
+    const tab = candidates.find(tab => tab.id === previous?.sourceTabId) || candidates[0];
+    if (!tab) throw new Error("Откройте Anime Catalog и войдите в аккаунт, затем повторите скан здесь.");
+    let response;
+    try {
+      response = await extensionApi.tabs.sendMessage(tab.id, {
+        type: "animego-scanner-create-job", mode: message.mode,
+      });
+    } catch (_error) {
+      throw new Error("Обновите открытую страницу Anime Catalog, затем повторите скан здесь.");
+    }
+    if (!response?.ok) throw new Error(response?.error || "Не удалось создать задание.");
+    if (response.empty) return response;
+    await startScan({ detail: response.detail }, { tab });
+    return { ok: true };
+  } finally {
+    creatingScan = false;
+  }
+}
+
 extensionApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "animego-scanner-create") {
+    createScan(message, sender).then(sendResponse)
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
   if (message?.type === "animego-scanner-prepare") {
     prepareAnimeGoAccess(sender)
       .then(sendResponse)
