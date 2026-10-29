@@ -168,6 +168,16 @@ data. A snapshot also expires when its earliest visible recent-update event
 leaves the seven-day window, so old badges disappear on the next catalog or
 detail request even without another database write.
 
+The authenticated app polls `/api/catalog-version` every 30 seconds while its
+tab is visible and immediately when it becomes visible again. The endpoint
+reuses the catalog revision marker and sends an empty `204` when the supplied
+version is current and the marker is clean. A dirty marker always causes a
+refresh, including when its generation has not changed again during a scan.
+The app retains the observed version until its refresh succeeds, and preserves
+the selected episode and player where possible. Poll requests do not update
+session activity or log successful empty responses. This synchronizes shared
+catalog data; it is not a separate synchronization channel for user state.
+
 ## API
 
 `GET /api/health`

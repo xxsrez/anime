@@ -69,6 +69,7 @@ SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS = 5 * 60
 GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
 GOOGLE_AUTH_STATE_FALLBACK_SECRET = secrets.token_bytes(32)
+CATALOG_POLL_EPOCH = secrets.token_hex(8)
 GOOGLE_AUTH_STATE_SECRET_ENV = "ANIME_GOOGLE_AUTH_STATE_SECRET"
 GOOGLE_AUTH_STATE_ERROR = "Не удалось подтвердить ответ Google. Попробуйте войти еще раз."
 LOGIN_HANDOFF_TTL_SECONDS = 60
@@ -6472,7 +6473,7 @@ def authenticate_google_credential(credential, db_path=None):
         con.close()
 
 
-def get_session_user(token, db_path=None):
+def get_session_user(token, db_path=None, *, touch=True):
     if not token:
         return None
     con = connect(db_path)
@@ -6502,7 +6503,7 @@ def get_session_user(token, db_path=None):
                 dt.datetime.now(dt.timezone.utc)
                 - dt.timedelta(seconds=SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS)
             ).isoformat(timespec="seconds")
-            if not row["session_last_seen_at"] or row["session_last_seen_at"] < cutoff:
+            if touch and (not row["session_last_seen_at"] or row["session_last_seen_at"] < cutoff):
                 con.execute(
                     """
                     update sessions
@@ -7630,6 +7631,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         parsed = urlparse(getattr(self, "path", "") or "")
+        if parsed.path == "/api/catalog-version" and getattr(self, "_last_status", None) == 204:
+            return
         server_logger().info(
             "remote=%s method=%s path=%s status=%s",
             self.client_address[0] if self.client_address else "-",
@@ -7659,6 +7662,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def log_request_performance(self, started_at, exc=None):
         parsed = urlparse(getattr(self, "path", "") or "")
+        if parsed.path == "/api/catalog-version" and getattr(self, "_last_status", None) == 204 and exc is None:
+            return
         event = {
             "received_at": now_iso(),
             "event": "server_request",
@@ -7978,7 +7983,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self._current_user = None
         self._current_session_token = None
         for token in self.session_tokens():
-            user = get_session_user(token, self.server.db_path)
+            is_catalog_poll = urlparse(getattr(self, "path", "") or "").path == "/api/catalog-version"
+            user = get_session_user(token, self.server.db_path, touch=not is_catalog_poll)
             if user:
                 self._current_user = user
                 self._current_session_token = token
@@ -8301,6 +8307,23 @@ class AnimeHandler(BaseHTTPRequestHandler):
         if path == "/api/app-config":
             manifest = json.loads((SCANNER_EXTENSION_DIR / "manifest.json").read_text(encoding="utf-8"))
             self.send_json({"player_hosts": list(PLAYER_HOSTS), "scanner_version": manifest["version"]})
+            return
+
+        if path == "/api/catalog-version":
+            token = catalog_revision_token(resolve_db_path(self.server.db_path))
+            if token is None:
+                self.send_json({"error": "catalog version unavailable"}, 503)
+                return
+            version = f"{CATALOG_POLL_EPOCH}:{token[0]}:{token[1]}"
+            since = parse_qs(parsed.query).get("since", [""])[0]
+            if since == version and token[2] == 0:
+                self._last_response_bytes = 0
+                self.send_response(204)
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+            else:
+                self.send_json({"version": version})
             return
 
         if path == "/api/animego-scanner-extension":
