@@ -69,11 +69,13 @@
       if (!groups.has(source)) {
         groups.set(source, {
           source,
+          source_retired: true,
           source_count: 0,
           available_episode_count: 0,
         });
       }
       const group = groups.get(source);
+      group.source_retired = group.source_retired && Boolean(variant.source_retired_at);
       group.source_count += Math.max(0, Number(variant.source_count) || 0);
       group.available_episode_count = Math.max(
         group.available_episode_count,
@@ -89,7 +91,10 @@
         )).length;
       }
     }
-    return [...groups.values()];
+    return [...groups.values()].map(group => {
+      if (!group.source_retired) delete group.source_retired;
+      return group;
+    });
   }
 
   function sourcePreference(source) {

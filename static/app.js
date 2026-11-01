@@ -278,7 +278,7 @@ function markPerformanceCheckpoint(name, context = {}) {
 
 function recordApiPerformance(path, details) {
   const normalizedPath = sameOriginPath(path);
-  if (!normalizedPath || normalizedPath === PERFORMANCE_ENDPOINT || !normalizedPath.startsWith("/api/")) {
+  if (!normalizedPath || normalizedPath === PERFORMANCE_ENDPOINT || normalizedPath.startsWith("/api/catalog-version") || !normalizedPath.startsWith("/api/")) {
     return;
   }
   pagePerformance.apiRequests.push({
@@ -395,6 +395,7 @@ async function api(path, options = {}) {
       window.location.replace(`/login?next=${encodeURIComponent(next)}`);
       throw new Error("authentication required");
     }
+    if (response.status === 204) return {};
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(payload?.error || `${response.status} ${response.statusText}`);
@@ -1195,7 +1196,10 @@ function itemSources(item) {
 }
 
 function sourceLabelList(item) {
-  return itemSources(item).map(sourceLabel).filter(Boolean).join(" · ");
+  return itemSources(item).map(source => {
+    const variants = (item.source_variants || []).filter(variant => variant.source === source);
+    return sourceLabel(source) + (variants.length && variants.every(variant => variant.source_retired_at) ? " (архив)" : "");
+  }).filter(Boolean).join(" · ");
 }
 
 function sourceVariants(detail) {
@@ -3788,7 +3792,7 @@ function renderContentSourceOptions() {
     const option = document.createElement("option");
     option.value = variant.source;
     const available = variant.available_episode_count || 0;
-    option.textContent = `${sourceLabel(variant.source)} · ${available} видео`;
+    option.textContent = `${sourceLabel(variant.source)}${variant.source_retired ? " (архив)" : ""} · ${available} видео`;
     option.selected = variant.source === state.selectedContentSource;
     el.contentSource.append(option);
   }
@@ -5657,9 +5661,68 @@ function initializeRedesign() {
   showScreen(route.animeId ? "title" : route.franchiseSlug ? "franchise" : state.viewMode === "maintenance" ? "maintenance" : "list");
 }
 
+async function refreshPolledCatalog() {
+  if (userStateSaveQueue.pending()) throw new Error("User state is being saved");
+  const revision = state.userStateRevision;
+  const detailRequestId = state.detailRequestId;
+  const franchiseRequestId = state.franchiseRequestId;
+  const payload = await api("/api/anime");
+  const reloadSearch = state.searchFieldsLoaded || Boolean(state.searchFieldsLoading);
+  if (state.searchFieldsLoading) await state.searchFieldsLoading.catch(() => {});
+  if (userStateSaveQueue.pending() || revision !== state.userStateRevision) {
+    throw new Error("User state changed during catalog refresh");
+  }
+  state.anime = Array.isArray(payload.items) ? payload.items : [];
+  state.searchFieldsById = null;
+  state.searchFieldsLoaded = false;
+  if (reloadSearch) await ensureSearchFields();
+  if (userStateSaveQueue.pending() || revision !== state.userStateRevision) {
+    throw new Error("User state changed during catalog refresh");
+  }
+  applyFilter({ selectFirst: false });
+  resetContentUpdatesForQuery();
+  invalidateRecommendations();
+  if (isUpdatesView()) loadContentUpdatesForView({ force: true });
+  if (isRecommendationView()) loadRecommendationsForView({ force: true, selectFirst: false });
+
+  if (state.screen === "franchise" && state.franchiseSlug && franchiseRequestId === state.franchiseRequestId) {
+    await openFranchise(state.franchiseSlug, { updateUrl: false });
+  } else if (state.screen === "title" && state.detail && detailRequestId === state.detailRequestId) {
+    const linkState = {
+      episodeId: state.selectedEpisodeId,
+      contentSource: state.selectedContentSource,
+      translation: state.selectedTranslation,
+      provider: state.selectedSourceId,
+    };
+    try {
+      await selectAnime(state.detail.slug || state.detail.id, { linkState, updateUrl: false });
+    } catch (error) {
+      if (error?.status !== 404 || state.detailRequestId !== detailRequestId + 1) throw error;
+      state.detail = null;
+      state.selectedAnimeId = null;
+      clearPlayer("Тайтл больше недоступен");
+      showScreen("list");
+      syncCatalogUrl();
+    }
+  }
+}
+
+const catalogPoller = window.catalogPoll.createCatalogPoller({
+  request: version => api(`/api/catalog-version${version ? `?since=${encodeURIComponent(version)}` : ""}`),
+  refresh: refreshPolledCatalog,
+  isVisible: () => !document.hidden,
+  setTimer: (callback, delay) => window.setTimeout(callback, delay),
+  clearTimer: timer => window.clearTimeout(timer),
+});
+document.addEventListener("visibilitychange", () => catalogPoller.visibilityChanged());
+window.addEventListener("online", () => catalogPoller.visibilityChanged());
+
 async function boot() {
   markPerformanceCheckpoint("boot_start");
   configurePlayerIframe(el.player);
+  // Read the version before loading the catalog so a write during boot is
+  // observed by the immediate check after the initial render.
+  const initialVersion = await api("/api/catalog-version").then(result => result.version).catch(() => null);
   const continuePromise = api("/api/continue-watching").catch(error => {
     reportClientError(error, { action: "load continue watching" });
     return { item: null };
@@ -5695,6 +5758,7 @@ async function boot() {
   markPerformanceCheckpoint("initial_detail_loaded", { selected_anime_id: state.selectedAnimeId });
   markPerformanceCheckpoint("boot_complete");
   reportHomePerformance("success");
+  catalogPoller.start(initialVersion);
 }
 
 initializeRedesign();

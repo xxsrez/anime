@@ -494,7 +494,7 @@ def task_payloads(con, selected):
     tasks = []
     for anime_id, selection_reason in selected:
         row = con.execute(
-            "select id, title, url, source, fields_json from anime where id = ? and source in ('animego', 'kinogoo')",
+            "select id, title, url, source, fields_json, source_retired_at from anime where id = ? and source in ('animego', 'kinogoo')",
             (int(anime_id),),
         ).fetchone()
         if row is None:
@@ -503,7 +503,8 @@ def task_payloads(con, selected):
             {
                 "anime_id": int(row["id"]),
                 "title": row["title"],
-                "url": row["url"],
+                "url": None if row["source_retired_at"] else row["url"],
+                "source_retired": bool(row["source_retired_at"]),
                 "source": row["source"],
                 "season": int(json.loads(row["fields_json"] or "{}").get("Kinogoo season", 1)),
                 "known_episode_ids": [] if selection_reason == "full" else known_playable_episode_ids(con, row["id"]),

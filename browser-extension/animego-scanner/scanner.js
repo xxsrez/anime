@@ -578,6 +578,9 @@ function responseContent(response, label) {
 }
 
 async function collectTitle(task, runGeneration) {
+  if (task.source_retired) {
+    throw new UpstreamError("Исходная карточка удалена. Проверяем сохранённый альтернативный источник.", { status: 404 });
+  }
   if (task.source === "kinogoo") {
     if (!(await extensionApi.permissions.contains({ origins: KINOGOO_ORIGINS }))) {
       throw new PermissionError("Нужен доступ к kinogoo.fm и api.nextembed.ws");

@@ -7,7 +7,7 @@ import { shouldRestartAfterReload } from "./scan-state.js";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true }) {
+async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true }) {
   const element = () => ({
     children: [], style: {}, attributes: {}, listeners: {},
     append(...items) { this.children.push(...items); },
@@ -19,6 +19,7 @@ async function scannerHarness({ stored = null, storedTheme, fetch, discovery = f
   const elements = new Map();
   const payload = { job_id: "1", origin: "http://127.0.0.1:8765", token: "fixture-token", mode: "full", tasks: [{ anime_id: 100, title: "Fixture", url: "https://animego.me/anime/fixture-100" }] };
   if (legacy) delete payload.tasks[0].url;
+  if (retired) { payload.tasks[0].source_retired = true; payload.tasks[0].url = null; }
   if (discovery) { payload.discovery = true; payload.tasks = []; }
   let storage = stored || {
     payload, checkpoint: { job_id: "1", status: "paused" },
@@ -592,6 +593,19 @@ test("temporary API failure keeps retry available and explains the error after r
   assert.equal(reloaded.elements.get("pause").disabled, false);
   assert.equal(reloaded.elements.get("start-partial").disabled, true);
   assert.equal(reloaded.elements.get("status").textContent, "Temporarily unavailable");
+});
+
+test("retired AnimeGO source goes directly to recovery without requesting deleted URLs", async () => {
+  let body;
+  const h = await scannerHarness({ retired: true, fetch: async (url, options) => {
+    assert.equal(url.origin, "http://127.0.0.1:8765");
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return { ok: true, text: async () => JSON.stringify({ job: { checked_items: 1 }, result: { recovered_source: "YummyAnime" } }) };
+  } });
+  await h.driver.run();
+  assert.equal(body.browser_recovery, true);
+  assert.equal(body.upstream_status, 404);
+  assert.equal(h.driver.state.status, "completed");
 });
 
 test("404 recovery uses browser API and preserves source response for server validation", async () => {

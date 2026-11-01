@@ -36,7 +36,7 @@ def needs_player_backfill(row):
 
 def playable_missing_rows(con, source=None, limit=0, anime_ids=None):
     params = []
-    where = []
+    where = ["a.source_retired_at is null"]
     if source:
         where.append("a.source = ?")
         params.append(source)

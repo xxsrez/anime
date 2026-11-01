@@ -1586,6 +1586,63 @@ assert.deepStrictEqual(rankedIds("zz"), []);
 
             self.assertEqual(server.get_anime_detail(anime_id, db_path)["title"], "New Title")
 
+    def test_catalog_version_poll_reports_committed_changes_and_requires_auth(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            self.seed_watchable_title(db_path, anime_id=143)
+            user_id = self.create_google_user(db_path, "catalog-poll", "poll@example.com")
+            token = self.create_session(db_path, user_id)
+            headers = {"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"}
+            status, _, _ = self.request_test_server(db_path, "GET", "/api/catalog-version")
+            self.assertEqual(status, 401)
+            server.get_catalog_cache(db_path)
+            status, _, body = self.request_test_server(db_path, "GET", "/api/catalog-version", headers)
+            self.assertEqual(status, 200)
+            version = json.loads(body)["version"]
+            path = "/api/catalog-version?" + urlencode({"since": version})
+            status, _, body = self.request_test_server(db_path, "GET", path, headers)
+            self.assertEqual((status, body), (204, b""))
+
+            con = server.connect(db_path)
+            try:
+                con.execute("update sessions set last_seen_at = '2000-01-01T00:00:00+00:00'")
+                con.commit()
+            finally:
+                con.close()
+            status, _, _ = self.request_test_server(db_path, "GET", path, headers)
+            self.assertEqual(status, 204)
+            con = server.connect(db_path)
+            try:
+                self.assertEqual(
+                    con.execute("select last_seen_at from sessions").fetchone()[0],
+                    "2000-01-01T00:00:00+00:00",
+                )
+            finally:
+                con.close()
+
+            con = server.connect(db_path)
+            try:
+                con.execute("update anime set title = 'Changed' where id = 143")
+                con.rollback()
+                status, _, _ = self.request_test_server(db_path, "GET", path, headers)
+                self.assertEqual(status, 204)
+                con.execute("update anime set title = 'Changed' where id = 143")
+                con.commit()
+            finally:
+                con.close()
+            status, _, body = self.request_test_server(db_path, "GET", path, headers)
+            self.assertEqual(status, 200)
+            changed = json.loads(body)["version"]
+            self.assertNotEqual(version, changed)
+            # Dirty remains actionable even when another write does not bump
+            # generation until the server rebuilds its catalog snapshot.
+            dirty_path = "/api/catalog-version?" + urlencode({"since": changed})
+            status, _, _ = self.request_test_server(db_path, "GET", dirty_path, headers)
+            self.assertEqual(status, 200)
+            server.get_catalog_cache(db_path)
+            status, _, body = self.request_test_server(db_path, "GET", dirty_path, headers)
+            self.assertEqual((status, body), (204, b""))
+
     def test_catalog_cache_token_reuses_request_connection(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"

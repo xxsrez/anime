@@ -18,6 +18,29 @@ import server
 
 
 class AnimeGoScansTest(unittest.TestCase):
+    def test_retired_source_keeps_episodes_but_hides_link_and_prefers_live_variant(self):
+        self.add_title(701, title="Retired source fixture", playable=True)
+        self.add_title(20000701, title="Retired source fixture", source="yummyanime", playable=True)
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set source_retired_at='2026-10-19T00:00:00Z' where id=701")
+            con.execute("update anime set url='https://ru.yummyani.me/catalog/item/fixture',source_id='yummyani:701' where id=20000701")
+            con.commit()
+            task = animego_scans.task_payloads(con, [(701, "stale")])[0]
+            self.assertTrue(task["source_retired"])
+            self.assertIsNone(task["url"])
+            import sync_videos
+            import backfill_players
+            self.assertNotIn(701, [r["id"] for r in sync_videos.animego_ongoing_rows(con)])
+            self.assertNotIn(701, [r["id"] for r in backfill_players.playable_missing_rows(con)])
+        server.invalidate_catalog_cache(self.db_path)
+        detail = server.get_anime_detail(701, self.db_path)
+        self.assertEqual(detail["id"], 20000701)
+        self.assertEqual(set(detail["source_member_ids"]), {701, 20000701})
+        archived = next(v for v in detail["source_variants"] if v["id"] == 701)
+        self.assertIsNone(archived["url"])
+        self.assertTrue(archived["source_retired_at"])
+        self.assertTrue(any(s["source_anime_id"] == 701 for sources in detail["sources_by_episode"].values() for s in sources))
+
     def test_browser_recovery_handshake_does_not_fetch_or_mark_item_checked(self):
         self.add_title(3998)
         self.add_title(20026525, source="yummyanime")

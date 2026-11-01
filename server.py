@@ -69,6 +69,7 @@ SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS = 5 * 60
 GOOGLE_AUTH_STATE_TTL_SECONDS = 10 * 60
 GOOGLE_AUTH_STATE_FALLBACK_SECRET = secrets.token_bytes(32)
+CATALOG_POLL_EPOCH = secrets.token_hex(8)
 GOOGLE_AUTH_STATE_SECRET_ENV = "ANIME_GOOGLE_AUTH_STATE_SECRET"
 GOOGLE_AUTH_STATE_ERROR = "Не удалось подтвердить ответ Google. Попробуйте войти еще раз."
 LOGIN_HANDOFF_TTL_SECONDS = 60
@@ -2219,7 +2220,8 @@ def variant_from_item(item):
         "source_id": item.get("source_id"),
         "title": item.get("title"),
         "subtitle": item.get("subtitle"),
-        "url": item.get("url"),
+        "url": None if item.get("source_retired_at") else item.get("url"),
+        "source_retired_at": item.get("source_retired_at"),
         "year": item.get("year"),
         "scraped_at": item.get("scraped_at"),
         "source_count": item.get("source_count") or 0,
@@ -2229,6 +2231,7 @@ def variant_from_item(item):
 
 def source_sort_key(item):
     return (
+        bool(item.get("source_retired_at")),
         source_priority(item.get("source")),
         0 if (numeric(item.get("source_count")) or 0) > 0 else 1,
         -(best_score(item) or 0),
@@ -3643,6 +3646,7 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             a.cover_url,
             a.source,
             a.source_id,
+            a.source_retired_at,
             a.listing_score,
             a.aggregate_score,
             a.aggregate_count,
@@ -3678,6 +3682,9 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
     ).fetchall()
 
     items = rows_to_dicts(rows)
+    for item in items:
+        if item.get("source_retired_at"):
+            item["url"] = None
     external_refs = franchise_catalog.external_refs_by_anime_id(con)
     for item in items:
         item["_canonical_external_refs"] = [
@@ -3894,7 +3901,7 @@ def clone_catalog_item(item, include_search_fields=False, user_state_by_source_i
 def compact_catalog_variant(variant):
     return {
         key: variant.get(key)
-        for key in ("id", "source", "source_id", "title", "subtitle")
+        for key in ("id", "source", "source_id", "title", "subtitle", "source_retired_at")
         if variant.get(key) not in (None, "")
     }
 
@@ -5046,6 +5053,8 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
         sources.sort(key=lambda source: source_row_sort_key(source, source_ranking_context))
 
     detail = dict(anime)
+    if detail.get("source_retired_at"):
+        detail["url"] = None
     detail.update(state)
     detail["genres"] = [row["genre"] for row in genres]
     detail["dubbings"] = [row["dubbing"] for row in dubbings]
@@ -6632,7 +6641,7 @@ def authenticate_google_credential(credential, db_path=None):
         con.close()
 
 
-def get_session_user(token, db_path=None):
+def get_session_user(token, db_path=None, *, touch=True):
     if not token:
         return None
     con = connect(db_path)
@@ -6662,7 +6671,7 @@ def get_session_user(token, db_path=None):
                 dt.datetime.now(dt.timezone.utc)
                 - dt.timedelta(seconds=SESSION_LAST_SEEN_WRITE_INTERVAL_SECONDS)
             ).isoformat(timespec="seconds")
-            if not row["session_last_seen_at"] or row["session_last_seen_at"] < cutoff:
+            if touch and (not row["session_last_seen_at"] or row["session_last_seen_at"] < cutoff):
                 con.execute(
                     """
                     update sessions
@@ -7790,6 +7799,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         parsed = urlparse(getattr(self, "path", "") or "")
+        if parsed.path == "/api/catalog-version" and getattr(self, "_last_status", None) == 204:
+            return
         server_logger().info(
             "remote=%s method=%s path=%s status=%s",
             self.client_address[0] if self.client_address else "-",
@@ -7819,6 +7830,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
 
     def log_request_performance(self, started_at, exc=None):
         parsed = urlparse(getattr(self, "path", "") or "")
+        if parsed.path == "/api/catalog-version" and getattr(self, "_last_status", None) == 204 and exc is None:
+            return
         event = {
             "received_at": now_iso(),
             "event": "server_request",
@@ -8138,7 +8151,8 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self._current_user = None
         self._current_session_token = None
         for token in self.session_tokens():
-            user = get_session_user(token, self.server.db_path)
+            is_catalog_poll = urlparse(getattr(self, "path", "") or "").path == "/api/catalog-version"
+            user = get_session_user(token, self.server.db_path, touch=not is_catalog_poll)
             if user:
                 self._current_user = user
                 self._current_session_token = token
@@ -8461,6 +8475,23 @@ class AnimeHandler(BaseHTTPRequestHandler):
         if path == "/api/app-config":
             manifest = json.loads((SCANNER_EXTENSION_DIR / "manifest.json").read_text(encoding="utf-8"))
             self.send_json({"player_hosts": list(PLAYER_HOSTS), "scanner_version": manifest["version"]})
+            return
+
+        if path == "/api/catalog-version":
+            token = catalog_revision_token(resolve_db_path(self.server.db_path))
+            if token is None:
+                self.send_json({"error": "catalog version unavailable"}, 503)
+                return
+            version = f"{CATALOG_POLL_EPOCH}:{token[0]}:{token[1]}"
+            since = parse_qs(parsed.query).get("since", [""])[0]
+            if since == version and token[2] == 0:
+                self._last_response_bytes = 0
+                self.send_response(204)
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+            else:
+                self.send_json({"version": version})
             return
 
         if path == "/api/animego-scanner-extension":

@@ -436,6 +436,7 @@ def init_db(db_path):
             "schema_json": "text",
             "source": "text",
             "source_id": "text",
+            "source_retired_at": "text",
             "editorial_status": "text not null default 'legacy'",
         },
     )
