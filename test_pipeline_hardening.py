@@ -1781,6 +1781,19 @@ class PipelineHardeningTest(unittest.TestCase):
             out_dir = Path(tmpdir) / "current"
             lock_path = Path(tmpdir) / "backup.operation.lock"
             user_id = self.make_backup_fixture(db_path)
+            con = server.connect(db_path)
+            con.execute(
+                "insert into user_episode_cycle_history "
+                "(user_id, anime_id, episode_id, cycle_event_id, completed_at, engaged_seconds) "
+                "values (?, 101, 101001, 1, null, 42)", (user_id,),
+            )
+            con.execute(
+                "insert into user_manual_episode_completions "
+                "(user_id, operation_id, anime_id, episode_id, member_ids, before_state, after_state, created_at) "
+                "values (?, 'backup-manual', 101, 101001, '[101]', '{}', '{}', '2026-01-01')", (user_id,),
+            )
+            con.commit()
+            con.close()
             args = SimpleNamespace(
                 db=str(db_path),
                 out=str(out_dir),
@@ -1819,12 +1832,20 @@ class PipelineHardeningTest(unittest.TestCase):
             expected_watch_events = con.execute(
                 "select * from user_watch_events order by id"
             ).fetchall()
+            expected_cycle_history = con.execute(
+                "select * from user_episode_cycle_history order by id"
+            ).fetchall()
+            expected_manual_completions = con.execute(
+                "select * from user_manual_episode_completions order by user_id, operation_id"
+            ).fetchall()
             con.execute(
                 "update user_title_state set is_favorite=0, watched=0 where user_id=? and anime_id=101",
                 (user_id,),
             )
             con.execute("delete from user_watch_events")
             con.execute("delete from user_episode_state")
+            con.execute("update user_episode_cycle_history set engaged_seconds=99")
+            con.execute("delete from user_manual_episode_completions")
             con.commit()
             con.executescript((out_dir / "user_state.sql").read_text(encoding="utf-8"))
             restored = con.execute(
@@ -1837,10 +1858,18 @@ class PipelineHardeningTest(unittest.TestCase):
             restored_watch_events = con.execute(
                 "select * from user_watch_events order by id"
             ).fetchall()
+            restored_cycle_history = con.execute(
+                "select * from user_episode_cycle_history order by id"
+            ).fetchall()
+            restored_manual_completions = con.execute(
+                "select * from user_manual_episode_completions order by user_id, operation_id"
+            ).fetchall()
             con.close()
             self.assertEqual(restored, expected_title_state)
             self.assertEqual(restored_episode_states, expected_episode_states)
             self.assertEqual(restored_watch_events, expected_watch_events)
+            self.assertEqual(restored_cycle_history, expected_cycle_history)
+            self.assertEqual(restored_manual_completions, expected_manual_completions)
 
             exported = json.loads((out_dir / "user_title_state.json").read_text(encoding="utf-8"))
             self.assertEqual(exported[0]["user_id"], user_id)

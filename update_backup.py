@@ -21,7 +21,9 @@ USER_STATE_TABLES = (
     "user_title_state",
     "user_title_navigation_state",
     "user_episode_state",
+    "user_episode_cycle_history",
     "user_watch_events",
+    "user_manual_episode_completions",
 )
 
 
@@ -234,7 +236,8 @@ It lives under `db/`, which is intentionally ignored by git.
 ## Contents
 
 - `animego.sqlite` - full SQLite backup made with SQLite's backup API.
-- `user_state.sql` - transactional SQL dump of title, episode, and watch-event state.
+- `user_state.sql` - transactional SQL dump of title, episode, watch-event,
+  viewing-cycle, and manual-completion state.
 - `user_title_state.json` - readable user-state export with title/source data.
 - `user_title_state.csv` - spreadsheet-friendly user-state export.
 - `SHA256SUMS` - checksums for the staged backup and export files.
@@ -268,7 +271,9 @@ sqlite3 db/animego.sqlite 'pragma integrity_check;'
 
 ## Restore Only User State
 
-From the project root:
+The target database must have the same user-state schema as this backup. Apply
+the matching schema migrations before restoring; the SQL dump does not downgrade
+or create tables. From the project root:
 
 ```bash
 sqlite3 -bail db/animego.sqlite < db/backups/current/user_state.sql
