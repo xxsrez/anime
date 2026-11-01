@@ -384,6 +384,18 @@ def user_library_state_v1_satisfied(con):
     return True
 
 
+def episode_progress_cycle_v1_satisfied(con):
+    columns = {row[1] for row in con.execute("pragma table_info(user_episode_state)")}
+    history = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_episode_cycle_history'"
+    ).fetchone()
+    history_columns = {row[1] for row in con.execute("pragma table_info(user_episode_cycle_history)")}
+    indexes = {row[1] for row in con.execute("pragma index_list(user_episode_cycle_history)")}
+    return (bool(history) and "idx_user_episode_cycle_history_title" in indexes
+            and {"id", "user_id", "anime_id", "episode_id", "cycle_event_id", "completed_at", "engaged_seconds"} <= history_columns
+            and {"cycle_event_id", "cycle_engaged_base", "cycle_completed_at"} <= columns)
+
+
 RUNTIME_SCHEMA_CONTRACTS = {
     "user-library-state-v1": {
         "path": "2026-07-09_zzzzz-user-library-state/00_add_user_library_state.sql",
@@ -391,6 +403,13 @@ RUNTIME_SCHEMA_CONTRACTS = {
         / "2026-07-09_zzzzz-user-library-state"
         / "00_add_user_library_state.sql",
         "checker": user_library_state_v1_satisfied,
+    },
+    "episode-progress-cycle-v1": {
+        "path": "2026-11-01_episode-progress-cycle/00_add_cycle_columns.sql",
+        "canonical_file": DEFAULT_MIGRATIONS
+        / "2026-11-01_episode-progress-cycle"
+        / "00_add_cycle_columns.sql",
+        "checker": episode_progress_cycle_v1_satisfied,
     },
 }
 

@@ -6,9 +6,14 @@ import vm from "node:vm";
 const source = fs.readFileSync(new URL("content-script.js", import.meta.url), "utf8");
 const origin = "https://anime-srez.up.railway.app";
 
-function bridge(globals) {
+function bridge(globals, theme = null) {
   const listeners = new Map();
   const events = [];
+  let themeChanged;
+  class MutationObserver {
+    constructor(callback) { themeChanged = callback; }
+    observe() {}
+  }
   class CustomEvent {
     constructor(type, options = {}) {
       this.type = type;
@@ -16,6 +21,7 @@ function bridge(globals) {
     }
   }
   const document = {
+    documentElement: { dataset: { theme } },
     addEventListener(type, listener) {
       listeners.set(type, listener);
     },
@@ -25,17 +31,39 @@ function bridge(globals) {
     },
   };
   vm.runInNewContext(source, {
-    ...globals, document, CustomEvent, location: { origin },
+    ...globals, document, CustomEvent, MutationObserver, location: { origin },
     window: { addEventListener() {} },
   });
   return {
     events,
+    async setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      themeChanged?.();
+      await new Promise(resolve => setImmediate(resolve));
+    },
     async emit(type, detail) {
       document.dispatchEvent(new CustomEvent(type, { detail }));
       await new Promise(resolve => setImmediate(resolve));
     },
   };
 }
+
+test("scan handoff carries the current catalog theme", async () => {
+  const sent = [];
+  const page = bridge({ chrome: { runtime: runtime(async message => {
+    sent.push(message);
+    return { ok: true };
+  }) } }, "light");
+  await page.emit("animego-scan-start", { origin, theme: "dark" });
+  assert.equal(sent[0].detail.theme, "light");
+  await page.emit("animego-scanner-open");
+  await page.emit("animego-scanner-prepare");
+  assert.equal(sent[1].theme, "light");
+  assert.equal(sent[2].theme, "light");
+  await page.setTheme("dark");
+  assert.equal(sent[3].type, "animego-scanner-theme");
+  assert.equal(sent[3].theme, "dark");
+});
 
 function runtime(sendMessage = async () => ({ ok: true, granted: true })) {
   return {
@@ -89,4 +117,63 @@ test("missing extension API at injection does not announce readiness", async () 
   assert.ok(!page.events.some(e => e.type === "animego-scanner-ready"));
   await page.emit("animego-scanner-prepare");
   assert.match(page.events.find(e => e.type === "animego-scanner-permission-state").detail.error, /Обновите страницу/);
+});
+
+for (const mode of ["partial", "full"]) {
+  test(`extension creates ${mode} job with the catalog session`, async () => {
+    let listener;
+    let request;
+    const api = runtime();
+    let persisted;
+    api.sendMessage = async message => { persisted = message; return { ok: true }; };
+    api.onMessage.addListener = fn => { listener = fn; };
+    bridge({ chrome: { runtime: api }, fetch: async (url, options) => {
+      request = { url, options };
+      return { ok: true, json: async () => ({
+        job: { id: 42 }, token: "fixture", tasks: [{ anime_id: 1 }], discovery: mode === "full",
+      }) };
+    } }, "dark");
+    const result = await new Promise(resolve => {
+      assert.equal(listener({ type: "animego-scanner-create-job", mode }, {}, resolve), true);
+    });
+    assert.equal(request.url, "/api/animego-scans");
+    assert.equal(request.options.credentials, "same-origin");
+    assert.equal(JSON.parse(request.options.body).mode, mode);
+    assert.equal(result.detail.job_id, 42);
+    assert.equal(result.detail.origin, origin);
+    assert.equal(result.detail.mode, mode);
+    assert.equal(result.detail.theme, "dark");
+    assert.equal(persisted.type, "animego-scanner-persist-job");
+    assert.equal(persisted.detail.job_id, 42);
+  });
+}
+
+test("catalog authentication failure is reported to the scanner", async () => {
+  let listener;
+  const api = runtime();
+  api.onMessage.addListener = fn => { listener = fn; };
+  bridge({ chrome: { runtime: api }, fetch: async () => ({
+    ok: false, status: 401, json: async () => ({ error: "Войдите в аккаунт" }),
+  }) });
+  const result = await new Promise(resolve => listener({ type: "animego-scanner-create-job", mode: "partial" }, {}, resolve));
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Войдите/);
+});
+
+test("failed local handoff cancels only the just-created job", async () => {
+  let listener;
+  const requests = [];
+  const api = runtime();
+  api.onMessage.addListener = fn => { listener = fn; };
+  api.sendMessage = async () => { throw new Error("Storage unavailable"); };
+  bridge({ chrome: { runtime: api }, fetch: async (url, options) => {
+    requests.push({ url, options });
+    return { ok: true, json: async () => ({ job: { id: 42 }, token: "fixture", tasks: [{ anime_id: 1 }] }) };
+  } });
+  const result = await new Promise(resolve => listener({ type: "animego-scanner-create-job", mode: "partial" }, {}, resolve));
+  assert.equal(result.ok, false);
+  assert.match(result.error, /42.*отменено/);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].url, "/api/animego-scans/42/complete");
+  assert.equal(JSON.parse(requests[1].options.body).stopped, true);
 });

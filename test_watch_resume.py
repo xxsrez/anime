@@ -176,6 +176,205 @@ class WatchResumeTest(unittest.TestCase):
         self.assertEqual(result["episode_state"]["engaged_seconds"], 1500)
         self.assertIsNone(result["episode_state"]["completed_at"])
 
+    def test_known_duration_survives_later_event_without_duration(self):
+        self.event(22)
+        for position in range(300, 1501, 300):
+            self.event(22, "heartbeat", engaged_seconds=300,
+                       playback_position_seconds=position, playback_duration_seconds=2586)
+        result = self.event(22, "fullscreen_enter")
+        self.assertIsNone(result["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_bounded_watch_metadata_preserves_playback_evidence(self):
+        metadata = {f"field-{index}": "x" * 2000 for index in range(20)}
+        encoded = server.sanitize_watch_metadata({
+            "metadata": metadata, "playback_ended": True,
+            "playback_position_seconds": 2500, "playback_duration_seconds": 2586,
+        })
+        cleaned = json.loads(encoded)
+        self.assertTrue(cleaned["truncated"])
+        self.assertTrue(cleaned["playback_ended"])
+        self.assertEqual(cleaned["playback_duration_seconds"], 2586)
+        self.assertEqual(cleaned["playback_position_seconds"], 2500)
+
+    def test_manual_progress_does_not_infer_completion_from_watch_time(self):
+        self.event(22)
+        for position in range(300, 1501, 300):
+            self.event(22, "heartbeat", engaged_seconds=300,
+                       playback_position_seconds=position, playback_duration_seconds=2586)
+        server.update_user_state(901, {"progress_episode_number": 22}, self.db, self.user)
+        self.assertIsNone(self.fixture.episode_state(901, 22)["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_restart_after_manual_clear_does_not_reuse_old_completion(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        self.event(22, "session_end", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        result = self.event(22, session="rewatch")
+        self.assertEqual(result["state"]["watch_status"], "watching")
+        self.assertIsNone(result["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_rewatch_uses_new_cycle_even_with_same_session_and_timestamp(self):
+        with patch.object(server, "WATCH_LIKELY_COMPLETED_SECONDS", 100):
+            self.event(22)
+            self.event(22, "heartbeat", engaged_seconds=60)
+            self.event(22, "session_end", playback_ended=True)
+            before = self.fixture.episode_state(901, 22)
+            with patch("server.now_iso", return_value="2026-09-12T16:00:00+00:00"):
+                server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+            self.event(22)
+            result = self.event(22, "heartbeat", engaged_seconds=20)
+            self.assertIsNone(result["episode_state"]["completed_at"])
+            self.assertEqual(self.target()["episode_number"], "22")
+            current = self.fixture.episode_state(901, 22)
+            self.assertEqual(current["completed_at"], before["completed_at"])
+            self.assertEqual(current["engaged_seconds"], before["engaged_seconds"] + 20)
+            self.assertIsNone(current["cycle_completed_at"])
+            result = self.event(22, "heartbeat", engaged_seconds=80)
+            self.assertIsNotNone(result["episode_state"]["completed_at"])
+            self.assertEqual(self.target()["episode_number"], "23")
+            completed_again = self.fixture.episode_state(901, 22)
+            self.assertEqual(completed_again["completed_at"], before["completed_at"])
+            self.assertEqual(completed_again["completion_confidence"], before["completion_confidence"])
+
+    def test_rewatch_of_finished_finale_remains_watching_until_new_completion(self):
+        self.set_release_status("Вышел")
+        self.event(23)
+        self.event(23, "heartbeat", engaged_seconds=60)
+        self.event(23, "session_end", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        result = self.event(23, session="new-session")
+        self.assertEqual(result["state"]["watch_status"], "watching")
+        self.assertIsNone(result["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "23")
+
+    def test_stale_session_end_does_not_complete_rewatch(self):
+        self.event(22, session="old")
+        self.event(22, "heartbeat", session="old", engaged_seconds=60)
+        self.event(22, "session_end", session="old", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="new")
+        stale = self.event(22, "session_end", session="old", engaged_seconds=300,
+                           playback_ended=True, library_watch_status="none")
+        self.assertIsNone(stale["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "22")
+        row = self.fixture.episode_state(901, 22)
+        self.assertEqual(row["engaged_seconds"], 360)
+        self.assertEqual(server.cycle_engaged_seconds(row), 0)
+
+    def test_old_session_without_version_cannot_complete_a_new_session(self):
+        self.event(22, session="old")
+        self.event(22, "heartbeat", session="old", engaged_seconds=60)
+        self.event(22, "session_end", session="old", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="new")
+        stale = self.event(22, "session_end", session="old", engaged_seconds=300, playback_ended=True)
+        self.assertIsNone(stale["episode_state"]["completed_at"])
+        self.assertEqual(server.cycle_engaged_seconds(self.fixture.episode_state(901, 22)), 0)
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_heartbeat_can_continue_cycle_started_after_progress_clear(self):
+        self.event(22, session="same-tab")
+        server.update_user_state(901, {"watch_status": "watching", "progress_episode_number": None},
+                                 self.db, self.user)
+        self.event(22, "heartbeat", session="same-tab", engaged_seconds=20)
+        self.event(22, "heartbeat", session="same-tab", engaged_seconds=30)
+        self.assertEqual(server.cycle_engaged_seconds(self.fixture.episode_state(901, 22)), 50)
+        result = self.event(22, "session_end", session="same-tab", playback_ended=True)
+        self.assertIsNotNone(result["episode_state"]["completed_at"])
+
+    def test_same_second_stale_event_cannot_finish_rewatch_in_same_session(self):
+        initial = self.event(22)
+        old_version = initial["state"]["watch_status_updated_at"]
+        self.event(22, "heartbeat", engaged_seconds=60)
+        self.event(22, "session_end", playback_ended=True)
+        with patch("server.now_iso", return_value="2026-09-12T16:00:00+00:00"):
+            cleared = server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        restarted = self.event(22, library_watch_status="none",
+                               library_watch_status_updated_at=cleared["watch_status_updated_at"])
+        self.assertNotEqual(restarted["state"]["watch_status_updated_at"], old_version)
+        stale = self.event(22, "session_end", engaged_seconds=300, playback_ended=True,
+                           library_watch_status="watching", library_watch_status_updated_at=old_version)
+        self.assertIsNone(stale["episode_state"]["completed_at"])
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_manual_progress_after_clear_starts_a_new_cycle(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        self.event(22, "session_end", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        server.update_user_state(901, {"progress_episode_number": 22}, self.db, self.user)
+        self.assertEqual(self.target()["episode_number"], "22")
+        self.assertIsNotNone(self.fixture.episode_state(901, 22)["completed_at"])
+        self.assertIsNone(self.fixture.episode_state(901, 22)["cycle_completed_at"])
+
+    def test_repeated_rewatch_preserves_previous_cycle_completion(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        self.event(22, "session_end", playback_ended=True)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="second")
+        self.event(22, "heartbeat", session="second", engaged_seconds=60)
+        self.event(22, "session_end", session="second", playback_ended=True)
+        previous = self.fixture.episode_state(901, 22)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="third")
+        con = server.connect(self.db)
+        try:
+            archived = con.execute(
+                "select * from user_episode_cycle_history where user_id = ? and anime_id = 901",
+                (self.user,),
+            ).fetchall()
+        finally:
+            con.close()
+        self.assertEqual(len(archived), 1)
+        self.assertEqual(archived[0]["completed_at"], previous["cycle_completed_at"])
+        self.assertEqual(archived[0]["engaged_seconds"], 60)
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_repeated_rewatch_preserves_incomplete_cycle_time(self):
+        self.event(22)
+        self.event(22, "heartbeat", engaged_seconds=60)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="second")
+        self.event(22, "heartbeat", session="second", engaged_seconds=20)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, session="third")
+        con = server.connect(self.db)
+        try:
+            archived = con.execute(
+                "select completed_at, engaged_seconds from user_episode_cycle_history where user_id = ? and anime_id = 901",
+                (self.user,),
+            ).fetchone()
+        finally:
+            con.close()
+        self.assertIsNone(archived["completed_at"])
+        self.assertEqual(archived["engaged_seconds"], 20)
+        self.assertEqual(self.target()["episode_number"], "22")
+
+    def test_late_seconds_before_rewatch_are_archived_with_previous_cycle(self):
+        self.event(22, session="first")
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        second = self.event(22, session="second")
+        old_version = second["state"]["watch_status_updated_at"]
+        self.event(22, "heartbeat", session="second", engaged_seconds=20)
+        server.update_user_state(901, {"watch_status": "none"}, self.db, self.user)
+        self.event(22, "session_end", session="second", engaged_seconds=10,
+                   library_watch_status="watching", library_watch_status_updated_at=old_version)
+        self.event(22, session="third")
+        con = server.connect(self.db)
+        try:
+            archived = con.execute(
+                "select engaged_seconds from user_episode_cycle_history where user_id = ? and anime_id = 901",
+                (self.user,),
+            ).fetchone()
+        finally:
+            con.close()
+        self.assertEqual(archived["engaged_seconds"], 30)
+        self.assertEqual(server.cycle_engaged_seconds(self.fixture.episode_state(901, 22)), 0)
+
     def set_release_status(self, status, total="23"):
         con = server.connect(self.db)
         con.execute("update anime set status = ?, episodes_text = ? where id = 901", (status, total))

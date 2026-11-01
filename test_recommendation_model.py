@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 import unittest
+from unittest.mock import patch
 
 import recommendation_model as model
 
@@ -39,6 +40,26 @@ def catalog_item(
 
 
 class RecommendationModelTest(unittest.TestCase):
+    def test_diversity_rerank_compares_each_candidate_selection_pair_once(self):
+        scored = [
+            {"item": {"id": index, "title": f"Title {index}", "franchise_id": index},
+             "genre_keys": frozenset({"action", f"genre-{index % 7}"}),
+             "base_score": 0.9 - index / 1000}
+            for index in range(130)
+        ]
+        with patch.object(model, "_weighted_jaccard", wraps=model._weighted_jaccard) as similarity:
+            result = model._diversity_rerank(
+                scored, limit=100, pool_size=130, idf={},
+                diversity_weight=0.2, franchise_cap=1,
+            )
+        self.assertEqual(len(result), 100)
+        self.assertEqual(similarity.call_count, sum(130 - selected for selected in range(1, 100)))
+        for index, chosen in enumerate(result):
+            expected = 0.2 * max((model._weighted_jaccard(
+                chosen["genre_keys"], earlier["genre_keys"], {},
+            ) for earlier in result[:index]), default=0.0)
+            self.assertAlmostEqual(chosen["diversity_penalty"], expected)
+
     def test_seed_weights_keep_explicit_favorite_dominant(self):
         favorite = catalog_item(1, "Favorite", is_favorite=True)
         watched = catalog_item(2, "Watched", watched=True)
@@ -111,6 +132,26 @@ class RecommendationModelTest(unittest.TestCase):
             by_id[4]["recommendation_based_on"][0]["seed_weight"],
             model.WATCHED_SEED_WEIGHT,
         )
+
+    def test_repeated_genres_reuse_seed_matches_without_sharing_results(self):
+        items = [
+            catalog_item(1, "Favorite", genres=("Драма", "Исэкай"), is_favorite=True),
+            catalog_item(2, "Candidate A", genres=("Драма", "Исекай")),
+            catalog_item(3, "Candidate B", genres=("Исекай", "Драма")),
+            catalog_item(4, "Candidate C", genres=("драма", "Исэкай")),
+        ]
+        with patch.object(model, "_nearest_seed_score", wraps=model._nearest_seed_score) as nearest:
+            result = model.rank_recommendations(items, limit=3, franchise_cap=None)
+        self.assertEqual(nearest.call_count, 2)
+
+        by_id = {item["id"]: item for item in result["items"]}
+        self.assertEqual(by_id[2]["recommendation_based_on"], by_id[3]["recommendation_based_on"])
+        self.assertEqual(
+            set(by_id[4]["recommendation_based_on"][0]["matched_genres"]),
+            {"драма", "Исэкай"},
+        )
+        by_id[2]["recommendation_based_on"][0]["matched_genres"].append("changed")
+        self.assertNotIn("changed", by_id[3]["recommendation_based_on"][0]["matched_genres"])
 
     def test_filters_and_predicates_run_before_top_k(self):
         items = [
@@ -238,7 +279,7 @@ class RecommendationModelTest(unittest.TestCase):
             self.assertIsNone(item["recommendation_confidence"])
             self.assertIn("пока мало данных", item["recommendation_reasons"][0])
 
-    def test_none_is_neutral_while_active_and_negative_states_are_known(self):
+    def test_neutral_status_and_explicit_user_signals(self):
         items = [
             catalog_item(1, "Planned", watch_status="planned"),
             catalog_item(2, "Dropped favorite", watch_status="dropped", is_favorite=True),

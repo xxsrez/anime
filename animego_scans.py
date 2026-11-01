@@ -1322,7 +1322,29 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
     try:
         if alternative["source"] != "yummyanime" or not yummy.is_modern_yummyani_url(alternative["url"]):
             return None
-        fetched, _detail, episodes, providers = yummy.parse_modern_detail(alternative["url"])
+        if payload.get("browser_recovery") is True:
+            if "recovery_response" not in payload and not payload.get("recovery_error"):
+                slug = yummy.parse_modern_slug(alternative["url"])
+                return {"task": {
+                    "anime_id": alternative["id"],
+                    "url": f"{yummy.YUMMYANI_API_BASE}/anime/{yummy.quote(slug)}?need_videos=true",
+                }}
+            if payload.get("recovery_error"):
+                return {"error": "YummyAnime: браузер не смог получить данные; проверка не завершена."}
+            raw = payload["recovery_response"]
+            if not isinstance(raw, dict) or not isinstance(raw.get("response"), dict):
+                raise ValueError("invalid alternate API response")
+            data = raw["response"]
+            if yummy.internal_modern_anime_id(data.get("anime_id")) != int(alternative["id"]):
+                raise ValueError("alternate source identity changed")
+            counts = data.get("episodes") or {}
+            count = int(counts.get("count") or counts.get("aired") or 1)
+            videos = data.get("videos") or []
+            if not 0 < count <= MAX_RESULT_EPISODES or not isinstance(videos, list) or len(videos) > MAX_RESULT_PROVIDERS:
+                raise ValueError("alternate source payload exceeds scan limits")
+            fetched, _detail, episodes, providers = yummy.parse_modern_payload(data, alternative["url"])
+        else:
+            fetched, _detail, episodes, providers = yummy.parse_modern_detail(alternative["url"], timeout=3)
         if int(fetched["id"]) != int(alternative["id"]):
             raise ValueError("alternate source identity changed")
         snapshots = []
@@ -1344,6 +1366,8 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
 
 def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None, fallback_resolver=None):
     recovery = prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, fallback_resolver, now)
+    if recovery and recovery.get("task"):
+        return {"recovery_task": recovery["task"]}
     try:
         lock = DatabaseOperationLock(
             db_path,
@@ -1599,7 +1623,26 @@ def complete_scan_job(db_path, job_id, token, payload=None, *, now=None):
                 (int(job_id), error["anime_id"]),
             ).fetchone()
             if item is None:
-                raise ValueError("completion error refers to an unassigned anime_id")
+                # Discovered titles may have no catalog row or job item. A
+                # processed result already affected the counters; a stop can
+                # also report an error for an assigned but unprocessed title.
+                discovered = con.execute(
+                    "select processed from animego_scan_discovery "
+                    "where job_id = ? and anime_id = ?",
+                    (int(job_id), error["anime_id"]),
+                ).fetchone()
+                if discovered is None:
+                    raise ValueError("completion error refers to an unassigned anime_id")
+                if not discovered["processed"]:
+                    if not stopped:
+                        raise ValueError("scan still has pending discovered titles")
+                    con.execute(
+                        "update animego_scan_discovery set processed = 1 where job_id = ? and anime_id = ?",
+                        (int(job_id), error["anime_id"]),
+                    )
+                    new_errors += 1
+                    last_error = error["message"]
+                continue
             if item["status"] != "pending":
                 continue
             # This is an extension summary, not a posted title result. Preserve

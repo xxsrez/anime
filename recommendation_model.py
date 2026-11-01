@@ -558,9 +558,11 @@ def _franchise_key(item: Mapping):
     return ("item",) + _stable_item_key(item)
 
 
-def _base_components(item: Mapping, profile: Mapping):
+def _base_components(item: Mapping, profile: Mapping, *, nearest_match=None):
     genre, matched_genres = _genre_profile_score(item, profile)
-    neighbor, based_on = _nearest_seed_score(item, profile)
+    neighbor, based_on = (
+        _nearest_seed_score(item, profile) if nearest_match is None else nearest_match
+    )
     components = {
         "genre": genre,
         "neighbor": neighbor,
@@ -614,8 +616,16 @@ def _recommendation_reasons(
 
 def _score_candidates(candidates: Sequence[Mapping], profile: Mapping):
     scored = []
+    nearest_by_genres = {}
     for item in candidates:
-        components, base_score, matched_genres, based_on = _base_components(item, profile)
+        # Seed similarity depends on the candidate's genres and their labels,
+        # not on its title or rating. Reuse it only within this user's ranking.
+        genre_signature = tuple(sorted(_genre_label_map(item).items()))
+        if genre_signature not in nearest_by_genres:
+            nearest_by_genres[genre_signature] = _nearest_seed_score(item, profile)
+        components, base_score, matched_genres, based_on = _base_components(
+            item, profile, nearest_match=nearest_by_genres[genre_signature]
+        )
         scored.append(
             {
                 "item": dict(item),
@@ -647,27 +657,32 @@ def _diversity_rerank(
     remaining = list(scored[:pool_size])
     selected = []
     franchise_counts = Counter()
+    similarities = {}
+    franchises = {id(entry): _franchise_key(entry["item"]) for entry in remaining}
+    stable_keys = {id(entry): _stable_item_key(entry["item"]) for entry in remaining}
 
     while remaining and len(selected) < limit:
         choices = []
         for entry in remaining:
-            franchise = _franchise_key(entry["item"])
+            entry_key = id(entry)
+            franchise = franchises[entry_key]
             if franchise_cap is not None and franchise_counts[franchise] >= franchise_cap:
                 continue
-            similarity = max(
-                (
-                    _weighted_jaccard(entry["genre_keys"], chosen["genre_keys"], idf)
-                    for chosen in selected
-                ),
-                default=0.0,
-            )
+            # Only the latest selection is new; retain the maximum against
+            # earlier selections instead of recomputing every pair each round.
+            similarity = similarities.get(entry_key, 0.0)
+            if selected:
+                similarity = max(similarity, _weighted_jaccard(
+                    entry["genre_keys"], selected[-1]["genre_keys"], idf,
+                ))
+            similarities[entry_key] = similarity
             penalty = diversity_weight * similarity
             rerank_score = clamp(entry["base_score"] - penalty)
             choices.append(
                 (
                     -rerank_score,
                     -entry["base_score"],
-                    _stable_item_key(entry["item"]),
+                    stable_keys[entry_key],
                     entry,
                     penalty,
                     rerank_score,
@@ -771,7 +786,10 @@ def rank_recommendations(
                 "recommendation_confidence": None,
                 "recommendation_model_version": MODEL_VERSION,
                 "recommendation_matched_genres": entry["matched_genres"][:6],
-                "recommendation_based_on": entry["based_on"],
+                "recommendation_based_on": [
+                    {**match, "matched_genres": list(match["matched_genres"])}
+                    for match in entry["based_on"]
+                ],
                 "recommendation_reasons": _recommendation_reasons(
                     item,
                     mode=profile["mode"],

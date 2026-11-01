@@ -154,6 +154,16 @@ Aggregated per-user episode state derived from `user_watch_events`:
   `started_at`, `completed_at`.
 - `engaged_seconds`, `heartbeat_count`, `last_event_type`, and confidence
   fields.
+- `cycle_event_id`, `cycle_engaged_base`, and `cycle_completed_at` describe a
+  new viewing cycle after the user clears progress. A null cycle ID keeps the
+  original behaviour. Lifetime `completed_at` and `engaged_seconds` remain
+  available for history and recommendation signals.
+
+`user_episode_cycle_history` stores earlier restarted cycles when another
+cycle begins, including their completion time when present and engaged time.
+The event-ID boundary prevents events already stored before a clear from
+being reused as evidence for the next cycle. A separate manual-completion
+snapshot includes this history so undo can restore the previous state.
 
 Strong watch signals update `user_title_state.progress_episode_number`.
 Episode/source selection signals remain telemetry only and do not start or
@@ -170,7 +180,9 @@ The frontend sends `playback_ended: true` with `session_end` when the current
 player reports an actual end, including an end immediately after a pause. The
 backend accepts completion only for an already-started episode with positive
 watched seconds in that same client session. This works below the 18-minute
-heuristic, which remains a fallback when no end signal is available. Pausing,
+heuristic, which remains a fallback only when no episode duration is known.
+When a duration has been reported, a later event that omits it does not
+re-enable the time-only heuristic. Pausing,
 opening a page, or an end message from an idle session cannot complete a series.
 
 ## Canonical Title View

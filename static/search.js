@@ -12,6 +12,8 @@
     [/oo/g, "o"],
   ];
   const MIN_FUZZY_LENGTH = 4;
+  const MAX_SEARCH_QUERY_CHARS = 240;
+  const MAX_SEARCH_QUERY_TOKENS = 12;
   const PRIMARY_TITLE_WEIGHT = 14;
   const SUBTITLE_WEIGHT = 11;
   const VARIANT_TITLE_WEIGHT = 10;
@@ -115,10 +117,16 @@
   }
 
   function searchQuery(value) {
-    const text = searchText(value);
+    // Python limits Unicode code points, not UTF-16 code units. Restrict the
+    // slice first so even a pasted oversized query stays cheap to process.
+    const raw = Array.from(String(value || "").slice(0, MAX_SEARCH_QUERY_CHARS * 2))
+      .slice(0, MAX_SEARCH_QUERY_CHARS)
+      .join("");
+    const tokens = uniqueTokens(searchText(raw).split(/\s+/).filter(Boolean))
+      .slice(0, MAX_SEARCH_QUERY_TOKENS);
     return {
-      text,
-      tokens: uniqueTokens(text.split(/\s+/).filter(Boolean)),
+      text: tokens.join(" "),
+      tokens,
     };
   }
 
@@ -164,6 +172,12 @@
     return previous[right.length];
   }
 
+  function adjectiveStem(token) {
+    // NFKD search normalization turns й into и, just as on the server.
+    const match = token.match(/^([а-я]{4,}?)(?:ого|его|ому|ему|ыми|ими|ои|ыи|ии|ым|им|ом|ем)$/u);
+    return match ? match[1] : null;
+  }
+
   function tokenMatchScore(queryToken, candidate) {
     const token = candidate.token;
     const weight = candidate.weight;
@@ -186,6 +200,11 @@
       ) {
         return 66 + weight * 7;
       }
+    }
+
+    const stem = adjectiveStem(queryToken);
+    if (stem && stem === adjectiveStem(token)) {
+      return 48 + weight * 6 + Math.min(queryToken.length, token.length);
     }
 
     const maxDistance = Math.min(maxEditDistance(queryToken), maxEditDistance(token));

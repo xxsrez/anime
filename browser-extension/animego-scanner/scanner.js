@@ -17,12 +17,17 @@ import { KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes } fro
 
 const extensionApi = resolveExtensionApi();
 const STORAGE_KEY = "animegoScannerSession";
+const THEME_KEY = "animegoScannerTheme";
 const APP_ORIGINS = new Set([
   "http://127.0.0.1:8765",
   "https://anime-srez.up.railway.app",
 ]);
 const UPSTREAM_BASE = "https://animego.me";
 const MAX_LOG_ENTRIES = 200;
+const YUMMY_ORIGIN = "https://api.yani.tv/*";
+const API_TIMEOUT_MS = 45000;
+const RECOVERY_TIMEOUT_MS = 15000;
+const UPSTREAM_TIMEOUT_MS = 30000;
 
 class BlockedError extends Error {
   constructor(message, status = null) {
@@ -74,6 +79,9 @@ const elements = Object.fromEntries(
     "status",
     "job-label",
     "log",
+    "start-partial",
+    "start-full",
+    "launch-status",
   ].map((id) => [id, document.getElementById(id)]),
 );
 
@@ -83,7 +91,55 @@ let activeRun = false;
 let currentRequest = null;
 let stopFinalization = null;
 let generation = 0;
+let loadedGeneration = null;
+let restartRequested = null;
 let lastUpstreamRequestAt = 0;
+let creatingScan = false;
+let announcedJobId = null;
+let announcedNoSession = false;
+let themeRevision = 0;
+
+function applyTheme(theme) {
+  if (!document.documentElement) return;
+  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+  else delete document.documentElement.dataset.theme;
+}
+
+extensionApi.storage.onChanged?.addListener((changes, area) => {
+  if (area !== "local" || !Object.hasOwn(changes, THEME_KEY)) return;
+  themeRevision += 1;
+  applyTheme(changes[THEME_KEY].newValue);
+});
+
+function renderLaunch() {
+  const busy = loadedGeneration !== generation || creatingScan || (checkpoint && !["completed", "stopped", "expired"].includes(checkpoint.status));
+  elements["start-partial"].disabled = Boolean(busy);
+  elements["start-full"].disabled = Boolean(busy);
+}
+
+async function startNewScan(mode) {
+  if (loadedGeneration !== generation || creatingScan || (checkpoint && !["completed", "stopped", "expired"].includes(checkpoint.status))) return;
+  const actionGeneration = generation;
+  creatingScan = true;
+  renderLaunch();
+  elements["launch-status"].textContent = "Готовим задание…";
+  try {
+    // A terminal state may have been reached even though its last save failed.
+    // The background reads storage before it permits creating another job.
+    if (checkpoint) {
+      await saveCheckpoint();
+      if (actionGeneration !== generation) return;
+    }
+    const response = await extensionApi.runtime.sendMessage({ type: "animego-scanner-create", mode });
+    if (!response?.ok) throw new Error(response?.error || "Не удалось запустить скан.");
+    elements["launch-status"].textContent = response.empty ? response.message : "";
+  } catch (error) {
+    elements["launch-status"].textContent = error.message;
+  } finally {
+    creatingScan = false;
+    renderLaunch();
+  }
+}
 
 function nowTime() {
   return new Intl.DateTimeFormat("ru", {
@@ -107,6 +163,13 @@ function log(message, kind = "") {
   while (elements.log.children.length > MAX_LOG_ENTRIES) {
     elements.log.lastElementChild?.remove();
   }
+}
+
+function reportControlError(error) {
+  const message = error?.message || String(error);
+  elements.status.textContent = message;
+  elements.status.className = "status error";
+  log(message, "error");
 }
 
 function modeLabel(mode) {
@@ -165,6 +228,7 @@ function statusText(status) {
       permission: "Нужен доступ к источнику",
       blocked: "AnimeGo запросил проверку — сканирование остановлено",
       error: "Сканирование прервано ошибкой",
+      expired: "Срок задания истёк. Запустите новый скан; уже сохранённые результаты не потеряны.",
       stopping: "Останавливаем…",
       stopped: "Сканирование остановлено",
       completing: "Сохраняем итог…",
@@ -174,12 +238,16 @@ function statusText(status) {
 }
 
 function render() {
+  renderLaunch();
   if (!session || !checkpoint) {
     return;
   }
   const { payload } = session;
   const total = payload.tasks.length;
   const checked = Math.min(total, checkpoint.checked_items);
+  const discovering = payload.discovery && !checkpoint.discovery_done
+    && checkpoint.next_index >= total
+    && !["completed", "stopped", "expired"].includes(checkpoint.status);
   const percent =
     checkpoint.status === "completed"
       ? 100
@@ -187,18 +255,40 @@ function render() {
         ? 0
         : (checked / total) * 100;
 
-  elements.subtitle.textContent =
-    checkpoint.status === "completed"
-      ? checkpoint.error_count > 0
-        ? `Сканирование завершено с ошибками: ${checkpoint.error_count} из ${total} тайтлов. Подробности ниже.`
-        : "Сканирование завершено. Результаты проверки сохранены."
-      : "Расширение проверяет AnimeGo через ваш браузер. Можно оставить эту вкладку в фоне.";
+  elements.subtitle.textContent = checkpoint.status === "completed"
+    ? checkpoint.error_count > 0
+      ? `Сканирование завершено с ошибками: ${checkpoint.error_count} из ${total} тайтлов. Подробности ниже.`
+      : "Сканирование завершено. Результаты проверки сохранены."
+    : ({
+      paused: "Сканирование на паузе. Можно продолжить или остановить его.",
+      permission: "Сканирование приостановлено до разрешения доступа к источнику.",
+      blocked: "Проверка приостановлена. Подробности и дальнейшие действия указаны ниже.",
+      error: "Проверка прервана. Подробности и дальнейшие действия указаны ниже.",
+      expired: "Срок задания истёк. Сохранённые результаты остаются в каталоге.",
+      stopping: "Останавливаем сканирование и сохраняем результаты.",
+      stopped: "Сканирование остановлено. Сохранённые результаты остаются в каталоге.",
+      completing: "Сохраняем итог сканирования.",
+    }[checkpoint.status] || "Расширение проверяет источники через ваш браузер. Можно оставить эту вкладку в фоне.");
   elements.mode.textContent = modeLabel(payload.mode);
-  elements["current-title"].textContent = checkpoint.current?.title || statusText(checkpoint.status);
-  elements["progress-text"].textContent = `${checked} / ${total}`;
-  elements["progress-track"].setAttribute("aria-valuemax", String(total));
-  elements["progress-track"].setAttribute("aria-valuenow", String(checked));
-  elements["progress-bar"].style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  elements["current-title"].textContent = checkpoint.current?.title
+    || (discovering && checkpoint.status === "running"
+      ? `Ищем новые тайтлы · страница ${checkpoint.discovery_page}`
+      : statusText(checkpoint.status));
+  elements["progress-text"].textContent = `${checked} / ${total}${discovering ? " · поиск" : ""}`;
+  elements["progress-track"].setAttribute("aria-valuemax", String(Math.max(total, 1)));
+  if (discovering) {
+    elements["progress-track"].removeAttribute("aria-valuenow");
+    elements["progress-track"].setAttribute("aria-valuetext", "Поиск новых тайтлов не завершён");
+    elements["progress-track"].setAttribute("data-indeterminate", "true");
+    if (checkpoint.status === "running") elements["progress-track"].setAttribute("data-active", "true");
+    else elements["progress-track"].removeAttribute("data-active");
+  } else {
+    elements["progress-track"].setAttribute("aria-valuenow", String(checked));
+    elements["progress-track"].removeAttribute("aria-valuetext");
+    elements["progress-track"].removeAttribute("data-indeterminate");
+    elements["progress-track"].removeAttribute("data-active");
+  }
+  elements["progress-bar"].style.width = discovering ? "32%" : `${Math.max(0, Math.min(100, percent))}%`;
   elements.checked.textContent = String(checked);
   elements.episodes.textContent = String(checkpoint.new_episode_count);
   elements.providers.textContent = String(checkpoint.new_provider_count);
@@ -214,9 +304,9 @@ function render() {
   elements["grant-access"].hidden = checkpoint.status !== "permission";
   elements["grant-access"].disabled = checkpoint.status !== "permission";
   elements.stop.disabled = !canStop;
-  elements.status.textContent = statusText(checkpoint.status);
+  elements.status.textContent = checkpoint.last_error || statusText(checkpoint.status);
   elements.status.className = `status ${
-    ["permission", "blocked", "error"].includes(checkpoint.status)
+    ["permission", "blocked", "error", "expired"].includes(checkpoint.status)
       ? "error"
       : checkpoint.status === "completed"
         ? "success"
@@ -251,18 +341,19 @@ async function saveCheckpoint() {
   if (!session || !checkpoint) {
     return;
   }
-  const stored = await extensionApi.storage.local.get(STORAGE_KEY);
-  const current = stored[STORAGE_KEY];
-  if (!current || String(current.payload?.job_id) !== String(session.payload.job_id)) {
-    return;
-  }
-  session = {
-    ...current,
-    payload: session.payload,
+  const savedGeneration = generation;
+  const response = await extensionApi.runtime.sendMessage({
+    type: "animego-scanner-save-checkpoint", payload: session.payload,
     checkpoint: { ...checkpoint },
-    savedAt: new Date().toISOString(),
-  };
-  await extensionApi.storage.local.set({ [STORAGE_KEY]: session });
+  });
+  if (!response?.ok) throw new Error(response?.error || "Не удалось сохранить прогресс скана. Обновите расширение и вкладку сканера.");
+  if (response.stale) {
+    if (savedGeneration === generation) {
+      generation += 1;
+      currentRequest?.abort();
+    }
+    throw new DOMException("Задание заменено новым", "AbortError");
+  }
 }
 
 function validPayload(payload) {
@@ -277,30 +368,51 @@ function validPayload(payload) {
 
 async function loadSession({ announce = true } = {}) {
   generation += 1;
+  const loadGeneration = generation;
+  loadedGeneration = null;
+  renderLaunch();
+  elements.pause.disabled = true;
+  elements.stop.disabled = true;
+  elements["grant-access"].disabled = true;
   currentRequest?.abort();
   currentRequest = null;
-  const stored = await extensionApi.storage.local.get(STORAGE_KEY);
+  const themeRevisionAtStart = themeRevision;
+  const stored = await extensionApi.storage.local.get([STORAGE_KEY, THEME_KEY]);
+  if (loadGeneration !== generation) return;
   const nextSession = stored[STORAGE_KEY];
+  if (themeRevisionAtStart === themeRevision) {
+    const theme = Object.hasOwn(stored, THEME_KEY) ? stored[THEME_KEY] : nextSession?.payload?.theme;
+    applyTheme(theme);
+  }
   if (!validPayload(nextSession?.payload)) {
+    session = null;
+    checkpoint = null;
+    renderLaunch();
     const granted = await hasAnimeGoHostPermission(extensionApi);
+    if (loadGeneration !== generation) return;
+    loadedGeneration = loadGeneration;
+    renderLaunch();
     elements.subtitle.textContent = granted
-      ? "Доступ готов. Вернитесь в Anime Catalog, чтобы запустить скан."
+      ? "Выберите быстрый или полный скан. Вкладка Anime Catalog должна быть открыта."
       : "Сначала разрешите узкий доступ только к AnimeGo.";
     elements["grant-access"].hidden = granted;
     elements["grant-access"].disabled = granted;
     elements.status.textContent = granted
-      ? "Вернитесь в Anime Catalog — доступ к AnimeGo уже выдан."
-      : "Разрешите доступ, затем скан запустится автоматически.";
+      ? "Готово к запуску"
+      : "Разрешите доступ к источнику, чтобы продолжить.";
     elements.status.className = granted ? "status success" : "status error";
     elements["current-title"].textContent = granted
       ? "Доступ к AnimeGo выдан"
       : "Нужен доступ к AnimeGo";
-    log(
-      granted
-        ? "Доступ к AnimeGo уже выдан. Вернитесь в Anime Catalog."
-        : "Нажмите «Разрешить AnimeGo». Браузер запросит доступ только к animego.me.",
-      granted ? "success" : "",
-    );
+    if (!announcedNoSession) {
+      log(
+        granted
+          ? "Доступ к AnimeGo уже выдан. Можно запустить скан здесь."
+          : "Нажмите «Разрешить доступ к источнику». Браузер запросит доступ только к animego.me.",
+        granted ? "success" : "",
+      );
+      announcedNoSession = true;
+    }
     if (granted) {
       extensionApi.runtime.sendMessage({ type: "animego-scanner-permission-granted" }).catch(() => {});
     }
@@ -308,17 +420,35 @@ async function loadSession({ announce = true } = {}) {
   }
   session = nextSession;
   checkpoint = normalizeCheckpoint(session.payload, session.checkpoint);
+  const expiresAt = Date.parse(session.payload.job?.expires_at || session.payload.expires_at || "");
+  if (!["completed", "stopped", "expired"].includes(checkpoint.status)
+      && Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+    checkpoint.status = "expired";
+    checkpoint.current = null;
+    checkpoint.last_error = statusText("expired");
+    try {
+      await saveCheckpoint();
+    } catch (error) {
+      if (loadGeneration !== generation) return;
+      checkpoint.last_error = `${statusText("expired")} Не удалось сохранить состояние: ${error?.message || String(error)}`;
+    }
+    if (loadGeneration !== generation) return;
+  }
+  loadedGeneration = loadGeneration;
   stopFinalization = null;
   render();
-  if (announce) {
+  const announcementKey = `${session.payload.origin}/${session.payload.job_id}`;
+  if (announce && announcedJobId !== announcementKey) {
+    announcedJobId = announcementKey;
     log(`Загружено задание: ${session.payload.tasks.length} тайтлов.`);
+    if (checkpoint.last_error) log(checkpoint.last_error, "error");
     for (const error of checkpoint.errors) {
       const task = session.payload.tasks.find(item => item.anime_id === error.anime_id);
       log(`${taskTitle(task || error)}: ${error.message}`, "error");
     }
   }
   if (checkpoint.status === "running") {
-    runScan();
+    launchScan();
   }
 }
 
@@ -341,6 +471,7 @@ async function interruptibleDelay(milliseconds, runGeneration) {
 }
 
 async function respectUpstreamDelay(runGeneration) {
+  await interruptibleDelay(0, runGeneration);
   const randomizedDelay = 550 + Math.floor(Math.random() * 450);
   const remaining = lastUpstreamRequestAt + randomizedDelay - Date.now();
   if (remaining > 0) {
@@ -352,7 +483,7 @@ async function respectUpstreamDelay(runGeneration) {
 async function ensureAnimeGoAccess() {
   if (!(await hasAnimeGoHostPermission(extensionApi))) {
     throw new PermissionError(
-      "Разрешите расширению доступ к animego.me, затем нажмите «Разрешить AnimeGo» ещё раз.",
+      "Разрешите расширению доступ к animego.me, затем нажмите «Разрешить доступ к источнику» ещё раз.",
     );
   }
 }
@@ -367,8 +498,11 @@ async function upstreamJson(path, runGeneration, { html = false } = {}) {
     }
     await respectUpstreamDelay(runGeneration);
     await ensureAnimeGoAccess();
+    await interruptibleDelay(0, runGeneration);
     const controller = new AbortController();
     currentRequest = controller;
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, UPSTREAM_TIMEOUT_MS);
     try {
       const response = await fetch(new URL(path, UPSTREAM_BASE), {
         method: "GET",
@@ -407,6 +541,10 @@ async function upstreamJson(path, runGeneration, { html = false } = {}) {
       }
       return parsed;
     } catch (error) {
+      if (timedOut && error?.name === "AbortError" && runGeneration === generation
+          && !["stopping", "stopped"].includes(checkpoint.status)) {
+        error = new UpstreamError("AnimeGo не ответил вовремя.", { retryable: true });
+      }
       if (
         error?.name === "AbortError" ||
         error instanceof BlockedError ||
@@ -422,6 +560,7 @@ async function upstreamJson(path, runGeneration, { html = false } = {}) {
         throw lastError;
       }
     } finally {
+      clearTimeout(timer);
       if (currentRequest === controller) {
         currentRequest = null;
       }
@@ -447,10 +586,20 @@ async function collectTitle(task, runGeneration) {
       await respectUpstreamDelay(runGeneration);
       const controller = new AbortController();
       currentRequest = controller;
-      const timer = setTimeout(() => controller.abort(), 30000);
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; controller.abort(); }, UPSTREAM_TIMEOUT_MS);
       try {
-        return await fetchKinogooHtml(url, controller.signal);
-      } finally { clearTimeout(timer); currentRequest = null; }
+        return await fetchKinogooHtml(url, controller.signal, fetch);
+      } catch (error) {
+        if (timedOut && error?.name === "AbortError" && runGeneration === generation
+            && !["stopping", "stopped"].includes(checkpoint.status)) {
+          throw new Error("Kinogoo не ответил вовремя.");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (currentRequest === controller) currentRequest = null;
+      }
     }
     const embed = kinogooPlayer(await read(task.url), task.url);
     const episodes = kinogooEpisodes(await read(embed), embed, task.season);
@@ -499,6 +648,8 @@ async function collectTitle(task, runGeneration) {
 async function apiPost(path, body) {
   const controller = new AbortController();
   currentRequest = controller;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, API_TIMEOUT_MS);
   try {
     const response = await fetch(new URL(path, session.payload.origin), {
       method: "POST",
@@ -523,15 +674,18 @@ async function apiPost(path, body) {
     }
     if (!response.ok) {
       throw new ApiError(
-        parsed?.error || parsed?.message || `Anime Catalog ответил HTTP ${response.status}.`,
+        response.status === 410 ? statusText("expired")
+          : parsed?.error || parsed?.message || `Anime Catalog ответил HTTP ${response.status}.`,
         response.status,
       );
     }
     return parsed;
   } catch (error) {
+    if (timedOut) throw new ApiError("Сервер не ответил за 45 секунд. Результат сохранён; нажмите «Продолжить» для повторной отправки.");
     if (error instanceof ApiError || error?.name === "AbortError") throw error;
     throw new ApiError(error?.message || "Не удалось отправить результат в Anime Catalog.");
   } finally {
+    clearTimeout(timer);
     if (currentRequest === controller) {
       currentRequest = null;
     }
@@ -585,10 +739,21 @@ async function processTask(task, index, runGeneration) {
       if (url.origin !== UPSTREAM_BASE || !url.pathname.startsWith("/anime/")) {
         throw new UpstreamError("Некорректный адрес карточки AnimeGo.");
       }
-      body.detail_html = await upstreamJson(url.pathname, runGeneration, { html: true });
+      try {
+        body.detail_html = await upstreamJson(url.pathname, runGeneration, { html: true });
+      } catch (error) {
+        if (task.selection_reason === "discovery" || !(error instanceof UpstreamError)
+            || runGeneration !== generation) throw error;
+        log(`Не удалось обновить карточку: ${error?.message || String(error)}. Найденные серии будут сохранены.`, "error");
+      }
     }
   }
-  await submitTaskResult(body, index, runGeneration);
+  const response = await submitTaskResult(body, index, runGeneration);
+  if (body.error) {
+    reportErrorResult(task, body.error, response);
+    render();
+    return;
+  }
   const episodes = body.episodes;
   if (episodes.length > 0) {
     log(`Добавлено новых серий: ${episodes.length}.`, "success");
@@ -606,16 +771,67 @@ async function submitTaskResult(body, index, runGeneration = generation) {
   // on the server. Replaying the exact result is safe and needs no new scrape.
   checkpoint.pending_result = body;
   await saveCheckpoint();
-  if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
-  const response = await apiPost(
+  if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+    throw new DOMException("Остановлено", "AbortError");
+  }
+  let response = await apiPost(
     `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/results`, body,
   );
-  if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
+  if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+    throw new DOMException("Остановлено", "AbortError");
+  }
+  if (response?.recovery_task) {
+    checkpoint.recovery_task = response.recovery_task;
+    await saveCheckpoint();
+    if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+      throw new DOMException("Остановлено", "AbortError");
+    }
+    const url = new URL(response.recovery_task.url);
+    if (url.origin !== "https://api.yani.tv" || !url.pathname.startsWith("/anime/")) {
+      throw new ApiError("Сервер вернул недопустимый адрес запасного источника.");
+    }
+    if (!(await extensionApi.permissions.contains({ origins: [YUMMY_ORIGIN] }))) {
+      throw new PermissionError("Для проверки запасного источника разрешите доступ к api.yani.tv.");
+    }
+    if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+      throw new DOMException("Остановлено", "AbortError");
+    }
+    log("AnimeGO вернул 404. Проверяем связанный тайтл на YummyAnime…");
+    elements.status.textContent = "Проверяем YummyAnime · до 15 секунд";
+    const controller = new AbortController();
+    currentRequest = controller;
+    const timer = setTimeout(() => controller.abort(), RECOVERY_TIMEOUT_MS);
+    try {
+      const upstream = await fetch(url, { signal: controller.signal, credentials: "omit", redirect: "error" });
+      if (!upstream.ok) throw new Error(`YummyAnime HTTP ${upstream.status}`);
+      body.recovery_response = await upstream.json();
+    } catch (error) {
+      if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) throw error;
+      body.recovery_error = true;
+      log("YummyAnime не ответил или вернул ошибку. Этот тайтл будет отмечен как непроверенный.", "error");
+    } finally {
+      clearTimeout(timer);
+      if (currentRequest === controller) currentRequest = null;
+    }
+    checkpoint.pending_result = body;
+    await saveCheckpoint();
+    if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+      throw new DOMException("Остановлено", "AbortError");
+    }
+    response = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/results`, body);
+  }
+  if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+    throw new DOMException("Остановлено", "AbortError");
+  }
   updateCountersFromResponse(response, body.episodes);
   checkpoint.next_index = index + 1;
   checkpoint.current = null;
   checkpoint.pending_result = null;
+  checkpoint.recovery_task = null;
   await saveCheckpoint();
+  if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
+    throw new DOMException("Остановлено", "AbortError");
+  }
   return response;
 }
 
@@ -627,9 +843,14 @@ async function recordOrdinaryError(task, index, error) {
       episodes: [],
       error: message.slice(0, 1000),
       upstream_status: error instanceof UpstreamError ? error.status : null,
+      browser_recovery: true,
       selection_reason: task.selection_reason || null,
     }, index,
   );
+  reportErrorResult(task, message, response);
+}
+
+function reportErrorResult(task, message, response) {
   if (response?.result?.recovered_source) {
     log(`${taskTitle(task)}: AnimeGO недоступен; проверено и обновлено через ${response.result.recovered_source}.`, "success");
     return;
@@ -642,15 +863,17 @@ async function recordOrdinaryError(task, index, error) {
   log(`${taskTitle(task)}: ${message}`, "error");
 }
 
-async function finishScan() {
+async function finishScan(runGeneration) {
   checkpoint.status = "completing";
   checkpoint.current = null;
   render();
   await saveCheckpoint();
+  if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
   const response = await apiPost(
     `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/complete`,
     { errors: checkpoint.errors },
   );
+  if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
   const job = response?.job;
   if (job) {
     checkpoint.checked_items = Number(job.checked_items) || checkpoint.checked_items;
@@ -661,6 +884,7 @@ async function finishScan() {
   checkpoint.status = "completed";
   checkpoint.current = null;
   await saveCheckpoint();
+  if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
   render();
   log(
     `Готово: новых серий ${checkpoint.new_episode_count}, ошибок ${checkpoint.error_count}.`,
@@ -670,10 +894,16 @@ async function finishScan() {
 }
 
 async function runScan() {
-  if (activeRun || !session || !checkpoint || checkpoint.status !== "running") {
+  if (!session || !checkpoint || checkpoint.status !== "running" || loadedGeneration !== generation) {
     return;
   }
+  if (activeRun) {
+    restartRequested = generation;
+    return;
+  }
+  restartRequested = null;
   activeRun = true;
+  checkpoint.last_error = null;
   const runGeneration = generation;
   try {
     for (let index = checkpoint.next_index; ; index += 1) {
@@ -693,8 +923,9 @@ async function runScan() {
           if (error.status === 404 && page > 1) notFound = true;
           else throw error;
         }
+        if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
         const discovered = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/discover`, { page, html, not_found: notFound });
-        if (runGeneration !== generation) return;
+        if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
         const known = new Set(session.payload.tasks.map(task => task.anime_id));
         session.payload.tasks.push(...discovered.tasks.filter(task => !known.has(task.anime_id)));
         checkpoint.total_items = session.payload.tasks.length;
@@ -709,7 +940,7 @@ async function runScan() {
       try {
         await processTask(task, index, runGeneration);
       } catch (error) {
-        if (runGeneration !== generation) return;
+        if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
         if (error?.name === "AbortError") {
           if (["stopping", "stopped"].includes(checkpoint.status) || runGeneration !== generation) {
             return;
@@ -718,6 +949,7 @@ async function runScan() {
         }
         if (error instanceof BlockedError) {
           checkpoint.status = "blocked";
+          checkpoint.last_error = error.message;
           checkpoint.current = null;
           await saveCheckpoint();
           render();
@@ -727,6 +959,7 @@ async function runScan() {
         }
         if (error instanceof PermissionError) {
           checkpoint.status = "permission";
+          checkpoint.last_error = error.message;
           checkpoint.current = null;
           await saveCheckpoint();
           render();
@@ -738,7 +971,8 @@ async function runScan() {
           return;
         }
         if (error instanceof ApiError) {
-          checkpoint.status = "error";
+          checkpoint.status = error.status === 410 ? "expired" : "error";
+          checkpoint.last_error = error.message;
           checkpoint.current = null;
           await saveCheckpoint();
           render();
@@ -754,7 +988,10 @@ async function runScan() {
             message: "Проверка тайтла завершена; подробности в журнале сканера",
           });
         } catch (submitError) {
-          checkpoint.status = "error";
+          if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
+          checkpoint.status = submitError instanceof PermissionError ? "permission"
+            : submitError instanceof ApiError && submitError.status === 410 ? "expired" : "error";
+          checkpoint.last_error = submitError?.message || String(submitError);
           checkpoint.current = null;
           await saveCheckpoint();
           render();
@@ -769,12 +1006,13 @@ async function runScan() {
     }
     if (checkpoint.status === "running") {
       try {
-        await finishScan();
+        await finishScan(runGeneration);
       } catch (error) {
-        if (error?.name === "AbortError" && ["stopping", "stopped"].includes(checkpoint.status)) {
+        if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
           return;
         }
-        checkpoint.status = "error";
+        checkpoint.status = error instanceof ApiError && error.status === 410 ? "expired" : "error";
+        checkpoint.last_error = error?.message || String(error);
         await saveCheckpoint();
         render();
         log(`Не удалось завершить job: ${error?.message || String(error)}`, "error");
@@ -786,49 +1024,104 @@ async function runScan() {
     }
   } catch (error) {
     if (runGeneration !== generation || ["stopping", "stopped", "paused"].includes(checkpoint.status)) return;
-    checkpoint.status = error instanceof BlockedError ? "blocked" : error instanceof PermissionError ? "permission" : "error";
-    await saveCheckpoint();
+    checkpoint.status = error instanceof BlockedError ? "blocked" : error instanceof PermissionError ? "permission"
+      : error instanceof ApiError && error.status === 410 ? "expired" : "error";
+    checkpoint.last_error = error?.message || String(error);
+    try {
+      await saveCheckpoint();
+    } catch (saveError) {
+      if (runGeneration !== generation) return;
+      checkpoint.last_error = `Не удалось сохранить состояние скана: ${saveError?.message || String(saveError)}`;
+    }
+    if (runGeneration !== generation) return;
     render();
-    log(error.message || String(error), "error");
-    notifyApp("animego-scan-error", { error: error.message || String(error) });
+    log(checkpoint.last_error, "error");
+    notifyApp("animego-scan-error", { error: checkpoint.last_error });
   } finally {
     activeRun = false;
-    if (shouldRestartAfterReload(runGeneration, generation, checkpoint?.status)) {
-      queueMicrotask(() => runScan());
+    if (loadedGeneration === generation && checkpoint?.status === "running"
+        && (restartRequested === generation || shouldRestartAfterReload(runGeneration, generation, checkpoint.status))) {
+      restartRequested = null;
+      queueMicrotask(launchScan);
     }
   }
 }
 
+function launchScan() {
+  const runGeneration = generation;
+  runScan().catch(error => {
+    if (runGeneration !== generation) return;
+    if (checkpoint && !["stopping", "stopped", "expired", "completed"].includes(checkpoint.status)) {
+      checkpoint.status = "error";
+      checkpoint.last_error = error?.message || String(error);
+      render();
+    }
+    reportControlError(error);
+  });
+}
+
 async function pauseOrResume() {
-  if (!checkpoint) {
+  if (!checkpoint || loadedGeneration !== generation) {
     return;
   }
+  const actionGeneration = generation;
   if (checkpoint.status === "running") {
     checkpoint.status = "paused";
-    await saveCheckpoint();
+    try {
+      await saveCheckpoint();
+    } catch (error) {
+      if (actionGeneration !== generation) return;
+      if (checkpoint.status !== "paused") return;
+      checkpoint.status = "running";
+      render();
+      throw error;
+    }
+    if (actionGeneration !== generation || checkpoint.status !== "paused") return;
     render();
     log("Сканирование поставлено на паузу.");
     notifyApp("animego-scan-progress", { message: "Пауза" });
     return;
   }
   if (["paused", "blocked", "error"].includes(checkpoint.status)) {
+    const previousStatus = checkpoint.status;
+    const previousError = checkpoint.last_error;
     checkpoint.status = "running";
-    await saveCheckpoint();
+    checkpoint.last_error = null;
+    try {
+      await saveCheckpoint();
+    } catch (error) {
+      if (actionGeneration !== generation) return;
+      if (checkpoint.status !== "running") return;
+      checkpoint.status = previousStatus;
+      checkpoint.last_error = previousError;
+      render();
+      throw error;
+    }
+    if (actionGeneration !== generation || checkpoint.status !== "running") return;
     render();
     log("Сканирование продолжено.");
     notifyApp("animego-scan-progress", { message: "Продолжаем сканирование" });
-    runScan();
+    launchScan();
   }
 }
 
 async function grantAnimeGoAccess() {
+  if (loadedGeneration !== generation) return;
+  const actionGeneration = generation;
   elements["grant-access"].disabled = true;
   elements.status.textContent = "Ожидаем разрешение браузера…";
   try {
     const task = session?.payload?.tasks?.[checkpoint?.next_index || 0];
-    const granted = task?.source === "kinogoo"
+    const granted = checkpoint?.recovery_task
+      ? await extensionApi.permissions.request({ origins: [YUMMY_ORIGIN] })
+      : task?.source === "kinogoo"
       ? await extensionApi.permissions.request({ origins: KINOGOO_ORIGINS })
       : await requestAnimeGoHostPermission(extensionApi);
+    if (actionGeneration !== generation) return;
+    if (session && checkpoint?.status !== "permission") {
+      render();
+      return;
+    }
     if (!granted) {
       elements["grant-access"].disabled = false;
       elements.status.textContent = "Доступ не выдан. Можно повторить или остановить скан.";
@@ -839,19 +1132,41 @@ async function grantAnimeGoAccess() {
 
     log("Доступ к источнику выдан.", "success");
     await extensionApi.runtime.sendMessage({ type: "animego-scanner-permission-granted" });
+    if (actionGeneration !== generation) return;
     if (session && checkpoint?.status === "permission") {
+      const previousError = checkpoint.last_error;
       checkpoint.status = "running";
-      await saveCheckpoint();
+      checkpoint.last_error = null;
+      try {
+        await saveCheckpoint();
+      } catch (error) {
+        if (actionGeneration !== generation) return;
+        if (checkpoint.status !== "running") return;
+        checkpoint.status = "permission";
+        checkpoint.last_error = previousError;
+        render();
+        throw error;
+      }
+      if (actionGeneration !== generation || checkpoint.status !== "running") return;
       render();
       notifyApp("animego-scan-progress", { message: "Доступ выдан, продолжаем сканирование" });
-      runScan();
+      launchScan();
+      return;
+    }
+    if (session) {
+      render();
       return;
     }
     elements["grant-access"].hidden = true;
-    elements.status.textContent = "Доступ выдан. Готовим задание в Anime Catalog…";
+    elements.status.textContent = "Доступ выдан. Если скан не начался, выберите режим проверки.";
     elements.status.className = "status success";
     elements["current-title"].textContent = "Доступ к AnimeGo выдан";
   } catch (error) {
+    if (actionGeneration !== generation) return;
+    if (session && ["stopping", "stopped", "expired", "completed"].includes(checkpoint?.status)) {
+      render();
+      return;
+    }
     elements["grant-access"].disabled = false;
     elements.status.textContent = error?.message || "Не удалось запросить доступ к AnimeGo.";
     elements.status.className = "status error";
@@ -861,6 +1176,7 @@ async function grantAnimeGoAccess() {
 
 async function stopScan() {
   if (
+    loadedGeneration !== generation ||
     !checkpoint ||
     !["running", "paused", "permission", "blocked", "error"].includes(checkpoint.status)
   ) {
@@ -869,17 +1185,29 @@ async function stopScan() {
   if (stopFinalization) {
     return stopFinalization;
   }
-  stopFinalization = (async () => {
+  const actionGeneration = generation;
+  const finalization = (async () => {
     checkpoint.status = "stopping";
+    checkpoint.last_error = null;
     checkpoint.current = null;
     currentRequest?.abort();
     render();
-    await saveCheckpoint();
+    try {
+      await saveCheckpoint();
+    } catch (error) {
+      if (actionGeneration !== generation) return;
+      checkpoint.status = "error";
+      checkpoint.last_error = error?.message || String(error);
+      render();
+      throw error;
+    }
+    if (actionGeneration !== generation) return;
     try {
       const response = await apiPost(
         `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/complete`,
         { stopped: true, errors: checkpoint.errors },
       );
+      if (actionGeneration !== generation) return;
       checkpoint.status = "stopped";
       if (response?.job) {
         checkpoint.error_count = Number(response.job.error_count) || checkpoint.error_count;
@@ -887,41 +1215,59 @@ async function stopScan() {
       log("Сканирование остановлено. Прогресс до последнего тайтла сохранён.");
       notifyApp("animego-scan-complete", { stopped: true, message: "Сканирование остановлено" });
     } catch (error) {
-      checkpoint.status = "error";
+      if (actionGeneration !== generation) return;
+      checkpoint.status = error instanceof ApiError && error.status === 410 ? "expired" : "error";
+      checkpoint.last_error = error?.message || String(error);
       log(`Не удалось остановить job на сервере: ${error?.message || String(error)}`, "error");
       notifyApp("animego-scan-error", {
         error: error?.message || String(error),
         blocked: false,
       });
     }
-    await saveCheckpoint();
+    try {
+      await saveCheckpoint();
+    } catch (error) {
+      if (actionGeneration !== generation) return;
+      render();
+      throw error;
+    }
+    if (actionGeneration !== generation) return;
     render();
   })();
+  stopFinalization = finalization;
   try {
-    return await stopFinalization;
+    return await finalization;
   } finally {
-    stopFinalization = null;
+    if (stopFinalization === finalization) stopFinalization = null;
   }
 }
 
+for (const mode of ["partial", "full"]) {
+  elements[`start-${mode}`].addEventListener("click", () => startNewScan(mode));
+}
+
 elements.pause.addEventListener("click", () => {
-  pauseOrResume().catch((error) => log(error?.message || String(error), "error"));
+  pauseOrResume().catch(reportControlError);
 });
 elements["grant-access"].addEventListener("click", () => {
-  grantAnimeGoAccess().catch((error) => log(error?.message || String(error), "error"));
+  grantAnimeGoAccess().catch(reportControlError);
 });
 elements.stop.addEventListener("click", () => {
-  stopScan().catch((error) => log(error?.message || String(error), "error"));
+  stopScan().catch(reportControlError);
 });
+
+function launchSessionLoad() {
+  const pending = loadSession();
+  const loadGeneration = generation;
+  pending.catch(error => {
+    if (loadGeneration === generation) reportControlError(error);
+  });
+}
 
 extensionApi.runtime.onMessage.addListener((message) => {
   if (message?.type === "animego-scanner-reload") {
-    loadSession().catch((error) => log(error?.message || String(error), "error"));
+    launchSessionLoad();
   }
 });
 
-loadSession().catch((error) => {
-  elements.status.textContent = error?.message || String(error);
-  elements.status.className = "status error";
-  log(error?.message || String(error), "error");
-});
+launchSessionLoad();

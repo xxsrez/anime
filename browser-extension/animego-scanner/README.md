@@ -19,6 +19,10 @@ for the catalog origin. On the first Scan in either browser, the scanner asks
 for optional access only to `https://animego.me/*`; no server job is created
 until the user grants it.
 
+The scanner uses the catalog's light or dark theme when opened from the site
+or when a new scan is created. Changes to the site's theme also update the open
+scanner. If no catalog theme has been supplied, it uses the system appearance.
+
 The extension sends only episodes that are not yet playable in the catalog,
 together with playable HTTPS providers. The server preserves existing metadata
 and may fill a previously null player URL.
@@ -63,6 +67,7 @@ must be verified separately from parser and server tests.
 - Progress is checkpointed in WebExtension local storage after every title.
 - Collected results are also saved before delivery. If delivery fails, Resume resends the saved result, including after a scanner reload, without scraping the title again.
 - A failed Stop can be retried; reloading during Stop restores a controllable job. The server rejects normal completion while titles remain pending.
+- AnimeGo requests time out and retry; a Kinogoo timeout is recorded for that title so the scan can continue. A failed metadata request for an existing AnimeGo title does not discard collected episodes.
 - Pause keeps the server job active and resume continues at the current title.
 - Closing the scanner tab does not discard the checkpoint. Click the extension action, or ask Anime Catalog to reopen the scanner, to resume.
 - Stop reports a terminal `stopped` result to the API and releases the scan lease.

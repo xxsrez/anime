@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import math
 
 
@@ -21,6 +22,20 @@ USER_STATE_FIELDS = frozenset(
         "not_interested",
     }
 )
+
+
+def next_watch_status_timestamp(previous, timestamp):
+    """Keep the status revision distinct even for changes in the same second."""
+    if not previous:
+        return timestamp
+    try:
+        prior = dt.datetime.fromisoformat(previous)
+        current = dt.datetime.fromisoformat(timestamp)
+        if current <= prior:
+            return (prior + dt.timedelta(microseconds=1)).isoformat(timespec="microseconds")
+    except (TypeError, ValueError, OverflowError):
+        pass
+    return timestamp
 
 
 def validate_progress_number(value):
@@ -160,7 +175,9 @@ def apply_patch(current, patch, timestamp):
         or state["watched"] != before["watched"]
         or state["progress_episode_number"] != before["progress_episode_number"]
     ):
-        state["watch_status_updated_at"] = timestamp
+        state["watch_status_updated_at"] = next_watch_status_timestamp(
+            before["watch_status_updated_at"], timestamp
+        )
     if state["not_interested"] != before["not_interested"]:
         state["not_interested_updated_at"] = timestamp
     return state

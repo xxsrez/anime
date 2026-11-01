@@ -18,6 +18,51 @@ import server
 
 
 class AnimeGoScansTest(unittest.TestCase):
+    def test_browser_recovery_handshake_does_not_fetch_or_mark_item_checked(self):
+        self.add_title(3998)
+        self.add_title(20026525, source="yummyanime")
+        url = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=? where id=20026525", (url,))
+            con.commit()
+        resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": url})
+        job = self.create_job()
+        body = {"anime_id": 3998, "error": "AnimeGO HTTP 404", "upstream_status": 404, "episodes": [], "browser_recovery": True}
+        args = (self.db_path, job["job"]["id"], job["token"])
+        with patch.object(animego_scans.yummy, "parse_modern_detail", side_effect=AssertionError("No server network")):
+            result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            self.assertEqual(result["recovery_task"]["anime_id"], 20026525)
+            self.assertEqual(result["recovery_task"]["url"], "https://api.yani.tv/anime/fixture?need_videos=true")
+            with closing(server.connect(self.db_path)) as con:
+                self.assertEqual(con.execute("select checked_items from animego_scan_jobs where id=?", (job["job"]["id"],)).fetchone()[0], 0)
+            episode = {"id": 20026525002, "number": "2", "title": "2 серия"}
+            provider = {**self.provider(), "episode_number": "2"}
+            body["recovery_response"] = {"response": {"anime_id": 26525}}
+            with patch.object(animego_scans.yummy, "parse_modern_payload", return_value=({"id": 20026525}, {}, [episode], [provider])) as parse:
+                result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+                parse.assert_called_once_with({"anime_id": 26525}, url)
+            self.assertEqual(result["job"]["error_count"], 0)
+            self.assertEqual(result["result"]["recovered_source"], "YummyAnime")
+            replay = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+            self.assertEqual(replay["job"]["checked_items"], 1)
+
+    def test_browser_recovery_rejects_substituted_source_and_reports_fetch_failure(self):
+        self.add_title(3998)
+        for raw in ({"response": {"anime_id": 1}}, {"response": {"anime_id": 26525, "episodes": {"count": 10**9}}}, None):
+            with self.subTest(raw=raw):
+                job = self.create_job()
+                resolver = Mock(return_value={"id": 20026525, "source": "yummyanime", "url": "https://ru.yummyani.me/catalog/item/fixture"})
+                body = {"anime_id": 3998, "error": "HTTP 404", "upstream_status": 404, "episodes": [], "browser_recovery": True}
+                if raw is None:
+                    body["recovery_error"] = True
+                else:
+                    body["recovery_response"] = raw
+                with patch.object(animego_scans.yummy, "parse_modern_detail", side_effect=AssertionError("No server network")):
+                    result = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS, fallback_resolver=resolver)
+                self.assertEqual(result["result"]["status"], "failed")
+                self.assertEqual(result["job"]["error_count"], 1)
+                animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {"stopped": True})
+
     def test_404_recovers_canonical_alternative_without_mixing_source_ids(self):
         self.add_title(3998)
         self.add_title(20026525, source="yummyanime")
@@ -257,6 +302,77 @@ class AnimeGoScansTest(unittest.TestCase):
             self.db_path, job["job"]["id"], job["token"],
             {"page": page, "html": html, **extra},
         )
+
+    def test_failed_discovered_title_does_not_block_completion(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701))
+        args = (self.db_path, job["job"]["id"], job["token"])
+        error = {"anime_id": 701, "message": "title fetch failed"}
+        body = {"anime_id": 701, "episodes": [], "error": error["message"]}
+
+        failed = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)
+        replay = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)
+        self.assertEqual(failed["result"]["status"], "failed")
+        self.assertEqual(replay["result"]["status"], "already_processed")
+        self.assertTrue(self.discover(job, 2, not_found=True)["done"])
+        with self.assertRaisesRegex(ValueError, "unassigned anime_id"):
+            animego_scans.complete_scan_job(
+                *args, {"errors": [{"anime_id": 999, "message": "not assigned"}]}
+            )
+
+        completed = animego_scans.complete_scan_job(*args, {"errors": [error]})
+        self.assertEqual(completed["job"]["status"], "completed")
+        self.assertEqual(completed["job"]["checked_items"], 1)
+        self.assertEqual(completed["job"]["error_count"], 1)
+        self.assertEqual(
+            animego_scans.complete_scan_job(*args, {"errors": [error]})["job"],
+            completed["job"],
+        )
+        with closing(server.connect(self.db_path)) as con:
+            self.assertIsNone(con.execute("select 1 from anime where id=701").fetchone())
+            run = con.execute("select status from content_update_runs").fetchone()
+            self.assertEqual(run["status"], "partial")
+
+    def test_stopping_after_failed_discovery_keeps_error_count(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701))
+        args = (self.db_path, job["job"]["id"], job["token"])
+        error = {"anime_id": 701, "message": "title fetch failed"}
+        animego_scans.submit_scan_result(
+            *args, {"anime_id": 701, "episodes": [], "error": error["message"]},
+            server.PLAYER_HOSTS,
+        )
+
+        stopped = animego_scans.complete_scan_job(*args, {"stopped": True, "errors": [error]})
+        self.assertEqual(stopped["job"]["status"], "stopped")
+        self.assertEqual(stopped["job"]["checked_items"], 1)
+        self.assertEqual(stopped["job"]["error_count"], 1)
+
+    def test_stopping_can_record_an_unprocessed_discovery_error(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701))
+        args = (self.db_path, job["job"]["id"], job["token"])
+        invalid = self.result_payload(701, 70101)
+        invalid["detail_html"] = "<html>unrecognized page</html>"
+        with self.assertRaisesRegex(ValueError, "no title"):
+            animego_scans.submit_scan_result(*args, invalid, server.PLAYER_HOSTS)
+        error = {"anime_id": 701, "message": "unrecognized detail page"}
+        stopped = animego_scans.complete_scan_job(*args, {"stopped": True, "errors": [error]})
+        self.assertEqual(stopped["job"]["status"], "stopped")
+        self.assertEqual(stopped["job"]["checked_items"], 0)
+        self.assertEqual(stopped["job"]["error_count"], 1)
+        self.assertEqual(animego_scans.complete_scan_job(*args, {"stopped": True, "errors": [error]}), stopped)
+
+    def test_stopping_after_rejected_discovery_result_without_summary_errors(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701))
+        args = (self.db_path, job["job"]["id"], job["token"])
+        invalid = self.result_payload(701, 70101)
+        invalid["detail_html"] = "<html>unrecognized page</html>"
+        with self.assertRaisesRegex(ValueError, "no title"):
+            animego_scans.submit_scan_result(*args, invalid, server.PLAYER_HOSTS)
+        stopped = animego_scans.complete_scan_job(*args, {"stopped": True})
+        self.assertEqual(stopped["job"]["status"], "stopped")
 
     def test_discovery_creates_playable_draft_atomically_and_replays(self):
         job = self.create_job()
@@ -898,7 +1014,7 @@ class AnimeGoScansTest(unittest.TestCase):
         source_manifest = json.loads((server.SCANNER_EXTENSION_DIR / "manifest.json").read_text())
         self.assertEqual(manifest["version"], source_manifest["version"])
         self.assertEqual(
-                    manifest["optional_host_permissions"], ["https://animego.me/*", "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]
+                    manifest["optional_host_permissions"], ["https://api.yani.tv/*", "https://animego.me/*", "https://kinogoo.fm/*", "https://api.nextembed.ws/*"]
         )
         self.assertNotIn("https://animego.me/*", manifest["host_permissions"])
         self.assertEqual(

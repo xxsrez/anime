@@ -90,6 +90,15 @@ test("Safari background bridge prepares optional access without windows API", as
   vm.runInNewContext(source, { browser, URL }, { filename: "background.js" });
   assert.equal(typeof runtimeListener, "function");
 
+  const updatedTheme = await new Promise(resolve => {
+    assert.equal(runtimeListener(
+      { type: "animego-scanner-theme", theme: "light" },
+      { tab: { id: 7, url: APP_URL }, url: APP_URL }, resolve,
+    ), true);
+  });
+  assert.equal(updatedTheme.ok, true);
+  assert.equal(storage.values.animegoScannerTheme, "light");
+
   const prepared = await new Promise(resolve => {
     assert.equal(
       runtimeListener(

@@ -3,19 +3,31 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Сканер AnimeGo</title>
+    <title>Сканер · Anime Catalog</title>
     <link rel="stylesheet" href="scanner.css">
   </head>
   <body>
     <main class="shell">
       <header class="hero">
-        <div>
-          <p class="eyebrow">Anime Catalog</p>
-          <h1>Сканер AnimeGo</h1>
+        <div class="hero-copy">
+          <p class="eyebrow">Anime Catalog <span>· Обновление каталога</span></p>
+          <h1>Сканер каталога</h1>
           <p id="subtitle" class="subtitle">Готовим задание…</p>
         </div>
         <span id="mode" class="mode">—</span>
       </header>
+
+      <section class="panel launch-panel" aria-label="Новый скан">
+        <div class="section-copy">
+          <h2>Новая проверка</h2>
+          <p class="subtitle">Быстрый скан проверяет актуальные тайтлы. Полный также ищет новые и занимает больше времени.</p>
+        </div>
+        <div class="launch-buttons">
+          <button id="start-partial" class="button primary" type="button">Быстрый скан</button>
+          <button id="start-full" class="button secondary" type="button">Полный скан</button>
+        </div>
+        <p id="launch-status" class="subtitle" aria-live="polite"></p>
+      </section>
 
       <section class="panel progress-panel" aria-labelledby="progress-title">
         <div class="progress-heading">
@@ -29,8 +41,9 @@
           id="progress-track"
           class="progress-track"
           role="progressbar"
+          aria-label="Прогресс сканирования"
           aria-valuemin="0"
-          aria-valuemax="0"
+          aria-valuemax="1"
           aria-valuenow="0"
         >
           <div id="progress-bar" class="progress-bar"></div>
@@ -58,7 +71,7 @@
           <h2 id="log-title">Ход работы</h2>
           <span id="job-label">—</span>
         </div>
-        <ol id="log" class="log" aria-live="polite"></ol>
+        <ol id="log" class="log" role="log" aria-live="off"></ol>
       </section>
     </main>
     <script type="module" src="scanner.js"></script>

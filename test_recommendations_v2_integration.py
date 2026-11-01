@@ -26,6 +26,16 @@ def item(item_id, title, *, genres=("Фэнтези",), score=8.0, **extra):
 
 
 class RecommendationV2IntegrationTest(unittest.TestCase):
+    def test_default_recommendations_return_one_hundred_unique_candidates(self):
+        catalog = [item(index, f"Candidate {index}", franchise_id=index) for index in range(1, 131)]
+        with patch("server.get_anime_list", return_value=catalog):
+            payload = server.get_recommendations(user_id=7)
+            capped = server.get_recommendations(limit=999, user_id=7)
+        self.assertEqual(payload["limit"], 100)
+        self.assertEqual(len(payload["items"]), 100)
+        self.assertEqual(len({entry["id"] for entry in payload["items"]}), 100)
+        self.assertEqual(len(capped["items"]), 100)
+
     def test_server_uses_v2_and_keeps_none_status_neutral(self):
         catalog = [
             item(1, "Favorite", is_favorite=True),

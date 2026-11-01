@@ -40,8 +40,8 @@ DEFAULT_DB = ROOT / "db" / "animego.sqlite"
 STATIC_DIR = ROOT / "static"
 SCANNER_EXTENSION_DIR = ROOT / "browser-extension" / "animego-scanner"
 DEFAULT_LOG_DIR = ROOT / "data" / "logs"
-DEFAULT_RECOMMENDATION_LIMIT = 20
-MAX_RECOMMENDATION_LIMIT = 50
+DEFAULT_RECOMMENDATION_LIMIT = 100
+MAX_RECOMMENDATION_LIMIT = 100
 DEFAULT_CONTENT_UPDATE_DAYS = 7
 DEFAULT_CONTENT_UPDATE_LIMIT = 160
 MAX_CONTENT_UPDATE_LIMIT = 500
@@ -806,6 +806,12 @@ def ensure_watch_tracking_schema(con):
     had_state = con.execute(
         "select 1 from sqlite_master where type = 'table' and name = 'user_episode_state'"
     ).fetchone()
+    had_cycle_history = con.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'user_episode_cycle_history'"
+    ).fetchone()
+    had_cycle_history_index = con.execute(
+        "select 1 from sqlite_master where type = 'index' and name = 'idx_user_episode_cycle_history_title'"
+    ).fetchone()
     con.executescript(
         """
         create table if not exists user_watch_events (
@@ -868,6 +874,9 @@ def ensure_watch_tracking_schema(con):
             last_event_type text not null,
             last_confidence real not null default 0,
             completion_confidence real,
+            cycle_event_id integer,
+            cycle_engaged_base integer,
+            cycle_completed_at text,
             updated_at text not null,
             primary key (user_id, anime_id, episode_id)
         );
@@ -882,9 +891,26 @@ def ensure_watch_tracking_schema(con):
             on user_episode_state(user_id, last_seen_at desc);
         create index if not exists idx_user_episode_state_anime_progress
             on user_episode_state(user_id, anime_id, progress_episode_number);
+
+        create table if not exists user_episode_cycle_history (
+            id integer primary key autoincrement,
+            user_id integer not null references users(id) on delete cascade,
+            anime_id integer not null references anime(id) on delete cascade,
+            episode_id integer not null references episodes(id) on delete cascade,
+            cycle_event_id integer not null,
+            completed_at text,
+            engaged_seconds integer not null
+        );
+        create index if not exists idx_user_episode_cycle_history_title
+            on user_episode_cycle_history(user_id, anime_id);
         """
     )
-    return not bool(had_events and had_state)
+    changed = ensure_columns(con, "user_episode_state", {
+        "cycle_event_id": "integer",
+        "cycle_engaged_base": "integer",
+        "cycle_completed_at": "text",
+    })
+    return changed or not bool(had_events and had_state and had_cycle_history and had_cycle_history_index)
 
 
 def ensure_title_navigation_schema(con):
@@ -1835,6 +1861,14 @@ def bounded_damerau_levenshtein(left, right, max_distance):
     return previous[-1]
 
 
+@lru_cache(maxsize=200_000)
+def search_adjective_stem(token):
+    # Search tokens are already NFKD-normalized: й becomes и.
+    # Keep a long Cyrillic stem to avoid conflating short words and names.
+    match = re.fullmatch(r"([а-я]{4,}?)(?:ого|его|ому|ему|ыми|ими|ои|ыи|ии|ым|им|ом|ем)", token)
+    return match.group(1) if match else None
+
+
 def search_token_match_score(query_token, candidate):
     token = candidate["token"]
     weight = candidate["weight"]
@@ -1858,6 +1892,10 @@ def search_token_match_score(query_token, candidate):
             and len(token) / len(query_token) >= 0.6
         ):
             return 66 + weight * 7
+
+    stem = search_adjective_stem(query_token)
+    if stem and stem == search_adjective_stem(token):
+        return 48 + weight * 6 + min(len(query_token), len(token))
 
     max_distance = min(max_search_edit_distance(query_token), max_search_edit_distance(token))
     if not max_distance:
@@ -3045,7 +3083,9 @@ def get_content_updates(
         episode_states = {}
         if user_id is not None:
             for row in con.execute(
-                """select anime_id, progress_episode_number, completed_at, last_seen_at
+                """select anime_id, progress_episode_number,
+                          case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at,
+                          last_seen_at
                    from user_episode_state where user_id = ? and started_at is not null""", (user_id,),
             ):
                 episode_states.setdefault(row["anime_id"], []).append(dict(row))
@@ -3800,7 +3840,9 @@ def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
         ).fetchall()
         states = {row["anime_id"]: dict(row) for row in rows}
         for row in con.execute(
-            """select anime_id, progress_episode_number, completed_at, last_seen_at
+            """select anime_id, progress_episode_number,
+                      case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at,
+                      last_seen_at
                from user_episode_state where user_id = ? and started_at is not null""",
             (int(user_id),),
         ):
@@ -4630,7 +4672,8 @@ def reconcile_completed_titles(con, user_id, groups=None):
             if totals and progress < max(totals):
                 continue
             latest = con.execute(
-                f"""select completed_at from user_episode_state
+                f"""select case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at
+                    from user_episode_state
                     where user_id = ? and anime_id in ({placeholders})
                       and progress_episode_number = ? and started_at is not null
                     order by last_seen_at desc, updated_at desc limit 1""",
@@ -4639,11 +4682,14 @@ def reconcile_completed_titles(con, user_id, groups=None):
             if not latest or not latest["completed_at"]:
                 continue
             timestamp = now_iso()
+            status_timestamp = user_state_model.next_watch_status_timestamp(
+                state.get("watch_status_updated_at"), timestamp
+            )
             con.execute(
                 f"""update user_title_state set watch_status = 'completed', watched = 1,
                     watch_status_updated_at = ?, updated_at = ?
                     where user_id = ? and anime_id in ({placeholders})""",
-                (timestamp, timestamp, user_id, *ids),
+                (status_timestamp, timestamp, user_id, *ids),
             )
             changed.append(group["id"])
         if owns_transaction:
@@ -5223,10 +5269,19 @@ def sanitize_watch_metadata(payload):
         metadata.pop(field, None)
         if payload.get(field) is not None:
             metadata[field] = payload[field]
+    # Preserve the validated playback fields before limiting arbitrary metadata
+    # to a bounded number of entries.
+    playback_fields = (
+        "playback_ended", "provider_progress", "playback_position_seconds",
+        "playback_duration_seconds",
+    )
+    metadata = {field: metadata.pop(field) for field in playback_fields if field in metadata} | metadata
     cleaned = sanitize_client_error_value(metadata)
     encoded = json.dumps(cleaned, ensure_ascii=False, sort_keys=True)
     if len(encoded.encode("utf-8")) > MAX_WATCH_METADATA_BYTES:
-        return json.dumps({"truncated": True}, ensure_ascii=False, sort_keys=True)
+        truncated = {"truncated": True}
+        truncated.update({field: cleaned[field] for field in playback_fields if field in cleaned})
+        return json.dumps(truncated, ensure_ascii=False, sort_keys=True)
     return encoded
 
 
@@ -5633,6 +5688,7 @@ def sync_manual_progress_to_episode_state(
         provider_id=source["provider_id"] if source else None,
         provider_title=source["provider_title"] if source else None,
         embed_host=source["embed_host"] if source else None,
+        infer_time_completion=False,
     )
     return watch_target_from_episode_source(
         episode,
@@ -5641,6 +5697,23 @@ def sync_manual_progress_to_episode_state(
         timestamp,
         engaged_seconds=engaged_seconds,
     )
+
+
+def episode_awaits_new_cycle(row):
+    return bool(row and row["started_at"] is None and row["last_event_type"] == "manual_clear")
+
+
+def cycle_completed_at(row):
+    if not row:
+        return None
+    return row["completed_at"] if row["cycle_event_id"] is None else row["cycle_completed_at"]
+
+
+def cycle_engaged_seconds(row):
+    if not row:
+        return 0
+    total = int(row["engaged_seconds"] or 0)
+    return max(0, total - int(row["cycle_engaged_base"] or 0)) if row["cycle_event_id"] is not None else total
 
 
 def mark_previous_episode_completed(con, user_id, anime_id, progress_episode_number, timestamp):
@@ -5654,9 +5727,9 @@ def mark_previous_episode_completed(con, user_id, anime_id, progress_episode_num
           and anime_id = ?
           and progress_episode_number is not null
           and progress_episode_number < ?
-          and completed_at is null
+          and (case when cycle_event_id is null then completed_at else cycle_completed_at end) is null
           and started_at is not null
-          and engaged_seconds >= ?
+          and (engaged_seconds - coalesce(cycle_engaged_base, 0)) >= ?
         order by progress_episode_number desc, last_seen_at desc
         limit 1
         """,
@@ -5667,15 +5740,16 @@ def mark_previous_episode_completed(con, user_id, anime_id, progress_episode_num
     con.execute(
         """
         update user_episode_state
-        set completed_at = ?,
-            completion_confidence = ?,
+        set completed_at = coalesce(completed_at, ?),
+            cycle_completed_at = case when cycle_event_id is not null then ? else cycle_completed_at end,
+            completion_confidence = case when completed_at is null then ? else completion_confidence end,
             updated_at = ?
         where user_id = ?
           and anime_id = ?
           and episode_id = ?
-          and completed_at is null
+          and (case when cycle_event_id is null then completed_at else cycle_completed_at end) is null
         """,
-        (timestamp, 0.8, timestamp, user_id, anime_id, previous["episode_id"]),
+        (timestamp, timestamp, 0.8, timestamp, user_id, anime_id, previous["episode_id"]),
     )
     return dict(previous)
 
@@ -5704,6 +5778,9 @@ def upsert_episode_watch_state(
     embed_host,
     playback_ended=False,
     playback_duration_seconds=None,
+    infer_time_completion=True,
+    cycle_floor_event_id=None,
+    cycle_current=True,
 ):
     existing = con.execute(
         """
@@ -5725,13 +5802,57 @@ def upsert_episode_watch_state(
     started_at = existing["started_at"] if existing and existing["started_at"] else (timestamp if started else None)
     completed_at = existing["completed_at"] if existing and existing["completed_at"] else None
     completion_confidence = existing["completion_confidence"] if existing and existing["completion_confidence"] else None
-    if (started_at and not completed_at and playback_duration_seconds is None
-            and total_engaged >= WATCH_LIKELY_COMPLETED_SECONDS):
-        completed_at = timestamp
-        completion_confidence = 0.7
-    if started_at and playback_ended:
+    cycle_event_id = existing["cycle_event_id"] if existing else None
+    cycle_engaged_base = existing["cycle_engaged_base"] if existing else None
+    current_completed_at = cycle_completed_at(existing)
+    if started and episode_awaits_new_cycle(existing):
+        if existing["cycle_event_id"] is not None:
+            con.execute(
+                """insert into user_episode_cycle_history
+                   (user_id, anime_id, episode_id, cycle_event_id, completed_at, engaged_seconds)
+                   values (?, ?, ?, ?, ?, ?)""",
+                (user_id, anime_id, episode_id, existing["cycle_event_id"],
+                 existing["cycle_completed_at"], cycle_engaged_seconds(existing)),
+            )
+        cycle_event_id = cycle_floor_event_id
+        if cycle_event_id is None:
+            cycle_event_id = con.execute("select coalesce(max(id), 0) + 1 from user_watch_events").fetchone()[0]
+        cycle_engaged_base = int(existing["engaged_seconds"] or 0)
+        current_completed_at = None
+    elif cycle_event_id is not None and not cycle_current and not episode_awaits_new_cycle(existing):
+        # Late events remain part of the lifetime history, but cannot advance
+        # the new cycle after the user explicitly cleared their progress. If
+        # the next cycle has not started yet, keep them in the previous cycle.
+        cycle_engaged_base = int(cycle_engaged_base or 0) + nonnegative_int(engaged_seconds)
+    cycle_engaged = total_engaged - int(cycle_engaged_base or 0) if cycle_event_id is not None else total_engaged
+    if (infer_time_completion and cycle_current and started_at and not current_completed_at
+            and playback_duration_seconds is None
+            and cycle_engaged >= WATCH_LIKELY_COMPLETED_SECONDS):
+        # A later event can omit a duration already reported for this episode.
+        # In that case the generic time threshold would complete long videos
+        # before they have reached the position-based completion threshold.
+        known_duration = con.execute(
+            """
+            select 1 from user_watch_events
+            where user_id = ? and anime_id = ? and episode_id = ?
+              and json_type(case when json_valid(metadata_json) then metadata_json else '{}' end,
+                            '$.playback_duration_seconds') = 'integer'
+              and json_extract(case when json_valid(metadata_json) then metadata_json else '{}' end,
+                               '$.playback_duration_seconds') > 0
+            limit 1
+            """,
+            (user_id, anime_id, episode_id),
+        ).fetchone()
+        if not known_duration:
+            if completed_at is None:
+                completion_confidence = 0.7
+            completed_at = completed_at or timestamp
+            current_completed_at = timestamp
+    if started_at and playback_ended and cycle_current:
+        if cycle_event_id is None or completed_at is None:
+            completion_confidence = 1.0
         completed_at = completed_at or timestamp
-        completion_confidence = 1.0
+        current_completed_at = current_completed_at or timestamp
 
     next_row = {
         "user_id": user_id,
@@ -5756,6 +5877,9 @@ def upsert_episode_watch_state(
         "last_event_type": event_type if started or not existing else existing["last_event_type"],
         "last_confidence": confidence if started or not existing else existing["last_confidence"],
         "completion_confidence": completion_confidence,
+        "cycle_event_id": cycle_event_id,
+        "cycle_engaged_base": cycle_engaged_base,
+        "cycle_completed_at": current_completed_at if cycle_event_id is not None else None,
         "updated_at": timestamp,
     }
     if existing and not started:
@@ -5789,6 +5913,9 @@ def upsert_episode_watch_state(
             last_event_type,
             last_confidence,
             completion_confidence,
+            cycle_event_id,
+            cycle_engaged_base,
+            cycle_completed_at,
             updated_at
         )
         values (
@@ -5814,6 +5941,9 @@ def upsert_episode_watch_state(
             :last_event_type,
             :last_confidence,
             :completion_confidence,
+            :cycle_event_id,
+            :cycle_engaged_base,
+            :cycle_completed_at,
             :updated_at
         )
         on conflict(user_id, anime_id, episode_id) do update set
@@ -5835,6 +5965,9 @@ def upsert_episode_watch_state(
             last_event_type = excluded.last_event_type,
             last_confidence = excluded.last_confidence,
             completion_confidence = excluded.completion_confidence,
+            cycle_event_id = excluded.cycle_event_id,
+            cycle_engaged_base = excluded.cycle_engaged_base,
+            cycle_completed_at = excluded.cycle_completed_at,
             updated_at = excluded.updated_at
         """,
         next_row,
@@ -6005,30 +6138,62 @@ def record_watch_event(payload, db_path=None, user_id=None):
             ),
         )
         started = event_type in WATCH_PROGRESS_EVENT_TYPES and confidence >= WATCH_STARTED_CONFIDENCE
-        if started:
+        event_state_is_current = True
+        if started or "library_watch_status" in payload or "library_watch_status_updated_at" in payload:
             current_title_state = get_group_state(con, member_ids, user_id)
-            event_state_is_current = True
             if "library_watch_status" in payload:
                 expected_status = bounded_text(payload.get("library_watch_status"), 40)
                 if expected_status not in user_state_model.WATCH_STATUS_SET:
-                    raise ValueError("library_watch_status is invalid")
-                event_state_is_current = expected_status == current_title_state.get("watch_status")
+                    if started:
+                        raise ValueError("library_watch_status is invalid")
+                    event_state_is_current = False
+                else:
+                    event_state_is_current = expected_status == current_title_state.get("watch_status")
             if event_state_is_current and "library_watch_status_updated_at" in payload:
                 expected_updated_at = bounded_text(payload.get("library_watch_status_updated_at"), 80)
                 event_state_is_current = expected_updated_at == current_title_state.get("watch_status_updated_at")
-            started = event_state_is_current and watch_event_can_start_title(current_title_state, event_type)
+            if started:
+                started = event_state_is_current and watch_event_can_start_title(current_title_state, event_type)
+        existing_episode_state = con.execute(
+            "select * from user_episode_state where user_id = ? and anime_id = ? and episode_id = ?",
+            (user_id, anime_id, episode["id"]),
+        ).fetchone()
+        starting_cycle = started and episode_awaits_new_cycle(existing_episode_state)
+        cycle_floor = cur.lastrowid if starting_cycle else (
+            existing_episode_state["cycle_event_id"] if existing_episode_state else None
+        )
+        cycle_current = event_state_is_current if cycle_floor is not None else True
+        if cycle_current and cycle_floor is not None and not starting_cycle:
+            # A delayed event from another old tab must not finish the new
+            # cycle unless that session has explicitly resumed since the clear.
+            prior_session, restarted_session = con.execute(
+                """select
+                     exists(select 1 from user_watch_events where user_id = ? and anime_id = ?
+                            and episode_id = ? and client_session_id = ? and id < ?),
+                     exists(select 1 from user_watch_events where user_id = ? and anime_id = ?
+                            and episode_id = ? and client_session_id = ? and id >= ?
+                            and (event_type in ('player_engaged', 'fullscreen_enter', 'pip_open')
+                                 or (id = ? and event_type = 'heartbeat')))""",
+                (user_id, anime_id, episode["id"], client_session_id, cycle_floor,
+                 user_id, anime_id, episode["id"], client_session_id, cycle_floor, cycle_floor),
+            ).fetchone()
+            if prior_session and not restarted_session:
+                cycle_current = False
+        if cycle_floor is not None and not cycle_current:
+            started = False
         # An ended message must belong to a session that actually advanced.
         # Loading an old episode with a historical started_at is insufficient.
-        completion_reported = playback_ended or (engaged_seconds > 0 and bool(con.execute(
+        completion_reported = cycle_current and (playback_ended or (engaged_seconds > 0 and bool(con.execute(
             """
             select 1 from user_watch_events
             where user_id = ? and anime_id = ? and episode_id = ?
               and client_session_id = ? and event_type = 'session_end'
+              and id >= ?
               and json_extract(metadata_json, '$.playback_ended') = 1
             limit 1
             """,
-            (user_id, anime_id, episode["id"], client_session_id),
-        ).fetchone()))
+            (user_id, anime_id, episode["id"], client_session_id, cycle_floor or 0),
+        ).fetchone())))
         # Pause/heartbeat and ended requests can reach the server out of order.
         # Reconcile both pieces from the same session, whichever arrives last.
         completion_verified = completion_reported and bool(con.execute(
@@ -6036,21 +6201,22 @@ def record_watch_event(payload, db_path=None, user_id=None):
             select 1 from user_watch_events
             where user_id = ? and anime_id = ? and episode_id = ?
               and client_session_id = ? and engaged_seconds > 0
+              and id >= ?
             limit 1
             """,
-            (user_id, anime_id, episode["id"], client_session_id),
+            (user_id, anime_id, episode["id"], client_session_id, cycle_floor or 0),
         ).fetchone())
         # Wall-clock watch time is shorter at increased playback speed, and
         # viewers often leave during credits without an ended message. Accept
         # reaching 90% of the duration with engagement in this session.
-        if (event_type in {"heartbeat", "session_end", "page_hidden"}
+        if (cycle_current and event_type in {"heartbeat", "session_end", "page_hidden"}
                 and playback_duration is not None and playback_position is not None
                 and playback_duration * 0.9
                 <= playback_position <= playback_duration + 2):
             session_seconds = con.execute(
                 """select coalesce(sum(engaged_seconds), 0) from user_watch_events
-                   where user_id = ? and anime_id = ? and episode_id = ? and client_session_id = ?""",
-                (user_id, anime_id, episode["id"], client_session_id),
+                   where user_id = ? and anime_id = ? and episode_id = ? and client_session_id = ? and id >= ?""",
+                (user_id, anime_id, episode["id"], client_session_id, cycle_floor or 0),
             ).fetchone()[0]
             completion_verified = completion_verified or session_seconds >= min(60, playback_duration * 0.5)
         episode_state = upsert_episode_watch_state(
@@ -6076,6 +6242,8 @@ def record_watch_event(payload, db_path=None, user_id=None):
             embed_host=embed_host,
             playback_ended=completion_verified,
             playback_duration_seconds=playback_duration,
+            cycle_floor_event_id=cycle_floor,
+            cycle_current=cycle_current,
         )
 
         title_state = None
@@ -6109,7 +6277,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 "event_at": timestamp,
             },
             "episode_state": {
-                key: episode_state.get(key)
+                key: (cycle_completed_at(episode_state) if key == "completed_at" else episode_state.get(key))
                 for key in (
                     "anime_id",
                     "episode_id",
@@ -6178,7 +6346,7 @@ def detail_watch_target_from_episode_state(row, detail):
         "provider_id": selected_source.get("provider_id") if selected_source else row.get("provider_id"),
         "video_source_id": selected_source.get("id") if selected_source else row.get("video_source_id"),
         "last_seen_at": row.get("last_seen_at"),
-        "completed_at": row.get("completed_at"),
+        "completed_at": cycle_completed_at(row),
         "engaged_seconds": row.get("engaged_seconds"),
     }
 
@@ -6218,7 +6386,7 @@ def continue_target_from_episode_state(row, db_path=None, user_id=None, detail=N
 
     target = current
     reason = "resume"
-    if row["completed_at"]:
+    if cycle_completed_at(row):
         follow_up = next_available_episode(episodes, row["progress_episode_number"])
         if follow_up:
             target = follow_up
@@ -6243,7 +6411,7 @@ def continue_target_from_episode_state(row, db_path=None, user_id=None, detail=N
         "video_source_id": selected_source.get("id"),
         "reason": reason,
         "last_seen_at": row["last_seen_at"],
-        "completed_at": row["completed_at"],
+        "completed_at": cycle_completed_at(row),
         "engaged_seconds": row["engaged_seconds"],
     }
 

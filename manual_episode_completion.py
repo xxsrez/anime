@@ -17,6 +17,9 @@ SCHEMA = """create table if not exists user_manual_episode_completions (
     primary key (user_id, operation_id)
 )"""
 
+SNAPSHOT_TABLES = ('user_title_state', 'user_episode_state', 'user_episode_cycle_history')
+WATCH_CYCLE_COLUMNS = ('cycle_event_id', 'cycle_engaged_base', 'cycle_completed_at')
+
 
 def ensure_schema(con):
     existed = con.execute("select 1 from sqlite_master where name = 'user_manual_episode_completions'").fetchone()
@@ -27,7 +30,7 @@ def ensure_schema(con):
 def snapshot(con, user_id, members):
     placeholders = ','.join('?' for _ in members)
     result = {}
-    for table in ('user_title_state', 'user_episode_state'):
+    for table in SNAPSHOT_TABLES:
         result[table] = [dict(row) for row in con.execute(
             f'select * from {table} where user_id = ? and anime_id in ({placeholders}) order by rowid',
             (user_id, *members),
@@ -39,6 +42,24 @@ def snapshot(con, user_id, members):
         (user_id, *members),
     ).fetchone()[0]
     return result
+
+
+def snapshot_matches(current, saved):
+    # Snapshots written before cycle tracking lack the new table and columns.
+    # They remain usable only if no cycle data has since appeared.
+    current = {key: value for key, value in current.items()}
+    if 'user_episode_cycle_history' not in saved:
+        if current.pop('user_episode_cycle_history'):
+            return False
+    saved_episodes = saved.get('user_episode_state') or []
+    if saved_episodes and any(key not in saved_episodes[0] for key in WATCH_CYCLE_COLUMNS):
+        normalized = []
+        for row in current['user_episode_state']:
+            if any(row.get(key) is not None for key in WATCH_CYCLE_COLUMNS):
+                return False
+            normalized.append({key: value for key, value in row.items() if key not in WATCH_CYCLE_COLUMNS})
+        current['user_episode_state'] = normalized
+    return current == saved
 
 
 def record(payload, db_path, user_id, core):
@@ -67,11 +88,13 @@ def record(payload, db_path, user_id, core):
                 raise ValueError('Отметка не найдена')
             if not operation['undone_at']:
                 members = json.loads(operation['member_ids'])
-                if snapshot(con, user_id, members) != json.loads(operation['after_state']):
+                if not snapshot_matches(snapshot(con, user_id, members), json.loads(operation['after_state'])):
                     raise ValueError('После отметки прогресс изменился. Отмена затронула бы более новые изменения.')
                 before = json.loads(operation['before_state'])
                 placeholders = ','.join('?' for _ in members)
-                for table in ('user_title_state', 'user_episode_state'):
+                for table in SNAPSHOT_TABLES:
+                    if table not in before:
+                        continue
                     con.execute(f'delete from {table} where user_id = ? and anime_id in ({placeholders})', (user_id, *members))
                     for row in before[table]:
                         columns = ','.join(row)
@@ -94,7 +117,8 @@ def record(payload, db_path, user_id, core):
             return {'ok': True, 'operation_id': operation_id, 'undone': bool(operation['undone_at'])}
         before = snapshot(con, user_id, members)
         key = core.episode_number_key(episode['number'], episode['id'])
-        if any(row['completed_at'] and core.episode_number_key(row['episode_number'], row['episode_id']) == key
+        if any(not core.episode_awaits_new_cycle(row) and core.cycle_completed_at(row)
+               and core.episode_number_key(row['episode_number'], row['episode_id']) == key
                for row in before['user_episode_state']):
             return {'ok': True, 'already_completed': True}
         timestamp = core.now_iso()

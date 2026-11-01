@@ -47,6 +47,50 @@ class DatabaseMigrationTest(unittest.TestCase):
         finally:
             con.close()
 
+    def test_episode_cycle_migration_and_runtime_adoption_preserve_existing_history(self):
+        migration = (Path(__file__).parent
+                     / "migrations/2026-11-01_episode-progress-cycle/00_add_cycle_columns.sql")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "migrations"
+            self.write_migration(root, migration.parent.name, migration.name, migration.read_text())
+            for runtime_first in (False, True):
+                with self.subTest(runtime_first=runtime_first):
+                    db_path = Path(tmpdir) / f"cycle-{runtime_first}.sqlite"
+                    con = sqlite3.connect(db_path)
+                    con.executescript("""
+                        create table users (id integer primary key);
+                        create table anime (id integer primary key);
+                        create table episodes (id integer primary key);
+                        create table user_episode_state (
+                            user_id integer, anime_id integer, episode_id integer,
+                            started_at text, completed_at text, engaged_seconds integer,
+                            last_seen_at text, progress_episode_number integer
+                        );
+                        insert into user_episode_state values
+                            (1, 2, 3, null, '2026-01-01', 1500, '2026-01-01', 4);
+                    """)
+                    if runtime_first:
+                        server.ensure_watch_tracking_schema(con)
+                    con.commit()
+                    con.close()
+
+                    result = db_migrate.apply_pending(db_path, root, no_backup=True)
+                    self.assertEqual(len(result["adopted"] if runtime_first else result["applied"]), 1)
+                    self.assertEqual(db_migrate.apply_pending(db_path, root, no_backup=True)["applied"], [])
+                    con = sqlite3.connect(db_path)
+                    row = con.execute("select started_at, completed_at, engaged_seconds, cycle_event_id, cycle_engaged_base, cycle_completed_at from user_episode_state").fetchone()
+                    self.assertEqual(row, (None, '2026-01-01', 1500, None, None, None))
+                    self.assertTrue(db_migrate.episode_progress_cycle_v1_satisfied(con))
+                    con.execute(
+                        "insert into user_episode_cycle_history "
+                        "(user_id, anime_id, episode_id, cycle_event_id, completed_at, engaged_seconds) "
+                        "values (1, 2, 3, 10, null, 20)"
+                    )
+                    self.assertEqual(con.execute(
+                        "select completed_at, engaged_seconds from user_episode_cycle_history"
+                    ).fetchone(), (None, 20))
+                    con.close()
+
     def test_video_source_index_migration_preserves_playable_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "anime.sqlite"

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "animegoScannerSession";
+const THEME_KEY = "animegoScannerTheme";
 const PERMISSION_SOURCE_KEY = "animegoScannerPermissionSource";
 const ANIMEGO_HOST_PERMISSION = "https://animego.me/*";
 const extensionApi = globalThis.browser ?? globalThis.chrome;
@@ -80,7 +81,14 @@ async function openScanner() {
   await extensionApi.tabs.create({ url: scannerUrl, active: true });
 }
 
-async function startScan(message, sender) {
+let sessionWrites = Promise.resolve();
+function serializeSessionWrite(action) {
+  const result = sessionWrites.then(action);
+  sessionWrites = result.catch(() => {});
+  return result;
+}
+
+async function persistScan(message, sender) {
   const origin = senderOrigin(sender);
   if (!origin || !APP_ORIGINS.has(origin)) {
     throw new Error("Эта страница не может запускать сканер AnimeGo.");
@@ -92,6 +100,7 @@ async function startScan(message, sender) {
     origin,
   };
   await extensionApi.storage.local.set({
+    [THEME_KEY]: ["light", "dark"].includes(payload.theme) ? payload.theme : null,
     [STORAGE_KEY]: {
       payload,
       sourceTabId: sender.tab?.id ?? null,
@@ -99,8 +108,27 @@ async function startScan(message, sender) {
       savedAt: new Date().toISOString(),
     },
   });
+  return { ok: true };
+}
+
+async function startScan(message, sender) {
+  await serializeSessionWrite(() => persistScan(message, sender));
   await openScanner();
   return { ok: true };
+}
+
+async function saveScanCheckpoint(message, sender) {
+  if (!isScannerPage(sender)) throw new Error("Некорректный источник сохранения скана.");
+  return serializeSessionWrite(async () => {
+    const stored = await extensionApi.storage.local.get(STORAGE_KEY);
+    const current = stored[STORAGE_KEY];
+    if (!current || jobId(current.payload) !== jobId(message.payload)) return { ok: true, stale: true };
+    await extensionApi.storage.local.set({ [STORAGE_KEY]: {
+      ...current, payload: message.payload, checkpoint: message.checkpoint,
+      savedAt: new Date().toISOString(),
+    } });
+    return { ok: true };
+  });
 }
 
 async function forwardToApp(message) {
@@ -119,26 +147,31 @@ async function forwardToApp(message) {
   }
 }
 
-async function reopenFromApp(sender) {
-  const stored = await extensionApi.storage.local.get(STORAGE_KEY);
-  const current = stored[STORAGE_KEY];
-  if (current && sender.tab?.id != null) {
-    await extensionApi.storage.local.set({
-      [STORAGE_KEY]: {
+async function reopenFromApp(sender, theme) {
+  await serializeSessionWrite(async () => {
+    const stored = await extensionApi.storage.local.get(STORAGE_KEY);
+    const current = stored[STORAGE_KEY];
+    const changes = { [THEME_KEY]: ["light", "dark"].includes(theme) ? theme : null };
+    if (current && sender.tab?.id != null) {
+      changes[STORAGE_KEY] = {
         ...current,
         sourceTabId: sender.tab.id,
         savedAt: new Date().toISOString(),
-      },
-    });
-  }
+      };
+    }
+    await extensionApi.storage.local.set(changes);
+  });
   await openScanner();
 }
 
-async function prepareAnimeGoAccess(sender) {
+async function prepareAnimeGoAccess(sender, theme) {
   const origin = senderOrigin(sender);
   if (!origin || !APP_ORIGINS.has(origin)) {
     throw new Error("Эта страница не может запрашивать доступ к AnimeGo.");
   }
+  await extensionApi.storage.local.set({
+    [THEME_KEY]: ["light", "dark"].includes(theme) ? theme : null,
+  });
   const granted = Boolean(
     await extensionApi.permissions?.contains?.({ origins: [ANIMEGO_HOST_PERMISSION] }),
   );
@@ -184,9 +217,77 @@ async function forwardPermissionGranted(sender) {
   return { ok: true };
 }
 
+let creatingScan = false;
+
+async function createScan(message, sender) {
+  if (!isScannerPage(sender)) throw new Error("Некорректный источник запуска скана.");
+  if (!["partial", "full"].includes(message.mode)) throw new Error("Неизвестный режим скана.");
+  if (creatingScan) throw new Error("Задание уже создаётся.");
+  creatingScan = true;
+  try {
+    const stored = await extensionApi.storage.local.get([STORAGE_KEY, PERMISSION_SOURCE_KEY]);
+    const previous = stored[STORAGE_KEY];
+    if (previous?.checkpoint && !["completed", "stopped", "expired"].includes(previous.checkpoint.status)) {
+      throw new Error("Сначала завершите или остановите текущий скан.");
+    }
+    const origin = previous?.payload?.origin || stored[PERMISSION_SOURCE_KEY]?.origin;
+    const tabs = await extensionApi.tabs.query({});
+    const candidates = tabs.filter(tab => APP_ORIGINS.has(senderOrigin({ tab }))
+      && (!origin || senderOrigin({ tab }) === origin));
+    const tab = candidates.find(tab => tab.id === previous?.sourceTabId) || candidates[0];
+    if (!tab) throw new Error("Откройте Anime Catalog и войдите в аккаунт, затем повторите скан здесь.");
+    let response;
+    try {
+      response = await extensionApi.tabs.sendMessage(tab.id, {
+        type: "animego-scanner-create-job", mode: message.mode,
+      });
+    } catch (_error) {
+      throw new Error("Обновите открытую страницу Anime Catalog, затем повторите скан здесь.");
+    }
+    if (!response?.ok) throw new Error(response?.error || "Не удалось создать задание.");
+    if (response.empty) return response;
+    const saved = await extensionApi.storage.local.get(STORAGE_KEY);
+    if (jobId(saved[STORAGE_KEY]?.payload) !== jobId(response.detail)) {
+      await startScan({ detail: response.detail }, { tab });
+    } else {
+      await openScanner();
+    }
+    return { ok: true };
+  } finally {
+    creatingScan = false;
+  }
+}
+
 extensionApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "animego-scanner-theme") {
+    const origin = senderOrigin(sender);
+    if (!origin || !APP_ORIGINS.has(origin)) {
+      sendResponse({ ok: false, error: "Некорректный источник темы." });
+      return false;
+    }
+    extensionApi.storage.local.set({
+      [THEME_KEY]: ["light", "dark"].includes(message.theme) ? message.theme : null,
+    }).then(() => sendResponse({ ok: true }))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+  if (message?.type === "animego-scanner-save-checkpoint") {
+    saveScanCheckpoint(message, sender).then(sendResponse)
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+  if (message?.type === "animego-scanner-persist-job") {
+    serializeSessionWrite(() => persistScan(message, sender)).then(sendResponse)
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+  if (message?.type === "animego-scanner-create") {
+    createScan(message, sender).then(sendResponse)
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
   if (message?.type === "animego-scanner-prepare") {
-    prepareAnimeGoAccess(sender)
+    prepareAnimeGoAccess(sender, message.theme)
       .then(sendResponse)
       .catch((error) => sendResponse({ ok: false, error: error?.message || String(error) }));
     return true;
@@ -209,7 +310,7 @@ extensionApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ ok: false, error: "Эта страница не может открывать сканер AnimeGo." });
       return false;
     }
-    reopenFromApp(sender)
+    reopenFromApp(sender, message.theme)
       .then(() => sendResponse({ ok: true }))
       .catch((error) => sendResponse({ ok: false, error: error?.message || String(error) }));
     return true;

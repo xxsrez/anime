@@ -64,6 +64,58 @@ class ManualCompletionTest(unittest.TestCase):
         self.assertEqual(detail['progress_episode_number'], 3)
         self.assertEqual(server.get_continue_watching(self.db, self.user)['item']['episode_number'], '4')
 
+    def test_manual_completion_after_clear_starts_new_cycle_and_can_be_undone(self):
+        self.call(self.payload(2))
+        server.update_user_state(901, {'watch_status': 'none'}, self.db, self.user)
+        con = server.connect(self.db)
+        before = manual.snapshot(con, self.user, [901])
+        con.close()
+        result = self.call(self.payload(2))
+        self.assertFalse(result.get('already_completed', False))
+        self.assertEqual(server.get_continue_watching(self.db, self.user)['item']['episode_number'], '3')
+        self.undo(result)
+        con = server.connect(self.db)
+        self.assertEqual(manual.snapshot(con, self.user, [901]), before)
+        con.close()
+
+    def test_undo_accepts_unchanged_snapshot_from_before_cycle_tracking(self):
+        result = self.call(self.payload(2))
+        con = server.connect(self.db)
+        row = con.execute(
+            'select before_state, after_state from user_manual_episode_completions where operation_id = ?',
+            (result['operation_id'],),
+        ).fetchone()
+        legacy = []
+        for value in row:
+            state = json.loads(value)
+            state.pop('user_episode_cycle_history')
+            for episode in state['user_episode_state']:
+                for key in manual.WATCH_CYCLE_COLUMNS:
+                    episode.pop(key)
+            legacy.append(json.dumps(state))
+        con.execute('update user_manual_episode_completions set before_state = ?, after_state = ? where operation_id = ?',
+                    (*legacy, result['operation_id']))
+        con.commit()
+        con.close()
+        self.assertTrue(self.undo(result)['undone'])
+
+    def test_undo_restores_cycle_history_when_manual_completion_starts_another_cycle(self):
+        self.call(self.payload(2))
+        server.update_user_state(901, {'watch_status': 'none'}, self.db, self.user)
+        self.call(self.payload(2))
+        server.update_user_state(901, {'watch_status': 'none'}, self.db, self.user)
+        con = server.connect(self.db)
+        before = manual.snapshot(con, self.user, [901])
+        con.close()
+        result = self.call(self.payload(2))
+        con = server.connect(self.db)
+        self.assertEqual(len(manual.snapshot(con, self.user, [901])['user_episode_cycle_history']), 1)
+        con.close()
+        self.undo(result)
+        con = server.connect(self.db)
+        self.assertEqual(manual.snapshot(con, self.user, [901]), before)
+        con.close()
+
     def test_final_episode_finished_vs_ongoing(self):
         for status, expected in [('Онгоинг', 'watching'), ('Вышел', 'completed'), ('Выпуск завершён', 'completed')]:
             con = server.connect(self.db)
