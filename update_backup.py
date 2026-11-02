@@ -28,7 +28,7 @@ USER_STATE_TABLES = (
 
 
 def connect(db_path):
-    con = sqlite3.connect(db_path)
+    con = sqlite3.connect(Path(db_path).resolve().as_uri() + "?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     con.execute("pragma foreign_keys=on")
     con.execute("pragma busy_timeout=30000")
@@ -157,8 +157,10 @@ def write_checksums(paths, out_dir):
     return path
 
 
-def collect_counts(con, db_path):
-    items = server.get_anime_list(str(db_path))
+def collect_counts(con):
+    items = server.canonicalize_items(
+        server.get_source_anime_items(con, include_search_fields=False)
+    )
     source_counts = {
         row["source"] or "unknown": row["count"]
         for row in con.execute(
@@ -262,18 +264,23 @@ It lives under `db/`, which is intentionally ignored by git.
 
 ## Restore Full Database
 
-From the project root:
+Stop the application and all other processes using the database first. Move the
+current database and any `-wal`, `-shm`, and `-journal` files to a separate
+directory, keeping them together for recovery. The target path must be empty:
+this also allows restoration when the current database is damaged. From the
+project root, restore into that empty path:
 
 ```bash
-cp db/backups/current/animego.sqlite db/animego.sqlite
+sqlite3 -bail db/animego.sqlite '.restore db/backups/current/animego.sqlite'
 sqlite3 db/animego.sqlite 'pragma integrity_check;'
 ```
 
 ## Restore Only User State
 
-The target database must have the same user-state schema as this backup. Apply
-the matching schema migrations before restoring; the SQL dump does not downgrade
-or create tables. From the project root:
+Stop writers and preserve a full backup of the target first. The target must have
+the same user-state schema and matching user, title, episode, and video-source
+IDs as this backup. Apply the matching schema migrations before restoring; the
+SQL dump does not downgrade or create tables. From the project root:
 
 ```bash
 sqlite3 -bail db/animego.sqlite < db/backups/current/user_state.sql
@@ -326,7 +333,7 @@ def update_backup(args):
 
         con = connect(backup_path)
         try:
-            counts = collect_counts(con, backup_path)
+            counts = collect_counts(con)
             rows = user_state_rows(con)
             sql_path = write_user_state_sql(con, stage)
         finally:

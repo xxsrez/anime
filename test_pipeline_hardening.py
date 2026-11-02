@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime as dt
+from contextlib import closing
 import json
 import os
 import sqlite3
@@ -1792,6 +1793,13 @@ class PipelineHardeningTest(unittest.TestCase):
                 "(user_id, operation_id, anime_id, episode_id, member_ids, before_state, after_state, created_at) "
                 "values (?, 'backup-manual', 101, 101001, '[101]', '{}', '{}', '2026-01-01')", (user_id,),
             )
+            # Initialization normally clears this combination. A backup must
+            # preserve the database as captured, not initialize the snapshot.
+            con.execute("update user_title_state set watch_status='none' where user_id=?", (user_id,))
+            con.execute(
+                "update user_episode_state set started_at='2026-01-01', last_event_type='heartbeat' "
+                "where user_id=?", (user_id,),
+            )
             con.commit()
             con.close()
             args = SimpleNamespace(
@@ -1829,6 +1837,13 @@ class PipelineHardeningTest(unittest.TestCase):
             expected_episode_states = con.execute(
                 "select * from user_episode_state order by user_id, anime_id, episode_id"
             ).fetchall()
+            with closing(sqlite3.connect(out_dir / "animego.sqlite")) as snapshot:
+                self.assertEqual(
+                    snapshot.execute(
+                        "select * from user_episode_state order by user_id, anime_id, episode_id"
+                    ).fetchall(),
+                    expected_episode_states,
+                )
             expected_watch_events = con.execute(
                 "select * from user_watch_events order by id"
             ).fetchall()
@@ -1873,6 +1888,20 @@ class PipelineHardeningTest(unittest.TestCase):
 
             exported = json.loads((out_dir / "user_title_state.json").read_text(encoding="utf-8"))
             self.assertEqual(exported[0]["user_id"], user_id)
+
+    def test_backup_rejects_orphaned_state_instead_of_cleaning_the_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "anime.sqlite"
+            out_dir = Path(tmpdir) / "current"
+            user_id = self.make_backup_fixture(db_path)
+            with closing(sqlite3.connect(db_path)) as con, con:
+                con.execute(
+                    "update user_episode_state set episode_id=999999 where user_id=?", (user_id,),
+                )
+            args = SimpleNamespace(db=str(db_path), out=str(out_dir), wait_lock=False)
+            with self.assertRaisesRegex(RuntimeError, "foreign_key_check failed"):
+                update_backup.update_backup(args)
+            self.assertFalse(out_dir.exists())
 
     def test_failed_backup_keeps_previous_published_directory(self):
         with tempfile.TemporaryDirectory() as tmpdir:
