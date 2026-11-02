@@ -48,6 +48,14 @@ message("kodik_player_duration_update", {data: {key: "kodik_player_duration_upda
 assert.equal(session.providerDurationSeconds, 1380);
 assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: 0}), null);
 assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: "bad"}), null);
+const cvhCalls = [];
+context.state.playerContext = { loaded: true, playerOrigin: "https://ru.yummyani.me", messageProvider: "cvh" };
+context.handleProviderPlaybackStarted = (provider, position) => cvhCalls.push([provider, position]);
+context.handlePlayerMessage({ source: frame, origin: "https://wrong.example", data: { key: "player_time_update", value: 5 } });
+context.handlePlayerMessage({ source: {}, origin: "https://ru.yummyani.me", data: { key: "player_time_update", value: 5 } });
+assert.equal(cvhCalls.length, 0, "CVH messages require the active iframe and exact origin");
+context.handlePlayerMessage({ source: frame, origin: "https://ru.yummyani.me", data: { key: "player_time_update", value: 5 } });
+assert.deepEqual(cvhCalls, [["cvh", 5]]);
 const payloadContext = vm.createContext({
   state: {detail: {id: 1, watch_status: "watching"}, anime: []},
   WATCH_MAX_DELTA_SECONDS: 300, document: {hidden: false},

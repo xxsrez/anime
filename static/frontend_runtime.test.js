@@ -220,6 +220,17 @@ assert.equal(runtime.playerMessageProvider({
 }), "kodik");
 assert.equal(runtime.playerMessageProvider({ embed_host: "cdn.aniboom.one" }), "aniboom");
 assert.equal(runtime.playerMessageProvider({ embed_host: "kodikplayer.com.evil.test" }), null);
+assert.equal(runtime.playerMessageProvider({ embed_host: "ru.yummyani.me", provider_title: "CVH" }), "cvh");
+assert.equal(runtime.playerMessageProvider({ embed_host: "ru.yummyani.me.evil.test", provider_title: "CVH" }), null);
+assert.equal(runtime.playerMessageProvider({ embed_host: "ru.yummyani.me", provider_title: "Other" }), null);
+assert.deepEqual(runtime.normalizePlayerMessage({ key: "player_time_update", value: 31 }),
+  { provider: "cvh", type: "time_update", positionSeconds: 31 });
+assert.deepEqual(runtime.normalizePlayerMessage({ key: "player_duration_update", value: 1371 }),
+  { provider: "cvh", type: "duration_update", durationSeconds: 1371 });
+assert.deepEqual(runtime.normalizePlayerMessage({ key: "player_video_ended" }),
+  { provider: "cvh", type: "playback_ended" });
+assert.equal(runtime.normalizePlayerMessage({ key: "player_time_update", value: null }), null);
+assert.equal(runtime.normalizePlayerMessage({ key: "player_duration_update", value: 0 }), null);
 const kodikEpisodes = [
   { id: 501, number: "1" },
   { id: 502, number: "2" },

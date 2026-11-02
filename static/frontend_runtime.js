@@ -339,6 +339,17 @@
         episodeNumber, seasonNumber: integerValue(data.season, { minimum: 0 }) };
     }
 
+    const cvhKey = String(data.key || "");
+    if (["player_video_started", "player_play"].includes(cvhKey)) return { provider: "cvh", type: "playback_started" };
+    if (cvhKey === "player_pause") return { provider: "cvh", type: "playback_paused" };
+    if (cvhKey === "player_video_ended") return { provider: "cvh", type: "playback_ended" };
+    if (cvhKey === "player_time_update" || cvhKey === "player_duration_update") {
+      const value = typeof data.value === "number" ? data.value : NaN;
+      if (!Number.isFinite(value) || value < 0) return null;
+      if (cvhKey === "player_time_update") return { provider: "cvh", type: "time_update", positionSeconds: value };
+      return value > 0 ? { provider: "cvh", type: "duration_update", durationSeconds: value } : null;
+    }
+
     const kodikKey = String(data.key || "");
     if (kodikKey.startsWith("kodik_player_")) {
       if (kodikKey === "kodik_player_current_episode") {
@@ -415,6 +426,7 @@
 
   function playerMessageProvider(source) {
     if (source?.embed_host === "api.nextembed.ws") return "nextembed";
+    if (source?.embed_host === "ru.yummyani.me" && source?.provider_title === "CVH") return "cvh";
     if (hostnameMatches(source?.embed_host, "kodikplayer.com")) return "kodik";
     if (hostnameMatches(source?.embed_host, "aniboom.one")) return "aniboom";
     return null;
