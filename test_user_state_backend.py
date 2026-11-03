@@ -220,6 +220,14 @@ class UserStateBackendTest(unittest.TestCase):
         self.assertFalse(state["is_favorite"])
         self.assertTrue(state["not_interested"])
 
+    def test_legacy_variant_watch_state_respects_explicit_revisions(self):
+        legacy = {"anime_id": 2, "watched": 1, "updated_at": "2026-07-10T00:00:00+00:00"}
+        watching = {"anime_id": 1, "watch_status": "watching", "progress_episode_number": 1}
+        self.assertEqual(server.aggregate_state_rows([watching, legacy])["watch_status"], "completed")
+
+        watching["watch_status_updated_at"] = "2026-07-09T00:00:00+00:00"
+        self.assertEqual(server.aggregate_state_rows([watching, legacy])["watch_status"], "watching")
+
     def test_none_clears_progress_and_continue_but_preserves_watch_history(self):
         server.record_watch_event(self.watch_payload(), self.db_path, self.user_id)
         self.assertEqual(self.detail()["watch_status"], "watching")

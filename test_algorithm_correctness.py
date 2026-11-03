@@ -5,6 +5,7 @@ import unittest
 
 import scrape_animego
 import server
+import user_state_model
 
 
 class PlaybackAlgorithmCorrectnessTest(unittest.TestCase):
@@ -314,25 +315,45 @@ class PlaybackAlgorithmCorrectnessTest(unittest.TestCase):
             self.user_id,
         )
 
-        # Preserve the legacy/canonical-variant case explicitly: old data can
-        # carry the watched flag on a non-primary source member.
+        # Give the non-primary member a newer, explicit completion. The
+        # completed title must be checked first, not hidden by a timestamp tie.
         con = server.connect(self.db_path)
         try:
+            primary_revision = con.execute(
+                "select watch_status_updated_at from user_title_state where user_id=? and anime_id=?",
+                (self.user_id, primary_id),
+            ).fetchone()[0]
+            completion_revision = user_state_model.next_watch_status_timestamp(primary_revision, server.now_iso())
             con.execute(
                 """
                 insert into user_title_state (
-                    user_id, anime_id, is_favorite, progress_episode_number, watched, updated_at
-                ) values (?, ?, 0, 1, 1, ?)
+                    user_id, anime_id, is_favorite, progress_episode_number, watched,
+                    watch_status, watch_status_updated_at, updated_at
+                ) values (?, ?, 0, 1, 1, 'completed', ?, ?)
                 on conflict(user_id, anime_id) do update set
                     watched = 1,
+                    watch_status = 'completed',
+                    watch_status_updated_at = excluded.watch_status_updated_at,
                     updated_at = excluded.updated_at
                 """,
-                (self.user_id, variant_id, server.now_iso()),
+                (self.user_id, variant_id, completion_revision, completion_revision),
             )
+            con.execute(
+                "update user_episode_state set last_seen_at='2000-01-01T00:00:00+00:00' "
+                "where user_id=? and anime_id=?",
+                (self.user_id, fallback_id),
+            )
+            first_anime = con.execute(
+                "select anime_id from user_episode_state where user_id=? "
+                "order by last_seen_at desc, last_confidence desc, updated_at desc limit 1",
+                (self.user_id,),
+            ).fetchone()[0]
             con.commit()
         finally:
             con.close()
 
+        self.assertEqual(first_anime, primary_id)
+        self.assertEqual(server.get_anime_detail(primary_id, self.db_path, self.user_id)["watch_status"], "completed")
         target = server.get_continue_watching(self.db_path, self.user_id)["item"]
         self.assertEqual(target["anime_id"], fallback_id)
         self.assertNotEqual(target["anime_id"], completed_detail["id"])
