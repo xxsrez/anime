@@ -12,7 +12,8 @@ export default defineRailway(() => {
     start: "sh scripts/railway_start.sh",
     healthcheck: "/api/health",
     healthcheckTimeout: 60,
-    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 10 },
+    // Railway defaults to ON_FAILURE with 10 retries; see README for why the
+    // default is omitted from IaC until the planner handles it correctly.
     replicas: { sfo: 1 },
     volumeMounts: { "/data": data },
   });
