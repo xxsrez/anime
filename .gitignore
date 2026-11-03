@@ -23,6 +23,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+.railway/node_modules/
 
 # Local environment.
 .env

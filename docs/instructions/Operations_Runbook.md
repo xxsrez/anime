@@ -208,6 +208,13 @@ Railway target:
 - Logs directory: `/data/logs`
 - Start command: `sh scripts/railway_start.sh`
 
+The `web` service and its `/data` volume mount are described by the named
+Infrastructure as Code partial in `.railway/railway.ts`. Its SDK installation
+and ownership boundaries are documented in `.railway/README.md`. Configuration
+changes require a reviewed `railway config plan` and an explicit apply; deploying
+the repository does not apply the IaC file. Keep the separate `daily-sync`
+service and production variables outside this partial.
+
 Required Railway variables for `web` in `production`:
 
 ```text
