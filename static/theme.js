@@ -4,7 +4,7 @@
   try { saved = localStorage.getItem("anime-theme"); } catch { /* Storage may be disabled. */ }
   function apply(theme) {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101317" : "#eae5db");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#151316" : "#f5efe6");
     for (const button of document.querySelectorAll("[data-theme-toggle]")) {
       button.textContent = theme === "dark" ? "Светлая тема" : "Тёмная тема";
       button.setAttribute("aria-label", `Включить ${theme === "dark" ? "светлую" : "тёмную"} тему`);
