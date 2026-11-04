@@ -341,6 +341,7 @@ body[data-section="library"] .anime-item img { border-radius: 10px; }
 .content-update-row[data-priority="true"] { border-color: var(--line); box-shadow: inset 3px 0 0 var(--accent); }
 .recent-update-badge, .anime-item .recent-update-badge, .content-update-title { color: var(--accent); }
 .recent-update-badge, .anime-item .recent-update-badge { border-color: var(--line); background: var(--panel-2); }
+.anime-item .recent-update-badge { max-width: 100%; white-space: normal; overflow: visible; }
 .watching-available-badge, .anime-item .watching-available-badge { color: var(--accent-2); border-color: var(--line); background: var(--panel-2); }
 .franchise-eyebrow, .franchise-history strong, .franchise-guide strong { letter-spacing: .02em; }
 .setup-panel .browser-tab[aria-selected="true"] { background: var(--panel-2); color: var(--accent); border-color: var(--line); }
