@@ -178,6 +178,7 @@ body[data-screen="list"]:has(#view-updates.active) #recommendation-meta { displa
 .maintenance-view { max-width: 1050px; }
 .maintenance-view > p { color: var(--muted); }
 .maintenance-view .animego-scan-control { padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-top: 24px; }
+.animego-scan-state { font-size: 13px; line-height: 1.45; white-space: normal; overflow: visible; }
 .share-dialog { width: min(520px, calc(100% - 32px)); padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); }
 .share-dialog::backdrop { background: #0009; }
 .share-dialog label { display: grid; gap: 6px; margin-top: 20px; }
@@ -193,7 +194,6 @@ body[data-service] .setup-panel { max-width: 900px; width: 100%; box-shadow: non
 /* Legacy components retain their structure; colors follow the same theme. */
 [data-theme="light"] .chip, [data-theme="light"] .recent-update-badge,
 [data-theme="light"] .watching-available-badge, [data-theme="light"] .recommendation-context,
-[data-theme="light"] .animego-scan-state,
 [data-theme="light"] .admin-table th, [data-theme="light"] .admin-table td,
 [data-theme="light"] .source-meta, [data-theme="light"] .field,
 [data-theme="light"] .franchise-entry, [data-theme="light"] .franchise-hero,
