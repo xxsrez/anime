@@ -1,0 +1,27 @@
+name: Release candidate smoke
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 0c77c8401aa5227f575e7173063f959ab11e20fc
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-dev.txt
+      - name: Smoke test with synthetic catalog
+        run: |
+          .venv/bin/python -c 'from pathlib import Path; from test_app import LocalAppTest; LocalAppTest.build_catalog_fixture(Path("/tmp/anime-ci-smoke.sqlite"))'
+          .venv/bin/python scripts/smoke_dev_app.py --db /tmp/anime-ci-smoke.sqlite
