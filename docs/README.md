@@ -1,7 +1,11 @@
 # Anime Local Documentation
 
-This directory is the durable project documentation for the local anime catalog
-and player prototype. It follows the `project-docs` layout:
+This directory is the durable project documentation for the catalog and player
+for anime and explicitly added live-action films and series. Historical project
+names remain in use; the catalog is not limited to anime. Live-action cards use
+`Игровое кино` and the search phrase `не аниме`, as specified in the
+[card editorial rules](instructions/Card_Editorial_Review.md).
+It follows the `project-docs` layout:
 
 - root pages explain the project, architecture, and repository structure;
 - [instructions/](instructions/README.md) contains working rules and operational process;
@@ -33,6 +37,8 @@ and player prototype. It follows the `project-docs` layout:
    conventions.
 12. [tasks/project-hardening/README.md](tasks/project-hardening/README.md) - 2026-07-09 repository-wide
     correctness, concurrency, recovery, security, and performance hardening.
+13. [instructions/Card_Editorial_Review.md](instructions/Card_Editorial_Review.md) - shared card style,
+    description and metadata rules, franchise links, and checks before editorial approval.
 
 ## Directory Map
 
@@ -95,7 +101,7 @@ long-running process.
   and `8776` are retired.
 - The recommendation list is computed locally from current-user
   `user_title_state` and catalog metadata.
-- The project does not download or host anime video streams.
+- The project does not download or host video streams.
 - Playback uses third-party embed URLs saved in SQLite. The main catalog should
   not contain titles that have no playable `embed_url`.
 - `db/animego.sqlite` is local mutable state and can change after scraping or

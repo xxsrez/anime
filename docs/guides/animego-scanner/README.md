@@ -1,13 +1,29 @@
-# AnimeGo User Scanner
+# AnimeGo and Kinogoo User Scanner
 
-The user scanner lets an authenticated Anime Catalog user check AnimeGo through
-their own Chrome or Safari connection. The server chooses the work, the
-extension reads AnimeGo listings and player endpoints, and the server validates
-new playable cards as well as additive episode/provider changes. A successful scan benefits every
-catalog user.
+The user scanner lets an authenticated Anime Catalog user check AnimeGO and
+existing Kinogoo cards through their own Chrome or Safari connection. The server
+selects the work, the extension reads source pages and player endpoints, and the
+server validates discovered AnimeGO titles and episode/provider updates. A
+successful scan benefits every catalog user.
 
 This is a catch-up path for the cloud-egress block. It complements, rather than
 replaces, the trusted AnimeGo push worker.
+
+## Existing Kinogoo cards
+
+The catalog includes live-action films and series as well as anime. Both scan
+modes include eligible existing Kinogoo cards. Kinogoo discovery is deliberately
+disabled: neither mode may create new Kinogoo cards. A new title or season needs
+an explicit user request, manual import, and
+[editorial review](../../instructions/Card_Editorial_Review.md), including the
+`Игровое кино` tag and `не аниме` search metadata for live-action works.
+
+The extension reads the requested season from the `api.nextembed.ws` playlist;
+it preserves region restrictions and skips blocked entries, entries without a
+stream, and zero-numbered extras. Updates preserve reviewed card metadata.
+After updating an installed extension, reload it and the catalog tab.
+
+The discovery behavior below applies to AnimeGO only.
 
 ## Scan Modes
 

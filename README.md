@@ -1,6 +1,14 @@
-# AnimeGO scraper notes
+# Anime Catalog
 
-Small local scraper prototype for `https://animego.me/anime/status/ongoing`.
+Catalog and player for anime and explicitly added live-action films and series.
+The historical Anime/AnimeGO project names do not restrict the catalog to anime.
+Live-action cards carry the visible tag `Игровое кино` and are searchable by
+`не аниме`. See the [catalog scope](docs/overview.md) and
+[card editorial rules](docs/instructions/Card_Editorial_Review.md).
+
+The AnimeGO scraper reads `https://animego.me/anime/status/ongoing`;
+Kinogoo titles are added explicitly, and the scanner only refreshes their
+existing cards.
 
 Project documentation lives in `docs/`. Start with `docs/README.md`; for dev
 server management, Railway production, release steps, env vars, and login

@@ -1,9 +1,18 @@
 # Project Overview
 
-Anime Local is a local anime catalog and player prototype. It scrapes metadata
-from anime sites into SQLite, serves the catalog from a tiny Python HTTP server,
+Anime Local is a catalog and player for anime and explicitly added live-action
+films and series. The historical project name does not limit its content to
+anime. It imports metadata into SQLite, serves the catalog from a Python HTTP server,
 and renders a compact browser UI for browsing, filtering, selecting episodes,
 choosing a provider/translation, and tracking personal progress.
+
+Live-action titles share the same catalog, favorites, watch progress, and
+franchise model. Each season should carry the visible genre/tag `Игровое кино`
+and metadata supporting searches for `не аниме` or `игровое кино`. Apply this
+classification to every season, including future additions, following the
+[card editorial rules](instructions/Card_Editorial_Review.md). This tag describes
+the work, not its source or country; it is not a blanket category for all
+non-Japanese animation.
 
 ## Current User Workflows
 
@@ -35,10 +44,16 @@ choosing a provider/translation, and tracking personal progress.
 
 ## Current Data Sources
 
-The project currently knows about two source families:
+The project currently knows about three source families:
 
 - AnimeGO metadata and player metadata.
 - YummyAnime/YummyAni title metadata imported into the same catalog model.
+- Kinogoo: explicitly requested titles and seasons, imported through
+  `kinogoo.py`. The browser scanner refreshes existing Kinogoo cards in Partial
+  and Full scans; it must not discover or create new Kinogoo cards automatically.
+
+Catalog organization:
+
 - A canonical API layer merges conservative AnimeGO/YummyAnime duplicate
   matches into one visible title with multiple source variants.
 - A curated franchise layer groups those canonical releases without relying on

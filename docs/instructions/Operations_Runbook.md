@@ -5,7 +5,13 @@ Railway production, and releasing code or database changes.
 
 ## Golden Rules
 
-- Before approving a catalog card, follow [Card_Editorial_Review.md](Card_Editorial_Review.md), including bidirectional franchise links and duplicate checks.
+- The catalog contains anime and explicitly added live-action films and series.
+  Apply the `Игровое кино` tag and `не аниме` search metadata to each live-action
+  card under [Card_Editorial_Review.md](Card_Editorial_Review.md). Kinogoo scans
+  update existing cards only; new Kinogoo cards require an explicit user request
+  and manual editorial review.
+
+- Before editing or approving a catalog card, follow [Card_Editorial_Review.md](Card_Editorial_Review.md) for the shared style, compact metadata, bidirectional franchise links, and duplicate checks.
 
 - Dev/test/scratch is `http://127.0.0.1:8765/`.
 - Production is Railway `anime-local` / environment `production` / service
