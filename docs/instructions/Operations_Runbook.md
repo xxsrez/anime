@@ -36,7 +36,9 @@ Railway production, and releasing code or database changes.
   schema/control migrations. Do not commit scraped catalog/player data patches.
 - `origin/main` is the production code ledger. In steady state it must point to
   the exact commit used by the last successfully smoke-tested production
-  deployment.
+  deployment. The local `main` checkout at `/Users/andrey/Projects/Home/Anime`
+  must be clean and at the same commit. Keep unfinished work in another branch
+  and worktree; preserve existing changes before synchronizing `main`.
 - Never deploy dirty or unpushed code, and never advance `main` with unreleased
   code. The normal order is: verify a clean pushed candidate, deploy that exact
   commit, smoke production, then immediately fast-forward `main` to it.
@@ -270,6 +272,10 @@ RELEASE_SHA="$(git rev-parse HEAD)"
 MAIN_BEFORE_RELEASE="$(git rev-parse origin/main)"
 test "$RELEASE_SHA" = "$(git rev-parse '@{u}')"
 git merge-base --is-ancestor "$MAIN_BEFORE_RELEASE" "$RELEASE_SHA"
+MAIN_CHECKOUT=/Users/andrey/Projects/Home/Anime
+test "$(git -C "$MAIN_CHECKOUT" branch --show-current)" = "main"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$MAIN_BEFORE_RELEASE"
 RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
 ```
 
@@ -429,9 +435,10 @@ Expected:
 - `/login` returns the Google login HTML.
 - Authenticated browser login succeeds.
 
-11. After every successful production smoke, fast-forward `main` to the exact
-    released commit and verify the remote ref. `main` must not move before this
-    point during the normal release flow:
+11. After every successful production smoke, fast-forward both remote and local
+    `main` to the exact released commit. Do not overwrite local changes; if the
+    checkout has become dirty, preserve them separately before proceeding.
+    `main` must not move before this point during the normal release flow:
 
 ```bash
 DEPLOYMENT_SNAPSHOT="$(
@@ -452,13 +459,19 @@ test "$(
 )" = "SUCCESS"
 git fetch origin --prune
 test "$(git rev-parse origin/main)" = "$MAIN_BEFORE_RELEASE"
-git switch main
-git pull --ff-only origin main
-git merge --ff-only "$RELEASE_SHA"
-git push origin main
+test "$(git -C "$MAIN_CHECKOUT" branch --show-current)" = "main"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$MAIN_BEFORE_RELEASE"
+git push origin "${RELEASE_SHA}:refs/heads/main"
 git fetch origin --prune
 test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+git -C "$MAIN_CHECKOUT" merge --ff-only origin/main
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$RELEASE_SHA"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
 ```
+
+If the push starts a GitHub automatic deployment, wait for that exact commit
+to reach `SUCCESS` and repeat the production smoke before completing the release.
 
 If deployment, migration/data-patch apply, or smoke fails, do not move `main`.
 Repair and release a new candidate, or roll production back to the captured
@@ -468,38 +481,13 @@ verify, and release a new fast-forward candidate.
 
 ## Recovering Main/Production Drift
 
-Use this only when the invariant was already broken and production contains
-code not represented by `main`. Outstanding branches alone are not a recovery
-case; combine them on a candidate branch and use the normal production-first
-flow. Drift recovery is the one temporary exception where `main` moves before
-the production deployment:
-
-1. Fetch and audit every local and remote branch. Include only intended release
-   changes; do not merge stale or experimental branches merely because they
-   exist.
-2. Merge the intended branches into local `main`, preferring fast-forward
-   merges where ancestry permits.
-3. Run the complete dev gate and browser checks from the resulting `main`.
-4. Push `main`, then prove that the clean local tree is exactly `origin/main`:
-
-```bash
-set -euo pipefail
-git push origin main
-git fetch origin --prune
-test -z "$(git status --porcelain=v1)"
-RELEASE_SHA="$(git rev-parse origin/main)"
-test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
-```
-
-5. Deploy exactly `$RELEASE_SHA` with the SHA in the Railway deployment message
-   using `$RELEASE_MARKER`; use the same matching-ID wait from normal release
-   step 6 and require that deployment to remain the latest `SUCCESS`.
-6. Apply migrations, smoke production, and verify both production and
-   `origin/main` before declaring reconciliation complete.
-
-Complete this recovery as one operation, then return to the normal
-production-first, fast-forward-main-after-smoke procedure above.
+Use this only when production and `main` already disagree. Identify the exact
+active deployment and source commit, and preserve any local work before
+changing branches. If that commit is known, successfully smoke-tested, and a
+fast-forward from `origin/main`, promote it and synchronize local `main`.
+Otherwise investigate the drift and prepare a verified candidate; after explicit
+production authorization, deploy and smoke it before promoting either `main`.
+Do not push unreleased code to `main` to make the references appear consistent.
 
 ## Admin Access
 

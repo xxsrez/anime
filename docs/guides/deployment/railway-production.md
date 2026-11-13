@@ -8,9 +8,11 @@ Railway is the production environment for Anime Local. The retired localhost
 production install at `127.0.0.1:8766` must not be used for releases.
 
 `origin/main` is the ledger of the last successfully verified production
-commit. Normal releases deploy a clean pushed candidate first and fast-forward
-`main` to that exact SHA only after production smoke checks pass. See
-`../../instructions/Operations_Runbook.md` for the drift-recovery exception.
+commit. The local `main` checkout must be clean and at that same SHA. Normal
+releases deploy a clean pushed candidate first, then fast-forward both copies of
+`main` only after production smoke checks pass. Keep unfinished changes in a
+separate branch and worktree. See `../../instructions/Operations_Runbook.md`
+for drift recovery.
 
 ## Production Target
 
@@ -20,7 +22,7 @@ commit. Normal releases deploy a clean pushed candidate first and fast-forward
 - Public URL: `https://anime-srez.up.railway.app`
 - Volume: `web-volume`
 - Volume mount: `/data`
-- Runtime config: `railway.json`
+- Infrastructure configuration: `.railway/railway.ts`
 - Start command: `sh scripts/railway_start.sh`
 - App database: `/data/animego.sqlite`
 - Logs directory: `/data/logs`
@@ -102,6 +104,10 @@ RELEASE_SHA="$(git rev-parse HEAD)"
 MAIN_BEFORE_RELEASE="$(git rev-parse origin/main)"
 test "$RELEASE_SHA" = "$(git rev-parse '@{u}')"
 git merge-base --is-ancestor "$MAIN_BEFORE_RELEASE" "$RELEASE_SHA"
+MAIN_CHECKOUT=/Users/andrey/Projects/Home/Anime
+test "$(git -C "$MAIN_CHECKOUT" branch --show-current)" = "main"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$MAIN_BEFORE_RELEASE"
 RELEASE_MARKER="$RELEASE_SHA-$(.venv/bin/python -c 'import uuid; print(uuid.uuid4())')"
 ```
 
@@ -288,13 +294,19 @@ test "$(
 )" = "SUCCESS"
 git fetch origin --prune
 test "$(git rev-parse origin/main)" = "$MAIN_BEFORE_RELEASE"
-git switch main
-git pull --ff-only origin main
-git merge --ff-only "$RELEASE_SHA"
-git push origin main
+test "$(git -C "$MAIN_CHECKOUT" branch --show-current)" = "main"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$MAIN_BEFORE_RELEASE"
+git push origin "${RELEASE_SHA}:refs/heads/main"
 git fetch origin --prune
 test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+git -C "$MAIN_CHECKOUT" merge --ff-only origin/main
+test "$(git -C "$MAIN_CHECKOUT" rev-parse HEAD)" = "$RELEASE_SHA"
+test -z "$(git -C "$MAIN_CHECKOUT" status --porcelain=v1)"
 ```
+
+If the push triggers a GitHub automatic deployment, wait for that exact commit
+to reach `SUCCESS` and repeat the production smoke.
 
 Do not move `main` after a failed release. If fast-forward promotion is no
 longer possible, reconcile, verify, and deploy a new candidate. For the
