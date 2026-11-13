@@ -3083,15 +3083,6 @@ def get_content_updates(
         new_episode_numbers_by_source_id = load_content_update_new_episode_numbers(con, days, event_type)
         summary = content_update_total_summary(con, cache, days, event_type)
         latest_run = latest_content_update_run(con)
-        episode_states = {}
-        if user_id is not None:
-            for row in con.execute(
-                """select anime_id, progress_episode_number,
-                          case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at,
-                          last_seen_at
-                   from user_episode_state where user_id = ? and started_at is not null""", (user_id,),
-            ):
-                episode_states.setdefault(row["anime_id"], []).append(dict(row))
         grouped = {}
         for row in source_summaries:
             group = cache.get("id_map", {}).get(int(row["anime_id"]))
@@ -3125,17 +3116,6 @@ def get_content_updates(
                 entry["group"],
                 user_state_by_source_id=user_state_by_source_id,
             )
-            progress = numeric(entry["item"].get("progress_episode_number"))
-            current_episode_states = [
-                state
-                for source_id in entry["group"].get("source_member_ids") or [entry["group"]["id"]]
-                for state in episode_states.get(source_id, [])
-                if progress is not None and numeric(state.get("progress_episode_number")) == progress
-            ]
-            if current_episode_states:
-                entry["item"]["last_watch"] = max(
-                    current_episode_states, key=lambda state: state.get("last_seen_at") or "",
-                )
             entry["is_priority"] = content_update_item_is_priority(
                 entry["item"],
                 entry["new_episode_numbers"],
@@ -3847,7 +3827,7 @@ def load_user_state_by_source_id(db_path=None, user_id=None, connection=None):
         ).fetchall()
         states = {row["anime_id"]: dict(row) for row in rows}
         for row in con.execute(
-            """select anime_id, progress_episode_number,
+            """select anime_id, episode_id, episode_number, progress_episode_number,
                       case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at,
                       last_seen_at
                from user_episode_state where user_id = ? and started_at is not null""",
@@ -3876,7 +3856,11 @@ def catalog_item_user_state(item, user_state_by_source_id):
     current = [episode for row in rows for episode in row.get("_episode_states", [])
                if progress is not None and numeric(episode["progress_episode_number"]) == progress]
     if current:
-        state["last_watch"] = max(current, key=lambda episode: episode.get("last_seen_at") or "")
+        latest = max(current, key=lambda episode: episode.get("last_seen_at") or "")
+        merged = merge_episode_completion(latest, current)
+        state["last_watch"] = {key: merged.get(key) for key in (
+            "anime_id", "progress_episode_number", "completed_at", "last_seen_at",
+        )}
     return state
 
 
@@ -4678,15 +4662,14 @@ def reconcile_completed_titles(con, user_id, groups=None):
             ) for value in re.findall(r"\d+(?:\.\d+)?", row[0] or "")]
             if totals and progress < max(totals):
                 continue
-            latest = con.execute(
-                f"""select case when cycle_event_id is null then completed_at else cycle_completed_at end as completed_at
-                    from user_episode_state
+            episode_rows = con.execute(
+                f"""select * from user_episode_state
                     where user_id = ? and anime_id in ({placeholders})
                       and progress_episode_number = ? and started_at is not null
-                    order by last_seen_at desc, updated_at desc limit 1""",
+                    order by last_seen_at desc, updated_at desc""",
                 (user_id, *ids, progress),
-            ).fetchone()
-            if not latest or not latest["completed_at"]:
+            ).fetchall()
+            if not episode_rows or not cycle_completed_at(merge_episode_completion(episode_rows[0], episode_rows)):
                 continue
             timestamp = now_iso()
             status_timestamp = user_state_model.next_watch_status_timestamp(
@@ -4794,6 +4777,34 @@ def episode_number_key(value, fallback):
         return f"n:{int(number)}" if float(number).is_integer() else f"n:{number}"
     key = normalize_key(raw)
     return f"s:{key}" if key else f"id:{fallback}"
+
+
+def episode_watch_key(state):
+    number = state.get("episode_number")
+    if number is None or not str(number).strip():
+        number = state.get("progress_episode_number")
+    return episode_number_key(str(number) if number is not None else None, state.get("episode_id"))
+
+
+def merge_episode_completion(row, candidates):
+    """Keep the latest watch/source while combining this episode's active-cycle completion."""
+    merged = dict(row)
+    key = episode_watch_key(merged)
+    completions = []
+    for candidate in candidates:
+        candidate = dict(candidate)
+        if episode_watch_key(candidate) != key:
+            continue
+        completed = (cycle_completed_at(candidate) if "cycle_event_id" in candidate
+                     else candidate.get("completed_at"))
+        if completed:
+            completions.append(completed)
+    completed = max(completions, default=None)
+    if merged.get("cycle_event_id") is not None:
+        merged["cycle_completed_at"] = completed
+    else:
+        merged["completed_at"] = completed
+    return merged
 
 
 def episode_key(episode):
@@ -4988,27 +4999,22 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     db_file = con.execute("pragma database_list").fetchone()["file"]
     translation_rankings = get_catalog_cache(db_file, user_id).get("translation_rankings") or {}
     title_navigation = get_group_title_navigation(con, member_ids, user_id)
+    watch_rows = []
     completed_episode_keys = set()
     if user_id is not None:
-        completed_episode_keys = {episode_number_key(row['episode_number'], row['episode_id']) for row in con.execute(
-            f"select episode_number, episode_id from user_episode_state where user_id = ? and anime_id in ({member_sql}) and completed_at is not null",
+        watch_rows = rows_to_dicts(con.execute(
+            f"""select * from user_episode_state
+                where user_id = ? and anime_id in ({member_sql}) and started_at is not null
+                order by last_seen_at desc, last_confidence desc, updated_at desc""",
             (user_id, *member_ids),
-        )}
+        ).fetchall())
+        completed_episode_keys = {
+            episode_watch_key(row)
+            for row in watch_rows if cycle_completed_at(row)
+        }
     latest_watch_row = None
-    if user_id is not None and state.get("watch_status") == "watching":
-        latest_watch_row = con.execute(
-            f"""
-            select *
-            from user_episode_state
-            where user_id = ?
-              and anime_id in ({member_sql})
-              and started_at is not null
-            order by last_seen_at desc, last_confidence desc, updated_at desc
-            limit 1
-            """,
-            (user_id, *member_ids),
-        ).fetchone()
-        latest_watch_row = dict(latest_watch_row) if latest_watch_row else None
+    if watch_rows and state.get("watch_status") == "watching":
+        latest_watch_row = merge_episode_completion(watch_rows[0], watch_rows)
     con.close()
 
     episode_buckets = {}
@@ -6266,6 +6272,13 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 timestamp,
                 event_type=event_type,
             )
+        related_episode_states = con.execute(
+            f"""select * from user_episode_state
+                where user_id = ? and anime_id in ({sql_placeholders(member_ids)})
+                  and progress_episode_number is ? and started_at is not null""",
+            (user_id, *member_ids, progress_episode_number),
+        ).fetchall()
+        response_episode_state = merge_episode_completion(episode_state, related_episode_states)
         if reconcile_completed_titles(con, user_id, [group]):
             title_state = get_group_state(con, member_ids, user_id)
         con.commit()
@@ -6286,7 +6299,7 @@ def record_watch_event(payload, db_path=None, user_id=None):
                 "event_at": timestamp,
             },
             "episode_state": {
-                key: (cycle_completed_at(episode_state) if key == "completed_at" else episode_state.get(key))
+                key: (cycle_completed_at(response_episode_state) if key == "completed_at" else response_episode_state.get(key))
                 for key in (
                     "anime_id",
                     "episode_id",
@@ -6464,7 +6477,7 @@ def get_continue_watching(db_path=None, user_id=None):
             continue
         for row in group_rows:
             target = continue_target_from_episode_state(
-                row,
+                merge_episode_completion(row, group_rows),
                 db_path,
                 user_id,
                 detail=detail,

@@ -165,6 +165,13 @@ The event-ID boundary prevents events already stored before a clear from
 being reused as evidence for the next cycle. A separate manual-completion
 snapshot includes this history so undo can restore the previous state.
 
+When a canonical episode has rows from several source-specific episode IDs,
+the current cycle combines their completion evidence. Catalog, update feed,
+detail, continuation, and watch-event responses use the same logical episode
+status while retaining the most recent watch's source and recency. Clearing
+progress excludes the previous cycle's completion from a new watch; raw
+events and historical episode rows are preserved.
+
 Strong watch signals update `user_title_state.progress_episode_number`.
 Episode/source selection signals remain telemetry only and do not start or
 resume a title by themselves.
