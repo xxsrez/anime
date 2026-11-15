@@ -146,7 +146,7 @@
 
   extensionApi?.runtime?.onMessage?.addListener((message, _sender, sendResponse) => {
     if (message?.type === "animego-scanner-create-job") {
-      if (!ALLOWED_ORIGINS.has(location.origin) || !["partial", "full"].includes(message.mode)) {
+      if (!ALLOWED_ORIGINS.has(location.origin) || !["partial", "extended", "full"].includes(message.mode)) {
         sendResponse({ ok: false, error: "Некорректный запрос сканирования." });
         return false;
       }
@@ -154,7 +154,7 @@
         const response = await fetch("/api/animego-scans", {
           method: "POST", credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: message.mode }),
+          body: JSON.stringify({ mode: message.mode, scanner_version: extensionApi.runtime.getManifest().version }),
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(response.status === 409
@@ -168,7 +168,7 @@
           job: payload.job || null,
           job_id: payload.job_id ?? payload.job?.id ?? payload.job,
           token: payload.token || payload.job_token,
-          tasks, discovery: payload.discovery === true,
+          tasks, discovery: payload.discovery === true, yummy_discovery: payload.yummy_discovery === true,
           origin: location.origin, mode: message.mode, theme: catalogTheme(),
         };
         try {

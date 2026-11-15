@@ -13,18 +13,19 @@ replaces, the trusted AnimeGo push worker.
 
 | Mode | UI | Server selection |
 | --- | --- | --- |
-| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | Selected, favorite and Watching titles from AnimeGO/Kinogoo, excluding completed titles whose explicit release end date is more than 30 days ago. Unknown end dates are retained. Then up to 8 other ongoing titles sampled without replacement, weighted toward older successful checks and recent content changes. |
-| Full | Choose `Full Scan` from the arrow menu and confirm. | Stored AnimeGO/Kinogoo titles with a known change in the last three calendar months. Titles without a known change date are treated as old. Cooldowns do not apply. All episodes are fetched again and existing provider URLs refreshed. AnimeGO listing discovery follows. YummyAnime uses its separate synchronizer. |
+| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected title and all favorite or Watching titles, including completed titles and linked source variants, plus up to eight other ongoing AnimeGO/Kinogoo titles. |
+| Extended | Choose `Extended Scan` from the arrow menu. | Stored AnimeGO/Kinogoo titles with a known change in the last three calendar months, followed by AnimeGO discovery. Unknown change dates are treated as old. |
+| Full | Choose `Full Scan` from the arrow menu and confirm. | All stored source records, regardless of age or missing dates, followed by AnimeGO and modern YummyAnime discovery. Unsupported or inaccessible sources are reported as failed checks. |
 
-Before selecting a full scan, the server refreshes source page dates from the
+Before selecting an Extended scan, the server refreshes source page dates from the
 AnimeGO and modern YummyAni sitemaps. It also records dated YummyAni videos
 when the feed or title API is synchronized. The window uses the newest source
 date or recorded title, episode, translation, or playable provider addition,
 including changes on another source of the same canonical card. A successful
 check without a change does not reset the window. A title with no known change
 date is excluded; a change exactly three calendar months old is outside the window. If either
-sitemap cannot be fetched or validated, full-scan creation returns an error;
-partial scans do not depend on this refresh.
+sitemap cannot be fetched or validated, Extended scan creation returns an error;
+Partial and Full do not depend on this refresh.
 
 These are source page dates and catalog-observed changes, not a complete
 upstream history. Legacy YummyAnime URLs may not match the modern sitemap, and
@@ -32,9 +33,9 @@ Kinogoo has no usable current sitemap date; they rely on recorded changes or
 dates from linked source variants. A source change which is absent from all
 available dates can therefore be missed.
 
-Full jobs expire after 24 hours to allow the larger scan to finish. Extension
-0.5.3 accepts up to 20,000 initial tasks and reports the exact public URL and
-request stage for HTTP errors. A 404 is a failed check, not evidence that no
+New Full jobs expire after 24 hours of inactivity; committed progress renews the
+deadline. Extended jobs expire after 24 hours and Partial jobs after two hours.
+Extension 0.5.16 or newer is required to start a new scan. A 404 is a failed check, not evidence that no
 new episodes exist; missing source cards are not deleted from the catalog.
 
 Extension 0.5.4 submits the upstream HTTP status. For an AnimeGO 404 the server
@@ -51,7 +52,7 @@ routine use and Full Scan for an intentional broad catch-up.
 
 ### New cards and editorial review
 
-Full Scan requires extension 0.3.0 or later. It reads `/anime`, `/anime/2`, and
+Extended and Full read `/anime`, `/anime/2`, and
 subsequent listing pages through the browser, including pages containing only
 known titles. A repeated page, an empty valid listing, or HTTP 404 after page
 one ends discovery. An
@@ -64,6 +65,13 @@ validated episode with a playable provider is saved. The title, source URL,
 poster, year, type, description, ratings, genres, studio, release information,
 and other available source fields are copied without AI. Video and the card
 are saved in one transaction. Titles without video remain outside the catalog.
+
+Full also pages through the modern YummyAnime API from the server and checks
+new candidates before importing playable cards. Listing changes during an
+offset-paginated scan can affect coverage. Kinogoo discovery is not implemented.
+Legacy Kinogo pages are attempted but their players are not supported; an error
+is recorded instead of declaring them unchanged. Source metadata and release
+status are refreshed when the source supplies and validates them.
 
 `anime.editorial_status` is independent of release status:
 
@@ -98,10 +106,8 @@ check. Full Scan ignores these cooldowns.
 
 Personal selection is the union of favorites and Watching, not every title
 with past activity. The current title is included once, even when personal.
-Supported sources remain AnimeGO and explicitly imported Kinogoo. A merged
-card resolves to its supported source variant; YummyAnime-only titles remain
-the responsibility of the separate YummyAnime sync. This change does not
-expand Full Scan or add another source adapter.
+Personal cards include their linked source variants, including YummyAnime.
+The random extra selection remains limited to AnimeGO and Kinogoo.
 
 For each other ongoing title that is due, the weight is
 `(1 + age_days) * (1 + max(0, 1 - change_age_days / 14))`.
@@ -171,8 +177,8 @@ the browser's extension settings.
    stopped. Closing or pausing the tab does not extend the server deadline.
 
 Only one user scan job may be `running` across the deployment. A second user
-gets HTTP `409` and a non-secret summary of the active job. Jobs expire two
-hours after creation; the expiry releases the global slot.
+gets HTTP `409` and a non-secret summary of the active job. Expiry releases the
+global slot; see the mode-specific deadlines above.
 
 AnimeGo requests are sequential, with a randomized delay between requests and
 bounded exponential retry backoff for transient failures. Do not add parallel
@@ -215,9 +221,11 @@ The server, not the extension, is the SQLite writer.
 
 | Endpoint | Authentication | Purpose |
 | --- | --- | --- |
-| `POST /api/animego-scans` | Anime Catalog session cookie | Create a `partial` or `full` job. Example body: `{"mode":"partial","current_anime_id":123}`. Returns HTTP `201` with `job`, job `token`, `tasks`, and `origin`; returns `409` when another job is active, or `503` when required source dates cannot be refreshed. |
+| `POST /api/animego-scans` | Anime Catalog session cookie | Create a `partial`, `extended`, or `full` job with `scanner_version` 0.5.16 or later. Returns `409` when another job is active, `426` for an outdated extension, or `503` when Extended source dates cannot be refreshed. |
 | `GET /api/animego-scans/<job_id>` | `Authorization: Bearer <job token>` | Read the job counters/status for extension recovery. |
-| `POST /api/animego-scans/<job_id>/discover` | `Authorization: Bearer <job token>` | Full scans only: submit sequential `{page, html}` listing pages, or `{page, not_found: true}` for a final 404. Returns new `tasks`, `done`, and job counters. Replaying a page is idempotent. |
+| `POST /api/animego-scans/<job_id>/discover` | `Authorization: Bearer <job token>` | Extended and Full: submit sequential AnimeGO listing pages. Replaying a page is idempotent. |
+| `POST /api/animego-scans/<job_id>/discover-yummy` | `Authorization: Bearer <job token>` | Full: fetch a sequential modern YummyAnime listing page and queue new candidates. |
+| `POST /api/animego-scans/<job_id>/source` | `Authorization: Bearer <job token>` | Check an assigned server-side source; inaccessible and unsupported sources are errors. |
 | `POST /api/animego-scans/<job_id>/results` | `Authorization: Bearer <job token>` | Submit one assigned title. Body contains `anime_id` and either an `episodes` array or an `error`. |
 | `POST /api/animego-scans/<job_id>/complete` | `Authorization: Bearer <job token>` | Finish the job. Optional body fields are `errors: [{"anime_id":123,"message":"..."}]` and `stopped: true|false`. Retrying completion for an already completed/stopped job is idempotent. |
 | `GET /api/animego-scanner-extension` | Anime Catalog session cookie | Download the current extension ZIP. |
@@ -230,11 +238,11 @@ playable providers. Provider fields are `provider_id`,
 `provider_title`, `translation_id`, `translation_title`, `embed_host`,
 `embed_url`, and `embed_url_redacted`.
 
-Full job creation also returns `discovery: true`, including when the initial
+Extended and Full job creation returns `discovery: true`, including when the initial
 task list is empty. Discovered tasks include the source `url` and
 `selection_reason: "discovery"`; their first playable result includes
 `detail_html` from that page. The server parses it with the shared source
-parser. A full job cannot complete until discovery and all queued titles have
+parser. A Full job also returns `yummy_discovery: true` and cannot complete until both discoveries and all queued titles have
 finished; stopping remains available at any point.
 
 A per-title error submitted through `/results` counts that item as checked. An
@@ -360,7 +368,8 @@ trusted worker, so the operation lock remains the final write boundary.
 | HTTP `410` | The job expired. Start a new scan. |
 | HTTP `423` | Another database operation holds the shared lock. Retry the same pending title result. |
 | Scanner halts on `403`, `429`, or CAPTCHA | Stop making requests, wait for AnimeGo access to recover, then resume/reload before the job expires. Do not increase request concurrency. |
-| Full Scan has fewer titles than the catalog | Titles with no known change in the last three calendar months, including those with unknown change dates, are excluded. |
+| Extended Scan has fewer titles than the catalog | Titles with no known change in the last three calendar months, including those with unknown change dates, are excluded. |
+| HTTP `426` | Download and reload extension 0.5.16 or newer, then reload the catalog page. |
 | The app says there is nothing to check | The server created and immediately completed a zero-task job, so it did not open the extension or hold the global slot. |
 | A scan finishes with no additions | This is valid: assigned titles were checked but all playable episodes/providers were already known. |
 

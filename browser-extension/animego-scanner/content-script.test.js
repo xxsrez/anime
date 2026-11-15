@@ -119,7 +119,7 @@ test("missing extension API at injection does not announce readiness", async () 
   assert.match(page.events.find(e => e.type === "animego-scanner-permission-state").detail.error, /Обновите страницу/);
 });
 
-for (const mode of ["partial", "full"]) {
+for (const mode of ["partial", "extended", "full"]) {
   test(`extension creates ${mode} job with the catalog session`, async () => {
     let listener;
     let request;

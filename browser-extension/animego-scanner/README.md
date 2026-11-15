@@ -47,7 +47,7 @@ entries without a stream are not added. Saved iframe URLs retain the source's
 region restrictions and select the exact season and episode. Stream URLs are
 not stored. Review the source description before approving a card.
 
-Both Partial and Full scans include imported Kinogoo cards. On the first
+All three scan modes can include imported Kinogoo cards. On the first
 Kinogoo task, the scanner pauses and requests optional access to
 `kinogoo.fm` and `api.nextembed.ws` through the access button. AnimeGo-only
 scans do not request those permissions. Reload the updated extension and the

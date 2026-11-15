@@ -48,7 +48,7 @@ function validateStart(detail, origin) {
   for (const task of detail.tasks) {
     const animeId = task?.anime_id;
     const source = task?.source || "animego";
-    if (!["animego", "kinogoo"].includes(source)
+    if (!["animego", "kinogoo", "yummyanime", "kinogo", "unsupported"].includes(source)
       || !Number.isSafeInteger(animeId) || animeId <= 0
       || (source === "animego" && animeId >= 10_000_000)) {
       throw new Error("В задании найден некорректный id или источник тайтла.");
@@ -221,7 +221,7 @@ let creatingScan = false;
 
 async function createScan(message, sender) {
   if (!isScannerPage(sender)) throw new Error("Некорректный источник запуска скана.");
-  if (!["partial", "full"].includes(message.mode)) throw new Error("Неизвестный режим скана.");
+  if (!["partial", "extended", "full"].includes(message.mode)) throw new Error("Неизвестный режим скана.");
   if (creatingScan) throw new Error("Задание уже создаётся.");
   creatingScan = true;
   try {

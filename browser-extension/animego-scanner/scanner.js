@@ -80,6 +80,7 @@ const elements = Object.fromEntries(
     "job-label",
     "log",
     "start-partial",
+    "start-extended",
     "start-full",
     "launch-status",
   ].map((id) => [id, document.getElementById(id)]),
@@ -114,6 +115,7 @@ extensionApi.storage.onChanged?.addListener((changes, area) => {
 function renderLaunch() {
   const busy = loadedGeneration !== generation || creatingScan || (checkpoint && !["completed", "stopped", "expired"].includes(checkpoint.status));
   elements["start-partial"].disabled = Boolean(busy);
+  elements["start-extended"].disabled = Boolean(busy);
   elements["start-full"].disabled = Boolean(busy);
 }
 
@@ -173,7 +175,7 @@ function reportControlError(error) {
 }
 
 function modeLabel(mode) {
-  return mode === "full" ? "Полный скан" : "Быстрый скан";
+  return mode === "full" ? "Полный скан" : mode === "extended" ? "Расширенный скан" : "Быстрый скан";
 }
 
 function taskTitle(task) {
@@ -195,6 +197,8 @@ function defaultCheckpoint(payload) {
     pending_result: null,
     discovery_page: 1,
     discovery_done: !payload.discovery,
+    yummy_discovery_page: 1,
+    yummy_discovery_done: !payload.yummy_discovery,
   };
 }
 
@@ -245,7 +249,8 @@ function render() {
   const { payload } = session;
   const total = payload.tasks.length;
   const checked = Math.min(total, checkpoint.checked_items);
-  const discovering = payload.discovery && !checkpoint.discovery_done
+  const discovering = ((!checkpoint.discovery_done && payload.discovery)
+    || (!checkpoint.yummy_discovery_done && payload.yummy_discovery))
     && checkpoint.next_index >= total
     && !["completed", "stopped", "expired"].includes(checkpoint.status);
   const percent =
@@ -272,7 +277,9 @@ function render() {
   elements.mode.textContent = modeLabel(payload.mode);
   elements["current-title"].textContent = checkpoint.current?.title
     || (discovering && checkpoint.status === "running"
-      ? `Ищем новые тайтлы · страница ${checkpoint.discovery_page}`
+      ? checkpoint.discovery_done
+        ? `Ищем новые тайтлы YummyAnime · страница ${checkpoint.yummy_discovery_page}`
+        : `Ищем новые тайтлы AnimeGO · страница ${checkpoint.discovery_page}`
       : statusText(checkpoint.status));
   elements["progress-text"].textContent = `${checked} / ${total}${discovering ? " · поиск" : ""}`;
   elements["progress-track"].setAttribute("aria-valuemax", String(Math.max(total, 1)));
@@ -393,7 +400,7 @@ async function loadSession({ announce = true } = {}) {
     loadedGeneration = loadGeneration;
     renderLaunch();
     elements.subtitle.textContent = granted
-      ? "Выберите быстрый или полный скан. Вкладка Anime Catalog должна быть открыта."
+      ? "Выберите режим скана. Вкладка Anime Catalog должна быть открыта."
       : "Сначала разрешите узкий доступ только к AnimeGo.";
     elements["grant-access"].hidden = granted;
     elements["grant-access"].disabled = granted;
@@ -699,6 +706,7 @@ function updateCountersFromResponse(response, localEpisodes) {
   const job = response?.job;
   const localProviderCount = localEpisodes.reduce((sum, item) => sum + item.providers.length, 0);
   if (job && typeof job === "object") {
+    if (job.expires_at && session?.payload?.job) session.payload.job.expires_at = job.expires_at;
     checkpoint.checked_items = Math.max(checkpoint.checked_items, Number(job.checked_items) || 0);
     checkpoint.new_episode_count = Math.max(
       checkpoint.new_episode_count,
@@ -728,16 +736,21 @@ async function processTask(task, index, runGeneration) {
 
   let body = checkpoint.pending_result;
   if (!body || body.anime_id !== task.anime_id) {
-    const episodes = await collectTitle(task, runGeneration);
-    if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
-    body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
-    if (task.source === "kinogoo") {
+    if (task.source && !["animego", "kinogoo"].includes(task.source)) {
+      await respectUpstreamDelay(runGeneration);
+      body = { anime_id: task.anime_id, episodes: [], server_source: true };
+    } else {
+      const episodes = await collectTitle(task, runGeneration);
+      if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
+      body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
+    }
+    if (body.server_source || task.source === "kinogoo") {
       // Kinogoo metadata is imported explicitly; AnimeGO HTML parsing does not apply.
     } else if (!task.url && task.selection_reason !== "discovery") {
       // Older servers omit card URLs. Keep episode delivery working while
       // metadata refresh waits for the server contract update.
       log("Сервер не передал адрес карточки: отправляем результат проверки серий без обновления метаданных.");
-    } else if (task.selection_reason !== "discovery" || episodes.length) {
+    } else if (task.selection_reason !== "discovery" || body.episodes.length) {
       const url = new URL(task.url);
       if (url.origin !== UPSTREAM_BASE || !url.pathname.startsWith("/anime/")) {
         throw new UpstreamError("Некорректный адрес карточки AnimeGo.");
@@ -747,11 +760,17 @@ async function processTask(task, index, runGeneration) {
       } catch (error) {
         if (task.selection_reason === "discovery" || !(error instanceof UpstreamError)
             || runGeneration !== generation) throw error;
+        body.metadata_error = "Не удалось обновить сведения карточки.";
         log(`Не удалось обновить карточку: ${error?.message || String(error)}. Найденные серии будут сохранены.`, "error");
       }
     }
   }
   const response = await submitTaskResult(body, index, runGeneration);
+  if ((response?.result?.status === "failed" || response?.result?.item_status === "failed") && !body.error) {
+    reportErrorResult(task, response.result.error || "Источник не проверен.", response);
+    render();
+    return;
+  }
   if (body.error) {
     reportErrorResult(task, body.error, response);
     render();
@@ -778,7 +797,7 @@ async function submitTaskResult(body, index, runGeneration = generation) {
     throw new DOMException("Остановлено", "AbortError");
   }
   let response = await apiPost(
-    `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/results`, body,
+    `/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/${body.server_source ? "source" : "results"}`, body,
   );
   if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) {
     throw new DOMException("Остановлено", "AbortError");
@@ -915,25 +934,38 @@ async function runScan() {
         return;
       }
       if (index >= session.payload.tasks.length) {
-        if (checkpoint.discovery_done) break;
-        const page = checkpoint.discovery_page;
-        log(`Ищем новые тайтлы: страница ${page}…`);
-        let html = null;
-        let notFound = false;
-        try {
-          html = await upstreamJson(page === 1 ? "/anime" : `/anime/${page}`, runGeneration, { html: true });
-        } catch (error) {
-          if (error.status === 404 && page > 1) notFound = true;
-          else throw error;
+        if (checkpoint.discovery_done && checkpoint.yummy_discovery_done) break;
+        const yummy = checkpoint.discovery_done;
+        const page = yummy ? checkpoint.yummy_discovery_page : checkpoint.discovery_page;
+        log(`Ищем новые тайтлы ${yummy ? "YummyAnime" : "AnimeGO"}: страница ${page}…`);
+        let discovered;
+        if (yummy) {
+          await respectUpstreamDelay(runGeneration);
+          discovered = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/discover-yummy`, { page });
+        } else {
+          let html = null;
+          let notFound = false;
+          try {
+            html = await upstreamJson(page === 1 ? "/anime" : `/anime/${page}`, runGeneration, { html: true });
+          } catch (error) {
+            if (error.status === 404 && page > 1) notFound = true;
+            else throw error;
+          }
+          if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
+          discovered = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/discover`, { page, html, not_found: notFound });
         }
         if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
-        const discovered = await apiPost(`/api/animego-scans/${encodeURIComponent(session.payload.job_id)}/discover`, { page, html, not_found: notFound });
-        if (runGeneration !== generation || ["stopping", "stopped"].includes(checkpoint.status)) return;
         const known = new Set(session.payload.tasks.map(task => task.anime_id));
+        if (discovered.job?.expires_at && session.payload.job) session.payload.job.expires_at = discovered.job.expires_at;
         session.payload.tasks.push(...discovered.tasks.filter(task => !known.has(task.anime_id)));
         checkpoint.total_items = session.payload.tasks.length;
-        checkpoint.discovery_page = page + 1;
-        checkpoint.discovery_done = discovered.done;
+        if (yummy) {
+          checkpoint.yummy_discovery_page = page + 1;
+          checkpoint.yummy_discovery_done = discovered.done;
+        } else {
+          checkpoint.discovery_page = page + 1;
+          checkpoint.discovery_done = discovered.done;
+        }
         await saveCheckpoint();
         render();
         index -= 1;
@@ -1245,7 +1277,7 @@ async function stopScan() {
   }
 }
 
-for (const mode of ["partial", "full"]) {
+for (const mode of ["partial", "extended", "full"]) {
   elements[`start-${mode}`].addEventListener("click", () => startNewScan(mode));
 }
 

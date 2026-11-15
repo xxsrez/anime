@@ -42,6 +42,7 @@ YUMMY_ID_OFFSET = 10_000_000
 YUMMYANI_ID_OFFSET = 20_000_000
 YUMMY_TRANSLATION_ID = 9_000_001
 YUMMYANI_TRANSLATION_ID_OFFSET = 9_100_000
+MAX_FETCH_BYTES = 8 * 1024 * 1024
 
 DEFAULT_URLS = [
     "https://yummyanime.tv/267-reinkarnacija-bezrabotnogo-istorija-o-prikljuchenijah-v-drugom-mire-k1.html",
@@ -74,7 +75,10 @@ def fetch_text(url, referer=None, delay=0.0, timeout=30):
             "aniboom.one",
         ),
     ) as response:
-        return response.read().decode("utf-8", "replace")
+        data = response.read(MAX_FETCH_BYTES + 1)
+        if len(data) > MAX_FETCH_BYTES:
+            raise ValueError("YummyAnime response is too large")
+        return data.decode("utf-8", "replace")
 
 
 def fetch_json(url, referer=None, delay=0.0, timeout=30):
@@ -311,8 +315,9 @@ def parse_player_params(soup):
     return players
 
 
-def fetch_player_url(player, page_url, delay=0.0):
-    data = json.loads(fetch_text(f"/engine/ajax/controller.php?{player['params']}", referer=page_url, delay=delay))
+def fetch_player_url(player, page_url, delay=0.0, *, fetcher=None):
+    fetcher = fetcher or fetch_text
+    data = json.loads(fetcher(f"/engine/ajax/controller.php?{player['params']}", referer=page_url, delay=delay))
     if not data.get("success"):
         return None
     url = normalize_embed_url(data.get("data"))
@@ -392,25 +397,32 @@ def kodik_season_option_url(embed_url, html_text, season_number):
     return None
 
 
-def expand_legacy_provider_urls(player, embed_url, page_url, episode_count, delay=0.0, preferred_season=None):
+def expand_legacy_provider_urls(player, embed_url, page_url, episode_count, delay=0.0, preferred_season=None, *, fetcher=None, strict=False):
+    fetcher = fetcher or fetch_text
     if player.get("provider_title") == "Kodik" and episode_count > 1:
         try:
-            html_text = fetch_text(embed_url, referer=page_url, delay=delay)
+            html_text = fetcher(embed_url, referer=page_url, delay=delay)
         except Exception:
+            if strict:
+                raise
             html_text = ""
         episode_urls = parse_kodik_serial_episode_urls(embed_url, html_text)
         if preferred_season and episode_urls and len(episode_urls) != episode_count:
             preferred_url = kodik_season_option_url(embed_url, html_text, preferred_season)
             if preferred_url:
                 try:
-                    preferred_html = fetch_text(preferred_url, referer=page_url, delay=delay)
+                    preferred_html = fetcher(preferred_url, referer=page_url, delay=delay)
                 except Exception:
+                    if strict:
+                        raise
                     preferred_html = ""
                 preferred_episode_urls = parse_kodik_serial_episode_urls(preferred_url, preferred_html)
                 if len(preferred_episode_urls) == episode_count:
                     return preferred_episode_urls
         if episode_urls:
             return episode_urls
+    if strict and episode_count > 1:
+        raise ValueError("legacy player episode list cannot be verified")
     episode_number = "1" if episode_count > 1 else None
     return [{"episode_number": episode_number, "embed_url": embed_url}]
 
@@ -573,7 +585,7 @@ def parse_modern_payload(anime, page_url, api_url=None):
     return item, detail, episodes, providers
 
 
-def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False, delay=0.0):
+def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False, delay=0.0, *, fetcher=None, strict_players=False):
     if is_modern_yummyani_url(page_url):
         return parse_modern_detail(page_url, include_embed_urls=include_embed_urls and not skip_player, delay=delay)
 
@@ -611,7 +623,7 @@ def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False
     providers = []
     if not skip_player:
         for player in parse_player_params(soup):
-            embed_url = fetch_player_url(player, page_url, delay=delay)
+            embed_url = fetch_player_url(player, page_url, delay=delay, fetcher=fetcher)
             if not embed_url:
                 continue
             for episode_url in expand_legacy_provider_urls(
@@ -621,6 +633,8 @@ def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False
                 episode_count,
                 delay=delay,
                 preferred_season=title_season_number(title),
+                fetcher=fetcher,
+                strict=strict_players,
             ):
                 episode_embed_url = episode_url["embed_url"]
                 providers.append(

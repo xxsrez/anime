@@ -887,6 +887,53 @@ test("completed scans with failed titles do not claim the catalog was updated", 
   assert.ok(messages.some(message => message.includes("Fixture: AnimeGo ответил HTTP 404.")));
 });
 
+test("server-backed source failure is recorded and reported without pretending success", async () => {
+  const original = await scannerHarness({});
+  const stored = original.snapshot();
+  stored.payload.tasks = [{ anime_id: 20000001, title: "Yummy fixture", source: "yummyanime", url: "https://ru.yummyani.me/catalog/item/fixture" }];
+  const paths = [];
+  const scanner = await scannerHarness({ stored, fetch: async (url, options) => {
+    paths.push(url.pathname);
+    if (url.pathname.endsWith("/source")) {
+      assert.equal(JSON.parse(options.body).anime_id, 20000001);
+      return { ok: true, status: 200, text: async () => JSON.stringify({
+        job: { checked_items: 1, error_count: 1 }, result: { status: "failed", error: "Нет плеера" },
+      }) };
+    }
+    return response({ checked_items: 1, error_count: 1 });
+  } });
+  scanner.driver.fastUpstream();
+  await scanner.driver.run();
+  assert.deepEqual(paths, ["/api/animego-scans/1/source", "/api/animego-scans/1/complete"]);
+  assert.match(scanner.elements.get("subtitle").textContent, /с ошибками/);
+  assert.equal(scanner.driver.state.errors[0].message, "Нет плеера");
+});
+
+test("full scan discovers and checks YummyAnime after AnimeGO discovery", async () => {
+  const original = await scannerHarness({});
+  const stored = original.snapshot();
+  stored.payload.tasks = [];
+  stored.payload.discovery = true;
+  stored.payload.yummy_discovery = true;
+  stored.checkpoint = { job_id: "1", status: "paused", discovery_done: true, discovery_page: 2 };
+  const paths = [];
+  const h = await scannerHarness({ stored, fetch: async (url) => {
+    paths.push(url.pathname);
+    if (url.pathname.endsWith("/discover-yummy")) return { ok: true, status: 200, text: async () => JSON.stringify({
+      done: true, tasks: [{ anime_id: 20000002, title: "New", source: "yummyanime", url: "https://ru.yummyani.me/catalog/item/new", known_episode_ids: [], selection_reason: "discovery" }],
+    }) };
+    if (url.pathname.endsWith("/source")) return { ok: true, status: 200, text: async () => JSON.stringify({
+      job: { checked_items: 1, error_count: 0, new_episode_count: 1 }, result: { status: "completed" },
+    }) };
+    return response({ checked_items: 1, error_count: 0, new_episode_count: 1 });
+  } });
+  h.driver.fastUpstream();
+  await h.driver.run();
+  assert.deepEqual(paths, ["/api/animego-scans/1/discover-yummy", "/api/animego-scans/1/source", "/api/animego-scans/1/complete"]);
+  assert.equal(h.driver.state.yummy_discovery_done, true);
+  assert.equal(h.driver.state.status, "completed");
+});
+
 test("a failed stop can be retried without reloading the extension", async () => {
   let requests = 0;
   const { driver } = await scannerHarness({ fetch: async () => {

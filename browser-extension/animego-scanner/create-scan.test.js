@@ -44,7 +44,7 @@ test("reopening the scanner updates its theme without losing the job", async () 
   assert.equal(h.storage.animegoScannerTheme, null);
 });
 
-for (const mode of ["partial", "full"]) {
+for (const mode of ["partial", "extended", "full"]) {
   test(`scanner starts a fresh ${mode} job in the existing tab`, async () => {
     const h = background();
     assert.equal((await h.create({ mode }, { url: scannerUrl })).ok, true);

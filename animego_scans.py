@@ -12,9 +12,12 @@ import random
 import re
 import secrets
 import sqlite3
+import threading
+import time
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 import zipfile
+from urllib.request import Request
 
 import content_updates
 import scrape_yummyanime as yummy
@@ -22,21 +25,25 @@ import scrape_animego as animego
 import kinogoo
 import title_activity
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
+from scripts.http_safety import open_validated_url
 
 
-SCAN_MODES = {"partial", "full"}
+SCAN_MODES = {"partial", "extended", "full"}
 ACTIVE_JOB_STATUS = "running"
 JOB_TTL_SECONDS = 2 * 60 * 60
 PARTIAL_EXTRA_LIMIT = 8
 FULL_CONTENT_WINDOW_MONTHS = 3
 MAX_RESULT_BODY_BYTES = 2 * 1024 * 1024
 MAX_COMPLETE_BODY_BYTES = 256 * 1024
-MAX_RESULT_EPISODES = 500
+MAX_RESULT_EPISODES = 2_000
 MAX_PROVIDERS_PER_EPISODE = 100
 MAX_RESULT_PROVIDERS = 5_000
 MAX_ERROR_TEXT = 2_000
 MAX_PROVIDER_URL = 8_192
 ONGOING_STATUSES = {"ongoing", "онгоинг"}
+SOURCE_FETCH_LIMIT = threading.BoundedSemaphore(1)
+YUMMY_DISCOVERY_PAGE_SIZE = 100
+MAX_YUMMY_DISCOVERY_PAGES = 500
 
 
 class ScanError(RuntimeError):
@@ -61,12 +68,22 @@ class ScanOperationBusyError(ScanError):
     pass
 
 
+class ScanSourceUnavailable(ScanError):
+    pass
+
+
 def now_utc():
     return dt.datetime.now(dt.timezone.utc)
 
 
 def iso_timestamp(value=None):
     return (value or now_utc()).isoformat(timespec="seconds")
+
+
+def supports_catalog_sources(version):
+    if not isinstance(version, str) or not re.fullmatch(r"\d{1,4}\.\d{1,4}\.\d{1,4}", version):
+        return False
+    return tuple(int(component) for component in version.split(".")) >= (0, 5, 16)
 
 
 def hash_token(token):
@@ -130,6 +147,11 @@ def ensure_schema(con):
             where status = 'running';
         create index if not exists idx_animego_scan_jobs_user_created
             on animego_scan_jobs(user_id, created_at desc);
+
+        create table if not exists animego_scan_job_modes (
+            job_id integer primary key references animego_scan_jobs(id) on delete cascade,
+            mode text not null check (mode in ('extended', 'full_v2'))
+        );
 
         create table if not exists animego_scan_job_items (
             job_id integer not null references animego_scan_jobs(id) on delete cascade,
@@ -253,7 +275,7 @@ def completed_over_month_ago(row, now):
     return (now.date() - ended).days > 30
 
 
-def scan_candidate_rows(con, *, include_completed=False):
+def scan_candidate_rows(con, *, include_completed=False, include_all_sources=False):
     rows = con.execute(
         """
         with episode_counts as (
@@ -287,9 +309,9 @@ def scan_candidate_rows(con, *, include_completed=False):
         left join available_episode_counts aec on aec.anime_id = a.id
         left join animego_title_scan_state scan_state on scan_state.anime_id = a.id
         left join title_content_activity activity on activity.anime_id = a.id
-        where a.source in ('animego', 'kinogoo')
+        where ? or a.source in ('animego', 'kinogoo')
         order by cast(coalesce(a.year, '0') as integer) desc, a.id desc
-        """
+        """, (int(include_all_sources),)
     ).fetchall()
     return rows if include_completed else [row for row in rows if row['source'] == 'kinogoo' or title_is_ongoing(row) or title_needs_player_backfill(row)]
 
@@ -297,16 +319,20 @@ def scan_candidate_rows(con, *, include_completed=False):
 def scan_state_by_anime_id(con, anime_ids):
     if not anime_ids:
         return {}
-    placeholders = ",".join("?" for _ in anime_ids)
-    rows = con.execute(
-        f"""select s.*, case when s.last_error is null then s.last_checked_at
-            else (select max(i.checked_at) from animego_scan_job_items i
-                  where i.anime_id = s.anime_id and i.status = 'completed' and i.error is null)
-            end as last_successful_at
-            from animego_title_scan_state s where s.anime_id in ({placeholders})""",
-        tuple(anime_ids),
-    ).fetchall()
-    return {int(row["anime_id"]): dict(row) for row in rows}
+    states = {}
+    for start in range(0, len(anime_ids), 900):
+        chunk = anime_ids[start:start + 900]
+        placeholders = ",".join("?" for _ in chunk)
+        rows = con.execute(
+            f"""select s.*, case when s.last_error is null then s.last_checked_at
+                else (select max(i.checked_at) from animego_scan_job_items i
+                      where i.anime_id = s.anime_id and i.status = 'completed' and i.error is null)
+                end as last_successful_at
+                from animego_title_scan_state s where s.anime_id in ({placeholders})""",
+            tuple(chunk),
+        ).fetchall()
+        states.update({int(row["anime_id"]): dict(row) for row in rows})
+    return states
 
 
 def timestamp_is_due(value, now):
@@ -498,13 +524,13 @@ def select_scan_items(
     now=None,
 ):
     if mode not in SCAN_MODES:
-        raise ValueError("mode must be 'partial' or 'full'")
+        raise ValueError("mode must be 'partial', 'extended' or 'full'")
     now = now or now_utc()
-    rows = scan_candidate_rows(con, include_completed=True)
-    if mode == "partial":
-        rows = [row for row in rows if not completed_over_month_ago(row, now)]
+    rows = scan_candidate_rows(con, include_completed=True, include_all_sources=mode != "extended")
     row_by_id = {int(row["id"]): row for row in rows}
     if mode == "full":
+        return [(anime_id, "full") for anime_id in row_by_id]
+    if mode == "extended":
         recent_targets = full_scan_recent_canonical_targets(con, variant_map, set(row_by_id), now)
         return [
             (anime_id, "full")
@@ -537,8 +563,13 @@ def select_scan_items(
             raise ValueError("current_anime_id must be a positive integer")
         add(variant_map.get(current_id, current_id), "current")
 
-    for anime_id in personal_candidate_ids(con, user_id, variant_map, set(row_by_id)):
-        add(anime_id, "personal")
+    personal = personal_candidate_ids(con, user_id, variant_map, set(row_by_id))
+    by_group = {}
+    for anime_id in row_by_id:
+        by_group.setdefault(variant_map.get(anime_id, anime_id), []).append(anime_id)
+    for anime_id in personal:
+        for source_id in by_group.get(anime_id, [anime_id]):
+            add(source_id, "personal")
 
     # Exponential races implement weighted sampling without replacement.
     # Sorting IDs first also makes seeded tests reproducible across processes.
@@ -546,7 +577,7 @@ def select_scan_items(
     ranked = []
     for anime_id in sorted(due_ids - selected.keys()):
         row = row_by_id[anime_id]
-        if not title_is_ongoing(row):
+        if row["source"] not in ("animego", "kinogoo") or not title_is_ongoing(row) or completed_over_month_ago(row, now):
             continue
         weight = partial_scan_weight(row, states.get(anime_id) or {}, now)
         key = -math.log(max(1e-15, 1.0 - picker.random())) / weight
@@ -582,7 +613,7 @@ def task_payloads(con, selected):
     tasks = []
     for anime_id, selection_reason in selected:
         row = con.execute(
-            "select id, title, url, source, fields_json, source_retired_at from anime where id = ? and source in ('animego', 'kinogoo')",
+            "select id, title, url, source, fields_json, source_retired_at from anime where id = ?",
             (int(anime_id),),
         ).fetchone()
         if row is None:
@@ -593,7 +624,7 @@ def task_payloads(con, selected):
                 "title": row["title"],
                 "url": None if row["source_retired_at"] else row["url"],
                 "source_retired": bool(row["source_retired_at"]),
-                "source": row["source"],
+                "source": row["source"] if row["source"] in {"animego", "kinogoo", "yummyanime", "kinogo"} else "unsupported",
                 "season": int(json.loads(row["fields_json"] or "{}").get("Kinogoo season", 1)),
                 "known_episode_ids": [] if selection_reason == "full" else known_playable_episode_ids(con, row["id"]),
                 "selection_reason": selection_reason,
@@ -623,6 +654,8 @@ def job_payload(row):
             "last_error",
         )
     }
+    if "requested_mode" in row.keys() and row["requested_mode"]:
+        payload["mode"] = "full" if row["requested_mode"] == "full_v2" else row["requested_mode"]
     for key in (
         "id",
         "user_id",
@@ -638,7 +671,10 @@ def job_payload(row):
 
 
 def load_job(con, job_id):
-    return con.execute("select * from animego_scan_jobs where id = ?", (int(job_id),)).fetchone()
+    return con.execute(
+        "select j.*, coalesce(m.mode,j.mode) as requested_mode from animego_scan_jobs j "
+        "left join animego_scan_job_modes m on m.job_id=j.id where j.id = ?", (int(job_id),)
+    ).fetchone()
 
 
 def check_active_job(db_path, now):
@@ -646,7 +682,9 @@ def check_active_job(db_path, now):
     con = connect(db_path)
     try:
         row = con.execute(
-            "select * from animego_scan_jobs where status='running' and expires_at > ? limit 1",
+            "select j.*, coalesce(m.mode,j.mode) as requested_mode from animego_scan_jobs j "
+            "left join animego_scan_job_modes m on m.job_id=j.id "
+            "where j.status='running' and j.expires_at > ? limit 1",
             (iso_timestamp(now),),
         ).fetchone()
         if row is not None:
@@ -659,9 +697,9 @@ def expire_stale_jobs(con, now=None):
     now_value = iso_timestamp(now)
     rows = con.execute(
         """
-        select *
-        from animego_scan_jobs
-        where status = 'running' and expires_at <= ?
+        select j.*, coalesce(m.mode,j.mode) as requested_mode
+        from animego_scan_jobs j left join animego_scan_job_modes m on m.job_id=j.id
+        where j.status = 'running' and j.expires_at <= ?
         """,
         (now_value,),
     ).fetchall()
@@ -699,14 +737,14 @@ def create_scan_job(
     source_snapshots=None,
 ):
     if mode not in SCAN_MODES:
-        raise ValueError("mode must be 'partial' or 'full'")
+        raise ValueError("mode must be 'partial', 'extended' or 'full'")
     user_keys = set(user.keys()) if hasattr(user, "keys") else set()
     user_id = int(user["id"])
     user_email = user["email"] if "email" in user_keys else None
     user_name = user["name"] if "name" in user_keys else None
     now = now or now_utc()
     created_at = iso_timestamp(now)
-    expires_at = iso_timestamp(now + dt.timedelta(seconds=24 * 60 * 60 if mode == "full" else JOB_TTL_SECONDS))
+    expires_at = iso_timestamp(now + dt.timedelta(seconds=24 * 60 * 60 if mode != "partial" else JOB_TTL_SECONDS))
     token = secrets.token_urlsafe(32)
     con = connect(db_path)
     try:
@@ -714,13 +752,14 @@ def create_scan_job(
         con.execute("begin immediate")
         expire_stale_jobs(con, now)
         active = con.execute(
-            "select * from animego_scan_jobs where status = 'running' limit 1"
+            "select j.*, coalesce(m.mode,j.mode) as requested_mode from animego_scan_jobs j "
+            "left join animego_scan_job_modes m on m.job_id=j.id where j.status = 'running' limit 1"
         ).fetchone()
         if active is not None:
             con.rollback()
             raise ScanConflictError(job_payload(active))
 
-        if mode == "full" and source_snapshots is not None:
+        if mode == "extended" and source_snapshots is not None:
             title_activity.apply_source_snapshots(con, source_snapshots, now)
 
         selected = select_scan_items(
@@ -737,10 +776,10 @@ def create_scan_job(
             con,
             f"user-{mode}",
             "user-animego-scan",
-            sorted({"animego"} | {task["source"] for task in tasks}),
+            sorted({"animego"} | ({"yummyanime"} if mode == "full" else set()) | {task["source"] for task in tasks if task["source"]}),
             started_at=created_at,
         )
-        job_status = "running" if tasks or mode == "full" else "completed"
+        job_status = "running" if tasks or mode != "partial" else "completed"
         cursor = con.execute(
             """
             insert into animego_scan_jobs (
@@ -753,7 +792,7 @@ def create_scan_job(
                 user_id,
                 user_email,
                 user_name,
-                mode,
+                "full" if mode == "extended" else mode,
                 job_status,
                 hash_token(token),
                 int(current_anime_id) if current_anime_id is not None else None,
@@ -765,6 +804,9 @@ def create_scan_job(
             ),
         )
         job_id = int(cursor.lastrowid)
+        if mode in {"extended", "full"}:
+            con.execute("insert into animego_scan_job_modes(job_id, mode) values (?, ?)",
+                        (job_id, "full_v2" if mode == "full" else "extended"))
         for position, task in enumerate(tasks):
             con.execute(
                 """
@@ -790,12 +832,14 @@ def create_scan_job(
             "token": token,
             "tasks": tasks,
             "origin": origin,
-            "discovery": mode == "full",
+            "discovery": mode != "partial",
+            "yummy_discovery": mode == "full",
         }
     except sqlite3.IntegrityError as exc:
         con.rollback()
         active = con.execute(
-            "select * from animego_scan_jobs where status = 'running' limit 1"
+            "select j.*, coalesce(m.mode,j.mode) as requested_mode from animego_scan_jobs j "
+            "left join animego_scan_job_modes m on m.job_id=j.id where j.status = 'running' limit 1"
         ).fetchone()
         if active is not None:
             raise ScanConflictError(job_payload(active)) from exc
@@ -835,7 +879,7 @@ def discover_scan_titles(db_path, job_id, token, payload):
                 # A changed parser or challenge page must not silently mean success.
                 raise ValueError("listing contains no recognizable titles")
             fingerprint = payload_sha256(sorted(item["id"] for item in items))
-            repeated = con.execute("select 1 from animego_scan_pages where job_id=? and fingerprint=?", (job_id, fingerprint)).fetchone()
+            repeated = con.execute("select 1 from animego_scan_pages where job_id=? and page>0 and fingerprint=?", (job_id, fingerprint)).fetchone()
             done = (not_found and page > 1) or empty_listing or bool(repeated)
             if not done:
                 seen = {row[0] for row in con.execute("select anime_id from animego_scan_discovery where job_id=?", (job_id,))}
@@ -863,6 +907,103 @@ def discover_scan_titles(db_path, job_id, token, payload):
         con.close()
 
 
+def _yummy_discovery_result(con, job_id, page):
+    page_row = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, -page)).fetchone()
+    if page_row is None:
+        return None
+    tasks = []
+    for row in con.execute("select item_json from animego_scan_discovery where job_id=? and page=? order by anime_id", (job_id, -page)):
+        item = json.loads(row["item_json"])
+        tasks.append({"anime_id": item["id"], "title": item["title"], "url": item["url"],
+                      "source": "yummyanime", "known_episode_ids": [], "selection_reason": "discovery"})
+    return {"tasks": tasks, "done": bool(page_row["done"]), "job": job_payload(load_job(con, job_id))}
+
+
+def discover_yummy_titles(db_path, job_id, token, page, *, now=None):
+    """Discover a bounded page of new YummyAni titles, without publishing cards."""
+    if type(page) is not int or not 1 <= page <= MAX_YUMMY_DISCOVERY_PAGES:
+        raise ValueError("YummyAnime discovery page limit reached")
+    con = connect(db_path)
+    try:
+        job = authenticate_job(con, job_id, token, require_running=True, now=now)
+        if job["requested_mode"] != "full_v2":
+            raise ValueError("YummyAnime discovery requires a new full scan")
+        previous = _yummy_discovery_result(con, job_id, page)
+        if previous is not None:
+            return previous
+        if page > 1:
+            predecessor = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, -(page - 1))).fetchone()
+            if predecessor is None or predecessor["done"]:
+                raise ValueError("YummyAnime discovery pages must be sequential")
+    finally:
+        con.close()
+    if not SOURCE_FETCH_LIMIT.acquire(blocking=False):
+        raise ScanOperationBusyError("Другой источник уже проверяется; повторите попытку.")
+    try:
+        query = urlencode({"limit": YUMMY_DISCOVERY_PAGE_SIZE, "offset": (page - 1) * YUMMY_DISCOVERY_PAGE_SIZE,
+                           "sort": "id", "sort_forward": "false"})
+        try:
+            payload = yummy.fetch_json(f"{yummy.YUMMYANI_API_BASE}/anime?{query}", timeout=12)
+        except Exception as exc:
+            raise ScanSourceUnavailable("Не удалось получить каталог YummyAnime. Повторите попытку.") from exc
+        rows = payload.get("response") if isinstance(payload, dict) else None
+        if not isinstance(rows, list) or len(rows) > YUMMY_DISCOVERY_PAGE_SIZE or (page == 1 and not rows):
+            raise ScanSourceUnavailable("Каталог YummyAnime вернул неполный или неверный ответ.")
+        entries = []
+        ids = set()
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ScanSourceUnavailable("Каталог YummyAnime вернул неверную карточку.")
+            source_id, slug = row.get("anime_id"), row.get("anime_url")
+            if type(source_id) is not int or not 0 < source_id < 10_000_000 or source_id in ids:
+                raise ScanSourceUnavailable("Каталог YummyAnime вернул неверный идентификатор.")
+            if not isinstance(slug, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,199}", slug):
+                raise ScanSourceUnavailable("Каталог YummyAnime вернул неподдерживаемый адрес.")
+            ids.add(source_id)
+            title = validated_text(row.get("title") or slug, "title", required=True, maximum=1000)
+            entries.append({"id": yummy.internal_modern_anime_id(source_id), "source": "yummyanime",
+                            "source_id": yummy.modern_source_id(source_id), "slug": slug, "title": title,
+                            "url": f"{yummy.YUMMYANI_BASE_URL}/catalog/item/{slug}"})
+        done = len(rows) < YUMMY_DISCOVERY_PAGE_SIZE
+        fingerprint = payload_sha256(sorted(ids))
+        con = connect(db_path)
+        try:
+            ensure_schema(con)
+            con.execute("begin immediate")
+            job = authenticate_job(con, job_id, token, require_running=True, now=now)
+            previous = _yummy_discovery_result(con, job_id, page)
+            if previous is not None:
+                con.commit()
+                return previous
+            if page > 1:
+                predecessor = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, -(page - 1))).fetchone()
+                if predecessor is None or predecessor["done"]:
+                    raise ValueError("YummyAnime discovery pages must be sequential")
+            if rows and con.execute("select 1 from animego_scan_pages where job_id=? and page<0 and fingerprint=?", (job_id, fingerprint)).fetchone():
+                raise ScanSourceUnavailable("Каталог YummyAnime повторил страницу; поиск не завершён.")
+            for item in entries:
+                existing = con.execute("select source,source_id from anime where id=?", (item["id"],)).fetchone()
+                if existing is not None:
+                    if existing["source"] != "yummyanime" or str(existing["source_id"]) != item["source_id"]:
+                        raise ValueError("YummyAnime title id belongs to another source")
+                    continue
+                cursor = con.execute("insert or ignore into animego_scan_discovery(job_id,anime_id,page,item_json) values (?,?,?,?)",
+                                     (job_id, item["id"], -page, json.dumps(item, ensure_ascii=False)))
+                if cursor.rowcount:
+                    con.execute("update animego_scan_jobs set total_items=total_items+1 where id=?", (job_id,))
+            con.execute("insert into animego_scan_pages(job_id,page,done,fingerprint) values (?,?,?,?)", (job_id, -page, int(done), fingerprint))
+            result = _yummy_discovery_result(con, job_id, page)
+            con.commit()
+            return result
+        except Exception:
+            con.rollback()
+            raise
+        finally:
+            con.close()
+    finally:
+        SOURCE_FETCH_LIMIT.release()
+
+
 def authenticate_job(con, job_id, token, *, require_running=False, now=None):
     if not token:
         raise ScanAuthenticationError("authentication required")
@@ -874,6 +1015,13 @@ def authenticate_job(con, job_id, token, *, require_running=False, now=None):
         raise ScanExpiredError("scan expired")
     if require_running and row["status"] != "running":
         raise ValueError("scan is not running")
+    if require_running and row["requested_mode"] == "full_v2":
+        # A comprehensive scan can take longer than a day. Keep its lease for
+        # 24 hours after committed progress, rather than expiring an active run.
+        expires_at = iso_timestamp((now or now_utc()) + dt.timedelta(hours=24))
+        if expires_at > row["expires_at"]:
+            con.execute("update animego_scan_jobs set expires_at=? where id=?", (expires_at, int(job_id)))
+            row = load_job(con, job_id)
     return row
 
 
@@ -1465,14 +1613,158 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
             raise ValueError("alternate source has no playable episodes")
         normalized = validate_result_payload({"anime_id": alternative["id"], "episodes": snapshots}, alternative["id"], allowed_hosts, max_episode_id=2**53)
         return {"anime_id": alternative["id"], "url": alternative["url"], "episodes": normalized["episodes"],
-                "source_updated_at": _detail.get("source_updated_at")}
+                "source_updated_at": _detail.get("source_updated_at"), "source_detail": _detail}
     except Exception as exc:
         # Keep the original failed result and report the alternative failure.
         # Do not expose upstream URLs containing player tokens or response bodies.
         return {"error": f"YummyAnime recovery failed ({type(exc).__name__})"}
 
 
-def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None, fallback_resolver=None):
+def resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *, now=None):
+    con = connect(db_path)
+    try:
+        authenticate_job(con, job_id, token, require_running=True, now=now)
+        if type(anime_id) is not int or not (con.execute(
+            "select 1 from animego_scan_job_items where job_id=? and anime_id=?", (job_id, anime_id)
+        ).fetchone() or con.execute(
+            "select 1 from animego_scan_discovery where job_id=? and anime_id=? and page<0", (job_id, anime_id)
+        ).fetchone()):
+            raise ValueError("anime_id is not assigned to this scan")
+    finally:
+        con.close()
+    if not SOURCE_FETCH_LIMIT.acquire(blocking=False):
+        raise ScanOperationBusyError("Другой источник уже проверяется; повторите попытку.")
+    try:
+        return _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, now=now)
+    finally:
+        SOURCE_FETCH_LIMIT.release()
+
+
+def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *, now=None):
+    """Fetch an assigned non-AnimeGO source only after authenticating the job."""
+    if type(anime_id) is not int or anime_id <= 0:
+        raise ValueError("anime_id must be a positive integer")
+    con = connect(db_path)
+    try:
+        authenticate_job(con, job_id, token, require_running=True, now=now)
+        item = con.execute(
+            "select status from animego_scan_job_items where job_id=? and anime_id=?", (job_id, anime_id)
+        ).fetchone()
+        candidate = None if item is not None else con.execute(
+            "select * from animego_scan_discovery where job_id=? and anime_id=? and page<0", (job_id, anime_id)
+        ).fetchone()
+        if item is None and candidate is None:
+            raise ValueError("anime_id is not assigned to this scan")
+        if (item is not None and item["status"] != "pending") or (candidate is not None and candidate["processed"]):
+            return submit_scan_result(db_path, job_id, token, {"anime_id": anime_id, "episodes": []}, allowed_hosts, now=now)
+        if candidate is not None:
+            source = json.loads(candidate["item_json"])
+            source["source_retired_at"] = None
+        else:
+            row = con.execute("select id, source, source_id, url, source_retired_at from anime where id=?", (anime_id,)).fetchone()
+            if row is None:
+                raise ValueError("assigned title no longer exists")
+            source = dict(row)
+    finally:
+        con.close()
+
+    detail = None
+    source_verified = False
+    payload = {"anime_id": anime_id, "episodes": []}
+    try:
+        if source["source_retired_at"]:
+            raise ValueError("source was retired")
+        parsed = urlparse(source["url"] or "")
+        if (parsed.scheme != "https" or parsed.username is not None or parsed.password is not None
+                or parsed.port is not None or parsed.query
+                or (parsed.fragment and source["source"] != "kinogo")):
+            raise ValueError("unsupported source address")
+        host = (parsed.hostname or "").lower()
+        if source["source"] == "yummyanime" and host == "ru.yummyani.me" and parsed.path.startswith("/catalog/item/"):
+            slug = yummy.parse_modern_slug(source["url"])
+            data, api_url = yummy.fetch_modern_anime(slug, True, timeout=12)
+            if not isinstance(data, dict):
+                raise ValueError("invalid YummyAni response")
+            counts = data.get("episodes") or {}
+            count = int(counts.get("count") or counts.get("aired") or 1)
+            videos = data.get("videos") or []
+            if not 0 < count <= MAX_RESULT_EPISODES or not isinstance(videos, list) or len(videos) > MAX_RESULT_PROVIDERS:
+                raise ValueError("YummyAni response exceeds scan limits")
+            item, detail, episodes, providers = yummy.parse_modern_payload(data, source["url"], api_url)
+        elif source["source"] == "yummyanime" and host == "yummyanime.tv" and re.fullmatch(r"/\d+-[^/]+\.html", parsed.path):
+            deadline = time.monotonic() + 30
+
+            def fetch_legacy(url, referer=None, delay=0.0):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("legacy source deadline exceeded")
+                check = connect(db_path)
+                try:
+                    row = load_job(check, job_id)
+                    if row is None or row["status"] != "running":
+                        raise ScanExpiredError("scan stopped while fetching source")
+                finally:
+                    check.close()
+                return yummy.fetch_text(url, referer=referer, delay=delay, timeout=min(8, remaining))
+
+            html = fetch_legacy(source["url"])
+            soup = yummy.BeautifulSoup(html, "lxml")
+            fields = yummy.parse_info_fields(soup)
+            label = yummy.clean_text(soup.select_one(".inner-page__img .movie-item__label"))
+            if not 0 < yummy.parse_episode_count(label, fields) <= MAX_RESULT_EPISODES:
+                raise ValueError("YummyAnime response exceeds scan limits")
+            if len(yummy.parse_player_params(soup)) > MAX_PROVIDERS_PER_EPISODE:
+                raise ValueError("YummyAnime has too many players")
+            item, detail, _, _ = yummy.parse_detail(source["url"], html, skip_player=True)
+            if int(item["id"]) != anime_id or str(item.get("source_id")) != str(source["source_id"]):
+                raise ValueError("source identity changed")
+            source_verified = True
+            if len(soup.select(".xfplayer[data-params]")) > len(yummy.parse_player_params(soup)):
+                payload["metadata_error"] = "Некоторые плееры источника не поддерживаются."
+            item, detail, episodes, providers = yummy.parse_detail(source["url"], html, include_embed_urls=True,
+                                                                   fetcher=fetch_legacy, strict_players=True)
+            if time.monotonic() > deadline:
+                raise TimeoutError("legacy source deadline exceeded")
+        elif source["source"] == "kinogo" and host in {"kinogo.org", "kinogo.online"}:
+            # These older sources are not the Kinogoo player adapter. Try the
+            # exact stored page, but never treat an unreadable player as unchanged.
+            request = Request(parsed._replace(fragment="").geturl(), headers={"User-Agent": yummy.USER_AGENT})
+            with open_validated_url(request, timeout=12, allowed_hosts=(host,)) as response:
+                response.read(MAX_RESULT_BODY_BYTES + 1)
+            raise ValueError("player format is not supported")
+        else:
+            raise ValueError("source is not supported")
+        if int(item["id"]) != anime_id or str(item.get("source_id")) != str(source["source_id"]):
+            raise ValueError("source identity changed")
+        source_verified = True
+        for episode in episodes:
+            matches = [p for p in providers if p.get("episode_number") == str(episode.get("number"))
+                       or (p.get("episode_number") is None and len(episodes) == 1)]
+            if matches:
+                if episode["id"] != yummy.internal_episode_id(anime_id, episode["number"]):
+                    raise ValueError("source episode identity changed")
+                payload["episodes"].append({"episode": episode, "providers": matches})
+        url_owners = {}
+        for snapshot in payload["episodes"]:
+            for provider in snapshot["providers"]:
+                url_owners.setdefault(provider.get("embed_url"), set()).add(snapshot["episode"]["id"])
+        if any(len(ids) > 1 for url, ids in url_owners.items() if url):
+            raise ValueError("player URL is ambiguous across episodes")
+        if not payload["episodes"] and not (candidate is not None and host == "ru.yummyani.me" and data.get("videos") == []):
+            payload["error"] = "Источник не вернул проверяемые плееры; содержимое не подтверждено."
+        validate_result_payload(payload, anime_id, allowed_hosts, max_episode_id=2**53)
+    except Exception as exc:
+        # A page, query, or exception may contain raw player tokens.
+        if not source_verified:
+            detail = None
+        payload["episodes"] = []
+        payload["error"] = f"Не удалось проверить источник ({type(exc).__name__})."
+    return submit_scan_result(db_path, job_id, token, payload, allowed_hosts, now=now, _source_detail=detail,
+                              _source_identity=(source["source"], source["source_id"], source["url"]))
+
+
+def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=None, fallback_resolver=None,
+                       _source_detail=None, _source_identity=None):
     recovery = prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, fallback_resolver, now)
     if recovery and recovery.get("task"):
         return {"recovery_task": recovery["task"]}
@@ -1504,24 +1796,38 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 if candidate is None:
                     raise ValueError("anime_id is not assigned to this scan")
                 if candidate["processed"]:
+                    saved = json.loads(candidate["item_json"])
                     con.commit()
-                    return {"job": job_payload(job), "result": {"anime_id": anime_id, "status": "already_processed", "new_episode_count": 0, "new_provider_count": 0}}
-                normalized = validate_result_payload(payload, anime_id, allowed_hosts)
+                    return {"job": job_payload(job), "result": {"anime_id": anime_id, "status": "already_processed", "item_status": "failed" if saved.get("scan_error") else "completed", "error": saved.get("scan_error"), "new_episode_count": 0, "new_provider_count": 0}}
+                discovered_item = json.loads(candidate["item_json"])
+                yummy_discovery = candidate["page"] < 0 and discovered_item.get("source") == "yummyanime"
+                normalized = validate_result_payload(payload, anime_id, allowed_hosts,
+                                                     max_episode_id=2**53 if yummy_discovery else 2_000_000_000)
                 con.execute("update animego_scan_discovery set processed=1 where job_id=? and anime_id=?", (job_id, anime_id))
                 if normalized["error"] or not normalized["episodes"]:
+                    if normalized["error"]:
+                        discovered_item["scan_error"] = normalized["error"]
+                        con.execute("update animego_scan_discovery set item_json=? where job_id=? and anime_id=?", (json.dumps(discovered_item), job_id, anime_id))
                     con.execute("update animego_scan_jobs set checked_items=checked_items+1, error_count=error_count+?, last_error=coalesce(?, last_error) where id=?", (int(bool(normalized["error"])), normalized["error"], job_id))
                     con.commit()
-                    return {"job": job_payload(load_job(con, job_id)), "result": {"anime_id": anime_id, "status": "failed" if normalized["error"] else "completed", "new_episode_count": 0, "new_provider_count": 0}}
+                    return {"job": job_payload(load_job(con, job_id)), "result": {"anime_id": anime_id, "status": "failed" if normalized["error"] else "completed", "error": normalized["error"], "new_episode_count": 0, "new_provider_count": 0}}
                 existing = con.execute("select source from anime where id=?", (anime_id,)).fetchone()
-                if existing and existing["source"] != "animego":
+                expected_source = "yummyanime" if yummy_discovery else "animego"
+                if existing and existing["source"] != expected_source:
                     raise ValueError("discovered title id belongs to another source")
                 if existing is None:
-                    html = validated_text(payload.get("detail_html"), "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
-                    detail = animego.parse_detail(html)
+                    if yummy_discovery:
+                        if _source_detail is None:
+                            raise ValueError("YummyAnime discovery requires validated source details")
+                        detail = _source_detail
+                    else:
+                        html = validated_text(payload.get("detail_html"), "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
+                        detail = animego.parse_detail(html)
                     if not detail["title"]:
                         raise ValueError("detail page contains no title")
-                    animego.upsert_anime(con, json.loads(candidate["item_json"]), detail, iso_timestamp(now), authoritative_metadata=True)
-                    content_updates.insert_event(con, job["content_update_run_id"], "new_title", anime_id, source="animego", source_id=str(anime_id), title=detail["title"], description="Добавлен тайтл; карточка требует оформления")
+                    animego.upsert_anime(con, discovered_item, detail, iso_timestamp(now), authoritative_metadata=True)
+                    content_updates.insert_event(con, job["content_update_run_id"], "new_title", anime_id, source=expected_source,
+                                                 source_id=str(discovered_item.get("source_id", anime_id)), title=detail["title"], description="Добавлен тайтл; карточка требует оформления")
                 position = con.execute("select coalesce(max(position), -1)+1 from animego_scan_job_items where job_id=?", (job_id,)).fetchone()[0]
                 con.execute("insert into animego_scan_job_items(job_id, anime_id, position, selection_reason) values (?, ?, ?, 'discovery')", (job_id, anime_id, position))
                 item = con.execute("select * from animego_scan_job_items where job_id=? and anime_id=?", (job_id, anime_id)).fetchone()
@@ -1532,18 +1838,23 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                     "result": {
                         "anime_id": anime_id,
                         "status": "already_processed",
+                        "item_status": item["status"],
+                        "error": item["error"] if item["status"] == "failed" else None,
                         "recovered_source": "YummyAnime" if str(item["error"] or "").startswith("Recovered via YummyAnime #") else None,
                         "new_episode_count": int(item["new_episode_count"] or 0),
                         "new_provider_count": int(item["new_provider_count"] or 0),
                     },
                 }
-            normalized = validate_result_payload(payload, anime_id, allowed_hosts)
             anime_row = con.execute(
-                "select * from anime where id = ? and source in ('animego', 'kinogoo')",
+                "select * from anime where id = ?",
                 (anime_id,),
             ).fetchone()
             if anime_row is None:
-                raise ValueError("assigned AnimeGO title no longer exists")
+                raise ValueError("assigned title no longer exists")
+            if _source_identity is not None and tuple(anime_row[key] for key in ("source", "source_id", "url")) != _source_identity:
+                raise ValueError("assigned source changed while checking")
+            normalized = validate_result_payload(payload, anime_id, allowed_hosts,
+                                                 max_episode_id=2**53 if anime_row["source"] == "yummyanime" else 2_000_000_000)
             if anime_row["source"] == "kinogoo":
                 for snapshot in normalized["episodes"]:
                     if not kinogoo.EPISODE_OFFSET < snapshot["episode"]["id"] < 2_000_000_000:
@@ -1553,6 +1864,11 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                             raise ValueError("Invalid Kinogoo player host")
             checked_at_dt = now or now_utc()
             checked_at = iso_timestamp(checked_at_dt)
+            if _source_detail is not None and anime_row["source"] == "yummyanime":
+                animego.refresh_release_metadata(con, anime_id, _source_detail, checked_at)
+                if _source_detail.get("source_updated_at"):
+                    title_activity.record_source_date(con, anime_id, _source_detail["source_updated_at"],
+                                                      checked_at_dt, source_kind="yummyanime_video")
             original_source_error = normalized["error"]
             if recovery and recovery.get("error"):
                 normalized["error"] = f"{normalized['error']} {recovery['error']}"[:MAX_ERROR_TEXT]
@@ -1563,6 +1879,8 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 if recovery.get("source_updated_at"):
                     title_activity.record_source_date(con, alternate_row["id"], recovery["source_updated_at"],
                                                       checked_at_dt, source_kind="yummyanime_video")
+                if recovery.get("source_detail"):
+                    animego.refresh_release_metadata(con, alternate_row["id"], recovery["source_detail"], checked_at)
                 update_title_scan_state(con, anime_row, job["user_id"], job_id, error=original_source_error, checked_at=checked_at_dt)
                 anime_row = alternate_row
                 normalized = {"anime_id": anime_row["id"], "error": None, "episodes": recovery["episodes"]}
@@ -1599,6 +1917,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                     "result": {
                         "anime_id": anime_id,
                         "status": "failed",
+                        "error": normalized["error"],
                         "new_episode_count": 0,
                         "new_provider_count": 0,
                     },
@@ -1606,6 +1925,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
 
             # Older extension versions omit HTML; preserve compatibility without
             # claiming that their episode-only scans refreshed metadata.
+            metadata_error = validated_text(payload.get("metadata_error"), "metadata_error", maximum=MAX_ERROR_TEXT)
             if payload.get("detail_html") and anime_row["source"] == "animego":
                 html = validated_text(payload["detail_html"], "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
                 detail = animego.parse_detail(html)
@@ -1624,12 +1944,12 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
             con.execute(
                 """
                 update animego_scan_job_items
-                set status = 'completed', checked_at = ?,
+                set status = ?, checked_at = ?,
                     new_episode_count = ?, new_provider_count = ?, error = ?
                 where job_id = ? and anime_id = ?
                 """,
-                (checked_at, new_episodes, new_providers,
-                 f"Recovered via YummyAnime #{anime_row['id']}; {original_source_error}" if recovery else None,
+                ("failed" if metadata_error else "completed", checked_at, new_episodes, new_providers,
+                 metadata_error or (f"Recovered via YummyAnime #{anime_row['id']}; {original_source_error}" if recovery else None),
                  int(job_id), anime_id),
             )
             con.execute(
@@ -1637,10 +1957,11 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 update animego_scan_jobs
                 set checked_items = checked_items + 1,
                     new_episode_count = new_episode_count + ?,
-                    new_provider_count = new_provider_count + ?
+                    new_provider_count = new_provider_count + ?,
+                    error_count = error_count + ?, last_error = coalesce(?, last_error)
                 where id = ?
                 """,
-                (new_episodes, new_providers, int(job_id)),
+                (new_episodes, new_providers, int(bool(metadata_error)), metadata_error, int(job_id)),
             )
             update_title_scan_state(
                 con,
@@ -1649,6 +1970,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 job_id,
                 new_episode_count=new_episodes,
                 new_provider_count=new_providers,
+                error=metadata_error,
                 checked_at=checked_at_dt,
             )
             con.commit()
@@ -1656,7 +1978,8 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 "job": job_payload(load_job(con, job_id)),
                 "result": {
                     "anime_id": anime_id,
-                    "status": "completed",
+                    "status": "failed" if metadata_error else "completed",
+                    "error": metadata_error,
                     "recovered_source": "YummyAnime" if recovery else None,
                     "new_episode_count": new_episodes,
                     "new_provider_count": new_providers,
@@ -1722,8 +2045,12 @@ def complete_scan_job(db_path, job_id, token, payload=None, *, now=None):
         ).fetchone():
             raise ValueError("scan still has pending titles; submit results or stop the scan")
         if not stopped and job["mode"] == "full":
-            if not con.execute("select 1 from animego_scan_pages where job_id=? and done=1", (job_id,)).fetchone():
+            if not con.execute("select 1 from animego_scan_pages where job_id=? and page>0 and done=1", (job_id,)).fetchone():
                 raise ValueError("full scan discovery is not complete; update the scanner extension")
+            if job["requested_mode"] == "full_v2" and not con.execute(
+                "select 1 from animego_scan_pages where job_id=? and page<0 and done=1", (job_id,)
+            ).fetchone():
+                raise ValueError("YummyAnime discovery is not complete")
             if con.execute("select 1 from animego_scan_discovery where job_id=? and processed=0", (job_id,)).fetchone():
                 raise ValueError("scan still has pending discovered titles")
         new_errors = 0

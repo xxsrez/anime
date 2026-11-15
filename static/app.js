@@ -575,7 +575,7 @@ function confirmFullAnimeGoScan() {
   return showAnimeGoScanDialog({
     kind: "full-confirm",
     title: "Запустить Full Scan?",
-    message: "Full Scan проверит полный набор актуальных кандидатов AnimeGO. Это займёт заметно больше времени и создаст больше запросов с вашего подключения.",
+    message: "Full Scan проверит все источники каталога и найдёт новые тайтлы. Это может занять много времени и создаст больше запросов к источникам.",
     confirmLabel: "Запустить Full Scan",
   });
 }
@@ -761,15 +761,16 @@ function handleAnimeGoScanComplete(event) {
   const checked = animeGoScanMetric(detail, "checked_items", "checked") ?? 0;
   const total = animeGoScanMetric(detail, "total_items", "total") ?? checked;
   const added = animeGoScanMetric(detail, "new_episode_count", "added") ?? 0;
+  const errors = animeGoScanMetric(detail, "error_count", "errors") ?? 0;
   const stopped = Boolean(detail.stopped) || String(detail?.job?.status || "") === "stopped";
   const message = stopped
     ? `Остановлено: ${checked}/${total} · добавлено серий: ${added}`
-    : `Готово: ${checked}/${total} · добавлено серий: ${added}`;
+    : `Готово: ${checked}/${total} · добавлено серий: ${added}${errors ? ` · ошибок: ${errors}` : ""}`;
   stopAnimeGoScanPolling();
   state.animeGoScanJobId = null;
   state.animeGoScanMode = null;
-  setAnimeGoScanPhase("idle", message, stopped ? "warn" : "ok");
-  showAppStatus(message, stopped ? "warn" : "ok");
+  setAnimeGoScanPhase("idle", message, stopped || errors ? "warn" : "ok");
+  showAppStatus(message, stopped || errors ? "warn" : "ok");
   refreshCatalogAfterAnimeGoScan().catch(error => {
     reportClientError(error, { action: "refresh catalog after animego scan" });
   });
@@ -803,12 +804,12 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
     showAnimeGoScannerSetup();
     return;
   }
-  const normalizedMode = mode === "full" ? "full" : "partial";
+  const normalizedMode = ["partial", "extended", "full"].includes(mode) ? mode : "partial";
   const scannerVersion = String(state.animeGoScannerVersion || "").split(".").map(Number);
-  if (!(scannerVersion[0] > 0 || (scannerVersion[0] === 0
-    && (scannerVersion[1] > 5 || (scannerVersion[1] === 5 && scannerVersion[2] >= 1))))) {
+  if (!(scannerVersion[0] > 0 || scannerVersion[1] > 5
+    || (scannerVersion[1] === 5 && scannerVersion[2] >= 16))) {
     showAnimeGoScannerSetup();
-    showAppStatus("Обновите сканер до версии 0.5.1 или новее: в старых версиях не запускаются задания с Kinogoo", "warn");
+    showAppStatus("Обновите сканер до версии 0.5.16 или новее", "warn");
     return;
   }
   if (normalizedMode === "full" && !fullConfirmed) {
@@ -836,6 +837,7 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: normalizedMode,
+        scanner_version: state.animeGoScannerVersion,
         current_anime_id: state.selectedAnimeId,
       }),
     });
@@ -865,7 +867,7 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
     setAnimeGoScanPhase("active", `0/${total} · передано сканеру`);
     startAnimeGoScanPolling(jobId, token);
     if (normalizedMode === "full") {
-      showAppStatus(`Full Scan: сервер подготовил ${total} актуальных тайтлов`, "warn");
+      showAppStatus(`Full Scan: сервер подготовил ${total} источников`, "warn");
     }
     document.dispatchEvent(new CustomEvent("animego-scan-start", {
       detail: {
@@ -874,6 +876,7 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
         token,
         tasks,
         discovery: payload.discovery === true,
+        yummy_discovery: payload.yummy_discovery === true,
         origin: window.location.origin,
         mode: normalizedMode,
         raw: payload,

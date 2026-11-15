@@ -4491,7 +4491,7 @@ def animego_scan_fallback(db_path, user_id, anime_id):
 
 
 def animego_scan_variant_map(db_path=None, user_id=None):
-    """Map every visible canonical member to a browser-scannable source row."""
+    """Map every canonical member to a shared representative source row."""
     mapping = {}
     for group in get_catalog_cache(db_path, user_id)["items"]:
         variants = group.get("source_variants") or []
@@ -4502,6 +4502,8 @@ def animego_scan_variant_map(db_path=None, user_id=None):
         if animego_variant is None and group.get("source") in ("animego", "kinogoo"):
             animego_variant = group
         if animego_variant is None:
+            animego_variant = next((variant for variant in variants if variant.get("id") is not None), group)
+        if animego_variant.get("id") is None:
             continue
         animego_id = int(animego_variant["id"])
         for member_id in group.get("source_member_ids") or [group.get("id")]:
@@ -8782,7 +8784,7 @@ class AnimeHandler(BaseHTTPRequestHandler):
             return
 
         scan_action_match = re.fullmatch(
-            r"/api/animego-scans/(\d+)/(results|complete|discover)", path
+            r"/api/animego-scans/(\d+)/(results|complete|discover|discover-yummy|source)", path
         )
         if scan_action_match:
             job_id = int(scan_action_match.group(1))
@@ -8794,10 +8796,25 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     else animego_scans.MAX_COMPLETE_BODY_BYTES
                 )
                 payload = self.read_limited_json_body(max_bytes)
-                if action == "discover":
+                if action == "discover-yummy":
+                    if not isinstance(payload, dict):
+                        raise ValueError("payload must be an object")
+                    result = animego_scans.discover_yummy_titles(
+                        self.server.db_path, job_id, self.bearer_request_token(), payload.get("page")
+                    )
+                elif action == "discover":
                     result = animego_scans.discover_scan_titles(
                         self.server.db_path, job_id, self.bearer_request_token(), payload
                     )
+                elif action == "source":
+                    if not isinstance(payload, dict):
+                        raise ValueError("payload must be an object")
+                    result = animego_scans.resolve_assigned_source(
+                        self.server.db_path, job_id, self.bearer_request_token(), payload.get("anime_id"), PLAYER_HOSTS
+                    )
+                    result_stats = result.get("result") or {}
+                    if result_stats.get("new_episode_count") or result_stats.get("new_provider_count"):
+                        invalidate_catalog_cache(self.server.db_path)
                 elif action == "results":
                     result = animego_scans.submit_scan_result(
                         self.server.db_path,
@@ -8832,6 +8849,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
             except animego_scans.ScanOperationBusyError as exc:
                 self.send_json({"error": str(exc)}, 423)
                 return
+            except animego_scans.ScanSourceUnavailable as exc:
+                self.send_json({"error": str(exc)}, 502)
+                return
             except ValueError as exc:
                 self.send_json({"error": str(exc)}, 400)
                 return
@@ -8848,11 +8868,14 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     raise ValueError("payload must be an object")
                 mode = payload.get("mode")
                 if mode not in animego_scans.SCAN_MODES:
-                    raise ValueError("mode must be 'partial' or 'full'")
+                    raise ValueError("mode must be 'partial', 'extended' or 'full'")
+                if not animego_scans.supports_catalog_sources(payload.get("scanner_version")):
+                    self.send_json({"error": "Обновите расширение сканера до версии 0.5.16 или новее."}, 426)
+                    return
                 now = animego_scans.now_utc()
-                if mode == "full":
+                if mode != "partial":
                     animego_scans.check_active_job(self.server.db_path, now)
-                snapshots = title_activity.fetch_source_snapshots(now) if mode == "full" else None
+                snapshots = title_activity.fetch_source_snapshots(now) if mode == "extended" else None
                 result = animego_scans.create_scan_job(
                     self.server.db_path,
                     user,
