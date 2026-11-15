@@ -10,7 +10,16 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
   const requested = [];
   const players = [];
   class Element {
-    constructor() { this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ""; this.open = false; this.attributes = {}; }
+    constructor() {
+      this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ""; this.open = false; this.attributes = {};
+      const classes = new Set();
+      this.classList = {
+        add: (...names) => names.forEach(name => classes.add(name)),
+        remove: (...names) => names.forEach(name => classes.delete(name)),
+        contains: name => classes.has(name),
+        toggle: (name, force = !classes.has(name)) => force ? classes.add(name) : classes.delete(name),
+      };
+    }
     addEventListener(event, callback, options = {}) { (this.listeners[event] ||= []).push({ callback, once: options.once }); }
     dispatch(event) {
       const listeners = [...(this.listeners[event] || [])];
@@ -22,10 +31,13 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
     focus() { this.focused = true; document.activeElement = this; }
     setAttribute(name, value) { this.attributes[name] = value; }
   }
-  const elements = Object.fromEntries(["quality", "translation", "translation-label", "resume", "skip-intro", "pip", "pip-label", "player-settings", "settings-toggle", "settings-close", "settings-quality", "message", "retry", "original"].map(
+  const elements = Object.fromEntries(["player", "quality", "translation", "translation-label", "resume", "skip-intro", "pip", "pip-label", "player-settings", "settings-toggle", "settings-close", "settings-quality", "message", "feedback-close", "retry", "original"].map(
     id => [id, new Element()],
   ));
   elements["skip-intro"].hidden = true;
+  elements.player.classList.add("is-empty", "is-loading");
+  elements["player-settings"].hidden = true;
+  elements["feedback-close"].hidden = true;
   const video = new Element();
   Object.assign(video, {
     currentTime: 0, duration: 1200, readyState: 1, paused: true, ended: false,
@@ -82,6 +94,92 @@ function keyEvent(key, extra = {}) {
   return { key, target: {}, prevented: false, stopped: false,
     preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; }, ...extra };
 }
+
+test("initial loading and failure keep native controls hidden until a source is available", async () => {
+  let finish;
+  const response = new Promise(resolve => { finish = resolve; });
+  const player = setup(() => response);
+  assert.equal(player.elements.player.classList.contains("is-empty"), true);
+  assert.equal(player.elements.player.classList.contains("is-loading"), true);
+  assert.equal(player.elements["player-settings"].hidden, true);
+  finish({ errorStatus: 503 });
+  await new Promise(setImmediate);
+  assert.equal(player.elements.player.classList.contains("is-empty"), true);
+  assert.equal(player.elements.player.classList.contains("is-loading"), false);
+  assert.equal(player.elements.player.classList.contains("has-error"), true);
+  assert.equal(player.elements.retry.hidden, false);
+  assert.equal(player.elements.original.hidden, false);
+  assert.equal(player.elements["feedback-close"].hidden, true, "there is no playable source to return to");
+  player.elements.retry.dispatch("click");
+  assert.equal(player.elements.player.classList.contains("is-loading"), true);
+  assert.equal(player.elements.player.classList.contains("has-error"), false);
+});
+
+test("a resolved source is usable before media metadata and keeps video visible during voice loading", async () => {
+  let finishSwitch;
+  const switching = new Promise(resolve => { finishSwitch = resolve; });
+  const translations = [{ id: "963", title: "First" }, { id: "17", title: "Second" }];
+  const player = setup(request => request.includes("translation=17") ? switching : {
+    streams: { "720": "https://p14.solodcdn.com/test.m3u8" }, translations, translation_id: "963",
+  }, { serial: "55" });
+  player.video.readyState = 0;
+  await new Promise(setImmediate);
+  assert.equal(player.elements.player.classList.contains("is-empty"), false);
+  assert.equal(player.elements.player.classList.contains("is-loading"), false);
+  assert.equal(player.elements["player-settings"].hidden, false);
+  player.elements["player-settings"].open = true;
+  player.elements.translation.insideSettings = true;
+  player.elements.translation.focus();
+  player.elements.translation.value = "17";
+  player.elements.translation.dispatch("change");
+  assert.equal(player.elements["player-settings"].open, false);
+  assert.equal(player.elements["settings-toggle"].focused, true);
+  assert.equal(player.elements.player.classList.contains("is-empty"), false);
+  assert.equal(player.elements.player.classList.contains("is-loading"), true);
+  assert.equal(player.elements.message.textContent, "Загружаем озвучку…");
+  finishSwitch({ errorStatus: 503 });
+  await new Promise(setImmediate);
+  assert.equal(player.elements.player.classList.contains("is-empty"), false);
+  assert.equal(player.elements.player.classList.contains("is-loading"), false);
+  assert.equal(player.elements.player.classList.contains("has-error"), true);
+  assert.equal(player.elements.retry.hidden, false);
+  assert.equal(player.elements["feedback-close"].hidden, false);
+  player.video.paused = false;
+  player.elements["feedback-close"].focus();
+  player.elements["feedback-close"].dispatch("click");
+  assert.equal(player.elements.player.classList.contains("has-error"), false);
+  assert.equal(player.elements.retry.hidden, true);
+  assert.equal(player.elements.original.hidden, true);
+  assert.equal(player.video.paused, false, "dismissing the error leaves the previous video playing");
+  assert.equal(player.video.focused, true);
+  player.video.dispatch("error");
+  player.video.dispatch("play");
+  assert.equal(player.elements.player.classList.contains("has-error"), false);
+  assert.equal(player.elements["feedback-close"].hidden, true);
+});
+
+test("an older voice response cannot finish the current loading state", async () => {
+  let finishFirst, finishSecond;
+  const first = new Promise(resolve => { finishFirst = resolve; });
+  const second = new Promise(resolve => { finishSecond = resolve; });
+  let calls = 0;
+  const translations = [{ id: "963", title: "First" }, { id: "17", title: "Second" }];
+  const payload = id => ({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" }, translations, translation_id: id });
+  const player = setup(() => ++calls === 1 ? payload("963") : calls === 2 ? first : second, { serial: "55" });
+  await new Promise(setImmediate);
+  player.elements.translation.value = "17";
+  player.elements.translation.dispatch("change");
+  player.elements.translation.value = "963";
+  player.elements.translation.dispatch("change");
+  finishFirst({ errorStatus: 503 });
+  await new Promise(setImmediate);
+  assert.equal(player.elements.player.classList.contains("is-loading"), true);
+  assert.equal(player.elements.player.classList.contains("has-error"), false);
+  finishSecond(payload("963"));
+  await new Promise(setImmediate);
+  assert.equal(player.elements.player.classList.contains("is-loading"), false);
+  assert.equal(player.elements.player.classList.contains("has-error"), false);
+});
 
 test("space toggles actual playback once and leaves controls and text input alone", async () => {
   const player = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } });

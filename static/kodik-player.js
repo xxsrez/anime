@@ -2,6 +2,7 @@
 
 (() => {
   const video = document.querySelector("video");
+  const player = document.getElementById("player");
   const quality = document.getElementById("quality");
   const translation = document.getElementById("translation");
   const translationLabel = document.getElementById("translation-label");
@@ -14,6 +15,7 @@
   const settingsClose = document.getElementById("settings-close");
   const settingsQuality = document.getElementById("settings-quality");
   const message = document.getElementById("message");
+  const feedbackClose = document.getElementById("feedback-close");
   const retry = document.getElementById("retry");
   const original = document.getElementById("original");
   const id = location.pathname.match(/^\/player\/kodik\/([1-9]\d{0,18})$/)?.[1];
@@ -62,6 +64,9 @@
   }
 
   function fail(text) {
+    player.classList.remove("is-loading");
+    player.classList.add("has-error");
+    player.classList.toggle("is-empty", !Object.keys(streams).length);
     const restoreFocus = settings.open && settings.contains(document.activeElement);
     settings.open = false;
     settings.hidden = !Object.keys(streams).length;
@@ -69,6 +74,7 @@
     message.textContent = text;
     retry.hidden = false;
     original.hidden = false;
+    feedbackClose.hidden = !Object.keys(streams).length;
     if (restoreFocus) retry.focus();
     if (Object.keys(streams).length) {
       quality.disabled = Object.keys(streams).length < 2;
@@ -76,6 +82,18 @@
       if (activeTranslation) translation.value = activeTranslation;
     }
   }
+
+  function dismissError() {
+    const restoreFocus = document.activeElement === feedbackClose;
+    player.classList.remove("has-error");
+    message.textContent = "";
+    retry.hidden = true;
+    original.hidden = true;
+    feedbackClose.hidden = true;
+    if (restoreFocus) video.focus();
+  }
+
+  feedbackClose.addEventListener("click", dismissError);
 
   function validStream(value) {
     try {
@@ -92,6 +110,9 @@
 
   function setSource(selected, position = 0, continuePlaying = false) {
     if (!validStream(streams[selected])) return fail("Не удалось загрузить видео.");
+    player.classList.remove("is-empty");
+    player.classList.remove("has-error");
+    feedbackClose.hidden = true;
     retry.hidden = true;
     original.hidden = true;
     message.textContent = "";
@@ -177,9 +198,12 @@
     const currentRequest = ++requestId;
     const recoveryQuality = recovering ? quality.value : null;
     const hadStreams = Object.keys(streams).length > 0;
+    player.classList.add("is-loading");
+    player.classList.remove("has-error");
+    feedbackClose.hidden = true;
     const requestedTranslation = translationId || savedTranslation();
     retryOptions = { recovering: true, translationId: requestedTranslation, persistChoice };
-    message.textContent = "Загружаем видео…";
+    message.textContent = hadStreams && translationId ? "Загружаем озвучку…" : "Загружаем видео…";
     retry.hidden = true;
     original.hidden = true;
     const selectionFocused = settings.open && [quality, translation].includes(document.activeElement);
@@ -253,6 +277,7 @@
       }
       retryOptions = { recovering: true, translationId: activeTranslation };
       setSource(defaultQuality, recoveryPosition, continuePlaying);
+      player.classList.remove("is-loading");
       retry.hidden = true;
       original.hidden = true;
       message.textContent = translationUnavailable ? "Выбранная озвучка недоступна. Выберите другую." : "";
@@ -270,6 +295,9 @@
     setSource(quality.value, position, playing);
   });
   translation.addEventListener("change", () => {
+    const restoreFocus = settings.open && settings.contains(document.activeElement);
+    settings.open = false;
+    if (restoreFocus) settingsToggle.focus();
     loadStreams({ recovering: true, translationId: translation.value, persistChoice: true });
   });
   resume.addEventListener("click", () => {
@@ -312,6 +340,7 @@
   });
   video.addEventListener("play", () => {
     resume.hidden = true;
+    if (player.classList.contains("has-error")) dismissError();
     message.textContent = "";
     post("kodik_player_play");
   });
