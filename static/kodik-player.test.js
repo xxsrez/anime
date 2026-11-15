@@ -29,7 +29,9 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
   const video = new Element();
   Object.assign(video, {
     currentTime: 0, duration: 1200, readyState: 1, paused: true, ended: false,
-    canPlayType: () => nativeSupport ? "maybe" : "", load() { this.currentTime = 0; }, play: async () => {},
+    canPlayType: () => nativeSupport ? "maybe" : "", load() { this.currentTime = 0; },
+    play() { this.paused = false; this.ended = false; this.dispatch("play"); return Promise.resolve(); },
+    pause() { if (!this.paused) { this.paused = true; this.dispatch("pause"); } },
   });
   const parent = { postMessage: (message, origin) => sent.push([message, origin]), document: {} };
   let scheduled = null;
@@ -73,13 +75,111 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
     },
   });
   vm.runInContext(source, context);
-  return { video, elements, sent, requested, players, document, documentListeners, windowListeners, parent, runTimer: () => scheduled?.() };
+  return { video, elements, sent, requested, players, document, documentListeners, windowListeners, parent, window, runTimer: () => scheduled?.() };
 }
 
 function keyEvent(key, extra = {}) {
   return { key, target: {}, prevented: false, stopped: false,
     preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; }, ...extra };
 }
+
+test("space toggles actual playback once and leaves controls and text input alone", async () => {
+  const player = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } });
+  await new Promise(setImmediate);
+  const first = keyEvent(" ", { code: "Space", target: player.video });
+  player.documentListeners.keydown(first);
+  assert.equal(player.video.paused, false);
+  assert.equal(first.prevented && first.stopped, true);
+  assert.equal(player.sent.at(-1)[0].key, "kodik_player_play");
+  const held = keyEvent(" ", { code: "Space", repeat: true });
+  player.documentListeners.keydown(held);
+  assert.equal(held.prevented && held.stopped, true);
+  assert.equal(player.video.paused, false, "holding Space does not repeatedly toggle playback");
+  for (const extra of [{ ctrlKey: true }, { shiftKey: true }, { isComposing: true }, { keyCode: 229 },
+    { target: { closest: () => ({}) } }]) {
+    const event = keyEvent(" ", extra);
+    player.documentListeners.keydown(event);
+    assert.equal(event.prevented, false);
+    assert.equal(player.video.paused, false);
+  }
+  player.documentListeners.keydown(keyEvent("Spacebar"));
+  assert.equal(player.video.paused, true);
+  assert.equal(player.sent.at(-1)[0].key, "kodik_player_pause");
+  player.video.ended = true;
+  player.documentListeners.keydown(keyEvent("unexpected-layout", { code: "Space" }));
+  assert.equal(player.video.paused, false);
+  assert.equal(player.video.ended, false);
+});
+
+test("space reports a rejected play request and ignores an interrupted one", async () => {
+  const player = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } });
+  await new Promise(setImmediate);
+  player.video.play = () => Promise.reject({ name: "NotAllowedError" });
+  player.documentListeners.keydown(keyEvent(" "));
+  await new Promise(setImmediate);
+  assert.match(player.elements.message.textContent, /Нажмите воспроизведение/);
+  player.elements.message.textContent = "";
+  player.video.play = () => Promise.reject({ name: "AbortError" });
+  player.documentListeners.keydown(keyEvent(" "));
+  await new Promise(setImmediate);
+  assert.equal(player.elements.message.textContent, "");
+});
+
+test("space cancels a queued resume when a quality change has not loaded metadata", async () => {
+  const player = setup({ streams: {
+    "480": "https://p14.solodcdn.com/a.m3u8", "720": "https://p14.solodcdn.com/b.m3u8",
+  } }, { hlsSupport: true });
+  await new Promise(setImmediate);
+  player.video.paused = false;
+  player.video.load = function () { this.paused = true; this.currentTime = 0; };
+  let plays = 0;
+  player.video.play = () => { plays++; player.video.paused = false; return Promise.resolve(); };
+  player.elements.quality.value = "480";
+  player.elements.quality.dispatch("change");
+  player.documentListeners.keydown(keyEvent(" "));
+  player.video.dispatch("loadedmetadata");
+  assert.equal(player.video.paused, true);
+  assert.equal(plays, 0);
+  player.documentListeners.keydown(keyEvent(" "));
+  assert.equal(player.video.paused, false);
+  assert.equal(plays, 1);
+  player.elements.quality.value = "720";
+  player.elements.quality.dispatch("change");
+  player.documentListeners.keydown(keyEvent(" "));
+  player.documentListeners.keydown(keyEvent(" "));
+  assert.equal(plays, 2, "a second press before metadata starts playback once");
+  player.video.dispatch("loadedmetadata");
+  assert.equal(plays, 2, "metadata does not start it again");
+});
+
+test("a failed media reload does not leave the first space press stuck", async () => {
+  for (const errorType of ["hls", "video"]) {
+    const player = setup({ streams: {
+      "480": "https://p14.solodcdn.com/a.m3u8", "720": "https://p14.solodcdn.com/b.m3u8",
+    } }, { hlsSupport: true });
+    await new Promise(setImmediate);
+    player.video.paused = false;
+    player.video.load = function () { this.paused = true; };
+    player.elements.quality.value = "480";
+    player.elements.quality.dispatch("change");
+    if (errorType === "hls") player.players.at(-1).onError("error", { fatal: true });
+    else player.video.dispatch("error");
+    let plays = 0;
+    player.video.play = () => { plays++; return Promise.resolve(); };
+    player.documentListeners.keydown(keyEvent(" "));
+    assert.equal(plays, 1, `first Space after ${errorType} error attempts playback`);
+  }
+});
+
+test("space does not start playback when no stream loaded", async () => {
+  const player = setup({ errorStatus: 503 });
+  await new Promise(setImmediate);
+  const event = keyEvent(" ");
+  player.documentListeners.keydown(event);
+  assert.equal(event.prevented, false);
+  assert.equal(player.window.animeCatalogKodikPlayer.togglePlayback(), false);
+  assert.equal(player.video.paused, true);
+});
 
 test("opening is offered only in its verified interval and skips without playing", async () => {
   const player = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" }, intro: { start: 10, end: 96 } });

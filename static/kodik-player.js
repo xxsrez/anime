@@ -26,6 +26,7 @@
   let savedPosition = null;
   let lastPosition = 0;
   let pendingPosition = null;
+  let resumeOnMetadata = false;
   let activeTranslation = null;
   let intro = null;
   let introMediaReady = false;
@@ -95,6 +96,7 @@
     original.hidden = true;
     message.textContent = "";
     const generation = ++mediaGeneration;
+    resumeOnMetadata = continuePlaying;
     introMediaReady = false;
     skipIntro.hidden = true;
     pendingPosition = Number.isFinite(position) && position > 0 ? position : null;
@@ -112,7 +114,9 @@
           lastPosition = video.currentTime;
           pendingPosition = null;
         }
-        if (continuePlaying) video.play().catch(() => {
+        const shouldResume = resumeOnMetadata;
+        resumeOnMetadata = false;
+        if (shouldResume) video.play().catch(() => {
           message.textContent = "Нажмите воспроизведение, чтобы продолжить.";
         });
       }, { once: true });
@@ -123,6 +127,7 @@
       player.on(window.Hls.Events.ERROR, (_event, details) => {
         if (generation === mediaGeneration && hlsPlayer === player && details.fatal) {
           player.stopLoad();
+          resumeOnMetadata = false;
           fail("Не удалось воспроизвести видео.");
         }
       });
@@ -326,6 +331,7 @@
   video.addEventListener("ended", () => post("kodik_player_video_ended"));
   video.addEventListener("error", () => {
     retryOptions = { recovering: true, translationId: activeTranslation };
+    resumeOnMetadata = false;
     fail("Не удалось воспроизвести видео.");
   });
   video.addEventListener("enterpictureinpicture", () => {
@@ -394,6 +400,27 @@
     ));
   }
 
+  function togglePlayback() {
+    if (!Object.keys(streams).length) return false;
+    if (resumeOnMetadata || (!video.paused && !video.ended)) {
+      resumeOnMetadata = false;
+      video.pause();
+    } else {
+      try {
+        video.play()?.catch(error => {
+          if (error?.name !== "AbortError") message.textContent = "Нажмите воспроизведение, чтобы продолжить.";
+        });
+      } catch {
+        message.textContent = "Нажмите воспроизведение, чтобы продолжить.";
+      }
+    }
+    return true;
+  }
+
+  // The same-origin parent calls this synchronously from its keydown handler,
+  // so the browser can associate play() with the user's gesture.
+  window.animeCatalogKodikPlayer = Object.freeze({ togglePlayback });
+
   async function toggleFullscreen() {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
@@ -421,6 +448,11 @@
       event.preventDefault();
       event.stopPropagation();
       toggleFullscreen();
+    } else if (!interactiveShortcutTarget(event.target)
+        && (event.code === "Space" || event.key === " " || event.key === "Spacebar")
+        && Object.keys(streams).length && (event.repeat || togglePlayback())) {
+      event.preventDefault();
+      event.stopPropagation();
     } else if (!interactiveShortcutTarget(event.target) && (key === "arrowleft" || key === "arrowright")
         && seekRelative(key === "arrowleft" ? -15 : 15)) {
       event.preventDefault();

@@ -4713,6 +4713,17 @@ function handlePlayerHotkey(event) {
       || isInteractiveShortcutTarget(event.target) || el.list.contains(event.target)
       || !state.detail || el.titleDetailView.hidden || !state.playerContext?.nativeKodik
       || !state.playerContext.loaded) return;
+  if (event.code === "Space" || event.key === " " || event.key === "Spacebar") {
+    try {
+      const api = el.player.contentWindow?.animeCatalogKodikPlayer;
+      if (typeof api?.togglePlayback === "function" && (event.repeat || api.togglePlayback())) {
+        event.preventDefault();
+      }
+    } catch {
+      // The frame may have navigated away between the state check and the call.
+    }
+    return;
+  }
   const seconds = event.key === "ArrowLeft" ? -15 : event.key === "ArrowRight" ? 15 : 0;
   if (!seconds || !el.player.contentWindow) return;
   event.preventDefault();
