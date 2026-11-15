@@ -3492,6 +3492,32 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                     self.assertEqual(status, 400)
                 resolve.assert_not_called()
 
+    def test_native_kodik_season_source_must_match_catalog_episode(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-season-user", "season@example.com")
+            token = self.create_session(db_path, user_id)
+            cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"}
+            con = server.connect(db_path)
+            source_id = con.execute("select id from video_sources where episode_id = 10101").fetchone()[0]
+            season_url = ("https://kodikplayer.com/season/55/base/720p"
+                          "?translations=false&only_episode=true&only_season=true&episode=7")
+            con.execute("update video_sources set embed_url = ? where id = ?", (season_url, source_id))
+            con.commit()
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded") as resolve:
+                status, _, _ = self.request_test_server(db_path, "GET", f"/api/kodik-stream/{source_id}", headers=cookie)
+                self.assertEqual(status, 404)
+                resolve.assert_not_called()
+            con.execute("update episodes set number = '7' where id = 10101")
+            con.commit()
+            con.close()
+            player = {"streams": {"720": "https://cloud2.solodcdn.com/video.m3u8"}, "translations": [], "translation_id": None}
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded", return_value=player) as resolve:
+                status, _, _ = self.request_test_server(db_path, "GET", f"/api/kodik-stream/{source_id}", headers=cookie)
+                self.assertEqual(status, 200)
+                self.assertEqual(resolve.call_args.kwargs["expected_episode"], "7")
+
     def test_native_kodik_stream_rejects_other_providers_and_hides_upstream_errors(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = f"{tmpdir}/animego.sqlite"

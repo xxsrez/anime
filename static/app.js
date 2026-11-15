@@ -3907,7 +3907,7 @@ function renderSources({ preservePlayer = false, playerMetadata = {} } = {}) {
   syncUrlFromDetail();
 }
 
-function kodikNativeConfig(source, playerUrl) {
+function kodikNativeConfig(source, playerUrl, episode) {
   if (!playerUrl || !/^[1-9]\d{0,18}$/.test(String(source?.id || ""))) return null;
   let url;
   try { url = new URL(playerUrl); } catch { return null; }
@@ -3924,7 +3924,17 @@ function kodikNativeConfig(source, playerUrl) {
     const values = url.searchParams.getAll(key);
     return values.length === 1 && /^[1-9]\d{0,5}$/.test(values[0]);
   });
-  if (!/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname) && !serialEpisode) return null;
+  const seasonMatch = /^\/season\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname);
+  const expectedEpisode = String(episode?.number ?? "");
+  const seasonKeys = ["translations", "only_episode", "only_season", "episode"];
+  const seasonParams = Array.from(url.searchParams.keys());
+  const seasonEpisode = seasonMatch && /^[1-9]\d{0,5}$/.test(expectedEpisode)
+    && seasonParams.length === seasonKeys.length && seasonKeys.every(key => url.searchParams.getAll(key).length === 1)
+    && url.searchParams.get("translations") === "false"
+    && url.searchParams.get("only_episode") === "true"
+    && url.searchParams.get("only_season") === "true"
+    && url.searchParams.get("episode") === expectedEpisode;
+  if (!/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname) && !serialEpisode && !seasonEpisode) return null;
   return { serialId: serialMatch ? serialMatch[1] : null };
 }
 
@@ -3949,7 +3959,7 @@ function setPlayer(source, episode, { forceKodikMode = false } = {}) {
     });
     return;
   }
-  const nativeConfig = kodikNativeConfig(source, playerUrl);
+  const nativeConfig = kodikNativeConfig(source, playerUrl, episode);
   const sameSourceAndEpisode = Boolean(
     state.playerContext
     && String(state.playerContext.source?.id) === String(source.id)
@@ -4016,7 +4026,7 @@ function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metada
   const sourceUrl = frontendRuntime.safeHttpsUrl(source?.embed_url, playerHosts);
   state.playerContext.isKodik = Boolean(sourceUrl && new URL(sourceUrl).hostname === "kodikplayer.com");
   state.playerContext.kodikNativeAvailable = Boolean(kodikNativeConfig(
-    source, sourceUrl,
+    source, sourceUrl, episode,
   ));
   updatePlayerDisplay(source, episode);
 }

@@ -227,6 +227,27 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   state.playerContext = null;
   context.setPlayer({ id: 15, embed_host: "aniboom.one", embed_url: "https://aniboom.one/seria/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://aniboom.one/seria/1/hash/720p", false]);
+
+  const seasonUrl = "https://kodikplayer.com/season/55/base/720p?translations=false&only_episode=true&only_season=true&episode=7";
+  const seasonSource = { id: 18, embed_host: "kodikplayer.com", embed_url: seasonUrl };
+  state.playerContext = null;
+  context.setPlayer(seasonSource, { id: 7, number: "7" });
+  assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/18", true]);
+  for (const [url, number] of [
+    [seasonUrl, "6"],
+    [seasonUrl + "&episode=8", "7"],
+    [seasonUrl + "&extra=1", "7"],
+    [seasonUrl.replace("translations=false", "translations=true"), "7"],
+    [seasonUrl.replace("only_episode=true", "only_episode=false"), "7"],
+  ]) {
+    state.playerContext = null;
+    context.setPlayer({ ...seasonSource, embed_url: url }, { id: 7, number });
+    assert.deepEqual(replaced.pop(), [url, false], "unsafe or mismatched season URLs keep the original player");
+  }
+  state.kodikPlayerMode = "original";
+  state.playerContext = null;
+  context.setPlayer(seasonSource, { id: 7, number: "7" });
+  assert.deepEqual(replaced.pop(), [seasonUrl, false], "original mode remains available for season sources");
 });
 
 test("Kodik player mode changes the frame and starts a fresh watch session", () => {

@@ -8538,7 +8538,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
             con = connect(self.server.db_path)
             try:
                 source = con.execute(
-                    "select embed_url, embed_host from video_sources where id = ?", (source_id,),
+                    """select v.embed_url, v.embed_host, e.number as episode_number
+                       from video_sources v join episodes e on e.id = v.episode_id where v.id = ?""",
+                    (source_id,),
                 ).fetchone()
                 last_event = con.execute(
                     """select metadata_json from user_watch_events
@@ -8552,12 +8554,18 @@ class AnimeHandler(BaseHTTPRequestHandler):
             if not source or source["embed_host"] != "kodikplayer.com":
                 self.send_json({"error": "not found"}, 404)
                 return
+            valid_source_url = kodik_stream.valid_kodik_episode_url(source["embed_url"])
+            if (valid_source_url and urlparse(valid_source_url).path.startswith("/season/")
+                    and not kodik_stream.season_episode_matches_catalog(valid_source_url, source["episode_number"])):
+                self.send_json({"error": "not found"}, 404)
+                return
             if not KODIK_RESOLVE_SLOTS.acquire(blocking=False):
                 self.send_json({"error": "video resolver busy"}, 503)
                 return
             try:
                 player = kodik_stream.resolve_kodik_streams_bounded(
                     source["embed_url"], catalog_origin=self.request_origin(), translation_id=translation_id,
+                    expected_episode=source["episode_number"],
                 )
             except kodik_stream.KodikTranslationUnavailable:
                 self.send_json({"error": "translation unavailable"}, 409)

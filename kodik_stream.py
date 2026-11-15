@@ -52,7 +52,7 @@ def valid_kodik_episode_url(value):
         valid_host = parsed.hostname == "kodikplayer.com" and parsed.port in (None, 443)
     except ValueError:
         return None
-    match = re.fullmatch(r"/(seria|serial)/(\d+)/([A-Za-z0-9_-]+)/(\d+p)/?", parsed.path)
+    match = re.fullmatch(r"/(seria|serial|season)/(\d+)/([A-Za-z0-9_-]+)/(\d+p)/?", parsed.path)
     if (
         parsed.scheme != "https" or not valid_host or parsed.username or parsed.password
         or parsed.fragment or not match
@@ -65,7 +65,25 @@ def valid_kodik_episode_url(value):
             for key in ("season", "episode")
         ):
             return None
+    elif match.group(1) == "season":
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        if (set(query) != {"translations", "only_episode", "only_season", "episode"}
+                or query.get("translations") != ["false"]
+                or query.get("only_episode") != ["true"]
+                or query.get("only_season") != ["true"]
+                or len(query.get("episode", [])) != 1
+                or not re.fullmatch(r"[1-9]\d{0,5}", query["episode"][0])):
+            return None
     return value
+
+
+def season_episode_matches_catalog(embed_url, episode_number):
+    """A season source is safe only for the exact episode recorded in the catalog."""
+    embed_url = valid_kodik_episode_url(embed_url)
+    if not embed_url or not isinstance(episode_number, str) or not re.fullmatch(r"[1-9]\d{0,5}", episode_number):
+        return False
+    parsed = urlsplit(embed_url)
+    return parsed.path.startswith("/season/") and parse_qs(parsed.query)["episode"] == [episode_number]
 
 
 def valid_stream_url(value):
@@ -243,10 +261,34 @@ def _serial_page_info(page, embed_url, info):
     return translations, selected, visible_numbers
 
 
-def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, session=None):
+def _season_page_info(page, info, episode_number):
+    """Verify the season's selected episode and voice against the actual player."""
+    page_info = {name: _js_string(page, "vInfo." + name) for name in ("type", "hash", "id")}
+    if info["type"] != "seria" or page_info != info:
+        raise KodikStreamError("provider returned a different episode")
+    soup = BeautifulSoup(page, "html.parser")
+    selected = soup.select(".serial-panel option[selected]")
+    if len(selected) != 1:
+        raise KodikStreamError("provider returned an ambiguous episode")
+    option = selected[0]
+    label = option.get("data-title") or option.get_text(" ", strip=True)
+    visible_numbers = re.findall(r"\d+(?:[.,]\d+)?", label)
+    if (option.get("value") != episode_number or option.get("data-id") != info["id"]
+            or option.get("data-hash") != info["hash"]
+            or option.get("data-other-translation") != "false"
+            or visible_numbers != [episode_number]):
+        raise KodikStreamError("provider returned a different episode")
+
+
+def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, expected_episode=None, session=None):
     embed_url = valid_kodik_episode_url(embed_url)
     if not embed_url:
         raise KodikStreamError("unsupported provider URL")
+    if urlsplit(embed_url).path.startswith("/season/"):
+        if not season_episode_matches_catalog(embed_url, expected_episode):
+            raise KodikStreamError("provider returned a different episode")
+        if translation_id is not None:
+            raise KodikStreamError("unsupported translation")
     try:
         origin = urlsplit(catalog_origin)
         valid_origin = (
@@ -299,6 +341,20 @@ def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, sess
                     raise KodikTranslationUnavailable("translation unavailable")
                 embed_url = selected_url
                 selected = translation_id
+        elif media_type == "season":
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            panel_query = {key: values[0] for key, values in query.items()}
+            panel_query["only_episode"] = "false"
+            panel_url = f"{KODIK_ORIGIN}{parsed.path}?{urlencode(panel_query)}"
+            if time.monotonic() > deadline:
+                raise KodikStreamError("provider response timed out")
+            with client.get(
+                panel_url,
+                headers={"User-Agent": USER_AGENT, "Referer": catalog_origin.rstrip("/") + "/"},
+                timeout=REQUEST_TIMEOUT, allow_redirects=False, stream=True,
+            ) as response:
+                panel = _read_response(response, deadline)
+            _season_page_info(panel, info, query["episode"][0])
         elif translation_id or (info["type"], info["id"], info["hash"]) != (media_type, media_id, media_hash):
             raise KodikStreamError("provider returned a different episode")
 
@@ -352,17 +408,25 @@ def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, sess
     }
 
 
-def resolve_kodik_streams(embed_url, *, catalog_origin, session=None):
-    return resolve_kodik_player(embed_url, catalog_origin=catalog_origin, session=session)["streams"]
+def resolve_kodik_streams(embed_url, *, catalog_origin, expected_episode=None, session=None):
+    return resolve_kodik_player(
+        embed_url, catalog_origin=catalog_origin, expected_episode=expected_episode, session=session,
+    )["streams"]
 
 
-def resolve_kodik_streams_bounded(embed_url, *, catalog_origin, translation_id=None):
+def resolve_kodik_streams_bounded(embed_url, *, catalog_origin, translation_id=None, expected_episode=None):
     """Run untrusted network I/O in a worker that can be stopped at the deadline."""
-    if not valid_kodik_episode_url(embed_url):
+    valid_url = valid_kodik_episode_url(embed_url)
+    if not valid_url:
         raise KodikStreamError("unsupported provider URL")
+    if urlsplit(valid_url).path.startswith("/season/") and not season_episode_matches_catalog(valid_url, expected_episode):
+        raise KodikStreamError("provider returned a different episode")
+    if urlsplit(valid_url).path.startswith("/season/") and translation_id is not None:
+        raise KodikStreamError("unsupported translation")
     if translation_id is not None and not re.fullmatch(r"[1-9]\d{0,9}", translation_id):
         raise KodikStreamError("unsupported translation")
-    payload = json.dumps({"embed_url": embed_url, "catalog_origin": catalog_origin, "translation_id": translation_id})
+    payload = json.dumps({"embed_url": embed_url, "catalog_origin": catalog_origin,
+                          "translation_id": translation_id, "expected_episode": expected_episode})
     try:
         result = subprocess.run(
             [sys.executable, "-I", str(Path(__file__).resolve()), "--resolve"],
@@ -409,7 +473,7 @@ def _worker_main():
         request = json.loads(sys.stdin.read(MAX_URL_CHARS * 2 + 1024))
         streams = resolve_kodik_player(
             request.get("embed_url"), catalog_origin=request.get("catalog_origin"),
-            translation_id=request.get("translation_id"),
+            translation_id=request.get("translation_id"), expected_episode=request.get("expected_episode"),
         )
     except KodikTranslationUnavailable:
         return WORKER_TRANSLATION_UNAVAILABLE
