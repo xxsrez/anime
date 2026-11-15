@@ -241,7 +241,6 @@ const el = {
   provider: document.getElementById("provider"),
   kodikPlayerMode: document.getElementById("kodik-player-mode"),
   kodikPlayerModeControl: document.getElementById("kodik-player-mode-control"),
-  kodikPlayerModeUnavailable: document.getElementById("kodik-player-mode-unavailable"),
   pipToggle: document.getElementById("pip-toggle"),
   playerActionState: document.getElementById("player-action-state"),
   player: document.getElementById("player"),
@@ -3992,8 +3991,7 @@ function setPlayer(source, episode, { forceKodikMode = false } = {}) {
 
 function updatePlayerDisplay(source, episode) {
   el.wrap.classList.toggle("native-kodik", Boolean(state.playerContext?.nativeKodik));
-  el.kodikPlayerModeControl.hidden = !state.playerContext?.isKodik;
-  el.kodikPlayerModeUnavailable.hidden = Boolean(state.playerContext?.kodikNativeAvailable);
+  el.kodikPlayerModeControl.hidden = !(state.playerContext?.isKodik && state.playerContext?.kodikNativeAvailable);
   el.kodikPlayerMode.querySelector('option[value="adfree"]').disabled = !state.playerContext?.kodikNativeAvailable;
   el.kodikPlayerMode.value = state.playerContext?.nativeKodik ? "adfree" : "original";
   el.pipToggle.disabled = false;
