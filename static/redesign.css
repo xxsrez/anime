@@ -152,6 +152,9 @@ body[data-screen="list"]:has(#view-updates.active) #recommendation-meta { displa
 .player-pane { width: 100%; max-width: 960px; min-width: 0; margin-inline: auto; }
 .iframe-wrap { width: 100%; height: auto; aspect-ratio: 16 / 9; min-height: 0; border: 1px solid var(--line); border-radius: 8px; background: #07090c; }
 .iframe-wrap iframe { width: 100%; height: 100%; }
+.iframe-wrap.native-kodik { height: auto; aspect-ratio: auto; }
+.iframe-wrap.native-kodik::before { display: block; height: 56px; padding-top: 56.25%; content: ""; }
+.iframe-wrap.native-kodik:fullscreen { width: 100vw; height: 100vh; }
 .source-panel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 14px 10px; width: 100%; max-width: 960px; margin-inline: auto; padding: 0; border: 0; background: transparent; position: relative; }
 .source-panel > label { min-width: 0; gap: 4px; }
 .source-panel > .kodik-player-mode-control { grid-column: 1 / -1; }

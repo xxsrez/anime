@@ -3980,6 +3980,7 @@ function setPlayer(source, episode, { forceKodikMode = false } = {}) {
 }
 
 function updatePlayerDisplay(source, episode) {
+  el.wrap.classList.toggle("native-kodik", Boolean(state.playerContext?.nativeKodik));
   el.kodikPlayerModeControl.hidden = !state.playerContext?.isKodik;
   el.kodikPlayerModeUnavailable.hidden = Boolean(state.playerContext?.kodikNativeAvailable);
   el.kodikPlayerMode.querySelector('option[value="adfree"]').disabled = !state.playerContext?.kodikNativeAvailable;
@@ -4030,6 +4031,7 @@ function clearPlayer(message) {
   el.pipToggle.disabled = true;
   clearWatchSession();
   state.playerContext = null;
+  el.wrap.classList.remove("native-kodik");
   el.kodikPlayerModeControl.hidden = true;
   if (el.player.hasAttribute("src")) replacePlayerFrame(null);
   el.wrap.classList.add("empty");
@@ -4648,7 +4650,7 @@ async function toggleFullscreen() {
   }
 
   try {
-    if (document.fullscreenElement === el.wrap) {
+    if (document.fullscreenElement === el.wrap || document.fullscreenElement === el.player) {
       await document.exitFullscreen();
     } else {
       await el.wrap.requestFullscreen();
@@ -4666,11 +4668,38 @@ function isEditableShortcutTarget(target) {
   return Boolean(target.closest?.("input, textarea, select, [contenteditable='true']"));
 }
 
+function isInteractiveShortcutTarget(target) {
+  if (isEditableShortcutTarget(target)) return true;
+  return Boolean(target?.closest?.(
+    "button, a, summary, [contenteditable], details[open], "
+    + "[role='slider'], [role='menu'], [role='listbox'], [role='tablist'], [role='radiogroup']",
+  ));
+}
+
 function isFullscreenHotkey(event) {
-  if (event.defaultPrevented || event.repeat) return false;
+  if (event.defaultPrevented || event.repeat || event.isComposing || event.keyCode === 229) return false;
   if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return false;
   if (isEditableShortcutTarget(event.target)) return false;
-  return event.code === "KeyF" || String(event.key || "").toLowerCase() === "f";
+  return event.code === "KeyF" || ["f", "а"].includes(String(event.key || "").toLowerCase());
+}
+
+function handlePlayerHotkey(event) {
+  if (isFullscreenHotkey(event)) {
+    event.preventDefault();
+    toggleFullscreen().catch(reportActionError("fullscreen hotkey"));
+    return;
+  }
+  if (event.defaultPrevented || event.isComposing || event.keyCode === 229
+      || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
+      || isInteractiveShortcutTarget(event.target) || el.list.contains(event.target)
+      || !state.detail || el.titleDetailView.hidden || !state.playerContext?.nativeKodik
+      || !state.playerContext.loaded) return;
+  const seconds = event.key === "ArrowLeft" ? -15 : event.key === "ArrowRight" ? 15 : 0;
+  if (!seconds || !el.player.contentWindow) return;
+  event.preventDefault();
+  el.player.contentWindow.postMessage({
+    key: "kodik_player_api", value: { method: "seek_relative", seconds },
+  }, window.location.origin);
 }
 
 let pictureInPictureRequest = null;
@@ -5595,11 +5624,7 @@ window.addEventListener("message", handlePlayerMessage);
 document.addEventListener("fullscreenchange", handleFullscreenStateChange);
 document.addEventListener("webkitfullscreenchange", handleFullscreenStateChange);
 document.addEventListener("visibilitychange", handleVisibilityChange);
-document.addEventListener("keydown", event => {
-  if (!isFullscreenHotkey(event)) return;
-  event.preventDefault();
-  toggleFullscreen().catch(reportActionError("fullscreen hotkey"));
-});
+document.addEventListener("keydown", handlePlayerHotkey);
 window.addEventListener("blur", () => {
   window.setTimeout(() => {
     if (document.activeElement === el.player) handlePlayerEngaged();

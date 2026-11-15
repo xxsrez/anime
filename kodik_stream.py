@@ -115,6 +115,67 @@ def _js_string(page, name):
     return value
 
 
+def valid_intro(value):
+    return (
+        isinstance(value, dict) and set(value) == {"start", "end"}
+        and type(value["start"]) is int and type(value["end"]) is int
+        and 0 <= value["start"] < value["end"] <= 86400
+        and 5 <= value["end"] - value["start"] <= 300
+    )
+
+
+def parse_kodik_intro(page):
+    """Read Kodik's opening marker; unknown or ambiguous metadata is optional."""
+    assignments = re.findall(r"\bplayerSettings\.skipButton\s*=", page)
+    if len(assignments) != 1:
+        return None
+    match = re.search(
+        r"\bplayerSettings\.skipButton\s*=\s*parseSkipButton\(\s*"
+        r"(?P<quote>['\"])(?P<value>[A-Za-z0-9\[\]:,\- ]{0,200})(?P=quote)"
+        r"\s*,\s*['\"]anime['\"]\s*\)\s*;", page,
+    )
+    if not match:
+        return None
+
+    def seconds(value):
+        parts = value.split(":")
+        if len(parts) > 3 or any(not part.isascii() or not part.isdigit() for part in parts):
+            return None
+        numbers = [int(part) for part in parts]
+        if any(part >= 60 for part in numbers[1:]):
+            return None
+        total = 0
+        for part in numbers:
+            total = total * 60 + part
+        return total if total <= 86400 else None
+
+    segments = []
+    for part in match.group("value").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        parsed = re.fullmatch(r"(?:\[([A-Za-z]+)\])?(\d+(?::\d+){0,2})-(\d+(?::\d+){0,2})", part)
+        if not parsed:
+            return None
+        label, start, end = parsed.group(1), seconds(parsed.group(2)), seconds(parsed.group(3))
+        if start is None or end is None or start >= end:
+            return None
+        segments.append((start, end, label))
+    if not segments or len(segments) > 4:
+        return None
+    segments.sort(key=lambda segment: segment[0])
+    if any(left[1] >= right[0] for left, right in zip(segments, segments[1:], strict=False)):
+        return None
+    named = [segment for segment in segments if segment[2] in ("opening", "intro")]
+    if len(named) > 1:
+        return None
+    # Kodik labels an unnamed first segment starting in the first 180 seconds
+    # as the opening; a late unnamed segment is not necessarily an opening.
+    selected = named[0] if named else (segments[0] if segments[0][2] is None and segments[0][0] <= 180 else None)
+    intro = {"start": selected[0], "end": selected[1]} if selected else None
+    return intro if valid_intro(intro) else None
+
+
 def _read_response(response, deadline):
     if response.status_code != 200:
         raise KodikStreamError("provider returned an unsuccessful response")
@@ -287,6 +348,7 @@ def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, sess
         "streams": streams,
         "translations": [{"id": item["id"], "title": item["title"]} for item in translations.values()],
         "translation_id": selected,
+        "intro": parse_kodik_intro(page),
     }
 
 
@@ -334,7 +396,12 @@ def resolve_kodik_streams_bounded(embed_url, *, catalog_origin, translation_id=N
         raise KodikStreamError("provider returned invalid translations")
     if (translations and selected is None) or (translation_id is not None and selected != translation_id):
         raise KodikStreamError("provider returned a different translation")
-    return payload
+    return {
+        "streams": payload["streams"],
+        "translations": translations,
+        "translation_id": selected,
+        "intro": payload.get("intro") if valid_intro(payload.get("intro")) else None,
+    }
 
 
 def _worker_main():

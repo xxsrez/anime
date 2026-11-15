@@ -6,6 +6,7 @@
   const translation = document.getElementById("translation");
   const translationLabel = document.getElementById("translation-label");
   const resume = document.getElementById("resume");
+  const skipIntro = document.getElementById("skip-intro");
   const pip = document.getElementById("pip");
   const pipLabel = document.getElementById("pip-label");
   const settings = document.getElementById("player-settings");
@@ -26,6 +27,8 @@
   let lastPosition = 0;
   let pendingPosition = null;
   let activeTranslation = null;
+  let intro = null;
+  let introMediaReady = false;
   let availableTranslations = [];
   let retryOptions = { recovering: true };
   let pipMessageTimer = null;
@@ -61,6 +64,7 @@
     const restoreFocus = settings.open && settings.contains(document.activeElement);
     settings.open = false;
     settings.hidden = !Object.keys(streams).length;
+    skipIntro.hidden = true;
     message.textContent = text;
     retry.hidden = false;
     original.hidden = false;
@@ -91,6 +95,8 @@
     original.hidden = true;
     message.textContent = "";
     const generation = ++mediaGeneration;
+    introMediaReady = false;
+    skipIntro.hidden = true;
     pendingPosition = Number.isFinite(position) && position > 0 ? position : null;
     if (pendingPosition != null) lastPosition = pendingPosition;
     if (hlsPlayer) {
@@ -101,8 +107,8 @@
       video.addEventListener("loadedmetadata", () => {
         if (generation !== mediaGeneration) return;
         if (pendingPosition != null) {
-          const limit = Number.isFinite(video.duration) ? Math.max(0, video.duration - 1) : position;
-          video.currentTime = Math.min(position, limit);
+          const limit = Number.isFinite(video.duration) ? Math.max(0, video.duration - 1) : pendingPosition;
+          video.currentTime = Math.min(pendingPosition, limit);
           lastPosition = video.currentTime;
           pendingPosition = null;
         }
@@ -131,6 +137,35 @@
   function formatTime(value) {
     const seconds = Math.floor(value);
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function validatedIntro(value) {
+    return value && Number.isInteger(value.start) && Number.isInteger(value.end)
+      && value.start >= 0 && value.start < value.end && value.end <= 86400
+      && value.end - value.start >= 5 && value.end - value.start <= 300
+      ? { start: value.start, end: value.end } : null;
+  }
+
+  function updateSkipIntro() {
+    const duration = video.duration;
+    skipIntro.hidden = !introMediaReady || !intro || !Number.isFinite(duration) || duration <= 0
+      || intro.end > duration / 2 || intro.start >= duration / 3
+      || !Number.isFinite(video.currentTime) || video.currentTime < intro.start
+      || video.currentTime >= intro.end - 1;
+  }
+
+  function seekRelative(seconds) {
+    if (![15, -15].includes(seconds) || !Object.keys(streams).length) return false;
+    const base = pendingPosition ?? video.currentTime;
+    if (!Number.isFinite(base) || (pendingPosition == null && video.readyState < 1)) return false;
+    const limit = Number.isFinite(video.duration) && video.duration > 0
+      ? Math.max(0, video.duration - 1) : Infinity;
+    const position = Math.max(0, Math.min(base + seconds, limit));
+    post("anime_catalog_kodik_seeking");
+    if (pendingPosition != null) pendingPosition = position;
+    else video.currentTime = position;
+    updateSkipIntro();
+    return true;
   }
 
   async function loadStreams({ recovering = false, translationId = null, persistChoice = false } = {}) {
@@ -178,6 +213,7 @@
         : 0;
       const continuePlaying = recovering && !video.paused && !video.ended && !translationUnavailable;
       streams = nextStreams;
+      intro = validatedIntro(payload.intro);
       settings.hidden = false;
       availableTranslations = translations;
       activeTranslation = translations.some(item => item.id === payload.translation_id) ? payload.translation_id : null;
@@ -251,9 +287,19 @@
     resume.hidden = true;
     video.play().catch(() => { message.textContent = "Нажмите воспроизведение, чтобы продолжить."; });
   });
+  skipIntro.addEventListener("click", () => {
+    updateSkipIntro();
+    if (skipIntro.hidden) return;
+    post("anime_catalog_kodik_seeking");
+    video.currentTime = intro.end;
+    skipIntro.hidden = true;
+    video.focus();
+  });
   retry.addEventListener("click", () => loadStreams(retryOptions));
   original.addEventListener("click", () => post("anime_catalog_kodik_original"));
   video.addEventListener("loadedmetadata", () => {
+    introMediaReady = true;
+    updateSkipIntro();
     if (Number.isFinite(video.duration) && video.duration > 0) {
       post("kodik_player_duration_update", video.duration);
       if (savedPosition != null && savedPosition >= video.duration * 0.9) resume.hidden = true;
@@ -267,8 +313,10 @@
   video.addEventListener("seeking", () => post("anime_catalog_kodik_seeking"));
   video.addEventListener("seeked", () => {
     if (pendingPosition == null && Number.isFinite(video.currentTime)) lastPosition = video.currentTime;
+    updateSkipIntro();
   });
   video.addEventListener("timeupdate", () => {
+    updateSkipIntro();
     if (pendingPosition == null && Number.isFinite(video.currentTime)) lastPosition = video.currentTime;
     if (!video.paused && !video.seeking && Number.isFinite(video.currentTime)) {
       post("kodik_player_time_update", video.currentTime);
@@ -334,18 +382,57 @@
   document.addEventListener("pointerdown", event => {
     if (settings.open && !settings.contains(event.target)) settings.open = false;
   });
+  function editableShortcutTarget(target) {
+    return Boolean(target?.isContentEditable || target?.closest?.(
+      "input, textarea, select, [contenteditable]",
+    ));
+  }
+
+  function interactiveShortcutTarget(target) {
+    return editableShortcutTarget(target) || Boolean(target?.closest?.(
+      "button, a, summary, [role='slider'], [role='menu'], [role='listbox']",
+    ));
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (window.parent.document.fullscreenElement) await window.parent.document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+      else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+      else message.textContent = "Используйте кнопку полноэкранного режима на видео.";
+    } catch {
+      message.textContent = "Не удалось открыть полноэкранный режим.";
+    }
+  }
+
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && settings.open) {
       settings.open = false;
       settingsToggle.focus();
       event.preventDefault();
+      return;
     }
-  });
+    if (event.defaultPrevented || event.isComposing || event.keyCode === 229
+        || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
+        || editableShortcutTarget(event.target)) return;
+    const key = String(event.key || "").toLowerCase();
+    if (!event.repeat && (event.code === "KeyF" || key === "f" || key === "а")) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFullscreen();
+    } else if (!interactiveShortcutTarget(event.target) && (key === "arrowleft" || key === "arrowright")
+        && seekRelative(key === "arrowleft" ? -15 : 15)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
   window.addEventListener("message", event => {
     if (event.source !== window.parent || event.origin !== location.origin) return;
     if (event.data?.key !== "kodik_player_api") return;
     if (event.data.value?.method === "enter_pip") setPip(true);
     if (event.data.value?.method === "exit_pip") setPip(false);
+    if (event.data.value?.method === "seek_relative") seekRelative(event.data.value.seconds);
   });
   loadStreams();
 })();
