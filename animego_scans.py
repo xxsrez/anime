@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """User-powered, additive-only AnimeGO scan jobs."""
 
+import calendar
 import datetime as dt
 import hashlib
 import hmac
@@ -19,6 +20,7 @@ import content_updates
 import scrape_yummyanime as yummy
 import scrape_animego as animego
 import kinogoo
+import title_activity
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 
 
@@ -26,6 +28,7 @@ SCAN_MODES = {"partial", "full"}
 ACTIVE_JOB_STATUS = "running"
 JOB_TTL_SECONDS = 2 * 60 * 60
 PARTIAL_EXTRA_LIMIT = 8
+FULL_CONTENT_WINDOW_MONTHS = 3
 MAX_RESULT_BODY_BYTES = 2 * 1024 * 1024
 MAX_COMPLETE_BODY_BYTES = 256 * 1024
 MAX_RESULT_EPISODES = 500
@@ -271,11 +274,19 @@ def scan_candidate_rows(con, *, include_completed=False):
              and f.label = 'Выпуск') as release_period,
             (select max(occurred_at) from content_update_events e
              where e.anime_id = a.id and e.event_type != 'new_title') as last_content_change_at,
+            (select occurred_at from content_update_events e
+             where e.anime_id = a.id and julianday(e.occurred_at) is not null
+             order by julianday(e.occurred_at) desc limit 1) as last_catalog_change_at,
+            scan_state.last_changed_at as last_scan_change_at,
+            activity.last_changed_at as last_observed_change_at,
+            activity.source_updated_at as last_source_update_at,
             coalesce(ec.episode_count, 0) as episode_count,
             coalesce(aec.available_episode_count, 0) as available_episode_count
         from anime a
         left join episode_counts ec on ec.anime_id = a.id
         left join available_episode_counts aec on aec.anime_id = a.id
+        left join animego_title_scan_state scan_state on scan_state.anime_id = a.id
+        left join title_content_activity activity on activity.anime_id = a.id
         where a.source in ('animego', 'kinogoo')
         order by cast(coalesce(a.year, '0') as integer) desc, a.id desc
         """
@@ -404,6 +415,78 @@ def partial_scan_weight(row, state, now):
     return (1.0 + age) * (1.0 + max(0.0, 1.0 - change_age / 14.0))
 
 
+def full_scan_cutoff(now):
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    now = now.astimezone(dt.timezone.utc)
+    month_index = now.year * 12 + now.month - 1 - FULL_CONTENT_WINDOW_MONTHS
+    year, month_index = divmod(month_index, 12)
+    month = month_index + 1
+    return now.replace(year=year, month=month, day=min(now.day, calendar.monthrange(year, month)[1]))
+
+
+def full_scan_has_recent_change(row, now):
+    changes = []
+    for value in (
+        row["last_catalog_change_at"], row["last_scan_change_at"],
+        row["last_observed_change_at"], row["last_source_update_at"],
+    ):
+        if not value:
+            continue
+        try:
+            changed_at = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if changed_at.tzinfo is None:
+            changed_at = changed_at.replace(tzinfo=dt.timezone.utc)
+        changes.append(changed_at)
+    if not changes:
+        return False
+    return max(changes) > full_scan_cutoff(now)
+
+
+def full_scan_recent_canonical_targets(con, variant_map, candidate_ids, now):
+    members = {int(source_id): int(target_id) for source_id, target_id in (variant_map or {}).items()}
+    grouped_targets = {}
+    for anime_id in candidate_ids:
+        grouped_targets.setdefault(members.get(anime_id, anime_id), set()).add(anime_id)
+    grouped_with_variants = {target for source, target in members.items() if source != target}
+    relevant = {
+        source: target for source, target in members.items()
+        if target in grouped_with_variants and target in grouped_targets
+    }
+    for target, candidates in grouped_targets.items():
+        if target in grouped_with_variants:
+            relevant.update({candidate: target for candidate in candidates})
+    if not relevant:
+        return set()
+    cutoff = full_scan_cutoff(now).isoformat()
+    changed_groups = set()
+    ids = list(relevant)
+    for start in range(0, len(ids), 900):
+        chunk = ids[start:start + 900]
+        placeholders = ",".join("?" for _ in chunk)
+        params = (*chunk, cutoff)
+        event_ids = con.execute(
+            f"""select distinct anime_id from content_update_events
+                where anime_id in ({placeholders}) and julianday(occurred_at) > julianday(?)""",
+            params,
+        )
+        state_ids = con.execute(
+            f"""select anime_id from animego_title_scan_state
+                where anime_id in ({placeholders}) and julianday(last_changed_at) > julianday(?)""",
+            params,
+        )
+        activity_ids = con.execute(
+            f"""select anime_id from title_content_activity
+                where anime_id in ({placeholders}) and
+                (julianday(last_changed_at) > julianday(?) or julianday(source_updated_at) > julianday(?))""",
+            (*chunk, cutoff, cutoff),
+        )
+        changed_groups.update(relevant[int(row[0])] for row in (*event_ids, *state_ids, *activity_ids))
+    return {anime_id for group in changed_groups for anime_id in grouped_targets[group]}
+
+
 def select_scan_items(
     con,
     mode,
@@ -422,7 +505,12 @@ def select_scan_items(
         rows = [row for row in rows if not completed_over_month_ago(row, now)]
     row_by_id = {int(row["id"]): row for row in rows}
     if mode == "full":
-        return [(anime_id, "full") for anime_id in row_by_id]
+        recent_targets = full_scan_recent_canonical_targets(con, variant_map, set(row_by_id), now)
+        return [
+            (anime_id, "full")
+            for anime_id, row in row_by_id.items()
+            if anime_id in recent_targets or full_scan_has_recent_change(row, now)
+        ]
 
     states = scan_state_by_anime_id(con, list(row_by_id))
     due_ids = {
@@ -553,6 +641,20 @@ def load_job(con, job_id):
     return con.execute("select * from animego_scan_jobs where id = ?", (int(job_id),)).fetchone()
 
 
+def check_active_job(db_path, now):
+    """Avoid a network refresh when a non-expired scan is already running."""
+    con = connect(db_path)
+    try:
+        row = con.execute(
+            "select * from animego_scan_jobs where status='running' and expires_at > ? limit 1",
+            (iso_timestamp(now),),
+        ).fetchone()
+        if row is not None:
+            raise ScanConflictError(job_payload(row))
+    finally:
+        con.close()
+
+
 def expire_stale_jobs(con, now=None):
     now_value = iso_timestamp(now)
     rows = con.execute(
@@ -594,6 +696,7 @@ def create_scan_job(
     origin=None,
     rng=None,
     now=None,
+    source_snapshots=None,
 ):
     if mode not in SCAN_MODES:
         raise ValueError("mode must be 'partial' or 'full'")
@@ -616,6 +719,9 @@ def create_scan_job(
         if active is not None:
             con.rollback()
             raise ScanConflictError(job_payload(active))
+
+        if mode == "full" and source_snapshots is not None:
+            title_activity.apply_source_snapshots(con, source_snapshots, now)
 
         selected = select_scan_items(
             con,
@@ -1358,7 +1464,8 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
         if not snapshots:
             raise ValueError("alternate source has no playable episodes")
         normalized = validate_result_payload({"anime_id": alternative["id"], "episodes": snapshots}, alternative["id"], allowed_hosts, max_episode_id=2**53)
-        return {"anime_id": alternative["id"], "url": alternative["url"], "episodes": normalized["episodes"]}
+        return {"anime_id": alternative["id"], "url": alternative["url"], "episodes": normalized["episodes"],
+                "source_updated_at": _detail.get("source_updated_at")}
     except Exception as exc:
         # Keep the original failed result and report the alternative failure.
         # Do not expose upstream URLs containing player tokens or response bodies.
@@ -1453,6 +1560,9 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 alternate_row = con.execute("select * from anime where id=? and source='yummyanime' and url=?", (recovery["anime_id"], recovery["url"])).fetchone()
                 if alternate_row is None:
                     raise ValueError("alternate source changed while checking")
+                if recovery.get("source_updated_at"):
+                    title_activity.record_source_date(con, alternate_row["id"], recovery["source_updated_at"],
+                                                      checked_at_dt, source_kind="yummyanime_video")
                 update_title_scan_state(con, anime_row, job["user_id"], job_id, error=original_source_error, checked_at=checked_at_dt)
                 anime_row = alternate_row
                 normalized = {"anime_id": anime_row["id"], "error": None, "episodes": recovery["episodes"]}

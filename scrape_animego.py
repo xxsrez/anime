@@ -12,6 +12,7 @@ from urllib.parse import urljoin, urlparse, urlunparse, parse_qsl, urlencode
 from urllib.request import Request
 
 from bs4 import BeautifulSoup
+import title_activity
 from scripts.http_safety import open_validated_url
 from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 
@@ -440,6 +441,7 @@ def init_db(db_path):
             "editorial_status": "text not null default 'legacy'",
         },
     )
+    title_activity.ensure_schema(con)
     con.execute("update anime set source = 'animego' where source is null")
     con.execute("update anime set source_id = cast(id as text) where source_id is null")
     return con
@@ -483,6 +485,7 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
     existing = con.execute("select editorial_status from anime where id = ?", (item["id"],)).fetchone()
     if existing and existing[0] == "ready":
         refresh_release_metadata(con, item["id"], detail, scraped_at)
+        title_activity.record_detail_date(con, item, detail, scraped_at)
         return
     fields = detail["fields"]
     published = str(detail.get("date_published") or "")
@@ -609,6 +612,7 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
             con.execute("insert or ignore into anime_dubbings(anime_id, dubbing) values (?, ?)", (item["id"], dubbing))
     if existing is None:
         con.execute("update anime set editorial_status = 'needs_review' where id = ?", (item["id"],))
+    title_activity.record_detail_date(con, item, detail, scraped_at)
 
 
 def upsert_episode(con, anime_id, episode, has_video, unavailable_reason, scraped_at):

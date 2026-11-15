@@ -15,6 +15,7 @@ import zipfile
 import animego_scans
 import scrape_animego
 import server
+import title_activity
 
 
 class AnimeGoScansTest(unittest.TestCase):
@@ -671,6 +672,159 @@ class AnimeGoScansTest(unittest.TestCase):
         with closing(server.connect(self.db_path)) as con:
             self.assertTrue(all(not task["known_episode_ids"] for task in animego_scans.task_payloads(con, selected)))
 
+    def test_full_scan_uses_content_changes_not_recent_checks(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        for anime_id in range(1, 7):
+            self.add_title(anime_id, source="kinogoo" if anime_id == 4 else "animego")
+        self.set_library_state(1, watch_status="watching")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            for anime_id, change_days in [(1, 93), (2, 5), (3, 120), (5, 92)]:
+                con.execute(
+                    "insert into animego_title_scan_state(anime_id,last_changed_at,last_checked_at) values (?,?,?)",
+                    (anime_id, animego_scans.iso_timestamp(now - dt.timedelta(days=change_days)),
+                     animego_scans.iso_timestamp(now)),
+                )
+            for anime_id, event_type, change_days in [
+                (2, "new_episode", 120),
+                (3, "new_provider", 2),
+                (4, "new_translation", 93),
+                (6, "new_title", 1),
+            ]:
+                con.execute(
+                    "insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values (?,?,?,?)",
+                    (event_type, anime_id, animego_scans.iso_timestamp(now - dt.timedelta(days=change_days)),
+                     f"full-recency-{anime_id}"),
+                )
+            con.commit()
+            full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
+            partial = animego_scans.select_scan_items(con, "partial", self.user["id"], now=now)
+        self.assertEqual({anime_id for anime_id, _ in full}, {2, 3, 6})
+        self.assertIn((1, "personal"), partial)
+        job = self.create_job("full", now=now)
+        self.assertEqual({task["anime_id"] for task in job["tasks"]}, {2, 3, 6})
+        self.assertEqual(job["job"]["total_items"], 3)
+        self.assertTrue(job["discovery"])
+
+    def test_full_scan_excludes_titles_with_no_known_change_date(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1, status="Онгоинг")
+        self.add_title(2, source="kinogoo", status="Вышел")
+        self.set_library_state(1, watch_status="watching")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
+            partial = animego_scans.select_scan_items(con, "partial", self.user["id"], now=now)
+        self.assertEqual(full, [])
+        self.assertIn((1, "personal"), partial)
+
+    def test_full_scan_recency_includes_other_canonical_source(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1)
+        self.add_title(2)
+        self.add_title(3)
+        self.add_title(20_000_001, source="yummyanime")
+        self.add_title(20_000_003, source="yummyanime")
+        self.add_title(30_000_002, source="kinogoo")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            for anime_id, days in [(1, 120), (2, 120), (3, 120), (20_000_001, 1), (30_000_002, 120)]:
+                con.execute(
+                    "insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values (?,?,?,?)",
+                    ("new_episode", anime_id, animego_scans.iso_timestamp(now - dt.timedelta(days=days)),
+                     f"canonical-recency-{anime_id}"),
+                )
+            con.execute(
+                "insert into animego_title_scan_state(anime_id,last_changed_at) values (?,?)",
+                (20_000_003, animego_scans.iso_timestamp(now - dt.timedelta(days=2))),
+            )
+            con.commit()
+            full = animego_scans.select_scan_items(
+                con, "full", self.user["id"], now=now,
+                variant_map={1: 1, 20_000_001: 1, 30_000_002: 1, 2: 2, 3: 3, 20_000_003: 3},
+            )
+        self.assertEqual(set(full), {(1, "full"), (3, "full"), (30_000_002, "full")})
+
+    def test_full_scan_uses_source_date_from_linked_title(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1)
+        self.add_title(2)
+        self.add_title(20_000_001, source="yummyanime")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            title_activity.record_source_date(con, 20_000_001, "2026-11-10", now, source_kind="yummy-sitemap")
+            con.commit()
+            full = animego_scans.select_scan_items(
+                con, "full", self.user["id"], now=now, variant_map={1: 1, 20_000_001: 1, 2: 2},
+            )
+        self.assertEqual(full, [(1, "full")])
+
+    def test_full_scan_compares_event_timestamps_in_utc(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1)
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            for event_type, changed, key in [
+                ("new_episode", "2026-08-15T14:00:00+03:00", "older-offset"),
+                ("new_provider", "2026-08-15T12:15:00+00:00", "recent-utc"),
+            ]:
+                con.execute(
+                    "insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values (?,1,?,?)",
+                    (event_type, changed, key),
+                )
+            con.commit()
+            full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
+        self.assertEqual(full, [(1, "full")])
+
+    def test_full_scan_cutoff_uses_calendar_months_and_clamps_short_months(self):
+        self.assertEqual(animego_scans.full_scan_cutoff(dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)),
+                         dt.datetime(2026, 8, 15, 12, tzinfo=dt.timezone.utc))
+        self.assertEqual(animego_scans.full_scan_cutoff(dt.datetime(2026, 5, 31, 12, tzinfo=dt.timezone.utc)),
+                         dt.datetime(2026, 2, 28, 12, tzinfo=dt.timezone.utc))
+        self.assertEqual(animego_scans.full_scan_cutoff(dt.datetime(2024, 5, 31, 12, tzinfo=dt.timezone.utc)),
+                         dt.datetime(2024, 2, 29, 12, tzinfo=dt.timezone.utc))
+
+    def test_full_scan_checks_later_canonical_variant_batches(self):
+        now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1)
+        self.add_title(2)
+        variant_ids = list(range(20_001_000, 20_001_950))
+        mapping = {1: 1, 2: 2, **{anime_id: 2 for anime_id in variant_ids}}
+        with closing(server.connect(self.db_path)) as con:
+            con.executemany(
+                "insert into anime(id,slug,title,url,source,source_id,scraped_at) values (?,?,?,?,?,?,?)",
+                ((anime_id, f"variant-{anime_id}", f"Variant {anime_id}",
+                  f"https://yummyani.me/{anime_id}", "yummyanime", str(anime_id),
+                  animego_scans.iso_timestamp(now)) for anime_id in variant_ids),
+            )
+            con.execute("delete from title_content_activity")
+            for anime_id, days in [(1, 120), (2, 120), (variant_ids[-1], 1)]:
+                con.execute(
+                    "insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values (?,?,?,?)",
+                    ("new_episode", anime_id, animego_scans.iso_timestamp(now - dt.timedelta(days=days)),
+                     f"variant-batch-{anime_id}"),
+                )
+            con.commit()
+            full = animego_scans.select_scan_items(
+                con, "full", self.user["id"], now=now, variant_map=mapping,
+            )
+        self.assertEqual(full, [(2, "full")])
+
+    def test_full_discovery_does_not_requeue_a_known_inactive_title(self):
+        now = animego_scans.now_utc()
+        self.add_title(9)
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity")
+            con.execute(
+                "insert into content_update_events(event_type,anime_id,occurred_at,dedupe_key) values ('new_episode',9,?,?)",
+                (animego_scans.iso_timestamp(now - dt.timedelta(days=120)), "inactive-discovery-9"),
+            )
+            con.commit()
+        job = self.create_job("full", now=now)
+        self.assertEqual(job["tasks"], [])
+        result = self.discover(job, 1, self.listing_html(9, 10))
+        self.assertEqual([task["anime_id"] for task in result["tasks"]], [10])
+
     def test_partial_excludes_old_completed_even_when_personal_or_current(self):
         now = dt.datetime(2026, 10, 16, tzinfo=dt.timezone.utc)
         for anime_id, status, release in [
@@ -985,17 +1139,59 @@ class AnimeGoScansTest(unittest.TestCase):
                 ["animego-scanner/manifest.json", "animego-scanner/worker.js"],
             )
 
+    def test_http_full_scan_refreshes_dates_and_fails_without_creating_a_job(self):
+        self.add_title(12)
+        session = self.session_token()
+        cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={session}", "Content-Type": "application/json"}
+        body = json.dumps({"mode": "full"}).encode("utf-8")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("delete from title_content_activity where anime_id=12")
+            con.commit()
+        with patch.object(title_activity, "fetch_source_snapshots", side_effect=title_activity.SourceDateRefreshError("refresh failed")):
+            status, _, raw = self.request("POST", "/api/animego-scans", headers=cookie, body=body)
+        self.assertEqual(status, 503)
+        self.assertEqual(json.loads(raw)["error"], "refresh failed")
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select count(*) from animego_scan_jobs").fetchone()[0], 0)
+
+        now = animego_scans.now_utc().isoformat(timespec="seconds")
+        with patch.object(title_activity, "fetch_source_snapshots", return_value={"animego": {12: now}, "yummyanime": {}}):
+            status, _, raw = self.request("POST", "/api/animego-scans", headers=cookie, body=body)
+        self.assertEqual(status, 201)
+        self.assertIn(12, [task["anime_id"] for task in json.loads(raw)["tasks"]])
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select source_updated_at from title_content_activity where anime_id=12").fetchone()[0], now)
+
+    def test_http_partial_scan_does_not_fetch_source_dates(self):
+        self.add_title(12)
+        cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={self.session_token()}", "Content-Type": "application/json"}
+        with patch.object(title_activity, "fetch_source_snapshots", side_effect=AssertionError("unexpected fetch")):
+            status, _, _ = self.request("POST", "/api/animego-scans", headers=cookie,
+                                        body=json.dumps({"mode": "partial"}).encode("utf-8"))
+        self.assertEqual(status, 201)
+
+    def test_http_full_scan_reports_existing_job_before_fetch(self):
+        self.add_title(12)
+        self.create_job()
+        cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={self.session_token()}", "Content-Type": "application/json"}
+        with patch.object(title_activity, "fetch_source_snapshots", side_effect=AssertionError("unexpected fetch")):
+            status, _, raw = self.request("POST", "/api/animego-scans", headers=cookie,
+                                          body=json.dumps({"mode": "full"}).encode("utf-8"))
+        self.assertEqual(status, 409)
+        self.assertEqual(json.loads(raw)["job"]["status"], "running")
+
     def test_http_create_status_setup_and_extension_download_auth(self):
         self.add_title(12)
         session = self.session_token()
         cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={session}"}
         create_body = json.dumps({"mode": "full"}).encode("utf-8")
-        status, _, raw = self.request(
-            "POST",
-            "/api/animego-scans",
-            headers={**cookie, "Content-Type": "application/json"},
-            body=create_body,
-        )
+        with patch.object(title_activity, "fetch_source_snapshots", return_value={"animego": {}, "yummyanime": {}}):
+            status, _, raw = self.request(
+                "POST",
+                "/api/animego-scans",
+                headers={**cookie, "Content-Type": "application/json"},
+                body=create_body,
+            )
         self.assertEqual(status, 201)
         created = json.loads(raw)
         self.assertEqual(created["tasks"][0]["selection_reason"], "full")

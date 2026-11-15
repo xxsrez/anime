@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import datetime as dt
 import hashlib
 import json
 import re
@@ -13,6 +14,7 @@ from urllib.request import Request
 from bs4 import BeautifulSoup
 from scripts.http_safety import open_validated_url
 from scripts.operation_lock import DatabaseOperationLock, default_lock_path
+import title_activity
 
 from scrape_animego import (
     clean_text,
@@ -525,6 +527,7 @@ def parse_modern_payload(anime, page_url, api_url=None):
         "dubbings": dubbings,
         "player_url": canonical_url if videos else None,
         "unsupported_episode_numbers": skipped_numbers,
+        "source_updated_at": title_activity.newest_video_date(videos, dt.datetime.now(dt.timezone.utc)),
     }
     # Feeds can expose a newly aired episode before updating the total count.
     episode_numbers = sorted(

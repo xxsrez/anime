@@ -33,6 +33,7 @@ import franchise_catalog
 import kodik_stream
 import manual_episode_completion
 import recommendation_model
+import title_activity
 import user_state_model
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 
@@ -1400,6 +1401,11 @@ def initialize_database(path):
     configure_connection(con)
     try:
         changed = ensure_catalog_schema(con)
+        had_title_activity = con.execute(
+            "select 1 from sqlite_master where type = 'table' and name = 'title_content_activity'"
+        ).fetchone()
+        title_activity.ensure_schema(con)
+        changed |= not bool(had_title_activity)
         changed |= ensure_auth_schema(con)
         changed |= ensure_user_state_schema(con)
         changed |= ensure_watch_tracking_schema(con)
@@ -8840,13 +8846,22 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 payload = self.read_json_body()
                 if not isinstance(payload, dict):
                     raise ValueError("payload must be an object")
+                mode = payload.get("mode")
+                if mode not in animego_scans.SCAN_MODES:
+                    raise ValueError("mode must be 'partial' or 'full'")
+                now = animego_scans.now_utc()
+                if mode == "full":
+                    animego_scans.check_active_job(self.server.db_path, now)
+                snapshots = title_activity.fetch_source_snapshots(now) if mode == "full" else None
                 result = animego_scans.create_scan_job(
                     self.server.db_path,
                     user,
-                    payload.get("mode"),
+                    mode,
                     current_anime_id=payload.get("current_anime_id"),
                     variant_map=animego_scan_variant_map(self.server.db_path, user["id"]),
                     origin=self.request_origin(),
+                    now=now,
+                    source_snapshots=snapshots,
                 )
             except ClientErrorPayloadTooLarge:
                 self.send_json({"error": "payload too large"}, 413)
@@ -8856,6 +8871,9 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 return
             except animego_scans.ScanConflictError as exc:
                 self.send_json({"error": str(exc), "job": exc.job}, 409)
+                return
+            except title_activity.SourceDateRefreshError as exc:
+                self.send_json({"error": str(exc)}, 503)
                 return
             except ValueError as exc:
                 self.send_json({"error": str(exc)}, 400)

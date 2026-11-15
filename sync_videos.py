@@ -22,6 +22,7 @@ import backfill_players
 import content_updates
 import scrape_animego as animego
 import scrape_yummyanime as yummy
+import title_activity
 from scripts import db_data_diff
 from scripts.atomic_publish import atomic_publish_directory
 from scripts.http_safety import open_validated_url
@@ -579,6 +580,8 @@ def sync_yummy_title(con, anime_ref, args, stats, reason):
             "source_id": item.get("source_id"), "number": number, "videos_skipped": count,
         }, ensure_ascii=False))
     new_title = not anime_row_exists(con, item["id"])
+    if not new_title:
+        title_activity.record_detail_date(con, item, detail, args.scraped_at)
     providers = [provider for provider in providers if provider_has_embed(provider)]
     selected = selected_episodes(episodes, args.episode_limit)
     selected = filter_episodes_with_providers(selected, providers) if not args.include_empty_episodes else selected
@@ -687,6 +690,25 @@ def sync_yummy_feed(con, args, stats):
             raise
         return
     response = payload.get("response") or {}
+    observed_at = dt.datetime.fromisoformat(args.scraped_at.replace("Z", "+00:00"))
+    begin_title(con, args)
+    try:
+        for row in response.get("new_videos") or []:
+            source_id = row.get("anime_id")
+            if type(source_id) is not int or source_id <= 0:
+                continue
+            anime_id = yummy.internal_modern_anime_id(source_id)
+            exists = con.execute(
+                "select 1 from anime where id=? and source='yummyanime' and source_id=?",
+                (anime_id, yummy.modern_source_id(source_id)),
+            ).fetchone()
+            source_date = title_activity.newest_video_date([row], observed_at)
+            if exists and source_date:
+                title_activity.record_source_date(con, anime_id, source_date, observed_at, source_kind="yummyanime_video")
+        finish_title(con, args)
+    except Exception:
+        abort_title(con, args)
+        raise
     grouped = OrderedDict()
     for row in response.get("new_videos") or []:
         provider_id = yummy_feed_provider_id(row)
