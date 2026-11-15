@@ -37,7 +37,9 @@ const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay; fullscreen; picture-in-picture; encrypted-media; web-share; screen-wake-lock";
 const PLAYER_IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups";
-const KODIK_PLAYER_MODE_STORAGE_KEY = "anime-kodik-player-mode";
+const PLAYER_MODE_STORAGE_KEYS = Object.freeze({
+  kodik: "anime-kodik-player-mode",
+});
 let playerHosts = [];
 const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
@@ -78,17 +80,26 @@ function performanceNow() {
   return window.performance?.now ? window.performance.now() : Date.now();
 }
 
-function loadKodikPlayerMode() {
+function playerModeStorageKey(playerId) {
+  return Object.prototype.hasOwnProperty.call(PLAYER_MODE_STORAGE_KEYS, playerId)
+    ? PLAYER_MODE_STORAGE_KEYS[playerId] : null;
+}
+
+function loadPlayerMode(playerId) {
+  const key = playerModeStorageKey(playerId);
+  if (!key) return "original";
   try {
-    return window.localStorage.getItem(KODIK_PLAYER_MODE_STORAGE_KEY) === "adfree" ? "adfree" : "original";
+    return window.localStorage.getItem(key) === "adfree" ? "adfree" : "original";
   } catch {
     return "original";
   }
 }
 
-function saveKodikPlayerMode(mode) {
+function savePlayerMode(playerId, mode) {
+  const key = playerModeStorageKey(playerId);
+  if (!key || !["adfree", "original"].includes(mode)) return;
   try {
-    window.localStorage.setItem(KODIK_PLAYER_MODE_STORAGE_KEY, mode);
+    window.localStorage.setItem(key, mode);
   } catch {
     // Keep the selection for this tab when storage is unavailable.
   }
@@ -167,7 +178,7 @@ const state = {
   watchFallbackTimer: null,
   watchFullscreenActive: false,
   playerContext: null,
-  kodikPlayerMode: loadKodikPlayerMode(),
+  kodikPlayerMode: loadPlayerMode("kodik"),
   animeGoScannerReady: false,
   animeGoScannerVersion: null,
   animeGoScannerUpstreamReady: false,
@@ -4021,7 +4032,7 @@ function setKodikPlayerMode(mode) {
   }
   const { source, episode } = context;
   state.kodikPlayerMode = mode;
-  saveKodikPlayerMode(mode);
+  savePlayerMode("kodik", mode);
   setPlayer(source, episode, { forceKodikMode: true });
   setPlayerActionState("Плеер переключён. Возможно, потребуется выбрать место в серии заново.");
 }

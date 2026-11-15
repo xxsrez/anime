@@ -246,7 +246,7 @@ test("Kodik player mode changes the frame and starts a fresh watch session", () 
     document: { createElement: () => ({ canPlayType: () => "maybe" }) },
     ensureWatchSession() { if (!state.watchSession) state.watchSession = { id: ++nextSession }; },
     clearWatchSession() { endedSessions.push(state.watchSession?.id); state.watchSession = null; },
-    saveKodikPlayerMode: mode => savedModes.push(mode),
+    savePlayerMode: (player, mode) => savedModes.push([player, mode]),
     updatePlayerDisplay() {}, cancelPictureInPictureRequest() {}, setPlayerActionState() {},
     clearPlayer() { assert.fail("valid player should not be cleared"); }, reportClientError() {},
     replacePlayerFrame(url, options) { frames.push([url, options.nativeKodik]); },
@@ -266,7 +266,7 @@ test("Kodik player mode changes the frame and starts a fresh watch session", () 
   assert.deepEqual(frames.at(-1), [source.embed_url, false]);
   assert.equal(state.watchSession.id, 2);
   assert.deepEqual(endedSessions, [1]);
-  assert.deepEqual(savedModes, ["original"]);
+  assert.deepEqual(savedModes, [["kodik", "original"]]);
   const count = frames.length;
   context.setKodikPlayerMode("original");
   assert.equal(frames.length, count, "choosing the active mode does not reload");
@@ -274,7 +274,7 @@ test("Kodik player mode changes the frame and starts a fresh watch session", () 
   assert.deepEqual(frames.at(-1), ["https://catalog.test/player/kodik/12", true]);
   assert.equal(state.watchSession.id, 3);
   assert.deepEqual(endedSessions, [1, 2]);
-  assert.deepEqual(savedModes, ["original", "adfree"]);
+  assert.deepEqual(savedModes, [["kodik", "original"], ["kodik", "adfree"]]);
   context.setKodikPlayerMode("not-a-mode");
   assert.equal(state.watchSession.id, 3);
 
@@ -294,17 +294,43 @@ test("Kodik player mode changes the frame and starts a fresh watch session", () 
   assert.notEqual(state.watchSession.id, sessionBeforeRefresh);
 });
 
-test("Kodik mode preference survives reload and tolerates blocked storage", () => {
-  const values = new Map();
+test("the existing Kodik choice survives without migration", () => {
+  const values = new Map([["anime-kodik-player-mode", "adfree"]]);
   const context = vm.createContext({
-    KODIK_PLAYER_MODE_STORAGE_KEY: "anime-kodik-player-mode",
     window: { localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) } },
   });
-  vm.runInContext(block("function loadKodikPlayerMode(", "function roundMetric("), context);
-  assert.equal(context.loadKodikPlayerMode(), "original");
-  context.saveKodikPlayerMode("adfree");
-  assert.equal(context.loadKodikPlayerMode(), "adfree");
+  vm.runInContext([
+    block("const PLAYER_MODE_STORAGE_KEYS =", "let playerHosts ="),
+    block("function playerModeStorageKey(", "function roundMetric("),
+  ].join("\n"), context);
+  assert.equal(context.loadPlayerMode("kodik"), "adfree", "the existing preference is read without migration");
+  context.savePlayerMode("kodik", "original");
+  assert.equal(context.loadPlayerMode("kodik"), "original");
+  assert.deepEqual([...values.keys()], ["anime-kodik-player-mode"]);
+  const before = [...values];
+  context.savePlayerMode("unknown", "adfree");
+  context.savePlayerMode("__proto__", "adfree");
+  context.savePlayerMode("kodik", "invalid");
+  assert.equal(context.loadPlayerMode("unknown"), "original");
+  assert.deepEqual([...values], before, "unsupported players and modes cannot change stored choices");
   context.window.localStorage = { getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } };
-  assert.equal(context.loadKodikPlayerMode(), "original");
-  assert.doesNotThrow(() => context.saveKodikPlayerMode("original"));
+  assert.equal(context.loadPlayerMode("kodik"), "original");
+  assert.doesNotThrow(() => context.savePlayerMode("kodik", "original"));
+});
+
+test("registered players have independent mode preferences", () => {
+  const values = new Map();
+  const context = vm.createContext({
+    PLAYER_MODE_STORAGE_KEYS: { kodik: "anime-kodik-player-mode", another: "anime-another-player-mode" },
+    window: { localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) } },
+  });
+  vm.runInContext(block("function playerModeStorageKey(", "function roundMetric("), context);
+  context.savePlayerMode("kodik", "adfree");
+  context.savePlayerMode("another", "original");
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
+  assert.equal(context.loadPlayerMode("another"), "original");
+  context.savePlayerMode("another", "adfree");
+  context.savePlayerMode("kodik", "original");
+  assert.equal(context.loadPlayerMode("kodik"), "original");
+  assert.equal(context.loadPlayerMode("another"), "adfree");
 });
