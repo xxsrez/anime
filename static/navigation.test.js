@@ -3,6 +3,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const navigation = require("./navigation.js");
+const runtime = require("./frontend_runtime.js");
 const source = fs.readFileSync(`${__dirname}/app.js`, "utf8");
 function block(start, end) {
   return source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
@@ -167,11 +168,56 @@ test("source navigation replaces the iframe and rebinds tracking without navigat
   let replaced = false;
   const old = { cloneNode: () => next, replaceWith: node => { assert.equal(node, next); replaced = true; } };
   Object.defineProperty(old, "src", { set: () => assert.fail("must not navigate old frame") });
-  const context = vm.createContext({ el: { player: old }, handlePlayerLoaded() {}, handlePlayerEngaged() {} });
+  const configured = [];
+  const context = vm.createContext({
+    el: { player: old }, handlePlayerLoaded() {}, handlePlayerEngaged() {},
+    configurePlayerIframe: (frame, options) => configured.push([frame, options.nativeKodik]),
+  });
   vm.runInContext(block("function replacePlayerFrame(", "function configurePlayerIframe("), context);
   context.replacePlayerFrame("https://player.test/episode-2");
   assert.equal(replaced, true);
   assert.equal(context.el.player, next);
   assert.equal(next.src, "https://player.test/episode-2");
+  assert.deepEqual(configured, [[next, false]]);
   assert.deepEqual(listeners, ["load", "focus", "pointerdown"]);
+});
+
+test("supported Kodik episodes and explicitly numbered serials use the local native player", () => {
+  const replaced = [];
+  const state = { playerContext: null };
+  let hlsSupport = "maybe";
+  const context = vm.createContext({
+    URL, state,
+    window: { location: { origin: "https://catalog.test" } },
+    document: { createElement: () => ({ canPlayType: () => hlsSupport }) },
+    el: { wrap: { classList: { remove() {} } }, player: { getAttribute: () => null } },
+    playerHosts: ["kodikplayer.com", "aniboom.one"],
+    frontendRuntime: runtime,
+    ensureWatchSession() {}, updatePlayerDisplay() {}, cancelPictureInPictureRequest() {}, setPlayerActionState() {},
+    clearPlayer() { assert.fail("valid player should not be cleared"); }, reportClientError() {},
+    replacePlayerFrame: (url, options) => replaced.push([url, options.nativeKodik]),
+    playerMessageProvider: () => "kodik",
+  });
+  vm.runInContext(block("function setPlayer(", "function updatePlayerDisplay("), context);
+  const episode = { id: 5 };
+  context.setPlayer({ id: 12, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/12", true]);
+  assert.equal(state.playerContext.playerOrigin, "https://catalog.test");
+  state.playerContext = null;
+  context.setPlayer({ id: 13, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/1/hash/720p" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/serial/1/hash/720p", false]);
+  state.playerContext = null;
+  context.setPlayer({ id: 16, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/55/hash/720p?season=1&episode=12" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/16?serial=55", true]);
+  state.playerContext = null;
+  context.setPlayer({ id: 17, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/55/hash/720p?season=1&episode=12&episode=13" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/serial/55/hash/720p?season=1&episode=12&episode=13", false]);
+  hlsSupport = "";
+  state.playerContext = null;
+  context.setPlayer({ id: 14, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/seria/1/hash/720p", false]);
+  hlsSupport = "maybe";
+  state.playerContext = null;
+  context.setPlayer({ id: 15, embed_host: "aniboom.one", embed_url: "https://aniboom.one/seria/1/hash/720p" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://aniboom.one/seria/1/hash/720p", false]);
 });

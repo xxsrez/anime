@@ -15,6 +15,7 @@ const requests = [];
 const session = { engaged: true, providerPlaybackActive: true, pendingProviderSeconds: 10 };
 const frame = {};
 const context = vm.createContext({
+  URL, playerHosts: ["kodikplayer.com"],
   state: { watchSession: session, playerContext: { loaded: true, playerOrigin: "https://kodikplayer.com", messageProvider: "kodik" } },
   el: { player: { contentWindow: frame } },
   frontendRuntime: runtime,
@@ -46,6 +47,31 @@ assert.equal(requests.length, 2, "ended survives an earlier pause");
 assert.deepEqual(requests[1], { event_type: "session_end", engaged_seconds: 0, playback_ended: true });
 message("kodik_player_duration_update", {data: {key: "kodik_player_duration_update", value: 1380}});
 assert.equal(session.providerDurationSeconds, 1380);
+const nativeContext = {
+  loaded: true, playerOrigin: "https://catalog.test", messageProvider: "kodik", nativeKodik: true,
+  source: { embed_url: "https://kodikplayer.com/seria/1/hash/720p" },
+};
+context.state.playerContext = nativeContext;
+session.providerPositionSeconds = 40;
+session.providerPositionObservedAt = 1000;
+context.handlePlayerMessage({ source: frame, origin: "https://wrong.test", data: { key: "anime_catalog_kodik_seeking" } });
+assert.equal(session.providerPositionSeconds, 40);
+context.handlePlayerMessage({ source: frame, origin: "https://catalog.test", data: { key: "anime_catalog_kodik_seeking" } });
+assert.equal(session.providerPositionSeconds, null);
+assert.equal(session.providerPositionObservedAt, null);
+session.providerPositionSeconds = 100;
+session.providerPositionObservedAt = 2000;
+session.pictureInPictureActive = true;
+const fallbacks = [];
+context.flushWatchSession = type => fallbacks.push(type);
+context.cancelPictureInPictureRequest = () => fallbacks.push("cancel_pip");
+context.replacePlayerFrame = url => fallbacks.push(url);
+context.handlePlayerMessage({ source: frame, origin: "https://catalog.test", data: { key: "anime_catalog_kodik_original" } });
+assert.deepEqual(fallbacks, ["session_end", "cancel_pip", "https://kodikplayer.com/seria/1/hash/720p"]);
+assert.equal(nativeContext.loaded, false);
+assert.equal(nativeContext.nativeKodik, false);
+assert.equal(session.providerPositionSeconds, null);
+assert.equal(session.pictureInPictureActive, false);
 assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: 0}), null);
 assert.equal(runtime.normalizePlayerMessage({key: "kodik_player_duration_update", value: "bad"}), null);
 const cvhCalls = [];

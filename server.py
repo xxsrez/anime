@@ -30,6 +30,7 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 import animego_scans
 import content_updates
 import franchise_catalog
+import kodik_stream
 import manual_episode_completion
 import recommendation_model
 import user_state_model
@@ -52,6 +53,7 @@ MAX_ANIMEGO_PUSH_BODY_BYTES = 32 * 1024 * 1024
 MAX_CLIENT_ERROR_BYTES = 16 * 1024
 MAX_PERFORMANCE_EVENT_BYTES = 24 * 1024
 MAX_WATCH_METADATA_BYTES = 4096
+KODIK_RESOLVE_SLOTS = threading.BoundedSemaphore(4)
 MAX_CLIENT_ERROR_TEXT = 2048
 MAX_CLIENT_ERROR_COLLECTION_ITEMS = 20
 SYNC_MODES = {"hourly", "daily", "full"}
@@ -114,6 +116,18 @@ def content_security_policy(script_nonce=None):
 
 
 CONTENT_SECURITY_POLICY = content_security_policy()
+KODIK_PLAYER_CSP = "; ".join((
+    "default-src 'none'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "form-action 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "connect-src 'self'",
+    "media-src https://solodcdn.com https://*.solodcdn.com",
+))
 EXTERNAL_RATING_SOURCES = {
     "tal": ("TAL", 0),
     "myanimelist": ("MAL", 1),
@@ -7920,6 +7934,20 @@ class AnimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_kodik_player_page(self):
+        body = (STATIC_DIR / "kodik-player.html").read_bytes()
+        self._last_response_bytes = len(body)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Security-Policy", KODIK_PLAYER_CSP)
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_binary(self, body, content_type, status=200, headers=None, filename=None):
         body = bytes(body)
         self._last_response_bytes = len(body)
@@ -8483,6 +8511,67 @@ class AnimeHandler(BaseHTTPRequestHandler):
         user = self.current_user()
         if path.startswith("/api/") and not user:
             self.send_json({"error": "authentication required"}, 401)
+            return
+
+        native_player_match = re.fullmatch(r"/player/kodik/([1-9]\d{0,18})", path)
+        if native_player_match:
+            if not user:
+                self.redirect_to_login()
+                return
+            self.send_kodik_player_page()
+            return
+
+        native_stream_match = re.fullmatch(r"/api/kodik-stream/([1-9]\d{0,18})", path)
+        if native_stream_match:
+            source_id = int(native_stream_match.group(1))
+            if source_id > 2**63 - 1:
+                self.send_json({"error": "not found"}, 404)
+                return
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            translation_values = query.get("translation", [])
+            if (len(translation_values) > 1 or
+                    (translation_values and not re.fullmatch(r"[1-9]\d{0,9}", translation_values[0]))):
+                self.send_json({"error": "invalid translation"}, 400)
+                return
+            translation_id = translation_values[0] if translation_values else None
+            con = connect(self.server.db_path)
+            try:
+                source = con.execute(
+                    "select embed_url, embed_host from video_sources where id = ?", (source_id,),
+                ).fetchone()
+                last_event = con.execute(
+                    """select metadata_json from user_watch_events
+                       where user_id = ? and video_source_id = ?
+                         and json_type(metadata_json, '$.playback_position_seconds') = 'integer'
+                       order by event_at desc, id desc limit 1""",
+                    (user["id"], source_id),
+                ).fetchone()
+            finally:
+                con.close()
+            if not source or source["embed_host"] != "kodikplayer.com":
+                self.send_json({"error": "not found"}, 404)
+                return
+            if not KODIK_RESOLVE_SLOTS.acquire(blocking=False):
+                self.send_json({"error": "video resolver busy"}, 503)
+                return
+            try:
+                player = kodik_stream.resolve_kodik_streams_bounded(
+                    source["embed_url"], catalog_origin=self.request_origin(), translation_id=translation_id,
+                )
+            except kodik_stream.KodikTranslationUnavailable:
+                self.send_json({"error": "translation unavailable"}, 409)
+                return
+            except kodik_stream.KodikStreamError:
+                self.send_json({"error": "video unavailable"}, 502)
+                return
+            finally:
+                KODIK_RESOLVE_SLOTS.release()
+            position = None
+            if last_event:
+                value = json.loads(last_event["metadata_json"]).get("playback_position_seconds")
+                if type(value) is int and 0 <= value <= 86400:
+                    position = value
+            self.send_json({**player, "resume_position": position})
             return
 
         if path == "/api/app-config":

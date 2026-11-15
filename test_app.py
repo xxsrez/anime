@@ -3414,6 +3414,131 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertIn(f"https://{host}", csp)
             self.assertIn(f"https://*.{host}", csp)
 
+    def test_native_kodik_player_is_authenticated_and_has_scoped_headers(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-user", "kodik@example.com")
+            token = self.create_session(db_path, user_id)
+            status, headers, _ = self.request_test_server(db_path, "GET", "/player/kodik/1")
+            self.assertEqual(status, 302)
+            self.assertEqual(headers["X-Frame-Options"], "DENY")
+            status, _, _ = self.request_test_server(db_path, "GET", "/api/kodik-stream/1")
+            self.assertEqual(status, 401)
+            status, headers, body = self.request_test_server(
+                db_path, "GET", "/player/kodik/1",
+                headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+            )
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["X-Frame-Options"], "SAMEORIGIN")
+        self.assertIn("frame-ancestors 'self'", headers["Content-Security-Policy"])
+        self.assertIn("media-src https://solodcdn.com https://*.solodcdn.com", headers["Content-Security-Policy"])
+        self.assertNotIn("'unsafe-inline'", headers["Content-Security-Policy"])
+        self.assertIn(b'/static/kodik-player.js', body)
+
+    def test_native_kodik_stream_reads_only_the_current_users_resume_position(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-user-1", "one@example.com")
+            other_id = self.create_google_user(db_path, "kodik-user-2", "two@example.com")
+            token = self.create_session(db_path, user_id)
+            con = server.connect(db_path)
+            source_id = con.execute("select id from video_sources where episode_id = 10101").fetchone()[0]
+            con.execute(
+                "update video_sources set embed_url = ? where id = ?",
+                ("https://kodikplayer.com/seria/123/hash/720p", source_id),
+            )
+            for uid, position, stamp in (
+                (user_id, 90, "2026-11-10T12:00:00+00:00"),
+                (other_id, 800, "2026-11-10T13:00:00+00:00"),
+            ):
+                con.execute(
+                    """insert into user_watch_events
+                       (user_id, anime_id, episode_id, video_source_id, client_session_id,
+                        event_type, event_at, metadata_json, created_at)
+                       values (?, 101, 10101, ?, 'test', 'heartbeat', ?, ?, ?)""",
+                    (uid, source_id, stamp, json.dumps({"playback_position_seconds": position}), stamp),
+                )
+            con.commit()
+            con.close()
+            stream = "https://cloud2.solodcdn.com/hls/test/episode.m3u8"
+            player = {"streams": {"720": stream}, "translations": [], "translation_id": None}
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded", return_value=player) as resolve:
+                status, headers, body = self.request_test_server(
+                    db_path, "GET", f"/api/kodik-stream/{source_id}",
+                    headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+                )
+            self.assertEqual(status, 200)
+            self.assertEqual(headers["Cache-Control"], "no-store")
+            self.assertEqual(json.loads(body), {**player, "resume_position": 90})
+            self.assertEqual(resolve.call_count, 1)
+
+    def test_native_kodik_stream_rejects_ambiguous_translation_before_resolving(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-user", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"}
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded") as resolve:
+                for query in ("translation=1&translation=2", "translation=x", "translation="):
+                    status, _, _ = self.request_test_server(
+                        db_path, "GET", f"/api/kodik-stream/1?{query}", headers=cookie,
+                    )
+                    self.assertEqual(status, 400)
+                resolve.assert_not_called()
+
+    def test_native_kodik_stream_rejects_other_providers_and_hides_upstream_errors(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-user", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            cookie = {"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"}
+            con = server.connect(db_path)
+            source_id = con.execute("select id from video_sources where episode_id = 10101").fetchone()[0]
+            con.execute("update video_sources set embed_host = 'aniboom.one' where id = ?", (source_id,))
+            con.commit()
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded") as resolve:
+                status, _, _ = self.request_test_server(db_path, "GET", f"/api/kodik-stream/{source_id}", headers=cookie)
+                self.assertEqual(status, 404)
+                resolve.assert_not_called()
+            con.execute("update video_sources set embed_host = 'kodikplayer.com' where id = ?", (source_id,))
+            con.commit()
+            con.close()
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded", side_effect=server.kodik_stream.KodikStreamError("secret")):
+                status, _, body = self.request_test_server(db_path, "GET", f"/api/kodik-stream/{source_id}", headers=cookie)
+            self.assertEqual(status, 502)
+            self.assertNotIn(b"secret", body)
+            with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded", side_effect=server.kodik_stream.KodikTranslationUnavailable("secret")):
+                status, _, body = self.request_test_server(db_path, "GET", f"/api/kodik-stream/{source_id}?translation=1", headers=cookie)
+            self.assertEqual(status, 409)
+            self.assertNotIn(b"secret", body)
+
+    def test_native_kodik_resolver_limits_parallel_requests(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = f"{tmpdir}/animego.sqlite"
+            shutil.copy(server.DEFAULT_DB, db_path)
+            user_id = self.create_google_user(db_path, "kodik-user", "one@example.com")
+            token = self.create_session(db_path, user_id)
+            con = server.connect(db_path)
+            source_id = con.execute("select id from video_sources where episode_id = 10101").fetchone()[0]
+            con.close()
+            for _ in range(4):
+                self.assertTrue(server.KODIK_RESOLVE_SLOTS.acquire(blocking=False))
+            try:
+                with patch.object(server.kodik_stream, "resolve_kodik_streams_bounded") as resolve:
+                    status, _, _ = self.request_test_server(
+                        db_path, "GET", f"/api/kodik-stream/{source_id}",
+                        headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={token}"},
+                    )
+                    self.assertEqual(status, 503)
+                    resolve.assert_not_called()
+            finally:
+                for _ in range(4):
+                    server.KODIK_RESOLVE_SLOTS.release()
+
     def test_player_host_allowlist_matches_frontend_and_catalog(self):
         app_js = Path(server.STATIC_DIR / "app.js").read_text(encoding="utf-8")
         self.assertIn('api("/api/app-config")', app_js)
@@ -3556,7 +3681,8 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn("preservePlayer: true", js)
         self.assertIn("const contextMatches = Boolean(", js)
         self.assertIn("if (contextMatches) {", js)
-        self.assertIn("const reportedBy = `${provider}_player_api`", js)
+        self.assertIn('"catalog_hls_player"', js)
+        self.assertIn(": `${provider}_player_api`", js)
         self.assertIn("fallbackFocused = !state.playerContext?.messageProvider", js)
         self.assertIn('sendWatchEvent("heartbeat"', js)
         self.assertNotIn("manuallyCorrected", js)

@@ -3899,7 +3899,6 @@ function setPlayer(source, episode) {
   }
   ensureWatchSession(source, episode);
   el.wrap.classList.remove("empty");
-  configurePlayerIframe(el.player);
   const contextMatches = Boolean(
     state.playerContext
     && String(state.playerContext.source?.id) === String(source.id)
@@ -3909,18 +3908,33 @@ function setPlayer(source, episode) {
     updatePlayerDisplay(source, episode);
     return;
   }
-  const navigatesPlayer = el.player.getAttribute("src") !== playerUrl;
+  const sourceId = String(source.id || "");
+  const parsedKodik = new URL(playerUrl);
+  const serialMatch = parsedKodik.pathname.match(/^\/serial\/(\d+)\/[A-Za-z0-9_-]+\/\d+p\/?$/);
+  const serialEpisode = serialMatch && ["season", "episode"].every(key => {
+    const values = parsedKodik.searchParams.getAll(key);
+    return values.length === 1 && /^[1-9]\d{0,5}$/.test(values[0]);
+  });
+  const nativeKodik = playerHost === "kodikplayer.com"
+    && (/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(parsedKodik.pathname) || serialEpisode)
+    && /^[1-9]\d{0,18}$/.test(sourceId)
+    && Boolean(document.createElement("video").canPlayType("application/vnd.apple.mpegurl"));
+  const frameUrl = nativeKodik
+    ? new URL(`/player/kodik/${sourceId}${serialMatch ? `?serial=${serialMatch[1]}` : ""}`, window.location.origin).href
+    : playerUrl;
+  const navigatesPlayer = el.player.getAttribute("src") !== frameUrl;
   state.playerContext = {
     source,
     episode,
-    playerOrigin,
+    playerOrigin: nativeKodik ? window.location.origin : playerOrigin,
     messageProvider: playerMessageProvider(source),
+    nativeKodik,
     loaded: navigatesPlayer ? false : (state.playerContext?.loaded ?? true),
   };
   if (navigatesPlayer) {
     cancelPictureInPictureRequest();
     setPlayerActionState("");
-    replacePlayerFrame(playerUrl);
+    replacePlayerFrame(frameUrl, { nativeKodik });
   }
   updatePlayerDisplay(source, episode);
 }
@@ -3960,10 +3974,11 @@ function clearPlayer(message) {
   el.episodeState.textContent = "-";
 }
 
-function replacePlayerFrame(url) {
+function replacePlayerFrame(url, { nativeKodik = false } = {}) {
   // A new browsing context avoids iframe navigations polluting the site's Back
   // history. Bind tracking to the replacement; stale frames fail source checks.
   const next = el.player.cloneNode(false);
+  configurePlayerIframe(next, { nativeKodik });
   next.removeAttribute("src");
   if (url) next.setAttribute("src", url);
   next.addEventListener("load", handlePlayerLoaded);
@@ -3973,9 +3988,11 @@ function replacePlayerFrame(url) {
   el.player = next;
 }
 
-function configurePlayerIframe(iframe = el.player) {
+function configurePlayerIframe(iframe = el.player, { nativeKodik = false } = {}) {
   iframe.setAttribute("allow", PLAYER_IFRAME_ALLOW);
-  iframe.setAttribute("sandbox", PLAYER_IFRAME_SANDBOX);
+  iframe.setAttribute("sandbox", nativeKodik
+    ? "allow-scripts allow-same-origin allow-presentation"
+    : PLAYER_IFRAME_SANDBOX);
   iframe.setAttribute("allowfullscreen", "");
   iframe.setAttribute("webkitallowfullscreen", "");
   iframe.setAttribute("mozallowfullscreen", "");
@@ -4304,7 +4321,9 @@ function handlePlayerLoaded() {
 function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   const session = state.watchSession;
   if (!session) return;
-  const reportedBy = `${provider}_player_api`;
+  const reportedBy = state.playerContext?.nativeKodik
+    ? "catalog_hls_player"
+    : `${provider}_player_api`;
   if (session.metadata?.reported_by !== reportedBy) {
     session.metadata = { ...session.metadata, reported_by: reportedBy };
   }
@@ -4466,6 +4485,29 @@ function applyPlayerEpisodeChange(message) {
 
 function handlePlayerMessage(event) {
   if (!playerMessageMatchesContext(event)) return;
+  if (state.playerContext?.nativeKodik && event.data?.key === "anime_catalog_kodik_original") {
+    const original = frontendRuntime.safeHttpsUrl(state.playerContext.source?.embed_url, playerHosts);
+    if (!original) return;
+    flushWatchSession("session_end", { beacon: true });
+    cancelPictureInPictureRequest();
+    if (state.watchSession) {
+      state.watchSession.providerPositionSeconds = null;
+      state.watchSession.providerPositionObservedAt = null;
+      state.watchSession.pictureInPictureActive = false;
+    }
+    state.playerContext.nativeKodik = false;
+    state.playerContext.playerOrigin = new URL(original).origin;
+    state.playerContext.loaded = false;
+    replacePlayerFrame(original);
+    return;
+  }
+  if (state.playerContext?.nativeKodik && event.data?.key === "anime_catalog_kodik_seeking") {
+    if (state.watchSession) {
+      state.watchSession.providerPositionSeconds = null;
+      state.watchSession.providerPositionObservedAt = null;
+    }
+    return;
+  }
   const message = frontendRuntime.normalizePlayerMessage(event.data);
   if (!message) return;
 

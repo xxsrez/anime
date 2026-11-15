@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Видеоплеер</title>
+  <link rel="stylesheet" href="/static/kodik-player.css">
+  <script src="/static/kodik-player.js" defer></script>
+</head>
+<body>
+  <main class="player">
+    <video controls playsinline webkit-playsinline preload="metadata"></video>
+    <div class="controls">
+      <label id="translation-label" for="translation" hidden>Озвучка</label>
+      <select id="translation" aria-label="Озвучка" hidden disabled></select>
+      <label for="quality">Качество</label>
+      <select id="quality" disabled aria-label="Качество видео"></select>
+      <button id="resume" type="button" hidden></button>
+      <button id="pip" type="button" hidden>Картинка в картинке</button>
+    </div>
+    <div id="message" class="message" role="status">Загружаем видео…</div>
+    <div class="recovery">
+      <button id="retry" type="button" hidden>Попробовать ещё раз</button>
+      <button id="original" type="button" hidden>Обычный плеер с рекламой</button>
+    </div>
+  </main>
+  <noscript>Для воспроизведения включите JavaScript.</noscript>
+</body>
+</html>
