@@ -5,9 +5,10 @@ const { test } = require("node:test");
 
 const source = fs.readFileSync(`${__dirname}/kodik-player.js`, "utf8");
 
-function setup(payload, { serial = null, preferences = new Map() } = {}) {
+function setup(payload, { serial = null, preferences = new Map(), hlsSupport = false, nativeSupport = true } = {}) {
   const sent = [];
   const requested = [];
+  const players = [];
   class Element {
     constructor() { this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ""; }
     addEventListener(event, callback, options = {}) { (this.listeners[event] ||= []).push({ callback, once: options.once }); }
@@ -24,10 +25,22 @@ function setup(payload, { serial = null, preferences = new Map() } = {}) {
   const video = new Element();
   Object.assign(video, {
     currentTime: 0, duration: 1200, paused: true, ended: false,
-    canPlayType: () => "maybe", load() { this.currentTime = 0; }, play: async () => {},
+    canPlayType: () => nativeSupport ? "maybe" : "", load() { this.currentTime = 0; }, play: async () => {},
   });
   const parent = { postMessage: (message, origin) => sent.push([message, origin]) };
   const window = { parent, addEventListener() {} };
+  if (hlsSupport) {
+    window.Hls = class {
+      static Events = { ERROR: "error" };
+      static isSupported() { return true; }
+      constructor(options) { this.options = options; players.push(this); }
+      on(_event, callback) { this.onError = callback; }
+      loadSource(url) { this.url = url; }
+      attachMedia(element) { this.video = element; element.load(); }
+      stopLoad() { this.stopped = true; }
+      destroy() { this.destroyed = true; }
+    };
+  }
   const document = {
     querySelector: () => video,
     getElementById: id => elements[id],
@@ -46,8 +59,75 @@ function setup(payload, { serial = null, preferences = new Map() } = {}) {
     },
   });
   vm.runInContext(source, context);
-  return { video, elements, sent, requested };
+  return { video, elements, sent, requested, players };
 }
+
+test("HLS playback uses the bundled player and switches quality without losing position", async () => {
+  const base = "https://p14.solodcdn.com/hls/test/";
+  const { video, elements, players } = setup(
+    { streams: { "480": `${base}480.m3u8`, "720": `${base}720.m3u8` } },
+    { hlsSupport: true, nativeSupport: false },
+  );
+  await new Promise(setImmediate);
+  assert.equal(players.length, 1);
+  assert.equal(players[0].url, `${base}720.m3u8`);
+  assert.equal(players[0].video, video);
+  video.currentTime = 42;
+  video.paused = false;
+  let plays = 0;
+  video.play = async () => { plays++; };
+  elements.quality.value = "480";
+  elements.quality.dispatch("change");
+  assert.equal(players[0].destroyed, true);
+  assert.equal(players[1].url, `${base}480.m3u8`);
+  assert.equal(players[1].options.startPosition, 42);
+  video.dispatch("loadedmetadata");
+  assert.equal(video.currentTime, 42);
+  assert.equal(plays, 1);
+  players[0].onError("error", { fatal: true });
+  assert.equal(elements.original.hidden, true, "an old player cannot show an error after switching");
+  players[1].onError("error", { fatal: true });
+  assert.equal(players[1].stopped, true);
+  assert.equal(elements.original.hidden, false);
+  assert.equal(elements.retry.hidden, false);
+});
+
+test("rapid HLS quality changes and retry keep a paused pending position", async () => {
+  const base = "https://p14.solodcdn.com/hls/test/";
+  const { video, elements, players } = setup(
+    { streams: { "360": `${base}360.m3u8`, "480": `${base}480.m3u8`, "720": `${base}720.m3u8` } },
+    { hlsSupport: true },
+  );
+  await new Promise(setImmediate);
+  video.currentTime = 240;
+  elements.quality.value = "480";
+  elements.quality.dispatch("change");
+  elements.quality.value = "360";
+  elements.quality.dispatch("change");
+  players.at(-1).onError("error", { fatal: true });
+  elements.retry.dispatch("click");
+  await new Promise(setImmediate);
+  video.dispatch("loadedmetadata");
+  assert.equal(video.currentTime, 240);
+  assert.equal(video.paused, true);
+  assert.equal(elements.quality.value, "360");
+});
+
+test("resume before metadata survives a quality change", async () => {
+  const base = "https://p14.solodcdn.com/hls/test/";
+  const { video, elements, players } = setup(
+    { streams: { "480": `${base}480.m3u8`, "720": `${base}720.m3u8` }, resume_position: 120 },
+    { hlsSupport: true },
+  );
+  await new Promise(setImmediate);
+  video.readyState = 0;
+  elements.resume.dispatch("click");
+  elements.quality.value = "480";
+  elements.quality.dispatch("change");
+  assert.equal(players.at(-1).options.startPosition, 120);
+  video.dispatch("loadedmetadata");
+  assert.equal(video.currentTime, 120);
+});
 
 test("native player loads safe streams and emits real video events", async () => {
   const url = "https://cloud2.solodcdn.com/hls/test/video.m3u8";

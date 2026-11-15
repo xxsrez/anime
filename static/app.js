@@ -3901,7 +3901,12 @@ function kodikNativeConfig(source, playerUrl) {
   if (!playerUrl || !/^[1-9]\d{0,18}$/.test(String(source?.id || ""))) return null;
   let url;
   try { url = new URL(playerUrl); } catch { return null; }
-  if (url.hostname !== "kodikplayer.com" || !document.createElement("video").canPlayType("application/vnd.apple.mpegurl")) {
+  const hasNativeHls = Boolean(document.createElement("video").canPlayType("application/vnd.apple.mpegurl"));
+  const hasMediaSource = [window.MediaSource, window.ManagedMediaSource].some(mediaSource => (
+    typeof mediaSource?.isTypeSupported === "function"
+    && mediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')
+   ));
+  if (url.hostname !== "kodikplayer.com" || !(hasNativeHls || hasMediaSource)) {
     return null;
   }
   const serialMatch = url.pathname.match(/^\/serial\/(\d+)\/[A-Za-z0-9_-]+\/\d+p\/?$/);

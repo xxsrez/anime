@@ -125,8 +125,9 @@ KODIK_PLAYER_CSP = "; ".join((
     "frame-ancestors 'self'",
     "script-src 'self'",
     "style-src 'self'",
-    "connect-src 'self'",
-    "media-src https://solodcdn.com https://*.solodcdn.com",
+    "connect-src 'self' https://solodcdn.com https://*.solodcdn.com",
+    "media-src blob: https://solodcdn.com https://*.solodcdn.com",
+    "worker-src blob:",
 ))
 EXTERNAL_RATING_SOURCES = {
     "tal": ("TAL", 0),

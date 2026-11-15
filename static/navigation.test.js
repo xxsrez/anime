@@ -219,6 +219,10 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   state.playerContext = null;
   context.setPlayer({ id: 14, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/seria/1/hash/720p", false]);
+  context.window.MediaSource = { isTypeSupported: () => true };
+  state.playerContext = null;
+  context.setPlayer({ id: 14, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" }, episode);
+  assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/14", true]);
   hlsSupport = "maybe";
   state.playerContext = null;
   context.setPlayer({ id: 15, embed_host: "aniboom.one", embed_url: "https://aniboom.one/seria/1/hash/720p" }, episode);

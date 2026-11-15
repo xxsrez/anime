@@ -16,6 +16,7 @@
   let streams = {};
   let requestId = 0;
   let mediaGeneration = 0;
+  let hlsPlayer = null;
   let savedPosition = null;
   let lastPosition = 0;
   let pendingPosition = null;
@@ -73,21 +74,38 @@
     const generation = ++mediaGeneration;
     pendingPosition = Number.isFinite(position) && position > 0 ? position : null;
     if (pendingPosition != null) lastPosition = pendingPosition;
-    video.src = streams[selected];
-    video.load();
-    if (Number.isFinite(position) && position > 0) {
+    if (hlsPlayer) {
+      hlsPlayer.destroy();
+      hlsPlayer = null;
+    }
+    if (pendingPosition != null || continuePlaying) {
       video.addEventListener("loadedmetadata", () => {
         if (generation !== mediaGeneration) return;
-        const limit = Number.isFinite(video.duration) ? Math.max(0, video.duration - 1) : position;
-        video.currentTime = Math.min(position, limit);
-        lastPosition = video.currentTime;
-        pendingPosition = null;
+        if (pendingPosition != null) {
+          const limit = Number.isFinite(video.duration) ? Math.max(0, video.duration - 1) : position;
+          video.currentTime = Math.min(position, limit);
+          lastPosition = video.currentTime;
+          pendingPosition = null;
+        }
         if (continuePlaying) video.play().catch(() => {
           message.textContent = "Нажмите воспроизведение, чтобы продолжить.";
         });
       }, { once: true });
-    } else if (continuePlaying) {
-      video.play().catch(() => { message.textContent = "Нажмите воспроизведение, чтобы продолжить."; });
+    }
+    if (window.Hls?.isSupported?.()) {
+      const player = new window.Hls({ backBufferLength: 60, startPosition: pendingPosition ?? -1 });
+      hlsPlayer = player;
+      player.on(window.Hls.Events.ERROR, (_event, details) => {
+        if (generation === mediaGeneration && hlsPlayer === player && details.fatal) {
+          player.stopLoad();
+          fail("Не удалось воспроизвести видео.");
+        }
+      });
+      player.loadSource(streams[selected]);
+      player.attachMedia(video);
+    } else {
+      video.src = streams[selected];
+      video.load();
     }
   }
 
@@ -108,7 +126,7 @@
     quality.disabled = true;
     translation.disabled = true;
     resume.hidden = true;
-    if (!id || !video.canPlayType("application/vnd.apple.mpegurl")) {
+    if (!id || !(window.Hls?.isSupported?.() || video.canPlayType("application/vnd.apple.mpegurl"))) {
       fail("Этот браузер не поддерживает такой видеопоток.");
       return;
     }
@@ -193,11 +211,17 @@
     if (savedPosition == null) return;
     const position = savedPosition;
     const generation = mediaGeneration;
+    pendingPosition = position;
     if (video.readyState >= 1) {
       video.currentTime = position;
+      lastPosition = video.currentTime;
+      pendingPosition = null;
     } else {
       video.addEventListener("loadedmetadata", () => {
-        if (generation === mediaGeneration) video.currentTime = position;
+        if (generation !== mediaGeneration) return;
+        video.currentTime = position;
+        lastPosition = video.currentTime;
+        pendingPosition = null;
       }, { once: true });
     }
     resume.hidden = true;

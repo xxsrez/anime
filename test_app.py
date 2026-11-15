@@ -3432,8 +3432,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertEqual(status, 200)
         self.assertEqual(headers["X-Frame-Options"], "SAMEORIGIN")
         self.assertIn("frame-ancestors 'self'", headers["Content-Security-Policy"])
-        self.assertIn("media-src https://solodcdn.com https://*.solodcdn.com", headers["Content-Security-Policy"])
+        self.assertIn("connect-src 'self' https://solodcdn.com https://*.solodcdn.com", headers["Content-Security-Policy"])
+        self.assertIn("media-src blob: https://solodcdn.com https://*.solodcdn.com", headers["Content-Security-Policy"])
+        self.assertIn("worker-src blob:", headers["Content-Security-Policy"])
         self.assertNotIn("'unsafe-inline'", headers["Content-Security-Policy"])
+        self.assertIn(b'/static/vendor/hls.light.min.js', body)
         self.assertIn(b'/static/kodik-player.js', body)
 
     def test_native_kodik_stream_reads_only_the_current_users_resume_position(self):
