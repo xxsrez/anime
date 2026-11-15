@@ -10,7 +10,7 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
   const requested = [];
   const players = [];
   class Element {
-    constructor() { this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ""; }
+    constructor() { this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ""; this.open = false; this.attributes = {}; }
     addEventListener(event, callback, options = {}) { (this.listeners[event] ||= []).push({ callback, once: options.once }); }
     dispatch(event) {
       const listeners = [...(this.listeners[event] || [])];
@@ -18,8 +18,11 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
       for (const { callback } of listeners) callback({ type: event });
     }
     replaceChildren(...children) { this.children = children; }
+    contains(target) { return target === this || Boolean(target?.insideSettings); }
+    focus() { this.focused = true; document.activeElement = this; }
+    setAttribute(name, value) { this.attributes[name] = value; }
   }
-  const elements = Object.fromEntries(["quality", "translation", "translation-label", "resume", "pip", "message", "retry", "original"].map(
+  const elements = Object.fromEntries(["quality", "translation", "translation-label", "resume", "pip", "pip-label", "player-settings", "settings-toggle", "settings-close", "settings-quality", "message", "retry", "original"].map(
     id => [id, new Element()],
   ));
   const video = new Element();
@@ -28,7 +31,13 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
     canPlayType: () => nativeSupport ? "maybe" : "", load() { this.currentTime = 0; }, play: async () => {},
   });
   const parent = { postMessage: (message, origin) => sent.push([message, origin]) };
-  const window = { parent, addEventListener() {} };
+  let scheduled = null;
+  const window = {
+    parent, addEventListener() {},
+    matchMedia: () => ({ matches: false }),
+    setTimeout: callback => { scheduled = callback; return 1; },
+    clearTimeout: () => { scheduled = null; },
+  };
   if (hlsSupport) {
     window.Hls = class {
       static Events = { ERROR: "error" };
@@ -41,10 +50,12 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
       destroy() { this.destroyed = true; }
     };
   }
+  const documentListeners = {};
   const document = {
     querySelector: () => video,
     getElementById: id => elements[id],
     createElement: () => new Element(),
+    addEventListener: (event, callback) => { documentListeners[event] = callback; },
     pictureInPictureEnabled: false,
   };
   const context = vm.createContext({
@@ -59,8 +70,96 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
     },
   });
   vm.runInContext(source, context);
-  return { video, elements, sent, requested, players };
+  return { video, elements, sent, requested, players, document, documentListeners, runTimer: () => scheduled?.() };
 }
+
+test("player settings reflect quality and close without disturbing playback", async () => {
+  const base = "https://p14.solodcdn.com/hls/test/";
+  const { video, elements, documentListeners } = setup({
+    streams: { "480": `${base}480.m3u8`, "720": `${base}720.m3u8` }, resume_position: 90,
+  });
+  await new Promise(setImmediate);
+  assert.equal(elements["settings-quality"].textContent, "720p");
+  assert.equal(elements["settings-toggle"].attributes["aria-label"], "Настройки видео, 720p");
+  elements.quality.value = "480";
+  elements.quality.dispatch("change");
+  assert.equal(elements["settings-quality"].textContent, "480p");
+  assert.equal(elements["settings-toggle"].attributes["aria-label"], "Настройки видео, 480p");
+  elements["player-settings"].open = true;
+  documentListeners.pointerdown({ target: { insideSettings: true } });
+  assert.equal(elements["player-settings"].open, true);
+  documentListeners.pointerdown({ target: video });
+  assert.equal(elements["player-settings"].open, false);
+  elements["player-settings"].open = true;
+  let prevented = false;
+  documentListeners.keydown({ key: "Escape", preventDefault: () => { prevented = true; } });
+  assert.equal(elements["player-settings"].open, false);
+  assert.equal(elements["settings-toggle"].focused, true);
+  assert.equal(prevented, true);
+  assert.equal(elements.resume.hidden, false);
+  video.dispatch("play");
+  assert.equal(elements.resume.hidden, true);
+});
+
+test("picture in picture changes the menu label only on confirmed events", async () => {
+  const { video, elements, sent } = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } });
+  await new Promise(setImmediate);
+  video.dispatch("enterpictureinpicture");
+  assert.equal(elements["pip-label"].textContent, "Вернуть видео из отдельного окна");
+  video.dispatch("leavepictureinpicture");
+  assert.equal(elements["pip-label"].textContent, "Картинка в картинке");
+  assert.deepEqual(sent.map(([message]) => message.key), ["kodik_player_enter_pip", "kodik_player_exit_pip"]);
+});
+
+test("settings return after a failed initial load is retried", async () => {
+  let available = false;
+  const { elements } = setup(() => available
+    ? { streams: { "720": "https://p14.solodcdn.com/test.m3u8" } }
+    : { errorStatus: 502 });
+  await new Promise(setImmediate);
+  assert.equal(elements["player-settings"].hidden, true);
+  available = true;
+  elements.retry.dispatch("click");
+  await new Promise(setImmediate);
+  assert.equal(elements["player-settings"].hidden, false);
+  assert.equal(elements["settings-quality"].textContent, "720p");
+});
+
+test("choosing another quality dismisses recovery actions after a playback error", async () => {
+  const base = "https://p14.solodcdn.com/hls/test/";
+  const { elements, players } = setup({ streams: { "480": `${base}480.m3u8`, "720": `${base}720.m3u8` } }, { hlsSupport: true });
+  await new Promise(setImmediate);
+  players[0].onError("error", { fatal: true });
+  assert.equal(elements.retry.hidden, false);
+  elements.quality.value = "480";
+  elements.quality.dispatch("change");
+  assert.equal(elements.retry.hidden, true);
+  assert.equal(elements.original.hidden, true);
+  assert.equal(elements.message.textContent, "");
+});
+
+test("PiP errors are temporary and do not clear a later message", async () => {
+  const { video, elements, runTimer } = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } });
+  await new Promise(setImmediate);
+  video.requestPictureInPicture = async () => { throw Error("unavailable"); };
+  elements.pip.dispatch("click");
+  await new Promise(setImmediate);
+  assert.match(elements.message.textContent, /Не удалось включить/);
+  elements.message.textContent = "Другая ошибка";
+  runTimer();
+  assert.equal(elements.message.textContent, "Другая ошибка");
+});
+
+test("a playback error restores focus from settings to retry", async () => {
+  const { elements, players } = setup({ streams: { "720": "https://p14.solodcdn.com/test.m3u8" } }, { hlsSupport: true });
+  await new Promise(setImmediate);
+  elements["player-settings"].open = true;
+  elements.quality.insideSettings = true;
+  elements.quality.focus();
+  players[0].onError("error", { fatal: true });
+  assert.equal(elements["player-settings"].open, false);
+  assert.equal(elements.retry.focused, true);
+});
 
 test("HLS playback uses the bundled player and switches quality without losing position", async () => {
   const base = "https://p14.solodcdn.com/hls/test/";
@@ -202,6 +301,7 @@ test("unsupported stream shows explicit fallback instead of loading an ad iframe
   const { video, elements, sent } = setup({ streams: { "720": "https://evil.test/video.m3u8" } });
   await new Promise(setImmediate);
   assert.equal(video.src, undefined);
+  assert.equal(elements["player-settings"].hidden, true);
   assert.equal(elements.original.hidden, false);
   assert.equal(elements.retry.hidden, false);
   elements.original.dispatch("click");

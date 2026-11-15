@@ -7,6 +7,11 @@
   const translationLabel = document.getElementById("translation-label");
   const resume = document.getElementById("resume");
   const pip = document.getElementById("pip");
+  const pipLabel = document.getElementById("pip-label");
+  const settings = document.getElementById("player-settings");
+  const settingsToggle = document.getElementById("settings-toggle");
+  const settingsClose = document.getElementById("settings-close");
+  const settingsQuality = document.getElementById("settings-quality");
   const message = document.getElementById("message");
   const retry = document.getElementById("retry");
   const original = document.getElementById("original");
@@ -23,6 +28,13 @@
   let activeTranslation = null;
   let availableTranslations = [];
   let retryOptions = { recovering: true };
+  let pipMessageTimer = null;
+
+  function updateQualityDisplay(value) {
+    const text = value ? `${value}p` : "";
+    settingsQuality.textContent = text;
+    settingsToggle.setAttribute("aria-label", text ? `Настройки видео, ${text}` : "Настройки видео");
+  }
 
   function savedTranslation() {
     try {
@@ -46,9 +58,13 @@
   }
 
   function fail(text) {
+    const restoreFocus = settings.open && settings.contains(document.activeElement);
+    settings.open = false;
+    settings.hidden = !Object.keys(streams).length;
     message.textContent = text;
     retry.hidden = false;
     original.hidden = false;
+    if (restoreFocus) retry.focus();
     if (Object.keys(streams).length) {
       quality.disabled = Object.keys(streams).length < 2;
       translation.disabled = availableTranslations.length < 2;
@@ -71,6 +87,9 @@
 
   function setSource(selected, position = 0, continuePlaying = false) {
     if (!validStream(streams[selected])) return fail("Не удалось загрузить видео.");
+    retry.hidden = true;
+    original.hidden = true;
+    message.textContent = "";
     const generation = ++mediaGeneration;
     pendingPosition = Number.isFinite(position) && position > 0 ? position : null;
     if (pendingPosition != null) lastPosition = pendingPosition;
@@ -123,8 +142,10 @@
     message.textContent = "Загружаем видео…";
     retry.hidden = true;
     original.hidden = true;
+    const selectionFocused = settings.open && [quality, translation].includes(document.activeElement);
     quality.disabled = true;
     translation.disabled = true;
+    if (selectionFocused) settingsClose.focus();
     resume.hidden = true;
     if (!id || !(window.Hls?.isSupported?.() || video.canPlayType("application/vnd.apple.mpegurl"))) {
       fail("Этот браузер не поддерживает такой видеопоток.");
@@ -157,6 +178,7 @@
         : 0;
       const continuePlaying = recovering && !video.paused && !video.ended && !translationUnavailable;
       streams = nextStreams;
+      settings.hidden = false;
       availableTranslations = translations;
       activeTranslation = translations.some(item => item.id === payload.translation_id) ? payload.translation_id : null;
       translation.replaceChildren(...translations.map(item => {
@@ -180,6 +202,7 @@
       const defaultQuality = values.includes(recoveryQuality)
         ? recoveryQuality : values.filter(value => Number(value) <= 720).at(-1) || values[0];
       quality.value = defaultQuality;
+      updateQualityDisplay(defaultQuality);
       quality.disabled = values.length < 2;
       savedPosition = Number.isInteger(payload.resume_position) && payload.resume_position >= 15
         ? payload.resume_position : null;
@@ -200,6 +223,7 @@
   }
 
   quality.addEventListener("change", () => {
+    updateQualityDisplay(quality.value);
     const position = pendingPosition ?? video.currentTime;
     const playing = !video.paused && !video.ended;
     setSource(quality.value, position, playing);
@@ -236,6 +260,7 @@
     }
   });
   video.addEventListener("play", () => {
+    resume.hidden = true;
     message.textContent = "";
     post("kodik_player_play");
   });
@@ -255,9 +280,17 @@
     retryOptions = { recovering: true, translationId: activeTranslation };
     fail("Не удалось воспроизвести видео.");
   });
-  video.addEventListener("enterpictureinpicture", () => post("kodik_player_enter_pip"));
-  video.addEventListener("leavepictureinpicture", () => post("kodik_player_exit_pip"));
+  video.addEventListener("enterpictureinpicture", () => {
+    pipLabel.textContent = "Вернуть видео из отдельного окна";
+    post("kodik_player_enter_pip");
+  });
+  video.addEventListener("leavepictureinpicture", () => {
+    pipLabel.textContent = "Картинка в картинке";
+    post("kodik_player_exit_pip");
+  });
   video.addEventListener("webkitpresentationmodechanged", () => {
+    pipLabel.textContent = video.webkitPresentationMode === "picture-in-picture"
+      ? "Вернуть видео из отдельного окна" : "Картинка в картинке";
     post(video.webkitPresentationMode === "picture-in-picture"
       ? "kodik_player_enter_pip" : "kodik_player_exit_pip");
   });
@@ -275,13 +308,39 @@
         await video.requestPictureInPicture();
       }
     } catch {
-      message.textContent = "Не удалось включить картинку в картинке.";
+      const text = "Не удалось включить картинку в картинке.";
+      message.textContent = text;
+      window.clearTimeout(pipMessageTimer);
+      pipMessageTimer = window.setTimeout(() => {
+        if (message.textContent === text) message.textContent = "";
+      }, 4000);
     }
   }
   pip.hidden = !(video.webkitSetPresentationMode || document.pictureInPictureEnabled);
-  pip.addEventListener("click", () => setPip(
-    !(video.webkitPresentationMode === "picture-in-picture" || document.pictureInPictureElement === video),
-  ));
+  pip.addEventListener("click", () => {
+    const restoreFocus = document.activeElement === pip;
+    setPip(!(video.webkitPresentationMode === "picture-in-picture" || document.pictureInPictureElement === video));
+    settings.open = false;
+    if (restoreFocus) settingsToggle.focus();
+  });
+  settings.addEventListener("toggle", () => {
+    if (settings.open && document.activeElement === settingsToggle
+        && window.matchMedia?.("(max-height: 260px)").matches) settingsClose.focus();
+  });
+  settingsClose.addEventListener("click", () => {
+    settings.open = false;
+    settingsToggle.focus();
+  });
+  document.addEventListener("pointerdown", event => {
+    if (settings.open && !settings.contains(event.target)) settings.open = false;
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && settings.open) {
+      settings.open = false;
+      settingsToggle.focus();
+      event.preventDefault();
+    }
+  });
   window.addEventListener("message", event => {
     if (event.source !== window.parent || event.origin !== location.origin) return;
     if (event.data?.key !== "kodik_player_api") return;
