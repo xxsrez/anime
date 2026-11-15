@@ -37,6 +37,7 @@ const RENDER_BATCH_SIZE = 80;
 const LINK_PARAM_KEYS = ["episode", "source", "translation", "provider"];
 const PLAYER_IFRAME_ALLOW = "autoplay; fullscreen; picture-in-picture; encrypted-media; web-share; screen-wake-lock";
 const PLAYER_IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups";
+const KODIK_PLAYER_MODE_STORAGE_KEY = "anime-kodik-player-mode";
 let playerHosts = [];
 const WATCH_ENDPOINT = "/api/watch-events";
 const CONTENT_UPDATE_ENDPOINT = "/api/content-updates";
@@ -75,6 +76,22 @@ if (!catalogSearch || !frontendRuntime) {
 
 function performanceNow() {
   return window.performance?.now ? window.performance.now() : Date.now();
+}
+
+function loadKodikPlayerMode() {
+  try {
+    return window.localStorage.getItem(KODIK_PLAYER_MODE_STORAGE_KEY) === "adfree" ? "adfree" : "original";
+  } catch {
+    return "original";
+  }
+}
+
+function saveKodikPlayerMode(mode) {
+  try {
+    window.localStorage.setItem(KODIK_PLAYER_MODE_STORAGE_KEY, mode);
+  } catch {
+    // Keep the selection for this tab when storage is unavailable.
+  }
 }
 
 function roundMetric(value) {
@@ -150,6 +167,7 @@ const state = {
   watchFallbackTimer: null,
   watchFullscreenActive: false,
   playerContext: null,
+  kodikPlayerMode: loadKodikPlayerMode(),
   animeGoScannerReady: false,
   animeGoScannerVersion: null,
   animeGoScannerUpstreamReady: false,
@@ -210,6 +228,9 @@ const el = {
   contentSource: document.getElementById("content-source"),
   translation: document.getElementById("translation"),
   provider: document.getElementById("provider"),
+  kodikPlayerMode: document.getElementById("kodik-player-mode"),
+  kodikPlayerModeControl: document.getElementById("kodik-player-mode-control"),
+  kodikPlayerModeUnavailable: document.getElementById("kodik-player-mode-unavailable"),
   pipToggle: document.getElementById("pip-toggle"),
   playerActionState: document.getElementById("player-action-state"),
   player: document.getElementById("player"),
@@ -3876,7 +3897,23 @@ function renderSources({ preservePlayer = false, playerMetadata = {} } = {}) {
   syncUrlFromDetail();
 }
 
-function setPlayer(source, episode) {
+function kodikNativeConfig(source, playerUrl) {
+  if (!playerUrl || !/^[1-9]\d{0,18}$/.test(String(source?.id || ""))) return null;
+  let url;
+  try { url = new URL(playerUrl); } catch { return null; }
+  if (url.hostname !== "kodikplayer.com" || !document.createElement("video").canPlayType("application/vnd.apple.mpegurl")) {
+    return null;
+  }
+  const serialMatch = url.pathname.match(/^\/serial\/(\d+)\/[A-Za-z0-9_-]+\/\d+p\/?$/);
+  const serialEpisode = serialMatch && ["season", "episode"].every(key => {
+    const values = url.searchParams.getAll(key);
+    return values.length === 1 && /^[1-9]\d{0,5}$/.test(values[0]);
+  });
+  if (!/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname) && !serialEpisode) return null;
+  return { serialId: serialMatch ? serialMatch[1] : null };
+}
+
+function setPlayer(source, episode, { forceKodikMode = false } = {}) {
   const playerUrl = frontendRuntime.safeHttpsUrl(source?.embed_url, playerHosts);
   let playerHost = "";
   let playerOrigin = "";
@@ -3897,30 +3934,26 @@ function setPlayer(source, episode) {
     });
     return;
   }
-  ensureWatchSession(source, episode);
-  el.wrap.classList.remove("empty");
-  const contextMatches = Boolean(
+  const nativeConfig = kodikNativeConfig(source, playerUrl);
+  const sameSourceAndEpisode = Boolean(
     state.playerContext
     && String(state.playerContext.source?.id) === String(source.id)
     && String(state.playerContext.episode?.id) === String(episode.id)
   );
+  const nativeKodik = sameSourceAndEpisode && !forceKodikMode
+    ? state.playerContext.nativeKodik
+    : Boolean(nativeConfig && state.kodikPlayerMode === "adfree");
+  if (sameSourceAndEpisode && state.playerContext.nativeKodik !== nativeKodik) clearWatchSession();
+  ensureWatchSession(source, episode);
+  el.wrap.classList.remove("empty");
+  const contextMatches = sameSourceAndEpisode && state.playerContext.nativeKodik === nativeKodik;
   if (contextMatches) {
     updatePlayerDisplay(source, episode);
     return;
   }
   const sourceId = String(source.id || "");
-  const parsedKodik = new URL(playerUrl);
-  const serialMatch = parsedKodik.pathname.match(/^\/serial\/(\d+)\/[A-Za-z0-9_-]+\/\d+p\/?$/);
-  const serialEpisode = serialMatch && ["season", "episode"].every(key => {
-    const values = parsedKodik.searchParams.getAll(key);
-    return values.length === 1 && /^[1-9]\d{0,5}$/.test(values[0]);
-  });
-  const nativeKodik = playerHost === "kodikplayer.com"
-    && (/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(parsedKodik.pathname) || serialEpisode)
-    && /^[1-9]\d{0,18}$/.test(sourceId)
-    && Boolean(document.createElement("video").canPlayType("application/vnd.apple.mpegurl"));
   const frameUrl = nativeKodik
-    ? new URL(`/player/kodik/${sourceId}${serialMatch ? `?serial=${serialMatch[1]}` : ""}`, window.location.origin).href
+    ? new URL(`/player/kodik/${sourceId}${nativeConfig.serialId ? `?serial=${nativeConfig.serialId}` : ""}`, window.location.origin).href
     : playerUrl;
   const navigatesPlayer = el.player.getAttribute("src") !== frameUrl;
   state.playerContext = {
@@ -3929,6 +3962,8 @@ function setPlayer(source, episode) {
     playerOrigin: nativeKodik ? window.location.origin : playerOrigin,
     messageProvider: playerMessageProvider(source),
     nativeKodik,
+    isKodik: playerHost === "kodikplayer.com",
+    kodikNativeAvailable: Boolean(nativeConfig),
     loaded: navigatesPlayer ? false : (state.playerContext?.loaded ?? true),
   };
   if (navigatesPlayer) {
@@ -3940,6 +3975,10 @@ function setPlayer(source, episode) {
 }
 
 function updatePlayerDisplay(source, episode) {
+  el.kodikPlayerModeControl.hidden = !state.playerContext?.isKodik;
+  el.kodikPlayerModeUnavailable.hidden = Boolean(state.playerContext?.kodikNativeAvailable);
+  el.kodikPlayerMode.querySelector('option[value="adfree"]').disabled = !state.playerContext?.kodikNativeAvailable;
+  el.kodikPlayerMode.value = state.playerContext?.nativeKodik ? "adfree" : "original";
   el.pipToggle.disabled = false;
   el.host.textContent = source.embed_host || "-";
   el.episodeState.textContent = episode.title && episode.title !== "---" ? episode.title : `${episode.number} серия`;
@@ -3959,7 +3998,26 @@ function adoptPlayerSource(source, episode, { videoSourceId = source?.id, metada
   state.playerContext.source = source;
   state.playerContext.episode = episode;
   state.playerContext.messageProvider = playerMessageProvider(source);
+  const sourceUrl = frontendRuntime.safeHttpsUrl(source?.embed_url, playerHosts);
+  state.playerContext.isKodik = Boolean(sourceUrl && new URL(sourceUrl).hostname === "kodikplayer.com");
+  state.playerContext.kodikNativeAvailable = Boolean(kodikNativeConfig(
+    source, sourceUrl,
+  ));
   updatePlayerDisplay(source, episode);
+}
+
+function setKodikPlayerMode(mode) {
+  const context = state.playerContext;
+  if (!context?.kodikNativeAvailable || !["adfree", "original"].includes(mode)) return;
+  if ((context.nativeKodik ? "adfree" : "original") === mode) {
+    el.kodikPlayerMode.value = mode;
+    return;
+  }
+  const { source, episode } = context;
+  state.kodikPlayerMode = mode;
+  saveKodikPlayerMode(mode);
+  setPlayer(source, episode, { forceKodikMode: true });
+  setPlayerActionState("Плеер переключён. Возможно, потребуется выбрать место в серии заново.");
 }
 
 function clearPlayer(message) {
@@ -3967,6 +4025,7 @@ function clearPlayer(message) {
   el.pipToggle.disabled = true;
   clearWatchSession();
   state.playerContext = null;
+  el.kodikPlayerModeControl.hidden = true;
   if (el.player.hasAttribute("src")) replacePlayerFrame(null);
   el.wrap.classList.add("empty");
   el.empty.textContent = message;
@@ -4313,7 +4372,8 @@ function discardWatchSession() {
   stopWatchFallbackTimer();
 }
 
-function handlePlayerLoaded() {
+function handlePlayerLoaded(event) {
+  if (event.currentTarget !== el.player) return;
   if (state.playerContext) state.playerContext.loaded = true;
   sendWatchEvent("player_loaded").catch(() => {});
 }
@@ -4486,19 +4546,7 @@ function applyPlayerEpisodeChange(message) {
 function handlePlayerMessage(event) {
   if (!playerMessageMatchesContext(event)) return;
   if (state.playerContext?.nativeKodik && event.data?.key === "anime_catalog_kodik_original") {
-    const original = frontendRuntime.safeHttpsUrl(state.playerContext.source?.embed_url, playerHosts);
-    if (!original) return;
-    flushWatchSession("session_end", { beacon: true });
-    cancelPictureInPictureRequest();
-    if (state.watchSession) {
-      state.watchSession.providerPositionSeconds = null;
-      state.watchSession.providerPositionObservedAt = null;
-      state.watchSession.pictureInPictureActive = false;
-    }
-    state.playerContext.nativeKodik = false;
-    state.playerContext.playerOrigin = new URL(original).origin;
-    state.playerContext.loaded = false;
-    replacePlayerFrame(original);
+    setKodikPlayerMode("original");
     return;
   }
   if (state.playerContext?.nativeKodik && event.data?.key === "anime_catalog_kodik_seeking") {
@@ -5518,6 +5566,9 @@ el.provider.addEventListener("change", event => {
   syncUrlFromDetail({ replace: false });
   markWatchEngaged("source_changed");
   saveTitleNavigation().catch(reportActionError("save provider"));
+});
+el.kodikPlayerMode.addEventListener("change", event => {
+  setKodikPlayerMode(event.target.value);
 });
 el.pipToggle.addEventListener("click", () => {
   openPictureInPicture().catch(reportActionError("picture in picture button"));

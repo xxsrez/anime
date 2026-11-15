@@ -3679,7 +3679,6 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertIn('markWatchEngaged("pip_open")', js)
         self.assertIn("playbackWasActive", js)
         self.assertIn("preservePlayer: true", js)
-        self.assertIn("const contextMatches = Boolean(", js)
         self.assertIn("if (contextMatches) {", js)
         self.assertIn('"catalog_hls_player"', js)
         self.assertIn(": `${provider}_player_api`", js)

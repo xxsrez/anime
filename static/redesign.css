@@ -154,6 +154,7 @@ body[data-screen="list"]:has(#view-updates.active) #recommendation-meta { displa
 .iframe-wrap iframe { width: 100%; height: 100%; }
 .source-panel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 14px 10px; width: 100%; max-width: 960px; margin-inline: auto; padding: 0; border: 0; background: transparent; position: relative; }
 .source-panel > label { min-width: 0; gap: 4px; }
+.source-panel > .kodik-player-mode-control { grid-column: 1 / -1; }
 .source-panel select { width: 100%; height: 42px; font-size: 13px; background: var(--panel); padding: 7px 10px; }
 .source-panel label > span { font-size: 11px; line-height: 18px; color: var(--muted); padding: 0 !important; }
 .source-panel-toolbar { position: absolute; top: 0; right: 0; z-index: 5; padding: 0; }

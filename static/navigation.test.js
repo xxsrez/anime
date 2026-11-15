@@ -184,7 +184,7 @@ test("source navigation replaces the iframe and rebinds tracking without navigat
 
 test("supported Kodik episodes and explicitly numbered serials use the local native player", () => {
   const replaced = [];
-  const state = { playerContext: null };
+  const state = { playerContext: null, kodikPlayerMode: "adfree" };
   let hlsSupport = "maybe";
   const context = vm.createContext({
     URL, state,
@@ -198,7 +198,7 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
     replacePlayerFrame: (url, options) => replaced.push([url, options.nativeKodik]),
     playerMessageProvider: () => "kodik",
   });
-  vm.runInContext(block("function setPlayer(", "function updatePlayerDisplay("), context);
+  vm.runInContext(block("function kodikNativeConfig(", "function updatePlayerDisplay("), context);
   const episode = { id: 5 };
   context.setPlayer({ id: 12, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/12", true]);
@@ -206,6 +206,9 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   state.playerContext = null;
   context.setPlayer({ id: 13, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/serial/1/hash/720p", false]);
+  assert.equal(state.playerContext.isKodik, true);
+  assert.equal(state.playerContext.kodikNativeAvailable, false);
+  assert.equal(state.kodikPlayerMode, "adfree", "unsupported source does not change the saved preference");
   state.playerContext = null;
   context.setPlayer({ id: 16, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/55/hash/720p?season=1&episode=12" }, episode);
   assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/16?serial=55", true]);
@@ -220,4 +223,84 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   state.playerContext = null;
   context.setPlayer({ id: 15, embed_host: "aniboom.one", embed_url: "https://aniboom.one/seria/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://aniboom.one/seria/1/hash/720p", false]);
+});
+
+test("Kodik player mode changes the frame and starts a fresh watch session", () => {
+  const frames = [];
+  const savedModes = [];
+  const endedSessions = [];
+  let nextSession = 0;
+  const state = { playerContext: null, watchSession: null, kodikPlayerMode: "adfree" };
+  const el = {
+    wrap: { classList: { remove() {} } },
+    player: { getAttribute: () => null },
+    kodikPlayerMode: { value: "" },
+  };
+  const context = vm.createContext({
+    URL, state, el, frontendRuntime: runtime, playerHosts: ["kodikplayer.com"],
+    window: { location: { origin: "https://catalog.test" } },
+    document: { createElement: () => ({ canPlayType: () => "maybe" }) },
+    ensureWatchSession() { if (!state.watchSession) state.watchSession = { id: ++nextSession }; },
+    clearWatchSession() { endedSessions.push(state.watchSession?.id); state.watchSession = null; },
+    saveKodikPlayerMode: mode => savedModes.push(mode),
+    updatePlayerDisplay() {}, cancelPictureInPictureRequest() {}, setPlayerActionState() {},
+    clearPlayer() { assert.fail("valid player should not be cleared"); }, reportClientError() {},
+    replacePlayerFrame(url, options) { frames.push([url, options.nativeKodik]); },
+    playerMessageProvider: () => "kodik",
+  });
+  vm.runInContext([
+    block("function kodikNativeConfig(", "function updatePlayerDisplay("),
+    block("function adoptPlayerSource(", "function setKodikPlayerMode("),
+    block("function setKodikPlayerMode(", "function clearPlayer("),
+  ].join("\n"), context);
+  const source = { id: 12, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/1/hash/720p" };
+  const episode = { id: 5 };
+  context.setPlayer(source, episode);
+  assert.deepEqual(frames.at(-1), ["https://catalog.test/player/kodik/12", true]);
+  assert.equal(state.watchSession.id, 1);
+  context.setKodikPlayerMode("original");
+  assert.deepEqual(frames.at(-1), [source.embed_url, false]);
+  assert.equal(state.watchSession.id, 2);
+  assert.deepEqual(endedSessions, [1]);
+  assert.deepEqual(savedModes, ["original"]);
+  const count = frames.length;
+  context.setKodikPlayerMode("original");
+  assert.equal(frames.length, count, "choosing the active mode does not reload");
+  context.setKodikPlayerMode("adfree");
+  assert.deepEqual(frames.at(-1), ["https://catalog.test/player/kodik/12", true]);
+  assert.equal(state.watchSession.id, 3);
+  assert.deepEqual(endedSessions, [1, 2]);
+  assert.deepEqual(savedModes, ["original", "adfree"]);
+  context.setKodikPlayerMode("not-a-mode");
+  assert.equal(state.watchSession.id, 3);
+
+  const unsupported = { id: 13, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/1/hash/720p" };
+  const nextSource = { id: 14, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/seria/2/hash/720p" };
+  const nextEpisode = { id: 6 };
+  context.setPlayer(unsupported, episode);
+  context.adoptPlayerSource(nextSource, nextEpisode);
+  const beforeRefresh = frames.length;
+  const sessionBeforeRefresh = state.watchSession.id;
+  context.setPlayer(nextSource, nextEpisode);
+  assert.equal(frames.length, beforeRefresh, "refreshing an adopted episode does not change its playing mode");
+  assert.equal(state.watchSession.id, sessionBeforeRefresh);
+  assert.equal(state.playerContext.nativeKodik, false);
+  context.setKodikPlayerMode("adfree");
+  assert.deepEqual(frames.at(-1), ["https://catalog.test/player/kodik/14", true]);
+  assert.notEqual(state.watchSession.id, sessionBeforeRefresh);
+});
+
+test("Kodik mode preference survives reload and tolerates blocked storage", () => {
+  const values = new Map();
+  const context = vm.createContext({
+    KODIK_PLAYER_MODE_STORAGE_KEY: "anime-kodik-player-mode",
+    window: { localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) } },
+  });
+  vm.runInContext(block("function loadKodikPlayerMode(", "function roundMetric("), context);
+  assert.equal(context.loadKodikPlayerMode(), "original");
+  context.saveKodikPlayerMode("adfree");
+  assert.equal(context.loadKodikPlayerMode(), "adfree");
+  context.window.localStorage = { getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } };
+  assert.equal(context.loadKodikPlayerMode(), "original");
+  assert.doesNotThrow(() => context.saveKodikPlayerMode("original"));
 });

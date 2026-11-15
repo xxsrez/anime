@@ -204,6 +204,14 @@
               <span>Плеер</span>
               <select id="provider"></select>
             </label>
+            <label id="kodik-player-mode-control" class="kodik-player-mode-control" hidden>
+              <span>Режим Kodik</span>
+              <select id="kodik-player-mode" aria-label="Режим Kodik">
+                <option value="adfree">Без рекламы</option>
+                <option value="original">Обычный плеер</option>
+              </select>
+              <span id="kodik-player-mode-unavailable" hidden>Для этого источника режим без рекламы недоступен.</span>
+            </label>
             <div id="player-action-state" class="player-action-state" aria-live="polite"></div>
             <div class="source-meta">
               <div>
