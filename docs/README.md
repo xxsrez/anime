@@ -33,8 +33,8 @@ and player prototype. It follows the `project-docs` layout:
    conventions.
 12. [tasks/project-hardening/README.md](tasks/project-hardening/README.md) - 2026-07-09 repository-wide
     correctness, concurrency, recovery, security, and performance hardening.
-13. [design/scan-requirements.md](design/scan-requirements.md) - draft user
-    requirements for quick, extended and full scans, pending approval.
+13. [design/scan-requirements.md](design/scan-requirements.md) - approved user
+    requirements for quick, extended and full scans.
 
 ## Directory Map
 
@@ -45,7 +45,7 @@ and player prototype. It follows the `project-docs` layout:
 | [project-structure.md](project-structure.md) | Where files live and which paths are generated. |
 | [instructions/](instructions/README.md) | Rules for working on this repo. |
 | [guides/](guides/README.md) | Current how-tos for components and deployment. |
-| [design/](design/README.md) | Original/historical specifications and drafts. |
+| [design/](design/README.md) | Specifications and design documents. |
 | [tasks/](tasks/README.md) | Future complex investigations with changelogs. |
 | [reports/](reports/README.md) | Future final analysis documents. |
 
