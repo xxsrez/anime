@@ -614,7 +614,9 @@ async function collectTitle(task, runGeneration) {
     const embed = kinogooPlayer(await read(task.url), task.url);
     const episodes = kinogooEpisodes(await read(embed), embed, task.season);
     const known = new Set(task.known_episode_ids || []);
-    return episodes.filter(snapshot => !known.has(snapshot.episode.id));
+    const selected = episodes.filter(snapshot => !known.has(snapshot.episode.id));
+    selected.coverageComplete = episodes.coverageComplete === true && selected.length === episodes.length;
+    return selected;
   }
   const animeId = task.anime_id;
   const initialResponse = await upstreamJson(`/player/${animeId}`, runGeneration);
@@ -626,6 +628,8 @@ async function collectTitle(task, runGeneration) {
   }
   const additions = unknownEpisodes(episodes, task.known_episode_ids);
   const collected = [];
+  let coverageComplete = episodes.length > 0 && additions.length === episodes.length
+    && !initial.invalidEpisodeCount && !initial.invalidProviderCount;
 
   for (const episode of additions) {
     let providers;
@@ -640,9 +644,11 @@ async function collectTitle(task, runGeneration) {
       const videoContent = responseContent(videoResponse, `Серия #${episode.id}`);
       const video = parsePlayerContent(videoContent);
       providers = video.providers;
+      if (video.invalidEpisodeCount || video.invalidProviderCount) coverageComplete = false;
       unavailableReason = parseUnavailableReason(videoResponse?.data?.content_online || "");
     }
     if (providers.length === 0) {
+      coverageComplete = false;
       log(
         `Серия ${episode.number || episode.id} найдена, но playable-плеер пока недоступен${
           unavailableReason ? `: ${unavailableReason}` : "."
@@ -652,6 +658,7 @@ async function collectTitle(task, runGeneration) {
     }
     collected.push({ episode, providers, unavailable_reason: null });
   }
+  collected.coverageComplete = coverageComplete;
   return collected;
 }
 
@@ -742,7 +749,11 @@ async function processTask(task, index, runGeneration) {
     } else {
       const episodes = await collectTitle(task, runGeneration);
       if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
-      body = { anime_id: task.anime_id, episodes, selection_reason: task.selection_reason || null };
+      body = { anime_id: task.anime_id, episodes, full_content_checked: episodes.coverageComplete === true,
+        selection_reason: task.selection_reason || null };
+      if (episodes.coverageComplete === false && !(task.known_episode_ids || []).length) {
+        body.metadata_error = "Не удалось полностью проверить серии или плееры источника.";
+      }
     }
     if (body.server_source || task.source === "kinogoo") {
       // Kinogoo metadata is imported explicitly; AnimeGO HTML parsing does not apply.
@@ -776,15 +787,15 @@ async function processTask(task, index, runGeneration) {
     render();
     return;
   }
-  const episodes = body.episodes;
-  if (episodes.length > 0) {
-    log(`Добавлено новых серий: ${episodes.length}.`, "success");
-  } else {
-    log("Новых playable-серий нет.");
-  }
+  const addedEpisodes = Number(response?.result?.new_episode_count ?? response?.new_episode_count) || 0;
+  const addedProviders = Number(response?.result?.new_provider_count ?? response?.new_provider_count) || 0;
+  const message = addedEpisodes || addedProviders
+    ? `Добавлено серий: ${addedEpisodes}, плееров: ${addedProviders}.`
+    : "Проверка завершена; новых серий и плееров нет.";
+  log(message, addedEpisodes || addedProviders ? "success" : undefined);
   render();
   notifyApp("animego-scan-progress", {
-    message: episodes.length > 0 ? `Добавлено серий: ${episodes.length}` : "Без изменений",
+    message,
   });
 }
 

@@ -134,6 +134,7 @@ test("parses episodes and deduplicates providers by backend identity", () => {
     },
   ]);
   assert.equal(parsed.providers.length, 1);
+  assert.equal(parsed.invalidProviderCount, 1);
   assert.deepEqual(parsed.providers[0], {
     provider_id: "aniboom",
     provider_title: "AniBoom",

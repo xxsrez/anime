@@ -65,6 +65,7 @@ test("Kinogoo uses playable playlist entries of one season, retaining geo restri
     { season: 2, episodes: [{ id: 9, episode: "1", hls: "x" }] },
   ]), embed, 1);
   assert.equal(result.length, 1);
+  assert.equal(result.coverageComplete, false);
   assert.equal(result[0].episode.id, 1500000007);
   const url = new URL(result[0].providers[0].embed_url);
   assert.equal(url.searchParams.get("episode"), "1");

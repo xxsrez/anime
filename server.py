@@ -8870,12 +8870,11 @@ class AnimeHandler(BaseHTTPRequestHandler):
                 if mode not in animego_scans.SCAN_MODES:
                     raise ValueError("mode must be 'partial', 'extended' or 'full'")
                 if not animego_scans.supports_catalog_sources(payload.get("scanner_version")):
-                    self.send_json({"error": "Обновите расширение сканера до версии 0.5.16 или новее."}, 426)
+                    self.send_json({"error": "Обновите расширение сканера до версии 0.5.17 или новее."}, 426)
                     return
                 now = animego_scans.now_utc()
                 if mode != "partial":
                     animego_scans.check_active_job(self.server.db_path, now)
-                snapshots = title_activity.fetch_source_snapshots(now) if mode == "extended" else None
                 result = animego_scans.create_scan_job(
                     self.server.db_path,
                     user,
@@ -8884,7 +8883,6 @@ class AnimeHandler(BaseHTTPRequestHandler):
                     variant_map=animego_scan_variant_map(self.server.db_path, user["id"]),
                     origin=self.request_origin(),
                     now=now,
-                    source_snapshots=snapshots,
                 )
             except ClientErrorPayloadTooLarge:
                 self.send_json({"error": "payload too large"}, 413)

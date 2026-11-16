@@ -67,13 +67,15 @@ export function kinogooEpisodes(html, embed, season) {
   }
   if (end < 0) throw new Error("Повреждённый список серий Kinogoo");
   const result = [], seen = new Set();
+  let coverageComplete = true;
   for (const entry of JSON.parse(html.slice(start, end))) {
-    if (entry.season !== season || entry.blocked) continue;
+    if (entry.season !== season) continue;
+    if (entry.blocked) { coverageComplete = false; continue; }
     for (const ep of entry.episodes || []) {
-      if (ep.blocked || !(ep.hls || ep.dash)) continue;
+      if (ep.blocked || !(ep.hls || ep.dash)) { coverageComplete = false; continue; }
       const number = String(ep.episode);
       // Unnumbered extras are not part of the season's main episode list.
-      if (number === "0") continue;
+      if (number === "0") { coverageComplete = false; continue; }
       if (!Number.isInteger(ep.id) || ep.id <= 0 || ep.id >= 500000000 || !/^[1-9]\d*$/.test(number)) throw new Error("Некорректная серия Kinogoo");
       const id = 1500000000 + ep.id;
       if (seen.has(id)) throw new Error("Повтор серии Kinogoo");
@@ -90,5 +92,6 @@ export function kinogooEpisodes(html, embed, season) {
     }
   }
   if (!result.length) throw new Error("Нет доступных серий выбранного сезона Kinogoo");
+  Object.defineProperty(result, "coverageComplete", { value: coverageComplete });
   return result;
 }

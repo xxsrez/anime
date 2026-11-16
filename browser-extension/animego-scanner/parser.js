@@ -102,9 +102,14 @@ export function parsePlayerDocument(documentNode) {
 
   const episodes = [];
   const seenEpisodeIds = new Set();
+  let invalidEpisodeCount = 0;
   for (const node of documentNode.querySelectorAll(".player-video-bar__item[data-episode]")) {
     const id = positiveInteger(attribute(node, "data-episode"));
-    if (!id || seenEpisodeIds.has(id)) {
+    if (!id) {
+      invalidEpisodeCount += 1;
+      continue;
+    }
+    if (seenEpisodeIds.has(id)) {
       continue;
     }
     seenEpisodeIds.add(id);
@@ -120,9 +125,11 @@ export function parsePlayerDocument(documentNode) {
 
   const providers = [];
   const seenProviders = new Set();
+  let invalidProviderCount = 0;
   for (const node of documentNode.querySelectorAll("[data-player][data-provider][data-ptranslation]")) {
     const provider = parseProviderNode(node);
     if (!provider) {
+      invalidProviderCount += 1;
       continue;
     }
     const identity = `${provider.provider_id}\u0000${provider.translation_id}`;
@@ -131,7 +138,7 @@ export function parsePlayerDocument(documentNode) {
       providers.push(provider);
     }
   }
-  return { selectedEpisodeId, episodes, providers };
+  return { selectedEpisodeId, episodes, providers, invalidEpisodeCount, invalidProviderCount };
 }
 
 export function parsePlayerContent(content, Parser = globalThis.DOMParser) {

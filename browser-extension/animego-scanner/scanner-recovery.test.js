@@ -844,6 +844,41 @@ test("existing titles send metadata even without new episodes", async () => {
   assert.deepEqual(body.episodes, []);
 });
 
+test("complete observation is sent and known episodes are not reported as additions", async () => {
+  let body;
+  const h = await scannerHarness({ fetch: async (url, options) => {
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return { ok: true, text: async () => JSON.stringify({ job: { checked_items: 1, new_episode_count: 0, new_provider_count: 0 },
+      result: { status: "completed", new_episode_count: 0, new_provider_count: 0 } }) };
+  } });
+  const episodes = [{ episode: { id: 10001 }, providers: [{ provider_id: "fixture" }] }];
+  episodes.coverageComplete = true;
+  h.driver.collect(async () => episodes);
+  h.driver.upstream(async () => "<h1>Fixture</h1>");
+  await h.driver.run();
+  assert.equal(body.full_content_checked, true);
+  assert.ok(h.elements.get("log").children.some(item => item.children.some(child =>
+    /новых серий и плееров нет/.test(child.textContent))));
+});
+
+test("incomplete source coverage is reported while available episodes are retained", async () => {
+  let body;
+  const h = await scannerHarness({ fetch: async (url, options) => {
+    if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+    return { ok: true, text: async () => JSON.stringify({ job: { checked_items: 1, error_count: 1 },
+      result: { status: "failed", error: "неполная проверка" } }) };
+  } });
+  const episodes = [{ episode: { id: 10001 }, providers: [{ provider_id: "fixture" }] }];
+  episodes.coverageComplete = false;
+  h.driver.collect(async () => episodes);
+  h.driver.upstream(async () => "<h1>Fixture</h1>");
+  await h.driver.run();
+  assert.equal(body.full_content_checked, false);
+  assert.match(body.metadata_error, /полностью проверить/);
+  assert.equal(body.episodes.length, 1);
+  assert.equal(h.driver.state.error_count, 1);
+});
+
 test("metadata failure does not discard episodes for an existing title", async () => {
   let body;
   const h = await scannerHarness({ fetch: async (url, options) => {

@@ -807,9 +807,9 @@ async function startAnimeGoScan(mode = "partial", { fullConfirmed = false } = {}
   const normalizedMode = ["partial", "extended", "full"].includes(mode) ? mode : "partial";
   const scannerVersion = String(state.animeGoScannerVersion || "").split(".").map(Number);
   if (!(scannerVersion[0] > 0 || scannerVersion[1] > 5
-    || (scannerVersion[1] === 5 && scannerVersion[2] >= 16))) {
+    || (scannerVersion[1] === 5 && scannerVersion[2] >= 17))) {
     showAnimeGoScannerSetup();
-    showAppStatus("Обновите сканер до версии 0.5.16 или новее", "warn");
+    showAppStatus("Обновите сканер до версии 0.5.17 или новее", "warn");
     return;
   }
   if (normalizedMode === "full" && !fullConfirmed) {

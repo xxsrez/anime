@@ -14,28 +14,23 @@ replaces, the trusted AnimeGo push worker.
 | Mode | UI | Server selection |
 | --- | --- | --- |
 | Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected title and all favorite or Watching titles, including completed titles and linked source variants, plus up to eight other ongoing AnimeGO/Kinogoo titles. |
-| Extended | Choose `Extended Scan` from the arrow menu. | Stored AnimeGO/Kinogoo titles with a known change in the last three calendar months, followed by AnimeGO discovery. Unknown change dates are treated as old. |
+| Extended | Choose `Extended Scan` from the arrow menu. | All source variants of titles not classified as completed, followed by AnimeGO discovery. Unknown classification is included. |
 | Full | Choose `Full Scan` from the arrow menu and confirm. | All stored source records, regardless of age or missing dates, followed by AnimeGO and modern YummyAnime discovery. Unsupported or inaccessible sources are reported as failed checks. |
 
-Before selecting an Extended scan, the server refreshes source page dates from the
-AnimeGO and modern YummyAni sitemaps. It also records dated YummyAni videos
-when the feed or title API is synchronized. The window uses the newest source
-date or recorded title, episode, translation, or playable provider addition,
-including changes on another source of the same canonical card. A successful
-check without a change does not reset the window. A title with no known change
-date is excluded; a change exactly three calendar months old is outside the window. If either
-sitemap cannot be fetched or validated, Extended scan creation returns an error;
-Partial and Full do not depend on this refresh.
+A title is classified as completed when its recognized release status says so
+without a conflicting ongoing source, or when each source variant has two
+complete matching observations at least one calendar month apart. New or changed
+content starts a new observation period. Errors and incomplete checks cannot
+confirm inactivity. Unknown statuses or insufficient observations remain
+eligible for Extended. Observations compare episode and provider identities;
+they cannot prove an upstream source has not changed between checks, or expose
+content the upstream parser did not supply. Source URLs changing resets evidence.
+Background content additions after the last observation make the title eligible
+again. Extended no longer requires fetching both sitemaps before starting.
 
-These are source page dates and catalog-observed changes, not a complete
-upstream history. Legacy YummyAnime URLs may not match the modern sitemap, and
-Kinogoo has no usable current sitemap date; they rely on recorded changes or
-dates from linked source variants. A source change which is absent from all
-available dates can therefore be missed.
-
-New Full jobs expire after 24 hours of inactivity; committed progress renews the
-deadline. Extended jobs expire after 24 hours and Partial jobs after two hours.
-Extension 0.5.16 or newer is required to start a new scan. A 404 is a failed check, not evidence that no
+New jobs expire after 24 hours of inactivity; committed progress renews the
+deadline. Older in-progress jobs retain their previous deadlines.
+Extension 0.5.17 or newer is required to start a new scan. A 404 is a failed check, not evidence that no
 new episodes exist; missing source cards are not deleted from the catalog.
 
 Extension 0.5.4 submits the upstream HTTP status. For an AnimeGO 404 the server
@@ -107,9 +102,10 @@ check. Full Scan ignores these cooldowns.
 Personal selection is the union of favorites and Watching, not every title
 with past activity. The current title is included once, even when personal.
 Personal cards include their linked source variants, including YummyAnime.
-The random extra selection remains limited to AnimeGO and Kinogoo.
+The random selection draws incomplete or unknown canonical titles and checks
+all their linked source variants.
 
-For each other ongoing title that is due, the weight is
+For each other eligible title that is due, the source weight is
 `(1 + age_days) * (1 + max(0, 1 - change_age_days / 14))`.
 `age_days` is time since the last successful user scan, capped at 90 days;
 never-successfully-checked titles start with 30 days. Failed attempts do not
@@ -118,12 +114,12 @@ content-update event (episodes/providers/translations, excluding new-card
 events), including changes discovered by background sync. Editing card
 metadata does not boost the weight. The change bonus is bounded at 2x.
 
-Exponential-race sampling draws up to eight unique titles using these weights.
-Recently checked titles are excluded until their cooldown expires; completed
+Exponential-race sampling draws up to eight unique canonical titles using the
+largest eligible source weight in each group. Recently checked groups are excluded
+until at least one source is due; completed
 titles never enter the extra pool, even when their player coverage is incomplete.
 State is shared across users and keyed by the source-specific anime ID. Existing
-scan state and successful job items supply the history; no separate queue or
-schema migration is needed. Selection is probabilistic: it does not promise
+scan state and successful job items supply the weighting history. Selection is probabilistic: it does not promise
 strictly disjoint consecutive sets after cooldown expiry or a bounded coverage
 deadline. Large personal libraries take longer; the existing job expiry and
 extension transport limits still apply.
@@ -203,8 +199,9 @@ errors are posted to the job and the scan continues.
 The server, not the extension, is the SQLite writer.
 
 - Existing episode metadata is never overwritten.
-- An already-playable provider/translation identity is a no-op. If that exact
-  provider row exists with a null `embed_url`, the server fills only its missing
+- For an already-playable provider/translation identity, Partial preserves the
+  existing row; Extended and Full refresh its provider and player fields. If the
+  exact provider row exists with a null `embed_url`, the server fills its missing
   player fields and preserves its existing titles/metadata.
 - A result may add a previously unknown episode with playable providers, or a
   previously unknown provider to an existing episode.
@@ -221,7 +218,7 @@ The server, not the extension, is the SQLite writer.
 
 | Endpoint | Authentication | Purpose |
 | --- | --- | --- |
-| `POST /api/animego-scans` | Anime Catalog session cookie | Create a `partial`, `extended`, or `full` job with `scanner_version` 0.5.16 or later. Returns `409` when another job is active, `426` for an outdated extension, or `503` when Extended source dates cannot be refreshed. |
+| `POST /api/animego-scans` | Anime Catalog session cookie | Create a `partial`, `extended`, or `full` job with `scanner_version` 0.5.17 or later. Returns `409` when another job is active or `426` for an outdated extension. |
 | `GET /api/animego-scans/<job_id>` | `Authorization: Bearer <job token>` | Read the job counters/status for extension recovery. |
 | `POST /api/animego-scans/<job_id>/discover` | `Authorization: Bearer <job token>` | Extended and Full: submit sequential AnimeGO listing pages. Replaying a page is idempotent. |
 | `POST /api/animego-scans/<job_id>/discover-yummy` | `Authorization: Bearer <job token>` | Full: fetch a sequential modern YummyAnime listing page and queue new candidates. |
@@ -231,9 +228,8 @@ The server, not the extension, is the SQLite writer.
 | `GET /api/animego-scanner-extension` | Anime Catalog session cookie | Download the current extension ZIP. |
 
 Each task includes `anime_id`, `title`, `known_episode_ids`, and
-`selection_reason`. `known_episode_ids` contains only already-playable episodes,
-so an existing placeholder without a playable source is intentionally checked
-again. An episode result contains the upstream episode fields and one or more
+`selection_reason`. For new jobs `known_episode_ids` is empty so that new
+providers on already-known episodes are checked as well. An episode result contains the upstream episode fields and one or more
 playable providers. Provider fields are `provider_id`,
 `provider_title`, `translation_id`, `translation_title`, `embed_host`,
 `embed_url`, and `embed_url_redacted`.
@@ -364,12 +360,12 @@ trusted worker, so the operation lock remains the final write boundary.
 | Safari extension disappeared | Temporary Safari extensions are removed after 24 hours or when Safari quits. Re-add the ZIP/folder from **Settings → Developer**. |
 | HTTP `401` creating a job or downloading the ZIP | Sign in to Anime Catalog again. |
 | HTTP `401` on job status/result | The extension has no valid token for that job; start a fresh scan after the old job finishes/expires. |
-| HTTP `409` on create | If it is your job, the app reopens the saved scanner. If it belongs to another user, wait for its owner to finish/stop it or for the two-hour expiry. |
+| HTTP `409` on create | If it is your job, the app reopens the saved scanner. If it belongs to another user, wait for its owner to finish/stop it or for the job to expire. |
 | HTTP `410` | The job expired. Start a new scan. |
 | HTTP `423` | Another database operation holds the shared lock. Retry the same pending title result. |
 | Scanner halts on `403`, `429`, or CAPTCHA | Stop making requests, wait for AnimeGo access to recover, then resume/reload before the job expires. Do not increase request concurrency. |
-| Extended Scan has fewer titles than the catalog | Titles with no known change in the last three calendar months, including those with unknown change dates, are excluded. |
-| HTTP `426` | Download and reload extension 0.5.16 or newer, then reload the catalog page. |
+| Extended Scan has fewer titles than the catalog | Titles classified as completed by release status or a month of matching observations are excluded. |
+| HTTP `426` | Download and reload extension 0.5.17 or newer, then reload the catalog page. |
 | The app says there is nothing to check | The server created and immediately completed a zero-task job, so it did not open the extension or hold the global slot. |
 | A scan finishes with no additions | This is valid: assigned titles were checked but all playable episodes/providers were already known. |
 

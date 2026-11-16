@@ -74,7 +74,7 @@ function scannerHarness({
   };
   const state = {
     animeGoScannerReady: ready,
-    animeGoScannerVersion: "0.5.16",
+    animeGoScannerVersion: "0.5.17",
     animeGoScannerUpstreamReady: upstreamReady,
     animeGoScanPhase: "idle",
     animeGoScanJobId: null,
@@ -207,7 +207,7 @@ async function testPartialScanDispatch() {
   assert.equal(harness.requests.length, 1);
   assert.deepEqual(JSON.parse(harness.requests[0].options.body), {
     mode: "partial",
-    scanner_version: "0.5.16",
+    scanner_version: "0.5.17",
     current_anime_id: 42,
   });
   const start = harness.events.find(event => event.type === "animego-scan-start");
