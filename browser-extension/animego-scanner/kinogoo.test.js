@@ -1,6 +1,36 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchKinogooHtml, kinogooEpisodes } from "./kinogoo.js";
+import { fetchKinogooHtml, kinogooEpisodes, kinogooPlayer } from "./kinogoo.js";
+
+test("extracts the supported iframe without constructing a DOM", () => {
+  const page = "https://kinogoo.fm/4037-polden.html";
+  const markup = `
+    <!-- <iframe src="https://api.nextembed.ws/embed/kp/1"></iframe> -->
+    <script>const decoy = '<iframe src="https://api.nextembed.ws/embed/kp/2">';</script>
+    <template><iframe src="https://api.nextembed.ws/embed/kp/3"></iframe></template>
+    <iframe src="http://[bad" onload="throw new Error('must not run')"></iframe>
+    <IMG SRC="https://bad.example/image" onerror="throw new Error('must not run')">
+    <IFRAME title="a > b" onload="throw new Error('must not run')"
+      SRC="//api.nextembed.ws/embed/kp/8545317?geoBlock=RU%2CEE&amp;host=kinogoo.fm"></IFRAME>`;
+  assert.equal(kinogooPlayer(markup, page),
+    "https://api.nextembed.ws/embed/kp/8545317?geoBlock=RU%2CEE&host=kinogoo.fm");
+});
+
+test("extracts quoted and unquoted source attributes without accepting credentials or decoys", () => {
+  const page = "https://kinogoo.fm/4037-polden.html";
+  assert.equal(kinogooPlayer('<iframe src=//api.nextembed.ws/embed/kp/42?x=1&#38;y=2></iframe>', page),
+    "https://api.nextembed.ws/embed/kp/42?x=1&y=2");
+  for (const markup of [
+    '<iframe src="https://user@api.nextembed.ws/embed/kp/42"></iframe>',
+    '<iframe src="https://api.nextembed.ws.evil.test/embed/kp/42"></iframe>',
+    '<iframe src="https://api.nextembed.ws/embed/kp/42/extra"></iframe>',
+    '<iframe src="https://bad.test" src="https://api.nextembed.ws/embed/kp/42"></iframe>',
+    '<style><iframe src="https://api.nextembed.ws/embed/kp/42"></iframe></style>',
+    '<!-- <iframe src="https://api.nextembed.ws/embed/kp/42"></iframe> -->',
+  ]) assert.throws(() => kinogooPlayer(markup, page), /не найден/);
+  assert.throws(() => kinogooPlayer('<iframe src="https://api.nextembed.ws/embed/kp/42">',
+    "https://user@kinogoo.fm/4037-polden.html"), /Некорректный адрес/);
+});
 
 test("Kinogoo follows a renamed title page and discovers the new playable episode", async () => {
   const page = "https://kinogoo.fm/4037-polden-1-sezon.html";

@@ -37,15 +37,112 @@ export async function fetchKinogooHtml(url, signal, fetcher = globalThis.fetch) 
   }
 }
 
-export function kinogooPlayer(html, page, Parser = globalThis.DOMParser) {
+function decodeAttribute(value) {
+  const named = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">" };
+  return value.replace(/&(?:#(x[0-9a-f]+|[0-9]+)|(amp|quot|apos|lt|gt));/gi, (_match, numeric, name) => {
+    if (name) return named[name.toLowerCase()];
+    const number = numeric[0].toLowerCase() === "x"
+      ? Number.parseInt(numeric.slice(1), 16) : Number.parseInt(numeric, 10);
+    return number > 0 && number <= 0x10ffff && !(number >= 0xd800 && number <= 0xdfff)
+      ? String.fromCodePoint(number) : "\ufffd";
+  });
+}
+
+function attributeValue(tag, start, wanted) {
+  let index = start;
+  while (index < tag.length) {
+    while (index < tag.length && /[\s/]/.test(tag[index])) index += 1;
+    if (index >= tag.length || tag[index] === ">") break;
+    const begin = index;
+    while (index < tag.length && !/[\s=/>]/.test(tag[index])) index += 1;
+    const name = tag.slice(begin, index).toLowerCase();
+    if (!name) { index += 1; continue; }
+    while (index < tag.length && /\s/.test(tag[index])) index += 1;
+    let value = "";
+    if (tag[index] === "=") {
+      index += 1;
+      while (index < tag.length && /\s/.test(tag[index])) index += 1;
+      const quote = tag[index] === '"' || tag[index] === "'" ? tag[index++] : null;
+      const valueStart = index;
+      if (quote) {
+        while (index < tag.length && tag[index] !== quote) index += 1;
+        value = tag.slice(valueStart, index);
+        if (tag[index] === quote) index += 1;
+      } else {
+        while (index < tag.length && !/[\s>]/.test(tag[index])) index += 1;
+        value = tag.slice(valueStart, index);
+      }
+    }
+    // HTML uses the first occurrence of a repeated attribute.
+    if (name === wanted) return decodeAttribute(value);
+  }
+  return null;
+}
+
+function tagEnd(html, start) {
+  let quote = null;
+  for (let index = start; index < html.length; index += 1) {
+    const char = html[index];
+    if (quote) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") quote = char;
+    else if (char === ">") return index + 1;
+  }
+  return -1;
+}
+
+export function kinogooPlayer(html, page) {
   const url = new URL(page);
-  if (url.origin !== "https://kinogoo.fm" || !/^\/\d+-[a-z0-9-]+\.html$/.test(url.pathname)) {
+  if (url.origin !== "https://kinogoo.fm" || url.username || url.password
+      || !/^\/\d+-[a-z0-9-]+\.html$/.test(url.pathname)) {
     throw new Error("Некорректный адрес Kinogoo");
   }
-  const doc = new Parser().parseFromString(html, "text/html");
-  for (const frame of doc.querySelectorAll("iframe[src]")) {
-    const target = new URL(frame.getAttribute("src"), page);
-    if (target.origin === "https://api.nextembed.ws" && /^\/embed\/kp\/\d+$/.test(target.pathname)) return target.href;
+  // Inspect markup as text. DOMParser on a third-party page may load images or
+  // frames and cause its inline event handlers to trigger extension CSP errors.
+  if (typeof html !== "string") throw new Error("Некорректная страница Kinogoo");
+  let index = 0, rawText = null, templateDepth = 0;
+  while (index < html.length) {
+    if (rawText) {
+      const closing = new RegExp(`</${rawText}(?=[\\s/>])[^>]*>`, "ig");
+      closing.lastIndex = index;
+      const found = closing.exec(html);
+      if (!found) break;
+      index = closing.lastIndex;
+      rawText = null;
+      continue;
+    }
+    const opening = html.indexOf("<", index);
+    if (opening < 0) break;
+    if (html.startsWith("<!--", opening)) {
+      const end = html.indexOf("-->", opening + 4);
+      if (end < 0) break;
+      index = end + 3;
+      continue;
+    }
+    const match = /^<(\/?)(([a-z][a-z0-9:-]*))(?=[\s/>])/i.exec(html.slice(opening));
+    if (!match) { index = opening + 1; continue; }
+    const end = tagEnd(html, opening + match[0].length);
+    if (end < 0) break;
+    const name = match[2].toLowerCase();
+    const closing = Boolean(match[1]);
+    const tag = html.slice(opening, end);
+    index = end;
+    if (name === "template") {
+      templateDepth = closing ? Math.max(0, templateDepth - 1) : templateDepth + 1;
+    } else if (!closing && name === "iframe" && templateDepth === 0) {
+      const source = attributeValue(tag, match[0].length, "src");
+      if (source) {
+        try {
+          const target = new URL(source, page);
+          if (target.origin === "https://api.nextembed.ws" && !target.username && !target.password
+              && /^\/embed\/kp\/\d+$/.test(target.pathname)) return target.href;
+        } catch (_error) {
+          // Ignore a malformed unrelated iframe and continue to the player.
+        }
+      }
+    }
+    if (!closing && ["script", "style", "textarea", "title", "xmp", "iframe"].includes(name)) rawText = name;
+    if (!closing && name === "plaintext") break;
   }
   throw new Error("Поддерживаемый плеер Kinogoo не найден");
 }
