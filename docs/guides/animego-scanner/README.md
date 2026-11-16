@@ -13,7 +13,7 @@ replaces, the trusted AnimeGo push worker.
 
 | Mode | UI | Server selection |
 | --- | --- | --- |
-| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected title and all favorite or Watching titles, including completed titles and linked source variants, plus up to eight other ongoing AnimeGO/Kinogoo titles. |
+| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected title and favorite or Watching titles that are not classified as completed, including linked source variants, plus up to eight other incomplete titles. Unknown classifications remain eligible. |
 | Extended | Choose `Extended Scan` from the arrow menu. | All source variants of titles not classified as completed, followed by AnimeGO discovery. Unknown classification is included. |
 | Full | Choose `Full Scan` from the arrow menu and confirm. | All stored source records, regardless of age or missing dates, followed by AnimeGO and modern YummyAnime discovery. Unsupported or inaccessible sources are reported as failed checks. |
 
@@ -100,7 +100,9 @@ check. Full Scan ignores these cooldowns.
 ### Weighted extra selection
 
 Personal selection is the union of favorites and Watching, not every title
-with past activity. The current title is included once, even when personal.
+with past activity. Completed titles are excluded even if personal or current;
+titles with unknown classification remain eligible. The current title is
+included once, even when personal.
 Personal cards include their linked source variants, including YummyAnime.
 The random selection draws incomplete or unknown canonical titles and checks
 all their linked source variants.

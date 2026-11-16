@@ -262,7 +262,7 @@ function render() {
 
   elements.subtitle.textContent = checkpoint.status === "completed"
     ? checkpoint.error_count > 0
-      ? `Сканирование завершено с ошибками: ${checkpoint.error_count} из ${total} тайтлов. Подробности ниже.`
+      ? `Сканирование завершено с ошибками: ${checkpoint.error_count} из ${total} источников. Подробности ниже.`
       : "Сканирование завершено. Результаты проверки сохранены."
     : ({
       paused: "Сканирование на паузе. Можно продолжить или остановить его.",
@@ -447,7 +447,7 @@ async function loadSession({ announce = true } = {}) {
   const announcementKey = `${session.payload.origin}/${session.payload.job_id}`;
   if (announce && announcedJobId !== announcementKey) {
     announcedJobId = announcementKey;
-    log(`Загружено задание: ${session.payload.tasks.length} тайтлов.`);
+    log(`Загружено задание: ${session.payload.tasks.length} источников.`);
     if (checkpoint.last_error) log(checkpoint.last_error, "error");
     for (const error of checkpoint.errors) {
       const task = session.payload.tasks.find(item => item.anime_id === error.anime_id);

@@ -561,13 +561,13 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertEqual(reasons.count("personal"), 2)
         self.assertEqual(reasons.count("random"), 8)
 
-    def test_partial_checks_entire_library_even_completed_and_recently_checked(self):
+    def test_partial_checks_entire_incomplete_library_even_recently_checked(self):
         now = animego_scans.now_utc()
         for anime_id in range(1, 25):
-            self.add_title(anime_id, status="Завершён", episodes_text="1", playable=True)
+            self.add_title(anime_id, status="Онгоинг", episodes_text="1", playable=True)
             self.set_library_state(anime_id, favorite=anime_id <= 12,
                                    watch_status="watching" if anime_id >= 12 else "not_watching")
-        self.add_title(25, status="Завершён", episodes_text="1", playable=True)
+        self.add_title(25, status="Онгоинг", episodes_text="1", playable=True)
         self.add_title(26, status="Завершён", episodes_text="1", playable=True)
         self.set_library_state(26)  # A state timestamp alone is not a personal subscription.
         for anime_id in range(100, 112):
@@ -723,11 +723,11 @@ class AnimeGoScansTest(unittest.TestCase):
         body = self.result_payload(1, 101)
         body.update(full_content_checked=True, detail_html="<h1>Source title</h1>")
 
-        def check(at, payload):
-            job = self.create_job("partial", now=at)
+        def check(at, payload, mode="partial"):
+            job = self.create_job(mode, now=at)
             animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], payload,
                                              server.PLAYER_HOSTS, now=at)
-            animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {}, now=at)
+            animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {"stopped": mode == "full"}, now=at)
 
         def selected(mode, at):
             with closing(server.connect(self.db_path)) as con:
@@ -739,12 +739,12 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertIn(1, selected("extended", end))  # Time passing alone is not a second check.
         check(end, body)
         self.assertNotIn(1, selected("extended", end))
-        self.assertIn(1, selected("partial", end))
+        self.assertNotIn(1, selected("partial", end))
         self.assertIn(1, selected("full", end))
 
         changed = self.result_payload(1, 101, provider=self.provider(provider_id="another-provider"))
         changed.update(full_content_checked=True, detail_html="<h1>Source title</h1>")
-        check(end + dt.timedelta(days=1), changed)
+        check(end + dt.timedelta(days=1), changed, mode="full")
         self.assertIn(1, selected("extended", end + dt.timedelta(days=1)))
         with closing(server.connect(self.db_path)) as con:
             obs = con.execute("select * from scan_source_observations where anime_id=1").fetchone()
@@ -848,7 +848,7 @@ class AnimeGoScansTest(unittest.TestCase):
         second[0]["providers"][0]["translation_id"] += 1
         self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
 
-    def test_partial_does_not_drop_favorite_because_it_ended_long_ago(self):
+    def test_partial_skips_favorite_completed_long_ago(self):
         now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
         self.add_title(1, status="Вышел")
         self.set_library_state(1, favorite=True)
@@ -856,7 +856,25 @@ class AnimeGoScansTest(unittest.TestCase):
             con.execute("insert into anime_fields(anime_id,label,value) values (1, 'Выпуск', '2020')")
             con.commit()
             selected = animego_scans.select_scan_items(con, "partial", self.user["id"], now=now)
-        self.assertIn((1, "personal"), selected)
+        self.assertNotIn(1, dict(selected))
+
+    def test_partial_skips_completed_personal_groups_but_keeps_unknown_and_conflicting(self):
+        self.add_title(1, status="Вышел")
+        self.set_library_state(1, favorite=True)
+        self.add_title(2, status="Завершён")
+        self.set_library_state(2, watch_status="watching")
+        self.add_title(3, status="")
+        self.set_library_state(3, favorite=True)
+        self.add_title(4, status="Вышел")
+        self.add_title(20_000_004, source="yummyanime", status="Онгоинг")
+        self.set_library_state(4, favorite=True)
+        mapping = {4: 4, 20_000_004: 4}
+        with closing(server.connect(self.db_path)) as con:
+            partial = dict(animego_scans.select_scan_items(con, "partial", self.user["id"],
+                                                            current_anime_id=1, variant_map=mapping))
+            full = dict(animego_scans.select_scan_items(con, "full", self.user["id"], variant_map=mapping))
+        self.assertEqual(set(partial), {3, 4, 20_000_004})
+        self.assertEqual(set(full), {1, 2, 3, 4, 20_000_004})
 
     def test_full_queues_every_source_even_without_activity(self):
         ids = [(1, "animego"), (30_000_001, "kinogoo"), (10_000_001, "yummyanime"),
@@ -1208,7 +1226,7 @@ class AnimeGoScansTest(unittest.TestCase):
         result = self.discover(job, 1, self.listing_html(9, 10))
         self.assertEqual([task["anime_id"] for task in result["tasks"]], [10])
 
-    def test_partial_includes_old_completed_when_personal_or_current(self):
+    def test_partial_skips_completed_even_when_personal_or_current(self):
         now = dt.datetime(2026, 10, 16, tzinfo=dt.timezone.utc)
         for anime_id, status, release in [
             (1, "Вышел", "с 10 января 2025 по 4 июля 2025"),
@@ -1225,7 +1243,7 @@ class AnimeGoScansTest(unittest.TestCase):
         with closing(server.connect(self.db_path)) as con:
             selected = animego_scans.select_scan_items(con, "partial", self.user["id"], current_anime_id=1, now=now)
             full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
-        self.assertEqual({i for i, _ in selected}, {1, 2, 3, 4, 5})
+        self.assertEqual({i for i, _ in selected}, {4})
         self.assertEqual({i for i, _ in full}, {1, 2, 3, 4, 5})
 
     def test_partial_handles_completed_release_formats_from_job_140(self):
@@ -1264,7 +1282,7 @@ class AnimeGoScansTest(unittest.TestCase):
         with closing(server.connect(self.db_path)) as con:
             partial = animego_scans.select_scan_items(con, "partial", self.user["id"], current_anime_id=1, now=now)
             full = animego_scans.select_scan_items(con, "full", self.user["id"], now=now)
-        self.assertEqual({i for i, _ in partial}, set(range(1, len(cases) + 1)))
+        self.assertEqual(partial, [])
         self.assertEqual(len(full), len(cases))
         for release in ["2021", "2022–2023", "27 февраля 2020"]:
             self.assertFalse(animego_scans.completed_over_month_ago(

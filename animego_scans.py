@@ -498,11 +498,15 @@ def select_scan_items(
             raise ValueError("current_anime_id must be a positive integer") from exc
         if current_id <= 0:
             raise ValueError("current_anime_id must be a positive integer")
-        for source_id in by_group.get(variant_map.get(current_id, current_id), [current_id]):
-            add(source_id, "current")
+        current_group = variant_map.get(current_id, current_id)
+        if current_group in incomplete_groups:
+            for source_id in by_group.get(current_group, [current_id]):
+                add(source_id, "current")
 
     personal = personal_candidate_ids(con, user_id, variant_map, set(row_by_id))
     for anime_id in personal:
+        if anime_id not in incomplete_groups:
+            continue
         for source_id in by_group.get(anime_id, [anime_id]):
             add(source_id, "personal")
 
