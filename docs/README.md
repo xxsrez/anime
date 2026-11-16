@@ -6,8 +6,8 @@ and player prototype. It follows the `project-docs` layout:
 - root pages explain the project, architecture, and repository structure;
 - [instructions/](instructions/README.md) contains working rules and operational process;
 - [guides/](guides/README.md) contains current component and deployment how-tos;
-- [design/](design/README.md), [tasks/](tasks/README.md), and [reports/](reports/README.md) are reserved for future historical
-  specifications, multi-day investigations, and final analyses.
+- [design/](design/README.md) contains specifications; [tasks/](tasks/README.md)
+  and [reports/](reports/README.md) contain investigations and analyses.
 
 ## Reading order
 
@@ -33,6 +33,8 @@ and player prototype. It follows the `project-docs` layout:
    conventions.
 12. [tasks/project-hardening/README.md](tasks/project-hardening/README.md) - 2026-07-09 repository-wide
     correctness, concurrency, recovery, security, and performance hardening.
+13. [design/scan-requirements.md](design/scan-requirements.md) - draft user
+    requirements for quick, extended and full scans, pending approval.
 
 ## Directory Map
 
@@ -43,7 +45,7 @@ and player prototype. It follows the `project-docs` layout:
 | [project-structure.md](project-structure.md) | Where files live and which paths are generated. |
 | [instructions/](instructions/README.md) | Rules for working on this repo. |
 | [guides/](guides/README.md) | Current how-tos for components and deployment. |
-| [design/](design/README.md) | Future original/historical specifications. |
+| [design/](design/README.md) | Original/historical specifications and drafts. |
 | [tasks/](tasks/README.md) | Future complex investigations with changelogs. |
 | [reports/](reports/README.md) | Future final analysis documents. |
 
