@@ -1336,17 +1336,37 @@ def apply_episode_result(con, job, item, anime_row, snapshot, scraped_at):
     new_providers = []
     for provider in providers:
         provider_id, translation_id = provider_identity(provider)
-        existing_provider = con.execute(
-            """
-            select *
-            from video_sources
-            where episode_id = ?
-              and provider_id = ?
-              and coalesce(translation_id, 0) = ?
-            limit 1
-            """,
-            (int(episode["id"]), provider_id, translation_id),
-        ).fetchone()
+        existing_provider = None
+        if job["mode"] == "full":
+            # Older AnimeGO data can contain several URLs for one provider.
+            # Refresh the matching URL first so updating a sibling cannot
+            # collide with its unique (episode, provider, translation, URL) key.
+            existing_provider = con.execute(
+                """
+                select *
+                from video_sources
+                where episode_id = ?
+                  and provider_id = ?
+                  and coalesce(translation_id, 0) = ?
+                  and embed_url_redacted = ?
+                order by case when translation_id = ? then 0 else 1 end, id
+                limit 1
+                """,
+                (int(episode["id"]), provider_id, translation_id,
+                 provider["embed_url_redacted"], translation_id),
+            ).fetchone()
+        if existing_provider is None:
+            existing_provider = con.execute(
+                """
+                select *
+                from video_sources
+                where episode_id = ?
+                  and provider_id = ?
+                  and coalesce(translation_id, 0) = ?
+                limit 1
+                """,
+                (int(episode["id"]), provider_id, translation_id),
+            ).fetchone()
         con.execute(
             "insert or ignore into translations(id, title) values (?, ?)",
             (translation_id, provider["translation_title"]),

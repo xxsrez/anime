@@ -1457,6 +1457,80 @@ class AnimeGoScansTest(unittest.TestCase):
             row = con.execute("select embed_url from video_sources where episode_id=801").fetchone()
         self.assertEqual(row[0], provider["embed_url"])
 
+    def test_scan_refreshes_matching_provider_when_older_address_also_exists(self):
+        self.add_title(8, playable=True)
+        provider = self.provider("provider-8", 1)
+        older_url = "https://kodikplayer.com/serial/1/older-token/720p"
+        previous_url = provider["embed_url"].replace("new-secret-token", "previous-token")
+        with closing(server.connect(self.db_path)) as con:
+            con.execute(
+                "update video_sources set embed_url=?, embed_url_redacted=? where episode_id=801",
+                (older_url, scrape_animego.redact_embed_url(older_url)),
+            )
+            con.execute(
+                """insert into video_sources (
+                    anime_id, episode_id, provider_id, provider_title, translation_id,
+                    translation_title, embed_host, embed_url, embed_url_redacted, scraped_at
+                ) values (8, 801, 'provider-8', 'Previous title', 1, 'Previous voice',
+                          'kodikplayer.com', ?, ?, ?)""",
+                (previous_url, provider["embed_url_redacted"], animego_scans.iso_timestamp()),
+            )
+            con.commit()
+        job = self.create_job("extended")
+        args = (self.db_path, job["job"]["id"], job["token"])
+        payload = self.result_payload(8, 801, provider=provider)
+
+        result = animego_scans.submit_scan_result(*args, payload, server.PLAYER_HOSTS)
+        replay = animego_scans.submit_scan_result(*args, payload, server.PLAYER_HOSTS)
+
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_episode_count"], 0)
+        self.assertEqual(result["result"]["new_provider_count"], 0)
+        self.assertEqual(replay["result"]["status"], "already_processed")
+        self.assertEqual(replay["job"]["checked_items"], 1)
+        with closing(server.connect(self.db_path)) as con:
+            rows = con.execute(
+                "select embed_url, provider_title from video_sources where episode_id=801 order by id"
+            ).fetchall()
+            self.assertEqual([(row[0], row[1]) for row in rows], [
+                (older_url, "Original provider"),
+                (provider["embed_url"], provider["provider_title"]),
+            ])
+            self.assertEqual(con.execute("select count(*) from animego_provider_additions").fetchone()[0], 0)
+
+    def test_scan_fills_matching_placeholder_without_overwriting_other_player(self):
+        self.add_title(8, playable=True)
+        provider = self.provider("provider-8", 1)
+        older_url = "https://kodikplayer.com/serial/1/older-token/720p"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute(
+                "update video_sources set embed_url=?, embed_url_redacted=? where episode_id=801",
+                (older_url, scrape_animego.redact_embed_url(older_url)),
+            )
+            con.execute(
+                """insert into video_sources (
+                    anime_id, episode_id, provider_id, translation_id,
+                    embed_url_redacted, scraped_at
+                ) values (8, 801, 'provider-8', 1, ?, ?)""",
+                (provider["embed_url_redacted"], animego_scans.iso_timestamp()),
+            )
+            con.commit()
+        job = self.create_job("full")
+
+        result = animego_scans.submit_scan_result(
+            self.db_path, job["job"]["id"], job["token"],
+            self.result_payload(8, 801, provider=provider), server.PLAYER_HOSTS,
+        )
+
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_episode_count"], 0)
+        self.assertEqual(result["result"]["new_provider_count"], 1)
+        with closing(server.connect(self.db_path)) as con:
+            urls = [row[0] for row in con.execute(
+                "select embed_url from video_sources where episode_id=801 order by id"
+            )]
+        self.assertEqual(urls, [older_url, provider["embed_url"]])
+
     def test_unsafe_provider_is_rejected_without_consuming_item(self):
         self.add_title(9)
         job = self.create_job()
