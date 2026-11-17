@@ -538,6 +538,7 @@ class AnimeGoScansTest(unittest.TestCase):
     def test_partial_selection_combines_current_personal_and_weighted_random(self):
         for anime_id in range(1, 21):
             self.add_title(anime_id)
+        self.set_library_state(1, watch_status="watching")
         self.set_library_state(2, watch_status="watching")
         self.set_library_state(3, favorite=True)
 
@@ -576,14 +577,120 @@ class AnimeGoScansTest(unittest.TestCase):
             for anime_id in range(1, 25):
                 con.execute("insert into animego_title_scan_state(anime_id,next_eligible_at) values (?,?)",
                             (anime_id, animego_scans.iso_timestamp(now + dt.timedelta(days=7))))
+            con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (?,?)",
+                        (25, animego_scans.iso_timestamp(now - dt.timedelta(hours=1))))
             con.commit()
             selected = animego_scans.select_scan_items(con, "partial", self.user["id"],
                                                        current_anime_id=25, rng=random.Random(7), now=now)
-        self.assertEqual(selected[0], (25, "current"))
         self.assertEqual({i for i, reason in selected if reason == "personal"}, set(range(1, 25)))
-        self.assertEqual(len(selected), 33)
-        self.assertEqual(len({i for i, _ in selected}), 33)
+        self.assertEqual(len(selected), 32)
+        self.assertEqual(len({i for i, _ in selected}), 32)
+        self.assertNotIn(25, dict(selected))
         self.assertNotIn(26, dict(selected))
+
+    def test_open_nonpersonal_title_is_only_a_random_candidate(self):
+        for anime_id in range(1, 12):
+            self.add_title(anime_id)
+        picker = Mock()
+        picker.random.side_effect = [0.99] + [0.01] * 10
+        with closing(server.connect(self.db_path)) as con:
+            selected = dict(animego_scans.select_scan_items(
+                con, "partial", self.user["id"], current_anime_id=1, rng=picker))
+        self.assertEqual(len(selected), animego_scans.PARTIAL_EXTRA_LIMIT)
+        self.assertNotIn(1, selected)
+        self.assertEqual(set(selected.values()), {"random"})
+
+    def test_twelve_hour_threshold_and_personal_exceptions_apply_to_both_modes(self):
+        now = dt.datetime(2026, 11, 17, 12, tzinfo=dt.timezone.utc)
+        for anime_id in range(1, 10):
+            self.add_title(anime_id, status="Вышел" if anime_id == 6 else "Онгоинг")
+        self.set_library_state(1, favorite=True)
+        self.set_library_state(2, watch_status="watching")
+        self.set_library_state(6, favorite=True)
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id, hours in [(1, 1), (2, 1), (3, 1), (4, 12), (6, 1), (7, 13)]:
+                con.execute(
+                    "insert into animego_title_scan_state(anime_id,last_checked_at,next_eligible_at) values (?,?,?)",
+                    (anime_id, animego_scans.iso_timestamp(now - dt.timedelta(hours=hours)),
+                     animego_scans.iso_timestamp(now + dt.timedelta(days=7))),
+                )
+            con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (8, 'invalid')")
+            con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (9, ?)",
+                        (animego_scans.iso_timestamp(now + dt.timedelta(hours=1)),))
+            con.commit()
+            extended = dict(animego_scans.select_scan_items(con, "extended", self.user["id"], now=now))
+            partial = dict(animego_scans.select_scan_items(
+                con, "partial", self.user["id"], current_anime_id=3, now=now, rng=random.Random(1)))
+            full = dict(animego_scans.select_scan_items(con, "full", self.user["id"], now=now))
+        self.assertEqual(set(extended), {1, 2, 4, 5, 7, 8, 9})
+        self.assertEqual(set(partial), {1, 2, 4, 5, 7, 8, 9})
+        self.assertEqual(set(full), set(range(1, 10)))
+        self.assertEqual(partial[1], "personal")
+        self.assertEqual(partial[2], "personal")
+        self.assertTrue(all(partial[i] == "random" for i in (4, 5, 7, 8, 9)))
+
+    def test_title_recency_requires_all_linked_sources_to_be_recent(self):
+        now = dt.datetime(2026, 11, 17, 12, tzinfo=dt.timezone.utc)
+        mapping = {1: 1, 20_000_001: 1, 2: 2, 20_000_002: 2, 3: 3, 20_000_003: 3}
+        for anime_id in mapping:
+            self.add_title(anime_id, source="yummyanime" if anime_id >= 20_000_000 else "animego")
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id, hours in [(1, 1), (20_000_001, 13), (2, 1),
+                                    (20_000_002, 1), (3, 1)]:
+                con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (?,?)",
+                            (anime_id, animego_scans.iso_timestamp(now - dt.timedelta(hours=hours))))
+            con.commit()
+            for mode in ("extended", "partial"):
+                selected = dict(animego_scans.select_scan_items(
+                    con, mode, self.user["id"], variant_map=mapping, now=now, rng=random.Random(1)))
+                self.assertEqual(set(selected), {1, 20_000_001, 3, 20_000_003})
+            self.set_library_state(2, favorite=True)
+            selected = dict(animego_scans.select_scan_items(
+                con, "extended", self.user["id"], variant_map=mapping, now=now))
+            self.assertEqual(set(selected), set(mapping))
+
+    def test_recency_uses_last_success_instead_of_last_failed_attempt(self):
+        now = dt.datetime(2026, 11, 17, 12, tzinfo=dt.timezone.utc)
+        self.add_title(1)
+        self.add_title(2)
+
+        def submit_at(anime_id, when, payload):
+            job = self.create_job("full", now=when)
+            animego_scans.submit_scan_result(
+                self.db_path, job["job"]["id"], job["token"],
+                {"anime_id": anime_id, **payload}, server.PLAYER_HOSTS, now=when)
+            animego_scans.complete_scan_job(
+                self.db_path, job["job"]["id"], job["token"], {"stopped": True}, now=when)
+
+        submit_at(1, now - dt.timedelta(hours=13), {"episodes": []})
+        submit_at(2, now - dt.timedelta(hours=1), {"episodes": []})
+        for anime_id in (1, 2):
+            submit_at(anime_id, now - dt.timedelta(minutes=1), {"error": "source unavailable"})
+        with closing(server.connect(self.db_path)) as con:
+            states = animego_scans.scan_state_by_anime_id(con, [1, 2])
+            self.assertEqual(states[1]["last_checked_at"], animego_scans.iso_timestamp(now - dt.timedelta(minutes=1)))
+            self.assertEqual(states[1]["last_successful_at"], animego_scans.iso_timestamp(now - dt.timedelta(hours=13)))
+            for mode in ("partial", "extended"):
+                selected = dict(animego_scans.select_scan_items(con, mode, self.user["id"], now=now))
+                self.assertEqual(set(selected), {1})
+
+    def test_failed_attempt_uses_latest_success_by_absolute_time(self):
+        self.add_title(1)
+        now = dt.datetime(2026, 11, 17, 22, 30, tzinfo=dt.timezone.utc)
+        earlier = dt.datetime(2026, 11, 17, 12, tzinfo=dt.timezone(dt.timedelta(hours=2)))
+        later = dt.datetime(2026, 11, 17, 11, tzinfo=dt.timezone.utc)
+        for checked_at, payload in [(earlier, {"episodes": []}), (later, {"episodes": []}),
+                                    (now - dt.timedelta(minutes=1), {"error": "unavailable"})]:
+            job = self.create_job("full", now=checked_at)
+            animego_scans.submit_scan_result(
+                self.db_path, job["job"]["id"], job["token"],
+                {"anime_id": 1, **payload}, server.PLAYER_HOSTS, now=checked_at)
+            animego_scans.complete_scan_job(
+                self.db_path, job["job"]["id"], job["token"], {"stopped": True}, now=checked_at)
+        with closing(server.connect(self.db_path)) as con:
+            state = animego_scans.scan_state_by_anime_id(con, [1])[1]
+            self.assertEqual(state["last_successful_at"], animego_scans.iso_timestamp(later))
+            self.assertNotIn(1, dict(animego_scans.select_scan_items(con, "extended", self.user["id"], now=now)))
 
     def test_partial_rotation_uses_shared_successful_checks_and_excludes_completed(self):
         for anime_id in range(1, 21):
@@ -843,10 +950,57 @@ class AnimeGoScansTest(unittest.TestCase):
     def test_player_token_rotation_does_not_reset_fingerprint(self):
         first = self.result_payload(1, 101)["episodes"]
         second = self.result_payload(1, 101)["episodes"]
-        second[0]["providers"][0]["embed_url"] = "https://kodikplayer.com/serial/1/new-token"
+        provider = second[0]["providers"][0]
+        provider["embed_url"] = provider["embed_url"].replace("new-secret-token", "rotated-token")
+        provider["embed_url_redacted"] = scrape_animego.redact_embed_url(provider["embed_url"])
         self.assertEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
-        second[0]["providers"][0]["translation_id"] += 1
+        provider["embed_url"] = provider["embed_url"].replace("serial/500/", "serial/501/")
+        provider["embed_url_redacted"] = scrape_animego.redact_embed_url(provider["embed_url"])
         self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+        provider["embed_url"] = provider["embed_url"].replace("serial/501/", "serial/500/")
+        provider["embed_url_redacted"] = scrape_animego.redact_embed_url(provider["embed_url"])
+        provider["translation_id"] += 1
+        self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+
+    def test_changed_player_address_resets_monthly_observation(self):
+        start = animego_scans.now_utc() + dt.timedelta(days=1)
+        end = scan_observations.one_month_after(start)
+        self.add_title(1, status="Онгоинг")
+        first = self.result_payload(1, 101)["episodes"]
+        second = self.result_payload(1, 101)["episodes"]
+        provider = second[0]["providers"][0]
+        provider["embed_url"] = provider["embed_url"].replace("serial/500/", "serial/501/")
+        provider["embed_url_redacted"] = scrape_animego.redact_embed_url(provider["embed_url"])
+        with closing(server.connect(self.db_path)) as con:
+            row = animego_scans.scan_candidate_rows(con, include_completed=True, include_all_sources=True)[0]
+            scan_observations.record(con, row, first, start, complete=True)
+            scan_observations.record(con, row, second, end, complete=True)
+            observation = con.execute("select * from scan_source_observations where anime_id=1").fetchone()
+            self.assertEqual(observation["unchanged_since"], animego_scans.iso_timestamp(end))
+            self.assertFalse(scan_observations.completed_group([row], {1: observation}, end))
+
+    def test_legacy_fingerprint_cannot_prove_player_unchanged(self):
+        start = animego_scans.now_utc() + dt.timedelta(days=1)
+        end = scan_observations.one_month_after(start)
+        self.add_title(1, status="Онгоинг")
+        snapshots = self.result_payload(1, 101)["episodes"]
+        with closing(server.connect(self.db_path)) as con:
+            row = animego_scans.scan_candidate_rows(con, include_completed=True, include_all_sources=True)[0]
+            scan_observations.record(con, row, snapshots, start, complete=True)
+            scan_observations.record(con, row, snapshots, end, complete=True)
+            con.execute("update scan_source_observations set content_fingerprint=? where anime_id=1", ("0" * 64,))
+            legacy = con.execute("select * from scan_source_observations where anime_id=1").fetchone()
+            self.assertFalse(scan_observations.completed_group([row], {1: legacy}, end))
+            scan_observations.record(con, row, snapshots, end + dt.timedelta(hours=1), complete=True)
+            fresh = con.execute("select * from scan_source_observations where anime_id=1").fetchone()
+            self.assertEqual(fresh["unchanged_since"], animego_scans.iso_timestamp(end + dt.timedelta(hours=1)))
+
+    def test_released_status_is_recognized_as_completed(self):
+        self.add_title(1, status="released")
+        self.set_library_state(1, favorite=True)
+        with closing(server.connect(self.db_path)) as con:
+            for mode in ("partial", "extended"):
+                self.assertNotIn(1, dict(animego_scans.select_scan_items(con, mode, self.user["id"])))
 
     def test_partial_skips_favorite_completed_long_ago(self):
         now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
@@ -1073,7 +1227,7 @@ class AnimeGoScansTest(unittest.TestCase):
         finally:
             animego_scans.SOURCE_FETCH_LIMIT.release()
 
-    def test_extended_scan_uses_content_changes_not_recent_checks(self):
+    def test_extended_scan_skips_recent_checks_except_personal_titles(self):
         now = dt.datetime(2026, 11, 15, 12, tzinfo=dt.timezone.utc)
         for anime_id in range(1, 7):
             self.add_title(anime_id, source="kinogoo" if anime_id == 4 else "animego")
@@ -1100,11 +1254,11 @@ class AnimeGoScansTest(unittest.TestCase):
             con.commit()
             full = animego_scans.select_scan_items(con, "extended", self.user["id"], now=now)
             partial = animego_scans.select_scan_items(con, "partial", self.user["id"], now=now)
-        self.assertEqual({anime_id for anime_id, _ in full}, set(range(1, 7)))
+        self.assertEqual({anime_id for anime_id, _ in full}, {1, 4, 6})
         self.assertIn((1, "personal"), partial)
         job = self.create_job("extended", now=now)
-        self.assertEqual({task["anime_id"] for task in job["tasks"]}, set(range(1, 7)))
-        self.assertEqual(job["job"]["total_items"], 6)
+        self.assertEqual({task["anime_id"] for task in job["tasks"]}, {1, 4, 6})
+        self.assertEqual(job["job"]["total_items"], 3)
         self.assertTrue(job["discovery"])
 
     def test_extended_scan_includes_unknown_and_excludes_confirmed_completed(self):
@@ -1714,6 +1868,27 @@ class AnimeGoScansTest(unittest.TestCase):
             manifest["browser_specific_settings"]["safari"]["strict_min_version"],
             "16.4",
         )
+
+    def test_http_extended_recency_uses_personal_state_and_canonical_sources(self):
+        now = animego_scans.now_utc()
+        for primary, title in [(1, "Personal Shared"), (2, "Recent Shared"), (3, "Stale Shared")]:
+            self.add_title(primary, title=title, playable=True)
+            self.add_title(20_000_000 + primary, title=title, source="yummyanime", playable=True)
+        self.set_library_state(20_000_001, favorite=True)
+        with closing(server.connect(self.db_path)) as con:
+            for anime_id in (1, 20_000_001, 2, 20_000_002, 3):
+                con.execute("insert into animego_title_scan_state(anime_id,last_checked_at) values (?,?)",
+                            (anime_id, animego_scans.iso_timestamp(now)))
+            con.commit()
+        session = self.session_token()
+        status, _, raw = self.request(
+            "POST", "/api/animego-scans",
+            headers={"Cookie": f"{server.SESSION_COOKIE_NAME}={session}", "Content-Type": "application/json"},
+            body=json.dumps({"mode": "extended", "scanner_version": "0.5.17"}).encode("utf-8"),
+        )
+        self.assertEqual(status, 201)
+        self.assertEqual({task["anime_id"] for task in json.loads(raw)["tasks"]},
+                         {1, 20_000_001, 3, 20_000_003})
 
 
 if __name__ == "__main__":

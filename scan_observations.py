@@ -9,8 +9,9 @@ import sqlite3
 
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "migrations/2026-11-16_scan-observations/00_scan_observations.sql"
-COMPLETED = {"вышел", "завершён", "завершен", "выпуск завершён", "выпуск завершен", "finished", "completed"}
+COMPLETED = {"вышел", "завершён", "завершен", "выпуск завершён", "выпуск завершен", "finished", "released", "completed"}
 ONGOING = {"онгоинг", "ongoing", "выходит", "анонс", "announced"}
+FINGERPRINT_VERSION = "v2:"
 
 
 def ensure_schema(con):
@@ -44,15 +45,16 @@ def identity(row):
 
 
 def fingerprint(episodes):
-    # Stable upstream identities, not URLs (which may contain rotating tokens).
+    # Redacted URLs retain stable player identity while omitting rotating tokens.
     content = []
     for snapshot in episodes:
         episode = snapshot["episode"]
-        providers = sorted((str(p["provider_id"]), int(p["translation_id"]), str(p["embed_host"]).lower())
+        providers = sorted((str(p["provider_id"]), int(p["translation_id"]), str(p["embed_host"]).lower(),
+                            str(p.get("embed_url_redacted") or ""))
                            for p in snapshot["providers"])
         content.append((int(episode["id"]), str(episode.get("number") or ""), providers))
-    data = json.dumps(["v1", sorted(content)], ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(data).hexdigest()
+    data = json.dumps(["v2", sorted(content)], ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return FINGERPRINT_VERSION + hashlib.sha256(data).hexdigest()
 
 
 def invalidate(con, anime_id):
@@ -96,6 +98,10 @@ def record(con, anime_row, episodes, checked_at, *, complete, started_at=None, j
 
 def inactive_by_observation(row, observation, now):
     if not observation or not observation["last_attempt_complete"] or observation["source_identity"] != identity(row):
+        return False
+    # Older observations did not track stable player addresses and cannot
+    # establish that players remained unchanged for a month.
+    if not str(observation["content_fingerprint"] or "").startswith(FINGERPRINT_VERSION):
         return False
     since, checked = parse_time(observation["unchanged_since"]), parse_time(observation["last_complete_at"])
     evidence_from = parse_time(observation["last_evidence_from"])

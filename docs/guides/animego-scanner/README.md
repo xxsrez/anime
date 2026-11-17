@@ -13,8 +13,8 @@ replaces, the trusted AnimeGo push worker.
 
 | Mode | UI | Server selection |
 | --- | --- | --- |
-| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | The selected title and favorite or Watching titles that are not classified as completed, including linked source variants, plus up to eight other incomplete titles. Unknown classifications remain eligible. |
-| Extended | Choose `Extended Scan` from the arrow menu. | All source variants of titles not classified as completed, followed by AnimeGO discovery. Unknown classification is included. |
+| Partial | Click `Scan`, or choose `Partial Scan` from the arrow menu. | Non-completed favorite and Watching titles, plus up to eight other non-completed titles whose last successful check is at least 12 hours old or unknown. |
+| Extended | Choose `Extended Scan` from the arrow menu. | Non-completed titles whose last successful check is at least 12 hours old or unknown, and non-completed favorites or Watching titles regardless of check time, followed by AnimeGO discovery. |
 | Full | Choose `Full Scan` from the arrow menu and confirm. | All stored source records, regardless of age or missing dates, followed by AnimeGO and modern YummyAnime discovery. Unsupported or inaccessible sources are reported as failed checks. |
 
 A title is classified as completed when its recognized release status says so
@@ -22,11 +22,16 @@ without a conflicting ongoing source, or when each source variant has two
 complete matching observations at least one calendar month apart. New or changed
 content starts a new observation period. Errors and incomplete checks cannot
 confirm inactivity. Unknown statuses or insufficient observations remain
-eligible for Extended. Observations compare episode and provider identities;
-they cannot prove an upstream source has not changed between checks, or expose
+eligible subject to the 12-hour rule. Observations compare episode and provider identities
+and redacted player addresses; token rotation alone does not count as a change.
+Legacy observations did not track stable player addresses and no longer prove
+that content was unchanged: the next complete check starts a new observation
+period. Explicit completed release statuses are unaffected. Observations
+cannot prove an upstream source has not changed between checks, or expose
 content the upstream parser did not supply. Source URLs changing resets evidence.
-Background content additions after the last observation make the title eligible
-again. Extended no longer requires fetching both sitemaps before starting.
+Background content additions after the last observation invalidate the
+inactivity evidence; non-personal titles remain subject to the 12-hour rule.
+Extended no longer requires fetching both sitemaps before starting.
 
 New jobs expire after 24 hours of inactivity; committed progress renews the
 deadline. Older in-progress jobs retain their previous deadlines.
@@ -89,20 +94,22 @@ where editorial_status = 'needs_review'
 order by id;
 ```
 
-Only the additional random portion of Partial Scan honors
-`animego_title_scan_state.next_eligible_at`. A changed ongoing title becomes
-eligible again after 6 hours; a changed non-ongoing title after 24 hours. An
-unchanged ongoing title backs off from 18 to at most 54 hours after repeated
-no-change checks, an unchanged non-ongoing title waits 7 days, and a title-level
-error retries after 30 minutes. Kinogoo waits 18 hours after a successful
-check. Full Scan ignores these cooldowns.
+For the 12-hour rule, a title is recently checked only when every linked
+source has a successful check within the last 12 hours. A missing successful
+check makes the whole title eligible, and an unsuccessful attempt does not
+replace an earlier success. At exactly 12 hours the title is eligible again.
+The state is shared across users: `animego_title_scan_state.last_checked_at`
+records the latest attempt, while completed scan items retain successful
+checks. Older `next_eligible_at` cooldown values remain stored but do not
+control selection. Full Scan ignores the 12-hour rule.
 
 ### Weighted extra selection
 
 Personal selection is the union of favorites and Watching, not every title
 with past activity. Completed titles are excluded even if personal or current;
-titles with unknown classification remain eligible. The current title is
-included once, even when personal.
+titles with unknown classification remain eligible. The open title is selected
+as personal if it belongs to that set, or as part of the random selection if
+eligible; merely opening it does not bypass the 12-hour rule.
 Personal cards include their linked source variants, including YummyAnime.
 The random selection draws incomplete or unknown canonical titles and checks
 all their linked source variants.
@@ -117,12 +124,12 @@ events), including changes discovered by background sync. Editing card
 metadata does not boost the weight. The change bonus is bounded at 2x.
 
 Exponential-race sampling draws up to eight unique canonical titles using the
-largest eligible source weight in each group. Recently checked groups are excluded
-until at least one source is due; completed
-titles never enter the extra pool, even when their player coverage is incomplete.
+largest source weight in each group. Titles checked successfully across all
+their sources less than 12 hours ago are excluded from the extra pool; completed
+titles never enter it, even when their player coverage is incomplete.
 State is shared across users and keyed by the source-specific anime ID. Existing
 scan state and successful job items supply the weighting history. Selection is probabilistic: it does not promise
-strictly disjoint consecutive sets after cooldown expiry or a bounded coverage
+strictly disjoint consecutive sets after the 12-hour interval or a bounded coverage
 deadline. Large personal libraries take longer; the existing job expiry and
 extension transport limits still apply.
 

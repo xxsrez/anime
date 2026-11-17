@@ -32,6 +32,7 @@ SCAN_MODES = {"partial", "extended", "full"}
 ACTIVE_JOB_STATUS = "running"
 JOB_TTL_SECONDS = 24 * 60 * 60
 PARTIAL_EXTRA_LIMIT = 8
+SCAN_RECENCY_HOURS = 12
 MAX_RESULT_BODY_BYTES = 2 * 1024 * 1024
 MAX_COMPLETE_BODY_BYTES = 256 * 1024
 MAX_RESULT_EPISODES = 2_000
@@ -327,8 +328,10 @@ def scan_state_by_anime_id(con, anime_ids):
         placeholders = ",".join("?" for _ in chunk)
         rows = con.execute(
             f"""select s.*, case when s.last_error is null then s.last_checked_at
-                else (select max(i.checked_at) from animego_scan_job_items i
-                      where i.anime_id = s.anime_id and i.status = 'completed' and i.error is null)
+                else (select i.checked_at from animego_scan_job_items i
+                      where i.anime_id = s.anime_id and i.status = 'completed' and i.error is null
+                        and julianday(i.checked_at) is not null
+                      order by julianday(i.checked_at) desc limit 1)
                 end as last_successful_at
                 from animego_title_scan_state s where s.anime_id in ({placeholders})""",
             tuple(chunk),
@@ -456,6 +459,8 @@ def select_scan_items(
     if mode not in SCAN_MODES:
         raise ValueError("mode must be 'partial', 'extended' or 'full'")
     now = now or now_utc()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
     rows = scan_candidate_rows(con, include_completed=True, include_all_sources=True)
     row_by_id = {int(row["id"]): row for row in rows}
     if mode == "full":
@@ -469,19 +474,28 @@ def select_scan_items(
         group for group, ids in by_group.items()
         if not scan_observations.completed_group([row_by_id[anime_id] for anime_id in ids], observations, now)
     }
+    states = scan_state_by_anime_id(con, list(row_by_id))
+    personal = personal_candidate_ids(con, user_id, variant_map, set(row_by_id))
+    personal_groups = set(personal)
+    cutoff = now - dt.timedelta(hours=SCAN_RECENCY_HOURS)
+
+    def recently_checked(ids):
+        # The title is fresh only when every linked source has a recent
+        # successful check. An error must not replace the preceding success.
+        checked = [scan_observations.parse_time((states.get(anime_id) or {}).get("last_successful_at"))
+                   for anime_id in ids]
+        return all(timestamp is not None and cutoff < timestamp <= now for timestamp in checked)
+
+    due_groups = {group for group, ids in by_group.items() if not recently_checked(ids)}
     if mode == "extended":
         return [
             (anime_id, "full")
             for anime_id in row_by_id
             if variant_map.get(anime_id, anime_id) in incomplete_groups
+            and (variant_map.get(anime_id, anime_id) in personal_groups
+                 or variant_map.get(anime_id, anime_id) in due_groups)
         ]
 
-    states = scan_state_by_anime_id(con, list(row_by_id))
-    due_ids = {
-        anime_id
-        for anime_id in row_by_id
-        if timestamp_is_due((states.get(anime_id) or {}).get("next_eligible_at"), now)
-    }
     selected = {}
 
     def add(anime_id, reason):
@@ -499,11 +513,10 @@ def select_scan_items(
         if current_id <= 0:
             raise ValueError("current_anime_id must be a positive integer")
         current_group = variant_map.get(current_id, current_id)
-        if current_group in incomplete_groups:
+        if current_group in incomplete_groups and current_group in personal_groups:
             for source_id in by_group.get(current_group, [current_id]):
                 add(source_id, "current")
 
-    personal = personal_candidate_ids(con, user_id, variant_map, set(row_by_id))
     for anime_id in personal:
         if anime_id not in incomplete_groups:
             continue
@@ -515,12 +528,10 @@ def select_scan_items(
     picker = rng or random.SystemRandom()
     ranked = []
     for group, ids in sorted(by_group.items()):
-        if group not in incomplete_groups or any(anime_id in selected for anime_id in ids):
+        if (group not in incomplete_groups or group not in due_groups
+                or any(anime_id in selected for anime_id in ids)):
             continue
-        eligible = [anime_id for anime_id in ids if anime_id in due_ids]
-        if not eligible:
-            continue
-        weight = max(partial_scan_weight(row_by_id[anime_id], states.get(anime_id) or {}, now) for anime_id in eligible)
+        weight = max(partial_scan_weight(row_by_id[anime_id], states.get(anime_id) or {}, now) for anime_id in ids)
         key = -math.log(max(1e-15, 1.0 - picker.random())) / weight
         ranked.append((key, group))
     for _, group in sorted(ranked)[:PARTIAL_EXTRA_LIMIT]:
