@@ -268,7 +268,7 @@ The tracked migration creates these tables:
 | --- | --- |
 | `animego_scan_jobs` | Actor snapshot (`user_id`, email, name), mode, lifecycle, totals, and content-update run. |
 | `animego_scan_job_items` | Assigned title, selection reason, result status, additions, and per-title error. |
-| `animego_title_scan_state` | Last check/change, next eligibility, no-change backoff, last user, and last job. |
+| `animego_title_scan_state` | Last attempt/change, legacy cooldown fields, last user, and last job; current selection does not use the legacy cooldown. |
 | `animego_episode_additions` | Episode attribution with `user_id`, `scan_job_id`, timestamp, payload hash, and optional future reversion marker. |
 | `animego_provider_additions` | Provider attribution with `user_id`, `scan_job_id`, provider key, timestamp, payload hash, and optional future reversion marker. |
 
@@ -373,7 +373,7 @@ trusted worker, so the operation lock remains the final write boundary.
 | HTTP `410` | The job expired. Start a new scan. |
 | HTTP `423` | Another database operation holds the shared lock. Retry the same pending title result. |
 | Scanner halts on `403`, `429`, or CAPTCHA | Stop making requests, wait for AnimeGo access to recover, then resume/reload before the job expires. Do not increase request concurrency. |
-| Extended Scan has fewer titles than the catalog | Titles classified as completed by release status or a month of matching observations are excluded. |
+| Extended Scan has fewer titles than the catalog | Completed titles are excluded. A non-personal title is also skipped if every source was successfully checked less than 12 hours ago. |
 | HTTP `426` | Download and reload extension 0.5.17 or newer, then reload the catalog page. |
 | The app says there is nothing to check | The server created and immediately completed a zero-task job, so it did not open the extension or hold the global slot. |
 | A scan finishes with no additions | This is valid: assigned titles were checked but all playable episodes/providers were already known. |

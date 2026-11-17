@@ -21,9 +21,9 @@
   the relation graph; `scripts/check_franchise_data.py` audits local coverage,
   one-to-one canonical ownership, and an editorial inbox of high-rated
   uncovered titles.
-- `animego_scans.py` selects Partial/Full user scan jobs, validates job-token
-  results, applies additive episode/provider changes, records attribution, and
-  packages the cross-browser WebExtension download.
+- `animego_scans.py` selects Partial/Extended/Full user scan jobs, validates
+  job-token results, records additions and attribution, refreshes existing
+  player fields in Extended/Full, and packages the cross-browser WebExtension.
 - `scrape_animego.py` owns the base SQLite schema and the AnimeGO scraper.
 - `scrape_yummyanime.py` imports selected YummyAnime/YummyAni titles into the
   same schema.
@@ -310,9 +310,13 @@ so the existing manual progress control stays in sync with automatic tracking.
 
 `POST /api/animego-scans`
 
-Requires an authenticated app session. Creates one `partial` or `full` user
-scan job and returns its assigned titles plus a job-scoped bearer token. Only
-one user scan job can be active globally; competing creates return `409`.
+Requires an authenticated app session. Creates a `partial`, `extended`, or
+`full` user scan job and returns its assigned source titles plus a job-scoped
+bearer token. Partial selects non-completed personal titles and a small random
+set of other due titles. Extended selects non-completed due or personal titles;
+both modes use the 12-hour rule documented in
+`guides/animego-scanner/README.md`. Full includes all source titles. Only one
+user scan job can be active globally; competing creates return `409`.
 
 `GET /api/animego-scans/<id>`
 
@@ -321,7 +325,8 @@ Requires the job bearer token. Returns status/counters for extension recovery.
 `POST /api/animego-scans/<id>/results`
 
 Requires the job bearer token. Validates and applies one assigned title's
-additive-only episode/provider result. Existing rows are not overwritten.
+episode/provider result. Existing episode metadata is preserved; Extended and
+Full may refresh existing provider and player fields.
 
 `POST /api/animego-scans/<id>/complete`
 
@@ -365,14 +370,14 @@ ZIP/folder temporarily for development. The setup UI is `/scanner-setup`.
    appends raw events, updates per-episode aggregate state, and updates the same
    per-title progress summary used by the manual controls.
 11. Recommendation data is reloaded after favorite/progress/status changes.
-12. A user may start a Partial or Full AnimeGo scan. The WebExtension first
+12. A user may start a Partial, Extended, or Full scan. The WebExtension first
     verifies or requests its exact optional AnimeGo host permission. Only after
-    that succeeds does the server choose eligible source-title tasks and issue a
-    job-only token. The extension fetches AnimeGo player metadata through the
-    user's Chrome or Safari connection and posts each title back. The server
-    validates assigned IDs and allowed HTTPS player URLs, applies only new
-    episodes/providers under the database-operation lock, writes
-    attribution/content-update rows, and invalidates the catalog cache.
+    that succeeds does the server choose eligible canonical titles and their
+    source tasks and issue a job-only token. The extension fetches AnimeGo and
+    Kinogoo player metadata through the user's Chrome or Safari connection;
+    assigned server-side sources are checked by the web service. The server
+    validates assigned IDs and allowed HTTPS player URLs, applies results under
+    the database-operation lock, and records attribution and content updates.
 
 ## Navigation And Themes
 
@@ -458,7 +463,7 @@ AnimeGO:
   trusted push collector for that source. The collector checks upstream data,
   but the production web process validates the complete bundle and remains the
   only SQLite writer. YummyAnime continues through the built-in web sync.
-- Authenticated users can additionally run distributed Partial/Full catch-up
+- Authenticated users can additionally run distributed Partial/Extended/Full catch-up
   scans through the Chrome/Safari WebExtension. These scans do not replace the trusted
   worker or advance its `animego:<mode>:last_success` marker. See
   `guides/animego-scanner/README.md`.

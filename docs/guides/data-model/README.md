@@ -71,6 +71,31 @@ Translation labels discovered by the AnimeGO scraper.
 
 Audit table for scraper runs.
 
+`animego_title_scan_state` and `animego_scan_job_items`
+
+User-scan state is shared across users and stored per source-specific `anime.id`.
+`last_checked_at` is the latest recorded attempt, including an error; the
+selector derives the latest successful check from that state and, after a failed
+attempt, from completed job items. An unscanned source has no successful
+timestamp. `next_eligible_at` and backoff fields remain as legacy state but no
+longer govern the current quick or extended selection.
+
+For the 12-hour rule, a canonical title is recent only when each linked source
+has a successful check within that interval. Personal favorites and Watching
+titles bypass this timing rule, while completed titles are excluded from both
+quick and extended scans. Full scans do not use the timing rule.
+
+`scan_source_observations`
+
+Stores a source identity, a versioned fingerprint of checked episodes and
+providers, the start of the unchanged period, and the latest complete check.
+The scanner uses these observations to infer inactivity only after complete
+matching checks at least one calendar month apart for every linked source.
+Legacy fingerprints lack player-address evidence and cannot prove inactivity;
+the next complete check starts a new observation period. This inferred state
+does not overwrite the source release status or the user's watch status. See
+the [scanner guide](../animego-scanner/README.md) for selection and limitations.
+
 `users`
 
 One row per authenticated Google account:

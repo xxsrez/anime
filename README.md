@@ -179,6 +179,6 @@ YummyAnime is fetched directly by the Railway web sync. AnimeGO blocks the
 current cloud egress, so production AnimeGO updates are collected by the
 trusted push worker documented in `docs/instructions/Operations_Runbook.md`;
 the production web process still performs all validation and SQLite writes.
-Authenticated users can also contribute additive AnimeGo updates with the
-`Scan` / `Full Scan` browser-extension workflow documented in
+Authenticated users can also update the catalog with the quick, extended, or
+full browser-extension scan documented in
 `docs/guides/animego-scanner/README.md`.

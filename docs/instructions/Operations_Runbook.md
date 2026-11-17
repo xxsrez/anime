@@ -546,7 +546,7 @@ Chrome/Safari Manifest V3 WebExtension. Keep that path separate from the trusted
 user jobs receive only a job-scoped token, never `ANIMEGO_PUSH_TOKEN`, and
 do not advance the worker's last-success marker. Both paths still validate and
 write on the web process under the shared database-operation lock. Setup,
-Partial/Full selection, job expiry/resume, attribution audit, and troubleshooting
+Partial/Extended/Full selection, job expiry/resume, attribution audit, and troubleshooting
 are documented in `docs/guides/animego-scanner/README.md`.
 
 The push boundary uses its own high-entropy `ANIMEGO_PUSH_TOKEN`; do not reuse

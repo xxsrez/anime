@@ -27,7 +27,7 @@ and player prototype. It follows the `project-docs` layout:
    reference; defer to the operations runbook for the release checklist.
 9. [guides/data-model/README.md](guides/data-model/README.md) - SQLite tables, relationships, ID
    conventions, and mutable data.
-10. [guides/animego-scanner/README.md](guides/animego-scanner/README.md) - Partial/Full user scans, Chrome/Safari setup,
+10. [guides/animego-scanner/README.md](guides/animego-scanner/README.md) - Partial/Extended/Full user scans, Chrome/Safari setup,
     attribution, API, and troubleshooting.
 11. [instructions/Code_Style_Instructions.md](instructions/Code_Style_Instructions.md) - coding rules and contribution
    conventions.

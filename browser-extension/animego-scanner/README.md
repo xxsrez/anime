@@ -23,9 +23,11 @@ The scanner uses the catalog's light or dark theme when opened from the site
 or when a new scan is created. Changes to the site's theme also update the open
 scanner. If no catalog theme has been supplied, it uses the system appearance.
 
-The extension sends only episodes that are not yet playable in the catalog,
-together with playable HTTPS providers. The server preserves existing metadata
-and may fill a previously null player URL.
+New jobs include already-known episodes so the scanner can find new playable
+providers. The server preserves existing episode metadata; Partial preserves
+already-playable providers, while Extended and Full may refresh their player
+fields. See the [scanner guide](../../docs/guides/animego-scanner/README.md)
+for the 12-hour selection rule and completion criteria.
 
 ## Explicit Kinogoo series
 
