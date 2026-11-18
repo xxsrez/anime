@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,7 @@ if str(ROOT) not in sys.path:
 
 import franchise_catalog  # noqa: E402
 import server  # noqa: E402
+from scripts.db_migrate import copy_database  # noqa: E402
 
 
 def parse_args():
@@ -34,6 +36,15 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if not args.db.is_file():
+        raise SystemExit(f"catalog database not found: {args.db}")
+    with tempfile.TemporaryDirectory(prefix="anime-franchise-audit-") as tmpdir:
+        snapshot = Path(tmpdir) / "catalog.sqlite"
+        copy_database(args.db, snapshot)
+        audit(args, snapshot)
+
+
+def audit(args, db_path):
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     expected_generated = args.expected_generated
     if expected_generated is None:
@@ -52,7 +63,7 @@ def main():
     canonical_owners = {}
     franchise_rows = []
     for definition in definitions:
-        payload = server.get_franchise_detail(definition["slug"], args.db)
+        payload = server.get_franchise_detail(definition["slug"], db_path)
         available_count = int(payload["available_count"])
         if definition in generated and available_count < 1:
             raise SystemExit(f"{definition['slug']} has no matching canonical catalog title")
@@ -80,7 +91,7 @@ def main():
             }
         )
 
-    catalog_items = server.get_anime_list(args.db)
+    catalog_items = server.get_anime_list(db_path)
     uncovered = [item for item in catalog_items if int(item["id"]) not in canonical_owners]
     uncovered.sort(
         key=lambda item: (

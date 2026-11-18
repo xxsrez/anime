@@ -51,9 +51,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           find static browser-extension/animego-scanner -name '*.js' -print0 | xargs -0 -n1 node --check
-          node static/animego_scan_ui.test.js
-          node --test static/scanner_setup.test.js
-          node --test static/frontend_runtime.test.js
+          node --test static/*.test.js
           npm test --prefix browser-extension/animego-scanner
 
       - name: Type-check Railway function
@@ -64,5 +62,5 @@ jobs:
 
       - name: Check shell syntax and repository hygiene
         run: |
-          sh -n scripts/*.sh
+          for script in scripts/*.sh; do sh -n "$script"; done
           python scripts/check_repo_hygiene.py

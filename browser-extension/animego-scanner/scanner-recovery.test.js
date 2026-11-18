@@ -3,11 +3,12 @@ import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import { fetchKinogooHtml, kinogooPlayer, kinogooEpisodes, KINOGOO_ORIGINS } from "./kinogoo.js";
+import { shouldUseInitialProviders, syntheticEpisode, unknownEpisodes } from "./parser.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true }) {
+async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true, parsePlayerContent }) {
   const element = () => ({
     children: [], style: {}, attributes: {}, listeners: {},
     append(...items) { this.children.push(...items); },
@@ -50,6 +51,7 @@ async function scannerHarness({ stored = null, storedTheme, fetch, discovery = f
     }, createElement: element },
     resolveExtensionApi: () => browser, fetch, URL, AbortController, DOMException,
     KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes,
+    parsePlayerContent, parseUnavailableReason: () => null, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes,
     hasAnimeGoHostPermission: async () => permission, requestAnimeGoHostPermission: requestPermission,
     setTimeout: fastTimers ? (fn, ms) => setTimeout(fn, ms >= 15000 ? 1 : ms) : setTimeout,
     clearTimeout, queueMicrotask, console, shouldRestartAfterReload,
@@ -877,6 +879,38 @@ test("incomplete source coverage is reported while available episodes are retain
   assert.match(body.metadata_error, /полностью проверить/);
   assert.equal(body.episodes.length, 1);
   assert.equal(h.driver.state.error_count, 1);
+});
+
+test("an unavailable episode leaves later episodes eligible and keeps already collected players", async () => {
+  const episodes = [{ id: 10001, number: "1" }, { id: 10002, number: "2" }, { id: 10003, number: "3" }];
+  const providers = [{ provider_id: "fixture" }];
+  let body;
+  const h = await scannerHarness({
+    parsePlayerContent: content => content === "first"
+      ? { episodes, providers, selectedEpisodeId: 10001 }
+      : { episodes: [], providers },
+    fetch: async (url, options) => {
+      if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+      return { ok: true, text: async () => JSON.stringify({
+        job: { checked_items: 1, error_count: 1, new_episode_count: 2, new_provider_count: 2 },
+        result: { status: "failed", error: "неполная проверка", new_episode_count: 2, new_provider_count: 2 },
+      }) };
+    },
+  });
+  h.driver.upstream(async path => {
+    if (path === "/player/100") return { data: { content: "first" } };
+    if (path === "/player/videos/10002") throw h.driver.upstreamError("HTTP 404", 404);
+    if (path === "/player/videos/10003") return { data: { content: "third" } };
+    return "<h1>Fixture</h1>";
+  });
+  await h.driver.run();
+  assert.equal(h.driver.state.status, "completed");
+  assert.deepEqual(body.episodes.map(snapshot => snapshot.episode.id), [10001, 10003]);
+  assert.equal(body.full_content_checked, false);
+  assert.match(body.metadata_error, /полностью проверить/);
+  assert.equal(body.upstream_status, undefined);
+  assert.ok(h.elements.get("log").children.some(item => item.children.some(child =>
+    /Сохранено серий: 2/.test(child.textContent))));
 });
 
 test("metadata failure does not discard episodes for an existing title", async () => {

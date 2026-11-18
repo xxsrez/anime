@@ -389,9 +389,8 @@ class AnimeGoScansTest(unittest.TestCase):
         job = self.create_job()
         self.discover(job, 1, self.listing_html(701))
         args = (self.db_path, job["job"]["id"], job["token"])
-        invalid = self.result_payload(701, 70101)
-        invalid["detail_html"] = "<html>unrecognized page</html>"
-        with self.assertRaisesRegex(ValueError, "no title"):
+        invalid = self.result_payload(701, 0)
+        with self.assertRaisesRegex(ValueError, "episode id"):
             animego_scans.submit_scan_result(*args, invalid, server.PLAYER_HOSTS)
         error = {"anime_id": 701, "message": "unrecognized detail page"}
         stopped = animego_scans.complete_scan_job(*args, {"stopped": True, "errors": [error]})
@@ -404,9 +403,8 @@ class AnimeGoScansTest(unittest.TestCase):
         job = self.create_job()
         self.discover(job, 1, self.listing_html(701))
         args = (self.db_path, job["job"]["id"], job["token"])
-        invalid = self.result_payload(701, 70101)
-        invalid["detail_html"] = "<html>unrecognized page</html>"
-        with self.assertRaisesRegex(ValueError, "no title"):
+        invalid = self.result_payload(701, 0)
+        with self.assertRaisesRegex(ValueError, "episode id"):
             animego_scans.submit_scan_result(*args, invalid, server.PLAYER_HOSTS)
         stopped = animego_scans.complete_scan_job(*args, {"stopped": True})
         self.assertEqual(stopped["job"]["status"], "stopped")
@@ -422,15 +420,15 @@ class AnimeGoScansTest(unittest.TestCase):
             self.assertEqual(con.execute("select count(*) from anime").fetchone()[0], 0)
         body = self.result_payload(701, 70101)
         body["detail_html"] = '<h1>New title</h1><div class="description">Source description</div>'
-        invalid = self.result_payload(701, 70101)
-        invalid["detail_html"] = body["detail_html"]
-        invalid["episodes"][0]["providers"][0]["embed_url"] = "https://invalid.example/video"
-        with self.assertRaises(ValueError):
-            animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], invalid, server.PLAYER_HOSTS)
+        body["episodes"][0]["providers"].append({
+            **self.provider("unsupported-player"), "embed_url": "https://unsupported.example/player"
+        })
         first = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS)
         self.assertEqual(first["result"]["new_episode_count"], 1)
+        self.assertEqual(first["result"]["status"], "failed")
         again = animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], body, server.PLAYER_HOSTS)
         self.assertEqual(again["result"]["status"], "already_processed")
+        self.assertEqual(again["result"]["item_status"], "failed")
         animego_scans.submit_scan_result(self.db_path, job["job"]["id"], job["token"], {"anime_id": 702, "episodes": []}, server.PLAYER_HOSTS)
         with closing(server.connect(self.db_path)) as con:
             self.assertEqual(con.execute("select editorial_status from anime where id=701").fetchone()[0], "needs_review")
@@ -443,6 +441,28 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertTrue(self.discover(job, 2, not_found=True)["done"])
         result = animego_scans.complete_scan_job(self.db_path, job["job"]["id"], job["token"], {})
         self.assertEqual(result["job"]["checked_items"], 2)
+        self.assertEqual(result["job"]["error_count"], 1)
+
+    def test_unreadable_discovered_card_does_not_block_following_titles(self):
+        job = self.create_job()
+        self.discover(job, 1, self.listing_html(701, 702))
+        args = (self.db_path, job["job"]["id"], job["token"])
+        body = {**self.result_payload(701, 70101), "detail_html": "<html>unrecognized page</html>"}
+        result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)
+        replay = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertIn("карточку AnimeGO", result["result"]["error"])
+        self.assertEqual(replay["result"]["error"], result["result"]["error"])
+        self.assertEqual(replay["job"]["checked_items"], 1)
+
+        body = {**self.result_payload(702, 70201), "detail_html": "<h1>Following title</h1>"}
+        self.assertEqual(animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)["result"]["status"], "completed")
+        self.assertTrue(self.discover(job, 2, not_found=True)["done"])
+        completed = animego_scans.complete_scan_job(*args)["job"]
+        self.assertEqual((completed["status"], completed["checked_items"], completed["error_count"]), ("completed", 2, 1))
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select id from anime order by id").fetchall()[0][0], 702)
+            self.assertIsNone(con.execute("select 1 from episodes where id=70101").fetchone())
 
     def test_discovery_continues_past_known_page_and_rejects_unparsed_page(self):
         self.add_title(1)
@@ -1685,25 +1705,34 @@ class AnimeGoScansTest(unittest.TestCase):
             )]
         self.assertEqual(urls, [older_url, provider["embed_url"]])
 
-    def test_unsafe_provider_is_rejected_without_consuming_item(self):
+    def test_unsupported_provider_only_fails_its_assigned_item(self):
         self.add_title(9)
+        self.add_title(10)
         job = self.create_job()
         provider = self.provider()
         provider.update(
             {
-                "embed_host": "evil.example",
-                "embed_url": "https://evil.example/player/token",
-                "embed_url_redacted": "//evil.example/player/<redacted>",
+                "embed_url": "https://unsupported.example/fixture-token",
             }
         )
-        with self.assertRaisesRegex(ValueError, "allowed HTTPS"):
-            animego_scans.submit_scan_result(
-                self.db_path,
-                job["job"]["id"],
-                job["token"],
-                self.result_payload(9, 902, provider=provider),
-                server.PLAYER_HOSTS,
-            )
+        route = f"/api/animego-scans/{job['job']['id']}/results"
+        body = json.dumps(self.result_payload(9, 902, provider=provider)).encode()
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {job['token']}"}
+        status, _, raw = self.request("POST", route, headers=headers, body=body)
+        result = json.loads(raw)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertIn("недопустимыми адресами: 1", result["result"]["error"])
+        self.assertNotIn(b"fixture-token", raw)
+        status, _, raw = self.request("POST", route, headers=headers, body=body)
+        replay = json.loads(raw)
+        self.assertEqual(status, 200)
+        self.assertEqual(replay["result"]["item_status"], "failed")
+        self.assertEqual(replay["job"]["checked_items"], 1)
+        body = json.dumps(self.result_payload(10, 1002)).encode()
+        status, _, raw = self.request("POST", route, headers=headers, body=body)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["result"]["status"], "completed")
         con = server.connect(self.db_path)
         try:
             item = con.execute(
@@ -1713,8 +1742,34 @@ class AnimeGoScansTest(unittest.TestCase):
             episode = con.execute("select 1 from episodes where id = 902").fetchone()
         finally:
             con.close()
-        self.assertEqual(item["status"], "pending")
+        self.assertEqual(item["status"], "failed")
         self.assertIsNone(episode)
+
+    def test_bad_player_and_card_preserve_valid_episodes_without_certifying_coverage(self):
+        self.add_title(9, title="Existing title")
+        job = self.create_job()
+        args = (self.db_path, job["job"]["id"], job["token"])
+        body = self.result_payload(9, 902)
+        player = body["episodes"][0]["providers"][0]
+        player["embed_url"] = "https://kodikplayer.com:443/serial/1/fixture-token/720p?hash="
+        bad = {**self.provider("unsupported"), "embed_url": "https://unsupported.example/player"}
+        body["episodes"][0]["providers"].append(bad)
+        body["episodes"] += self.result_payload(9, 903, provider=bad)["episodes"]
+        body["detail_html"] = "<html>unrecognized page</html>"
+        body["full_content_checked"] = True
+
+        result = animego_scans.submit_scan_result(*args, body, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertEqual(result["result"]["new_episode_count"], 1)
+        self.assertEqual(result["result"]["new_provider_count"], 1)
+        self.assertIn("недопустимыми адресами: 2", result["result"]["error"])
+        self.assertIn("карточку AnimeGO", result["result"]["error"])
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select title from anime where id=9").fetchone()[0], "Existing title")
+            sources = con.execute("select episode_id, embed_host, embed_url_redacted from video_sources where anime_id=9").fetchall()
+            self.assertEqual([tuple(row) for row in sources],
+                             [(902, "kodikplayer.com:443", scrape_animego.redact_embed_url(player["embed_url"]))])
+            self.assertIsNone(con.execute("select 1 from scan_source_observations where anime_id=9").fetchone())
 
     def test_complete_stop_records_summary_errors_without_counting_them_checked(self):
         self.add_title(10)

@@ -257,13 +257,16 @@ def fail_on_drift(plan):
 
 
 def copy_database(source_path, target_path):
-    source = sqlite3.connect(source_path)
-    target = sqlite3.connect(target_path)
+    source_uri = f"{Path(source_path).resolve().as_uri()}?mode=ro"
+    source = sqlite3.connect(source_uri, uri=True)
     try:
-        with target:
-            source.backup(target)
+        target = sqlite3.connect(target_path)
+        try:
+            with target:
+                source.backup(target)
+        finally:
+            target.close()
     finally:
-        target.close()
         source.close()
 
 

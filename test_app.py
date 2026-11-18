@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from contextlib import closing
 import datetime as dt
 import http.client
 import importlib.util
@@ -4463,6 +4464,18 @@ assert.deepStrictEqual(rankedIds("zz"), []);
                 finally:
                     third.close()
                 self.assertEqual(initialize.call_count, 2)
+
+    def test_existing_catalog_upgrades_retired_source_column_before_serving(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "legacy.sqlite"
+            self.build_catalog_fixture(db_path)
+            with closing(sqlite3.connect(db_path)) as con:
+                con.execute("alter table anime drop column source_retired_at")
+                con.commit()
+            with patch.dict(os.environ, {"ANIME_AUTO_MIGRATE": "0"}):
+                server.prepare_database(db_path)
+            self.assertTrue(server.check_database_readiness(db_path))
+            self.assertTrue(server.get_anime_list(db_path))
 
     def test_connect_detects_atomic_database_replacement(self):
         with tempfile.TemporaryDirectory() as tmpdir:

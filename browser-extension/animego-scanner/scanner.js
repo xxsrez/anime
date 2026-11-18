@@ -628,6 +628,7 @@ async function collectTitle(task, runGeneration) {
   }
   const additions = unknownEpisodes(episodes, task.known_episode_ids);
   const collected = [];
+  let episodeFetchFailed = false;
   let coverageComplete = episodes.length > 0 && additions.length === episodes.length
     && !initial.invalidEpisodeCount && !initial.invalidProviderCount;
 
@@ -640,12 +641,21 @@ async function collectTitle(task, runGeneration) {
     ) {
       providers = initial.providers;
     } else {
-      const videoResponse = await upstreamJson(`/player/videos/${episode.id}`, runGeneration);
-      const videoContent = responseContent(videoResponse, `Серия #${episode.id}`);
-      const video = parsePlayerContent(videoContent);
-      providers = video.providers;
-      if (video.invalidEpisodeCount || video.invalidProviderCount) coverageComplete = false;
-      unavailableReason = parseUnavailableReason(videoResponse?.data?.content_online || "");
+      try {
+        const videoResponse = await upstreamJson(`/player/videos/${episode.id}`, runGeneration);
+        const videoContent = responseContent(videoResponse, `Серия #${episode.id}`);
+        const video = parsePlayerContent(videoContent);
+        providers = video.providers;
+        if (video.invalidEpisodeCount || video.invalidProviderCount) coverageComplete = false;
+        unavailableReason = parseUnavailableReason(videoResponse?.data?.content_online || "");
+      } catch (error) {
+        if (!(error instanceof UpstreamError)) throw error;
+        episodeFetchFailed = true;
+        coverageComplete = false;
+        log(`Не удалось проверить серию ${episode.number || episode.id}: ${error.message}`, "error");
+        if (error.retryable) break;
+        continue;
+      }
     }
     if (providers.length === 0) {
       coverageComplete = false;
@@ -659,6 +669,7 @@ async function collectTitle(task, runGeneration) {
     collected.push({ episode, providers, unavailable_reason: null });
   }
   collected.coverageComplete = coverageComplete;
+  collected.episodeFetchFailed = episodeFetchFailed;
   return collected;
 }
 
@@ -751,7 +762,7 @@ async function processTask(task, index, runGeneration) {
       if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
       body = { anime_id: task.anime_id, episodes, full_content_checked: episodes.coverageComplete === true,
         selection_reason: task.selection_reason || null };
-      if (episodes.coverageComplete === false && !(task.known_episode_ids || []).length) {
+      if (episodes.episodeFetchFailed || (episodes.coverageComplete === false && !(task.known_episode_ids || []).length)) {
         body.metadata_error = "Не удалось полностью проверить серии или плееры источника.";
       }
     }
@@ -771,19 +782,15 @@ async function processTask(task, index, runGeneration) {
       } catch (error) {
         if (task.selection_reason === "discovery" || !(error instanceof UpstreamError)
             || runGeneration !== generation) throw error;
-        body.metadata_error = "Не удалось обновить сведения карточки.";
+        body.metadata_error = [body.metadata_error, "Не удалось обновить сведения карточки."].filter(Boolean).join(" ");
         log(`Не удалось обновить карточку: ${error?.message || String(error)}. Найденные серии будут сохранены.`, "error");
       }
     }
   }
   const response = await submitTaskResult(body, index, runGeneration);
-  if ((response?.result?.status === "failed" || response?.result?.item_status === "failed") && !body.error) {
-    reportErrorResult(task, response.result.error || "Источник не проверен.", response);
-    render();
-    return;
-  }
-  if (body.error) {
-    reportErrorResult(task, body.error, response);
+  const result = response?.result;
+  if (result?.status === "failed" || result?.item_status === "failed" || body.error) {
+    reportErrorResult(task, result?.error || body.error || "Источник не проверен.", response);
     render();
     return;
   }
@@ -880,12 +887,13 @@ async function recordOrdinaryError(task, index, error) {
       selection_reason: task.selection_reason || null,
     }, index,
   );
-  reportErrorResult(task, message, response);
+  reportErrorResult(task, response?.result?.error || message, response);
 }
 
 function reportErrorResult(task, message, response) {
-  if (response?.result?.recovered_source) {
-    log(`${taskTitle(task)}: AnimeGO недоступен; проверено и обновлено через ${response.result.recovered_source}.`, "success");
+  const result = response?.result;
+  if (result?.recovered_source && !result.error) {
+    log(`${taskTitle(task)}: AnimeGO недоступен; проверено и обновлено через ${result.recovered_source}.`, "success");
     return;
   }
   checkpoint.errors.push({
@@ -893,7 +901,10 @@ function reportErrorResult(task, message, response) {
     message: message.slice(0, 1000),
   });
   checkpoint.errors = checkpoint.errors.slice(-100);
-  log(`${taskTitle(task)}: ${message}`, "error");
+  const addedEpisodes = Number(result?.new_episode_count) || 0;
+  const addedProviders = Number(result?.new_provider_count) || 0;
+  const added = addedEpisodes || addedProviders ? ` Сохранено серий: ${addedEpisodes}, плееров: ${addedProviders}.` : "";
+  log(`${taskTitle(task)}: ${message}${added}`, "error");
 }
 
 async function finishScan(runGeneration) {

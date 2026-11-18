@@ -1201,6 +1201,7 @@ def ensure_catalog_schema(con):
         {
             "source": "text",
             "source_id": "text",
+            "source_retired_at": "text",
             "editorial_status": "text not null default 'legacy'",
         },
     )
@@ -1503,7 +1504,7 @@ def check_database_readiness(path):
             if con.execute("pragma foreign_key_check").fetchone() is not None:
                 return False
             required_columns = {
-                "anime": {"id", "slug", "title", "source", "source_id"},
+                "anime": {"id", "slug", "title", "source", "source_id", "source_retired_at"},
                 "episodes": {"id", "anime_id", "number", "has_video"},
                 "video_sources": {"id", "anime_id", "episode_id", "embed_url"},
                 "users": {"id", "google_sub"},

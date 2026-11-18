@@ -4,7 +4,6 @@ import http.client
 import json
 import os
 from pathlib import Path
-import shutil
 import sys
 import tempfile
 import threading
@@ -14,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import server  # noqa: E402 -- ROOT bootstrap is intentional
+from scripts.db_migrate import copy_database  # noqa: E402
 
 
 def request(host, port, method, path, headers=None, body=None):
@@ -32,7 +32,7 @@ def assert_status(actual, expected, label):
 def make_smoke_db(source_db, tmpdir):
     smoke_db = Path(tmpdir) / "animego-smoke.sqlite"
     if source_db.exists():
-        shutil.copy2(source_db, smoke_db)
+        copy_database(source_db, smoke_db)
     server.prepare_database(smoke_db)
     return smoke_db
 

@@ -44,6 +44,7 @@ ONGOING_STATUSES = {"ongoing", "онгоинг"}
 SOURCE_FETCH_LIMIT = threading.BoundedSemaphore(1)
 YUMMY_DISCOVERY_PAGE_SIZE = 100
 MAX_YUMMY_DISCOVERY_PAGES = 500
+UNREADABLE_CARD = "Не удалось прочитать карточку AnimeGO."
 
 
 class ScanError(RuntimeError):
@@ -1020,39 +1021,27 @@ def validated_provider(provider, allowed_hosts):
         provider.get("embed_url"), "embed_url", required=True, maximum=MAX_PROVIDER_URL
     )
     normalized_url = animego.normalize_embed_url(raw_url)
-    parsed = urlparse("https:" + normalized_url if normalized_url.startswith("//") else normalized_url)
     try:
+        parsed = urlparse("https:" + normalized_url if normalized_url.startswith("//") else normalized_url)
         port = parsed.port
-    except ValueError as exc:
-        raise ValueError("player URL has an invalid port") from exc
+    except ValueError:
+        return None
     if (
         parsed.scheme.casefold() != "https"
         or not parsed.hostname
         or parsed.username is not None
         or parsed.password is not None
         or port not in (None, 443)
+        or "\\" in parsed.netloc
         or not allowed_player_host(parsed.hostname, allowed_hosts)
     ):
-        raise ValueError("player URL is not an allowed HTTPS URL")
+        return None
+    # The browser and urllib can serialize the same URL differently. Derive
+    # both stored fields from the validated address on the server.
     embed_host = animego.embed_host(normalized_url)
     redacted = animego.redact_embed_url(normalized_url)
-    supplied_host = validated_text(provider.get("embed_host"), "embed_host", maximum=500)
-    supplied_redacted = animego.normalize_embed_url(
-        validated_text(
-            provider.get("embed_url_redacted"),
-            "embed_url_redacted",
-            required=True,
-            maximum=MAX_PROVIDER_URL,
-        )
-    )
     if not embed_host or not redacted:
-        raise ValueError("player URL could not be normalized safely")
-    if supplied_host and supplied_host.casefold() != embed_host.casefold():
-        raise ValueError("embed_host does not match player URL")
-    canonical_supplied = "https:" + supplied_redacted if supplied_redacted.startswith("//") else supplied_redacted
-    canonical_redacted = "https:" + redacted if redacted.startswith("//") else redacted
-    if canonical_supplied != canonical_redacted:
-        raise ValueError("embed_url_redacted does not match player URL")
+        return None
     return {
         "provider_id": provider_id,
         "provider_title": provider_title,
@@ -1064,6 +1053,16 @@ def validated_provider(provider, allowed_hosts):
     }
 
 
+def add_scan_error(message, previous):
+    return (f"{message} {previous}" if previous else message)[:MAX_ERROR_TEXT]
+
+
+def scan_result_detail(payload):
+    html = validated_text(payload.get("detail_html"), "detail_html", maximum=MAX_RESULT_BODY_BYTES)
+    detail = animego.parse_detail(html) if html else None
+    return detail if detail and detail["title"] else None
+
+
 def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_episode_id=2_000_000_000):
     if not isinstance(payload, dict):
         raise ValueError("payload must be an object")
@@ -1071,6 +1070,7 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_ep
     if type(anime_id) is not int or anime_id != int(assigned_anime_id):
         raise ValueError("anime_id is not assigned to this result")
     error = validated_text(payload.get("error"), "error", maximum=MAX_ERROR_TEXT)
+    metadata_error = validated_text(payload.get("metadata_error"), "metadata_error", maximum=MAX_ERROR_TEXT)
     episodes = payload.get("episodes", [])
     if not isinstance(episodes, list):
         raise ValueError("episodes must be an array")
@@ -1082,6 +1082,7 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_ep
     normalized = []
     episode_ids = set()
     provider_count = 0
+    skipped_players = 0
     for snapshot in episodes:
         if not isinstance(snapshot, dict) or not isinstance(snapshot.get("episode"), dict):
             raise ValueError("episode snapshot must contain an episode object")
@@ -1104,7 +1105,15 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_ep
         provider_count += len(providers)
         if provider_count > MAX_RESULT_PROVIDERS:
             raise ValueError("too many providers in result")
-        normalized_providers = [validated_provider(provider, allowed_hosts) for provider in providers]
+        normalized_providers = []
+        for provider in providers:
+            player = validated_provider(provider, allowed_hosts)
+            if player is None:
+                skipped_players += 1
+            else:
+                normalized_providers.append(player)
+        if not normalized_providers:
+            continue
         identities = [
             (provider["provider_id"], provider["translation_id"])
             for provider in normalized_providers
@@ -1117,10 +1126,15 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_ep
                 "providers": normalized_providers,
             }
         )
+    if skipped_players:
+        metadata_error = add_scan_error(
+            f"Пропущено плееров с недопустимыми адресами: {skipped_players}.", metadata_error
+        )
     return {
         "anime_id": anime_id,
         "episodes": normalized,
         "error": error,
+        "metadata_error": metadata_error,
     }
 
 
@@ -1566,7 +1580,9 @@ def prepare_source_recovery(db_path, job_id, token, payload, allowed_hosts, reso
         if not snapshots:
             raise ValueError("alternate source has no playable episodes")
         normalized = validate_result_payload({"anime_id": alternative["id"], "episodes": snapshots}, alternative["id"], allowed_hosts, max_episode_id=2**53)
-        return {"anime_id": alternative["id"], "url": alternative["url"], "episodes": normalized["episodes"],
+        if not normalized["episodes"]:
+            return {"error": normalized["metadata_error"]}
+        return {"anime_id": alternative["id"], "url": alternative["url"], "result": normalized,
                 "source_updated_at": _detail.get("source_updated_at"), "source_detail": _detail}
     except Exception as exc:
         # Keep the original failed result and report the alternative failure.
@@ -1750,6 +1766,8 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 "select * from animego_scan_job_items where job_id = ? and anime_id = ?",
                 (int(job_id), anime_id),
             ).fetchone()
+            normalized = None
+            imported_card = False
             if item is None:
                 candidate = con.execute("select * from animego_scan_discovery where job_id=? and anime_id=?", (job_id, anime_id)).fetchone()
                 if candidate is None:
@@ -1762,30 +1780,36 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 yummy_discovery = candidate["page"] < 0 and discovered_item.get("source") == "yummyanime"
                 normalized = validate_result_payload(payload, anime_id, allowed_hosts,
                                                      max_episode_id=2**53 if yummy_discovery else 2_000_000_000)
+                expected_source = "yummyanime" if yummy_discovery else "animego"
+                existing = None
+                detail = None
+                candidate_error = normalized["error"]
+                if normalized["episodes"]:
+                    existing = con.execute("select source from anime where id=?", (anime_id,)).fetchone()
+                    if existing and existing["source"] != expected_source:
+                        raise ValueError("discovered title id belongs to another source")
+                    if existing is None:
+                        if yummy_discovery:
+                            if _source_detail is None:
+                                raise ValueError("YummyAnime discovery requires validated source details")
+                            detail = _source_detail
+                        else:
+                            detail = scan_result_detail(payload)
+                        if not detail or not detail["title"]:
+                            candidate_error = add_scan_error(UNREADABLE_CARD, normalized["metadata_error"])
+
                 con.execute("update animego_scan_discovery set processed=1 where job_id=? and anime_id=?", (job_id, anime_id))
-                if normalized["error"] or not normalized["episodes"]:
-                    candidate_error = normalized["error"] or validated_text(payload.get("metadata_error"), "metadata_error", maximum=MAX_ERROR_TEXT)
+                if candidate_error or not normalized["episodes"]:
+                    candidate_error = candidate_error or normalized["metadata_error"]
                     if candidate_error:
                         discovered_item["scan_error"] = candidate_error
                         con.execute("update animego_scan_discovery set item_json=? where job_id=? and anime_id=?", (json.dumps(discovered_item), job_id, anime_id))
                     con.execute("update animego_scan_jobs set checked_items=checked_items+1, error_count=error_count+?, last_error=coalesce(?, last_error) where id=?", (int(bool(candidate_error)), candidate_error, job_id))
                     con.commit()
                     return {"job": job_payload(load_job(con, job_id)), "result": {"anime_id": anime_id, "status": "failed" if candidate_error else "completed", "error": candidate_error, "new_episode_count": 0, "new_provider_count": 0}}
-                existing = con.execute("select source from anime where id=?", (anime_id,)).fetchone()
-                expected_source = "yummyanime" if yummy_discovery else "animego"
-                if existing and existing["source"] != expected_source:
-                    raise ValueError("discovered title id belongs to another source")
                 if existing is None:
-                    if yummy_discovery:
-                        if _source_detail is None:
-                            raise ValueError("YummyAnime discovery requires validated source details")
-                        detail = _source_detail
-                    else:
-                        html = validated_text(payload.get("detail_html"), "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
-                        detail = animego.parse_detail(html)
-                    if not detail["title"]:
-                        raise ValueError("detail page contains no title")
                     animego.upsert_anime(con, discovered_item, detail, iso_timestamp(now), authoritative_metadata=True)
+                    imported_card = True
                     content_updates.insert_event(con, job["content_update_run_id"], "new_title", anime_id, source=expected_source,
                                                  source_id=str(discovered_item.get("source_id", anime_id)), title=detail["title"], description="Добавлен тайтл; карточка требует оформления")
                 position = con.execute("select coalesce(max(position), -1)+1 from animego_scan_job_items where job_id=?", (job_id,)).fetchone()[0]
@@ -1813,8 +1837,9 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 raise ValueError("assigned title no longer exists")
             if _source_identity is not None and tuple(anime_row[key] for key in ("source", "source_id", "url")) != _source_identity:
                 raise ValueError("assigned source changed while checking")
-            normalized = validate_result_payload(payload, anime_id, allowed_hosts,
-                                                 max_episode_id=2**53 if anime_row["source"] == "yummyanime" else 2_000_000_000)
+            if normalized is None:
+                normalized = validate_result_payload(payload, anime_id, allowed_hosts,
+                                                     max_episode_id=2**53 if anime_row["source"] == "yummyanime" else 2_000_000_000)
             if anime_row["source"] == "kinogoo":
                 for snapshot in normalized["episodes"]:
                     if not kinogoo.EPISODE_OFFSET < snapshot["episode"]["id"] < 2_000_000_000:
@@ -1844,7 +1869,7 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                     animego.refresh_release_metadata(con, alternate_row["id"], recovery["source_detail"], checked_at)
                 update_title_scan_state(con, anime_row, job["user_id"], job_id, error=original_source_error, checked_at=checked_at_dt)
                 anime_row = alternate_row
-                normalized = {"anime_id": anime_row["id"], "error": None, "episodes": recovery["episodes"]}
+                normalized = recovery["result"]
             if normalized["error"]:
                 scan_observations.invalidate(con, anime_id)
                 con.execute(
@@ -1887,13 +1912,13 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
 
             # Older extension versions omit HTML; preserve compatibility without
             # claiming that their episode-only scans refreshed metadata.
-            metadata_error = validated_text(payload.get("metadata_error"), "metadata_error", maximum=MAX_ERROR_TEXT)
-            if payload.get("detail_html") and anime_row["source"] == "animego":
-                html = validated_text(payload["detail_html"], "detail_html", required=True, maximum=MAX_RESULT_BODY_BYTES)
-                detail = animego.parse_detail(html)
-                if not detail["title"]:
-                    raise ValueError("detail page contains no title")
-                animego.upsert_anime(con, dict(anime_row), detail, checked_at, authoritative_metadata=False)
+            metadata_error = normalized["metadata_error"]
+            if not imported_card and payload.get("detail_html") and anime_row["source"] == "animego":
+                detail = scan_result_detail(payload)
+                if detail is None:
+                    metadata_error = add_scan_error(UNREADABLE_CARD, metadata_error)
+                else:
+                    animego.upsert_anime(con, dict(anime_row), detail, checked_at, authoritative_metadata=False)
 
             new_episodes = 0
             new_providers = 0
