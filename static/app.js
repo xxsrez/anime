@@ -2277,7 +2277,7 @@ function renderList({ append = false } = {}) {
     if (isRecommendationView()) {
       const recScore = formatRecommendationScore(item.recommendation_score);
       const confidence = item.recommendation_confidence ? `${item.recommendation_confidence}` : "";
-      meta.textContent = [recScore, confidence, frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source].filter(Boolean).join(" · ");
+      meta.textContent = [recScore && `Совет ${recScore}`, confidence, frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source].filter(Boolean).join(" · ");
     } else {
       meta.textContent = [text(item.kind, "тайтл"), frontendRuntime.releaseStatusLabel(item.status), `${available} видео`, score, source, watch].filter(Boolean).join(" · ");
     }
@@ -3533,7 +3533,7 @@ function renderRecommendationContext(detail) {
   header.className = "recommendation-context-header";
 
   const score = document.createElement("strong");
-  score.textContent = `Рейтинг совета ${formatRecommendationScore(rec.recommendation_score)}`;
+  score.textContent = `Балл рекомендации ${formatRecommendationScore(rec.recommendation_score)}`;
   header.append(score);
   if (rec.recommendation_confidence) {
     const confidence = document.createElement("span");

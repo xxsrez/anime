@@ -19,6 +19,19 @@ from scripts.operation_lock import DatabaseOperationLock, default_lock_path
 
 BASE_URL = "https://animego.me"
 START_URL = f"{BASE_URL}/anime/status/ongoing"
+EXTERNAL_RATING_SOURCES = {
+    "tal": ("TAL", 0),
+    "myanimelist": ("MAL", 1),
+    "mal": ("MAL", 1),
+    "anilist": ("AniList", 2),
+    "shikimori": ("Shikimori", 3),
+    "imdb": ("IMDB", 4),
+}
+EXTERNAL_RATING_LABEL_SQL = ", ".join(f"'{key}'" for key in EXTERNAL_RATING_SOURCES)
+EXTERNAL_RATING_FIELD_PREDICATE_SQL = (
+    "value is not null and "
+    f"lower(trim(label)) in ({EXTERNAL_RATING_LABEL_SQL})"
+)
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
@@ -44,6 +57,11 @@ def parse_score(value):
         return None
     match = re.search(r"\d+(?:[,.]\d+)?", text)
     return float(match.group(0).replace(",", ".")) if match else None
+
+
+def parse_rating_number(value):
+    score = parse_score(value)
+    return score if score is not None and 0 < score <= 10 else None
 
 
 def parse_int(value):
@@ -468,6 +486,17 @@ def refresh_release_metadata(con, anime_id, detail, scraped_at):
         con.execute(f"update anime set {column}=? where id=?", (value, anime_id))
         con.execute("insert or replace into anime_fields(anime_id,label,value) values (?,?,?)", (anime_id, label, value))
         stored[label] = value
+    for label, value in fields.items():
+        if label.strip().lower() in EXTERNAL_RATING_SOURCES and parse_rating_number(value) is not None:
+            con.execute(
+                """
+                insert into anime_fields(anime_id,label,value) values (?,?,?)
+                on conflict(anime_id,label) do update set value=excluded.value
+                where anime_fields.value is not excluded.value
+                """,
+                (anime_id, label, value),
+            )
+            stored[label] = value
     # Older Yummy imports use 'Время'. Fill gaps without replacing edited facts.
     for column, value in (
         ("duration", fields.get("Длительность") or fields.get("Время")),
@@ -487,7 +516,18 @@ def upsert_anime(con, item, detail, scraped_at, *, authoritative_metadata):
         refresh_release_metadata(con, item["id"], detail, scraped_at)
         title_activity.record_detail_date(con, item, detail, scraped_at)
         return
-    fields = detail["fields"]
+    fields = {
+        label: value
+        for label, value in detail["fields"].items()
+        if label.strip().lower() not in EXTERNAL_RATING_SOURCES or parse_rating_number(value) is not None
+    }
+    if existing and (authoritative_metadata or fields):
+        for label, value in con.execute(
+            f"select label, value from anime_fields where anime_id=? and {EXTERNAL_RATING_FIELD_PREDICATE_SQL}",
+            (item["id"],),
+        ):
+            if parse_rating_number(value) is not None:
+                fields.setdefault(label, value)
     published = str(detail.get("date_published") or "")
     year = item.get("year") or (published[:4] if re.match(r"^\d{4}-\d{2}-\d{2}$", published) else None)
     fields_json = json.dumps(fields, ensure_ascii=False, sort_keys=True)

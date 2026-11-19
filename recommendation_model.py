@@ -362,10 +362,8 @@ def _best_rating(item: Mapping):
     keys.extend(("external_score", "aggregate_score", "listing_score"))
     for key in keys:
         value = numeric(item.get(key))
-        if value is not None:
-            if 10 < value <= 100:
-                value /= 10.0
-            return clamp(value, 0.0, 10.0)
+        if value is not None and 0 < value <= 100:
+            return value / 10.0 if value > 10 else value
     return None
 
 

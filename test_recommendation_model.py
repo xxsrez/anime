@@ -293,6 +293,19 @@ class RecommendationModelTest(unittest.TestCase):
         self.assertEqual(payload["profile"]["mode"], "personalized")
         self.assertEqual(payload["profile"]["seed_count"], 1)
 
+    def test_zero_site_rating_uses_the_same_quality_as_a_missing_rating(self):
+        items = [
+            catalog_item(1, "No score", rating=None, votes=0),
+            catalog_item(2, "Placeholder score", rating=None, votes=0, aggregate_score=0, listing_score=0),
+            catalog_item(3, "Valid alternate score", rating=None, votes=0, aggregate_score=0, listing_score=8.5),
+        ]
+        payload = model.rank_recommendations(items, limit=3, diversity_weight=0)
+        by_id = {item["id"]: item for item in payload["items"]}
+        self.assertEqual(by_id[1]["recommendation_score"], by_id[2]["recommendation_score"])
+        self.assertNotIn("Рейтинг 0/10", by_id[2]["recommendation_reasons"])
+        self.assertIn("Рейтинг 8.5/10", by_id[3]["recommendation_reasons"])
+        self.assertGreater(by_id[3]["recommendation_score"], by_id[2]["recommendation_score"])
+
     def test_long_series_gets_no_bonus_beyond_binary_playability(self):
         items = [
             catalog_item(

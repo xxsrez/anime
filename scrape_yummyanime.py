@@ -500,6 +500,10 @@ def parse_modern_payload(anime, page_url, api_url=None):
         "Другие названия": "; ".join(other_titles) if other_titles else None,
     }
     fields = {key: value for key, value in fields.items() if value}
+    for label, key in (("Shikimori", "shikimori_rating"), ("MyAnimeList", "myanimelist_rating")):
+        score = rating.get(key)
+        if type(score) in (int, float) and 0 < score <= 10:
+            fields[label] = str(score)
 
     cover_url = asset_url(poster.get("big") or poster.get("fullsize") or poster.get("huge"))
     canonical_url = f"{YUMMYANI_BASE_URL}/catalog/item/{anime.get('anime_url') or slug}"

@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, call, patch
 import urllib.error
 
 import scrape_animego
+import scrape_yummyanime
 import server
 import sync_videos
 import update_backup
@@ -28,6 +29,38 @@ from scripts.operation_lock import DatabaseOperationLock, OperationLockError, de
 
 
 class PipelineHardeningTest(unittest.TestCase):
+    def test_modern_yummy_ratings_survive_an_incomplete_refresh(self):
+        payload = {
+            "anime_id": 42,
+            "title": "Source Title",
+            "rating": {"average": 7.3, "shikimori_rating": 8.2, "myanimelist_rating": 7.9},
+        }
+        url = "https://ru.yummyani.me/catalog/item/source-title"
+        item, detail, _, _ = scrape_yummyanime.parse_modern_payload(payload, url)
+        with closing(scrape_animego.init_db(":memory:")) as con:
+            scrape_animego.upsert_anime(con, item, detail, "2026-11-18", authoritative_metadata=True)
+            con.row_factory = sqlite3.Row
+            rating = server.load_external_ratings(con)[item["id"]]
+            self.assertEqual((rating["external_score"], rating["external_score_source"]), (7.9, "MAL"))
+
+            payload["rating"] = {"average": 7.3, "shikimori_rating": 8.4, "myanimelist_rating": 0}
+            _, updated, _, _ = scrape_yummyanime.parse_modern_payload(payload, url)
+            self.assertNotIn("MyAnimeList", updated["fields"])
+            scrape_animego.upsert_anime(con, item, updated, "2026-11-19", authoritative_metadata=True)
+            fields = dict(con.execute("select label,value from anime_fields where anime_id=?", (item["id"],)))
+            self.assertEqual(fields["MyAnimeList"], "7.9")
+            self.assertEqual(fields["Shikimori"], "8.4")
+
+            con.execute("update anime set editorial_status='ready', title='Edited Title'")
+            payload["rating"] = {"average": 7.4, "myanimelist_rating": 8.1}
+            _, updated, _, _ = scrape_yummyanime.parse_modern_payload(payload, url)
+            scrape_animego.upsert_anime(con, item, updated, "2026-11-20", authoritative_metadata=True)
+            row = con.execute("select title, fields_json from anime").fetchone()
+            self.assertEqual(row["title"], "Edited Title")
+            self.assertEqual(json.loads(row["fields_json"])["Shikimori"], "8.4")
+            self.assertEqual(json.loads(row["fields_json"])["MyAnimeList"], "8.1")
+            self.assertEqual(server.load_external_ratings(con)[item["id"]]["external_score"], 8.1)
+
     def test_yummy_new_title_imports_then_repeated_scan_is_idempotent(self):
         snapshot = self.animego_bundle(anime_id=20000015, episode_id=20000015001)["snapshots"][0]
         snapshot["item"].update(source="yummyanime", source_id="yummyani:15")

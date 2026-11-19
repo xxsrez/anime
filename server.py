@@ -35,6 +35,11 @@ import manual_episode_completion
 import recommendation_model
 import title_activity
 import user_state_model
+from scrape_animego import (
+    EXTERNAL_RATING_SOURCES,
+    EXTERNAL_RATING_FIELD_PREDICATE_SQL,
+    parse_rating_number,
+)
 from scripts.operation_lock import DatabaseOperationLock, OperationLockError
 
 ROOT = Path(__file__).resolve().parent
@@ -130,19 +135,6 @@ KODIK_PLAYER_CSP = "; ".join((
     "media-src blob: https://solodcdn.com https://*.solodcdn.com",
     "worker-src blob:",
 ))
-EXTERNAL_RATING_SOURCES = {
-    "tal": ("TAL", 0),
-    "myanimelist": ("MAL", 1),
-    "mal": ("MAL", 1),
-    "anilist": ("AniList", 2),
-    "shikimori": ("Shikimori", 3),
-    "imdb": ("IMDB", 4),
-}
-EXTERNAL_RATING_LABEL_SQL = ", ".join(f"'{key}'" for key in EXTERNAL_RATING_SOURCES)
-EXTERNAL_RATING_FIELD_PREDICATE_SQL = (
-    "value is not null and "
-    f"lower(trim(label)) in ({EXTERNAL_RATING_LABEL_SQL})"
-)
 EXTERNAL_RATING_INDEX_NAME = "idx_anime_fields_external_rating"
 EXTERNAL_RATING_INDEX_SQL = f"""
     create index {EXTERNAL_RATING_INDEX_NAME}
@@ -1671,17 +1663,6 @@ def numeric(value):
         return None
 
 
-def parse_rating_number(value):
-    text = str(value or "").replace(",", ".")
-    match = re.search(r"\d+(?:\.\d+)?", text)
-    if not match:
-        return None
-    score = numeric(match.group(0))
-    if score is None or score <= 0 or score > 10:
-        return None
-    return score
-
-
 def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
 
@@ -2078,10 +2059,11 @@ def best_score(item):
 
 
 def raw_site_score(item):
-    aggregate = numeric(item.get("aggregate_score"))
-    if aggregate is not None:
-        return aggregate
-    return numeric(item.get("listing_score"))
+    for key in ("aggregate_score", "listing_score"):
+        score = numeric(item.get(key))
+        if score is not None and 0 < score <= 10:
+            return score
+    return None
 
 
 def synthetic_rating(item):
