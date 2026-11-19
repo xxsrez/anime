@@ -9,6 +9,22 @@ function block(start, end) {
   return source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
 }
 
+test("the title rating and catalog sort use MAL, with missing scores last", () => {
+  const context = vm.createContext({
+    state: { sortDir: "desc" },
+    sortDefinition: () => ({ type: "number", value: context.malScore }),
+  });
+  vm.runInContext(block("function numericValue(", "function formatRecommendationScore("), context);
+  vm.runInContext(block("function compareAnime(", "function favoriteWatchStatusRank("), context);
+  const unrated = { title: "A", mal_score: null, effective_score: 9.9 };
+  const rated = { title: "B", mal_score: 8.42 };
+  assert.equal(context.ratingText(unrated), "MAL —");
+  assert.equal(context.ratingText(rated), "MAL 8.42/10");
+  assert.ok(context.compareAnime(unrated, rated) > 0);
+  context.state.sortDir = "asc";
+  assert.ok(context.compareAnime(unrated, rated) > 0);
+});
+
 test("section tabs persist independently across reloads without overriding explicit routes", () => {
   const data = new Map();
   const storage = { getItem: key => data.get(key), setItem: (key, value) => data.set(key, value) };

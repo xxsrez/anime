@@ -12,9 +12,10 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 import math
 import re
 import unicodedata
+from mal_ratings import score_number
 
 
-MODEL_VERSION = "recommendation-v2"
+MODEL_VERSION = "recommendation-v3"
 
 FAVORITE_SEED_WEIGHT = 3.0
 WATCHED_SEED_WEIGHT = 0.65
@@ -171,6 +172,18 @@ def is_known_item(item: Mapping) -> bool:
     if item.get("progress_episode_number") is not None:
         return True
     return seed_weight(item) > 0.0
+
+
+def discoverable_items(items: Sequence[Mapping]) -> list[Mapping]:
+    unknown = []
+    known_mal_ids = set()
+    for item in items:
+        if is_known_item(item):
+            if item.get("mal_id") is not None:
+                known_mal_ids.add(item["mal_id"])
+        else:
+            unknown.append(item)
+    return [item for item in unknown if item.get("mal_id") not in known_mal_ids]
 
 
 def _catalog_genre_statistics(items: Sequence[Mapping]):
@@ -355,29 +368,15 @@ def _kind_profile_score(item: Mapping, profile: Mapping) -> float:
     return clamp(weights.get(kind, 0.0) / max(weights.values()))
 
 
-def _best_rating(item: Mapping):
-    keys = []
-    if _normalize_text(item.get("effective_score_source")) != "synthetic":
-        keys.append("effective_score")
-    keys.extend(("external_score", "aggregate_score", "listing_score"))
-    for key in keys:
-        value = numeric(item.get(key))
-        if value is not None and 0 < value <= 100:
-            return value / 10.0 if value > 10 else value
-    return None
-
-
 def _quality_score(item: Mapping) -> float:
-    rating = _best_rating(item)
+    rating = score_number(item.get("mal_score"))
     if rating is None:
         return 0.35
     return clamp((rating - 5.0) / 5.0)
 
 
 def _popularity_score(item: Mapping) -> float:
-    count = 0.0
-    for key in ("aggregate_count", "popularity", "external_popularity"):
-        count = max(count, numeric(item.get(key)) or 0.0)
+    count = numeric(item.get("mal_scored_by")) or 0.0
     return clamp(math.log10(count + 1.0) / 5.0) if count > 0 else 0.0
 
 
@@ -579,10 +578,10 @@ def _base_components(item: Mapping, profile: Mapping, *, nearest_match=None):
 
 
 def _format_rating(item: Mapping) -> str | None:
-    rating = _best_rating(item)
+    rating = score_number(item.get("mal_score"))
     if rating is None:
         return None
-    return f"{rating:.1f}".rstrip("0").rstrip(".")
+    return f"{rating:.2f}".rstrip("0").rstrip(".")
 
 
 def _recommendation_reasons(
@@ -604,7 +603,7 @@ def _recommendation_reasons(
 
     rating = _format_rating(item)
     if rating:
-        reasons.append(f"Рейтинг {rating}/10")
+        reasons.append(f"MyAnimeList {rating}/10")
     if has_playable_source(item):
         reasons.append("Есть видео в каталоге")
     else:
@@ -693,6 +692,9 @@ def _diversity_rerank(
         choices.sort(key=lambda choice: choice[:3])
         _, _, _, chosen, penalty, rerank_score, franchise = choices[0]
         remaining.remove(chosen)
+        mal_id = chosen["item"].get("mal_id")
+        if mal_id is not None:
+            remaining = [entry for entry in remaining if entry["item"].get("mal_id") != mal_id]
         selected.append(
             {
                 **chosen,
@@ -735,7 +737,7 @@ def rank_recommendations(
     if franchise_cap is not None:
         franchise_cap = max(1, int(franchise_cap))
 
-    unknown_items = [item for item in catalog if not is_known_item(item)]
+    unknown_items = discoverable_items(catalog)
     candidates = filter_catalog_items(
         unknown_items,
         filters=filters,
@@ -825,6 +827,7 @@ __all__ = [
     "PERSONALIZED_COMPONENT_WEIGHTS",
     "WATCHED_SEED_WEIGHT",
     "build_recommendation_profile",
+    "discoverable_items",
     "filter_catalog_items",
     "genre_label",
     "has_playable_source",

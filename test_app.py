@@ -1662,12 +1662,10 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             self.assertEqual(len(cache["items"]), 1)
 
     def test_catalog_revision_migration_covers_runtime_trigger_contract(self):
-        migration = (
-            server.ROOT
-            / "migrations"
-            / "2026-07-09_zzz-catalog-cache-revision"
-            / "00_create_catalog_cache_revision.sql"
-        ).read_text(encoding="utf-8").lower()
+        migration = "\n".join(
+            path.read_text(encoding="utf-8").lower()
+            for path in (server.ROOT / "migrations").glob("*/*.sql")
+        )
 
         for table in server.CATALOG_REVISION_TABLES:
             for operation in ("insert", "update", "delete"):

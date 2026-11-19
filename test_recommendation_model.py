@@ -26,8 +26,8 @@ def catalog_item(
         "id": item_id,
         "title": title,
         "genres": list(genres),
-        "effective_score": rating,
-        "aggregate_count": votes,
+        "mal_score": rating,
+        "mal_scored_by": votes,
         "source_count": source_count,
         "available_episode_count": available_episode_count,
         "kind": kind,
@@ -293,17 +293,17 @@ class RecommendationModelTest(unittest.TestCase):
         self.assertEqual(payload["profile"]["mode"], "personalized")
         self.assertEqual(payload["profile"]["seed_count"], 1)
 
-    def test_zero_site_rating_uses_the_same_quality_as_a_missing_rating(self):
+    def test_mal_is_the_only_quality_source(self):
         items = [
             catalog_item(1, "No score", rating=None, votes=0),
-            catalog_item(2, "Placeholder score", rating=None, votes=0, aggregate_score=0, listing_score=0),
-            catalog_item(3, "Valid alternate score", rating=None, votes=0, aggregate_score=0, listing_score=8.5),
+            catalog_item(2, "Site rating only", rating=None, votes=0, aggregate_score=10, aggregate_count=10_000),
+            catalog_item(3, "MyAnimeList score", rating=8.5, votes=0, aggregate_score=4),
         ]
         payload = model.rank_recommendations(items, limit=3, diversity_weight=0)
         by_id = {item["id"]: item for item in payload["items"]}
         self.assertEqual(by_id[1]["recommendation_score"], by_id[2]["recommendation_score"])
-        self.assertNotIn("Рейтинг 0/10", by_id[2]["recommendation_reasons"])
-        self.assertIn("Рейтинг 8.5/10", by_id[3]["recommendation_reasons"])
+        self.assertFalse(any("MyAnimeList" in reason for reason in by_id[2]["recommendation_reasons"]))
+        self.assertIn("MyAnimeList 8.5/10", by_id[3]["recommendation_reasons"])
         self.assertGreater(by_id[3]["recommendation_score"], by_id[2]["recommendation_score"])
 
     def test_long_series_gets_no_bonus_beyond_binary_playability(self):
@@ -311,18 +311,16 @@ class RecommendationModelTest(unittest.TestCase):
             catalog_item(
                 1,
                 "A short",
-                rating=6.5,
+                rating=None,
                 source_count=1,
                 available_episode_count=1,
-                effective_score_source="synthetic",
             ),
             catalog_item(
                 2,
                 "B long",
-                rating=9.5,
+                rating=None,
                 source_count=30,
                 available_episode_count=300,
-                effective_score_source="synthetic",
             ),
         ]
 
@@ -338,6 +336,28 @@ class RecommendationModelTest(unittest.TestCase):
             by_id[2]["recommendation_components"]["base_score"],
         )
         self.assertEqual([item["id"] for item in payload["items"]], [1, 2])
+
+    def test_personal_fit_can_outrank_high_mal_score_and_mal_breaks_equal_fit(self):
+        items = [
+            catalog_item(1, "Favorite", is_favorite=True),
+            catalog_item(2, "Good fit with higher rating", rating=8.5),
+            catalog_item(3, "Good fit with lower rating", rating=7.0),
+            catalog_item(4, "Good fit without rating", rating=None),
+            catalog_item(5, "Different genre", rating=9.8, genres=("Триллер",)),
+        ]
+        payload = model.rank_recommendations(items, limit=4, diversity_weight=0)
+        self.assertEqual([item["id"] for item in payload["items"]], [2, 3, 4, 5])
+
+    def test_mal_identity_prevents_repeating_catalog_variants(self):
+        items = [
+            catalog_item(1, "Favorite", mal_id=100, is_favorite=True),
+            catalog_item(2, "Another name for the favorite", mal_id=100),
+            catalog_item(3, "Unseen title", mal_id=101, rating=8.5),
+            catalog_item(4, "Another name for the unseen title", mal_id=101, rating=8.0),
+            catalog_item(5, "Unmatched title", rating=None),
+        ]
+        payload = model.rank_recommendations(items, limit=5, diversity_weight=0)
+        self.assertEqual([item["id"] for item in payload["items"]], [3, 5])
 
     def test_scores_components_and_explanations_stay_in_public_ranges(self):
         items = [

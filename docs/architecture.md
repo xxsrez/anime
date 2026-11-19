@@ -264,7 +264,7 @@ is `/franchises/<slug>`.
 `GET /api/recommendations`
 
 Requires authentication. Returns recommended titles plus current-user profile
-metadata. Optional `limit` defaults to 20 and is clamped to 1..50. The taste
+metadata. Optional `limit` defaults to 100 and is clamped to 1..100. The taste
 profile uses favorites and explicit `completed` state as the strongest signals, and
 automatic watch history only as a lighter signal after an episode has at least
 five engaged minutes. Short player visits update progress/continue-watching but
@@ -275,7 +275,7 @@ do not become recommendation seeds. Response fields include:
   and component scores.
 - `limit` - normalized limit used by the server.
 - `profile` - seed counts, top weighted genres, and mode:
-  `personalized` or `popular`.
+  `personalized` or `cold_start`.
 
 `GET /api/continue-watching`
 
@@ -513,26 +513,26 @@ tokens out of order, and allows small typos on longer words.
 
 ## Recommendations
 
-Recommendation scoring lives in `server.py` and is intentionally explainable.
+The API uses `recommendation_model.py` to rank the catalog for the current user.
 It is scoped to the current authenticated user:
 
 - Favorites count most strongly as taste seeds.
 - `completed` titles and meaningful watch history count as weaker seeds;
   `watching` is known library state, while `none` is neutral.
 - Candidates already favorited, completed, or in progress are excluded.
+- A MyAnimeList entry appears at most once even if its catalog cards have
+  different names. It is excluded if the user already knows one of those cards.
 - `not_interested` remains a hidden negative recommendation signal and is not a
   fourth viewing status.
 - Genre overlap and nearest-seed similarity form the taste score.
-- Rating, rating count, source availability, recency, and type match adjust the
-  final ranking.
-- Recommendations expect the main catalog to be watchable-only. As a defensive
-  fallback, if metadata-only rows leak into the database, watchable candidates
-  are kept above rows that cannot be opened in the player.
-- With no seeds, the endpoint uses a popularity/quality/availability fallback.
+- MyAnimeList score, its vote count, playability, and type match contribute to
+  the ranking. Missing MAL scores use a neutral quality contribution.
+- With no seeds, ranking uses the MAL score, playability, and MAL vote count.
+- The final selection limits repeated franchises and discounts overlapping genres.
 
-The frontend always requests 20 items and displays them in the `Советы` tab.
-Each row shows score/confidence/source availability and short reason text. The
-profile metadata includes total candidate count and watchable candidate count.
+The frontend requests 100 items and displays the recommendation score out of
+100, the MAL score out of 10 or a dash, video availability, and short reasons.
+The profile includes total and watchable candidate counts.
 
 ## Player Controls
 

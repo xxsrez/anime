@@ -12,8 +12,8 @@ def item(item_id, title, *, genres=("Фэнтези",), score=8.0, **extra):
         "id": item_id,
         "title": title,
         "genres": list(genres),
-        "effective_score": score,
-        "aggregate_count": 1000,
+        "mal_score": score,
+        "mal_scored_by": 1000,
         "source_count": 1,
         "available_episode_count": 1,
         "kind": "TV",
@@ -36,7 +36,7 @@ class RecommendationV2IntegrationTest(unittest.TestCase):
         self.assertEqual(len({entry["id"] for entry in payload["items"]}), 100)
         self.assertEqual(len(capped["items"]), 100)
 
-    def test_server_uses_v2_and_keeps_none_status_neutral(self):
+    def test_server_uses_current_model_and_keeps_none_status_neutral(self):
         catalog = [
             item(1, "Favorite", is_favorite=True),
             item(2, "Completed", watch_status="completed"),

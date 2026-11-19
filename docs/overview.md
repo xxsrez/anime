@@ -13,7 +13,7 @@ choosing a provider/translation, and tracking personal progress.
 - Sign out from the sidebar account control.
 - Search by title, subtitle, source, type, status, year, or genre.
 - Filter by genre, year, type, status, source, and whether video is available.
-- Sort by best rating, site rating, listing rating, rating count, year, video
+- Sort by MyAnimeList score, site rating, listing rating, rating count, year, video
   availability, or title.
 - Open a title detail view with poster, metadata, description, genres, fields,
   episodes, and player source selectors.
@@ -74,16 +74,41 @@ to the embedded player's own PiP controls.
 Recommendations are computed on demand from local data for the current Google
 user. Favorites have the highest profile weight; `completed` titles and
 meaningful watch history also contribute. The score combines genre similarity,
-similarity to known titles, rating quality, source availability, popularity,
-recency, and title type. Known titles already favorited, completed, or in
+similarity to known titles, the public MyAnimeList score and vote count,
+playability, and title type. Known titles already favorited, completed, or in
 progress are excluded.
 
 The favorite flag and the three-state viewing status are independent. The
 internal `not_interested` signal is reserved for recommendation feedback; it is
 not shown as a fourth library status or title-page action.
 
-When no taste profile exists yet, the same endpoint falls back to a popularity
-and availability ranking.
+Without a taste profile, the endpoint ranks by MAL score, playability, and MAL
+vote count. Every card displays its MAL score out of 10 or a dash. The
+recommendation score out of 100 uses the same MAL score and treats missing
+quality as neutral. The catalog's MyAnimeList sort puts unrated titles last
+in both directions.
+
+### Refresh MyAnimeList ratings
+
+Download `anime-offline-database.jsonl` from the
+[Anime Offline Database releases](https://github.com/cedya77/anime-offline-database/releases)
+to the ignored `data/mal-ratings/` directory. From the repository root, run:
+
+```bash
+.venv/bin/python scripts/import_mal_ratings.py \
+  --db db/animego.sqlite \
+  --aod data/mal-ratings/anime-offline-database.jsonl --apply
+```
+
+The script reads MAL scores and vote counts from Tenrai using verified IDs.
+Explicit MAL IDs take precedence. For existing cards without an ID, it
+checks titles and release years, with Russian-name lookup via Shikimori where
+needed. The write is transactional. Omit `--apply` to inspect coverage or add
+`--missing-only` to process new and previously unmatched rows. Run the full
+refresh to revisit titles that previously lacked a public score. Pass
+`--verified-ids PATH` to include an independently verified JSON mapping from
+`source:source_id` to MAL ID for titles with alternate names. A null mapping
+leaves a combined card out of the import when MAL rates its parts separately.
 
 ## Known Limitations
 

@@ -31,6 +31,7 @@ import animego_scans
 import content_updates
 import franchise_catalog
 import kodik_stream
+import mal_ratings
 import manual_episode_completion
 import recommendation_model
 import title_activity
@@ -201,6 +202,7 @@ CATALOG_REVISION_TABLES = (
     "anime_genres",
     "anime_dubbings",
     "anime_title_aliases",
+    "anime_mal_ratings",
     "content_update_events",
 )
 SEARCH_FOLDS = (
@@ -1187,6 +1189,7 @@ def ensure_curated_title_aliases(con):
 
 def ensure_catalog_schema(con):
     changed = ensure_title_alias_schema(con)
+    changed |= mal_ratings.ensure_schema(con)
     changed |= ensure_columns(
         con,
         "anime",
@@ -2340,6 +2343,7 @@ def merge_canonical_items(items):
     rating_item = preferred_rating_item(sorted_items)
     for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
         merged[field] = rating_item.get(field)
+    merged.update(mal_ratings.group_rating(sorted_items))
 
     for field in ("subtitle", "cover_url", "listing_score", "aggregate_score", "aggregate_count", "kind", "year", "status", "episodes_text"):
         if merged.get(field) in (None, ""):
@@ -2348,6 +2352,7 @@ def merge_canonical_items(items):
 
     merged.pop("_canonical_aliases", None)
     merged.pop("_canonical_external_refs", None)
+    merged.pop("_mal_checked_at", None)
     return aggregate_item_state(merged, sorted_items)
 
 
@@ -3449,7 +3454,7 @@ def get_recommendations(
     user_id=None,
     filters=None,
 ):
-    """Return deterministic Recommendation v2 results for one user."""
+    """Return ranked recommendations for one user."""
 
     limit = normalize_recommendation_limit(limit or DEFAULT_RECOMMENDATION_LIMIT)
     items = get_anime_list(db_path, user_id=user_id)
@@ -3459,7 +3464,7 @@ def get_recommendations(
         limit=limit,
         filters=normalized_filters,
     )
-    unknown_items = [item for item in items if not recommendation_model.is_known_item(item)]
+    unknown_items = recommendation_model.discoverable_items(items)
     filtered_unknown_items = recommendation_model.filter_catalog_items(
         unknown_items,
         filters=normalized_filters,
@@ -3677,9 +3682,11 @@ def get_source_anime_items(con, user_id=None, include_search_fields=True):
             for identifier in sorted(identifiers)
         ]
     apply_external_ratings(items, load_external_ratings(con))
+    mal_by_anime = mal_ratings.load(con)
     search_fields_by_anime_id = load_catalog_search_fields(con) if include_search_fields else {}
     canonical_aliases_by_anime_id = load_canonical_match_aliases(con)
     for item in items:
+        item.update(mal_by_anime.get(item["id"]) or {})
         apply_state_fields(item)
         item["genres"] = [g for g in (item.pop("genres") or "").split(",") if g]
         item["available_episode_count"] = item["available_episode_count"] or 0
@@ -3956,6 +3963,7 @@ def catalog_api_item(item):
             "not_interested_updated_at": item.get("not_interested_updated_at"),
             "watch_last_seen_at": item.get("watch_last_seen_at"),
             "can_mark_completed": bool(item.get("can_mark_completed", True)),
+            **{key: item.get(key) for key in mal_ratings.FIELDS},
         }
     )
     genres = list(item.get("genres") or [])
@@ -5080,6 +5088,7 @@ def get_anime_detail(anime_ref, db_path=None, user_id=None):
     detail["can_mark_completed"] = bool(group.get("can_mark_completed", True))
     for field in ("external_score", "external_score_source", "synthetic_score", "effective_score", "effective_score_source"):
         detail[field] = group.get(field)
+    detail.update({key: group.get(key) for key in mal_ratings.FIELDS})
     detail["slug"] = group.get("slug")
     detail["internal_id"] = group.get("internal_id")
     detail["source_count"] = sum(len(sources) for sources in by_episode.values())

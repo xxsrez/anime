@@ -1390,30 +1390,14 @@ function yearValue(item) {
   return numericValue(item.year) || numericValue(String(item.date_published || "").slice(0, 4));
 }
 
-function bestScore(item) {
-  return numericValue(item.effective_score)
-    ?? numericValue(item.aggregate_score)
-    ?? numericValue(item.listing_score);
-}
-
-function formatScore(value) {
-  const score = numericValue(value);
-  if (score == null) return "";
-  const rounded = score.toFixed(1).replace(/\.0$/, "");
-  return `${rounded}/10`;
-}
-
-function ratingSourceLabel(item) {
-  const source = item?.effective_score_source;
-  if (!source) return "";
-  return source === "synthetic" ? "синт." : source;
+function malScore(item) {
+  const score = numericValue(item.mal_score);
+  return score >= 1 && score <= 10 ? score : null;
 }
 
 function ratingText(item) {
-  const formatted = formatScore(bestScore(item));
-  if (!formatted) return "";
-  const source = ratingSourceLabel(item);
-  return source ? `${formatted} ${source}` : formatted;
+  const score = malScore(item);
+  return score == null ? "MAL —" : `MAL ${Number(score.toFixed(2))}/10`;
 }
 
 function formatRecommendationScore(value) {
@@ -1838,10 +1822,10 @@ const sortDefinitions = [
   },
   {
     id: "rating_best",
-    label: "Лучший",
+    label: "MyAnimeList",
     defaultDir: "desc",
     type: "number",
-    value: bestScore,
+    value: malScore,
   },
   {
     id: "aggregate_score",
