@@ -140,6 +140,14 @@ assert.equal(
 assert.equal(runtime.safeHttpsUrl("http://kodikplayer.com/video", ["kodikplayer.com"]), null);
 assert.equal(runtime.safeHttpsUrl("https://kodikplayer.com.evil.test/video", ["kodikplayer.com"]), null);
 assert.equal(runtime.safeHttpsUrl("https://user@example.com/video", ["example.com"]), null);
+assert.equal(runtime.safeHttpsUrl("https://www.youtube.com/embed/R29CU0dg0ts", ["www.youtube.com"]),
+  "https://www.youtube.com/embed/R29CU0dg0ts");
+for (const value of [
+  "https://www.youtube.com/watch?v=R29CU0dg0ts",
+  "https://www.youtube.com/embed/too-short",
+  "https://sub.www.youtube.com/embed/R29CU0dg0ts",
+  "https://www.youtube.com:444/embed/R29CU0dg0ts",
+]) assert.equal(runtime.safeHttpsUrl(value, ["www.youtube.com"]), null);
 assert.equal(
   runtime.safeHttpsUrl("//kodikplayer.com/seria/1/token/720p", ["kodikplayer.com"]),
   "https://kodikplayer.com/seria/1/token/720p",

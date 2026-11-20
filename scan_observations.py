@@ -5,6 +5,7 @@ import datetime as dt
 import hashlib
 import json
 from pathlib import Path
+import re
 import sqlite3
 
 
@@ -44,13 +45,24 @@ def identity(row):
     return json.dumps([row["source"], row["source_id"], row["url"]], ensure_ascii=False, separators=(",", ":"))
 
 
+def stable_player_address(provider):
+    # A YouTube video ID is a public content identity, not an access token.
+    # Include it in the fingerprint while excluding all query parameters.
+    if str(provider.get("embed_host") or "").casefold() in ("www.youtube.com", "www.youtube.com:443"):
+        match = re.fullmatch(r"(?:https:)?//www\.youtube\.com(?::443)?(/embed/[A-Za-z0-9_-]{11})(?:\?[^#]*)?(?:#.*)?",
+                             str(provider.get("embed_url") or ""), flags=re.IGNORECASE)
+        if match:
+            return "//www.youtube.com" + match.group(1)
+    return str(provider.get("embed_url_redacted") or "")
+
+
 def fingerprint(episodes):
     # Redacted URLs retain stable player identity while omitting rotating tokens.
     content = []
     for snapshot in episodes:
         episode = snapshot["episode"]
         providers = sorted((str(p["provider_id"]), int(p["translation_id"]), str(p["embed_host"]).lower(),
-                            str(p.get("embed_url_redacted") or ""))
+                            stable_player_address(p))
                            for p in snapshot["providers"])
         content.append((int(episode["id"]), str(episode.get("number") or ""), providers))
     data = json.dumps(["v2", sorted(content)], ensure_ascii=False, separators=(",", ":")).encode("utf-8")

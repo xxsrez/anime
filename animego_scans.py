@@ -39,11 +39,15 @@ MAX_COMPLETE_BODY_BYTES = 256 * 1024
 MAX_RESULT_EPISODES = 2_000
 MAX_PROVIDERS_PER_EPISODE = 100
 MAX_RESULT_PROVIDERS = 5_000
+# Server-fetched catalog sources can contain thousands of independently
+# validated episode players. Browser-submitted results retain the lower limit.
+MAX_SOURCE_PROVIDERS = 15_000
 # Raw API entries include unsupported/empty players; the validated result
 # retains its separate, stricter provider limit.
 MAX_SOURCE_VIDEOS = 20_000
 MAX_ERROR_TEXT = 2_000
 MAX_PROVIDER_URL = 8_192
+YOUTUBE_EMBED_HOST = "www.youtube.com"
 ONGOING_STATUSES = {"ongoing", "онгоинг"}
 SOURCE_FETCH_LIMIT = threading.BoundedSemaphore(1)
 YUMMY_DISCOVERY_PAGE_SIZE = 100
@@ -1044,9 +1048,13 @@ def validated_provider(provider, allowed_hosts):
         or not allowed_player_host(parsed.hostname, allowed_hosts)
     ):
         return None
+    host = parsed.hostname.casefold()
+    if host.rstrip(".") == YOUTUBE_EMBED_HOST or host.rstrip(".").endswith("." + YOUTUBE_EMBED_HOST):
+        if host != YOUTUBE_EMBED_HOST or not re.fullmatch(r"/embed/[A-Za-z0-9_-]{11}", parsed.path):
+            return None
     # The browser and urllib can serialize the same URL differently. Derive
     # both stored fields from the validated address on the server.
-    embed_host = animego.embed_host(normalized_url)
+    embed_host = host if host == YOUTUBE_EMBED_HOST else animego.embed_host(normalized_url)
     redacted = animego.redact_embed_url(normalized_url)
     if not embed_host or not redacted:
         return None
@@ -1071,7 +1079,8 @@ def scan_result_detail(payload):
     return detail if detail and detail["title"] else None
 
 
-def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_episode_id=2_000_000_000):
+def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_episode_id=2_000_000_000,
+                            max_providers=MAX_RESULT_PROVIDERS):
     if not isinstance(payload, dict):
         raise ValueError("payload must be an object")
     anime_id = payload.get("anime_id")
@@ -1111,7 +1120,7 @@ def validate_result_payload(payload, assigned_anime_id, allowed_hosts, *, max_ep
         if len(providers) > MAX_PROVIDERS_PER_EPISODE:
             raise ValueError(f"episode {episode_id} has too many providers")
         provider_count += len(providers)
-        if provider_count > MAX_RESULT_PROVIDERS:
+        if provider_count > max_providers:
             raise ValueError("too many providers in result")
         normalized_providers = []
         for provider in providers:
@@ -1744,7 +1753,8 @@ def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *,
             raise ValueError("player URL is ambiguous across episodes")
         if not payload["episodes"] and not (candidate is not None and host == "ru.yummyani.me" and data.get("videos") == []):
             payload["error"] = "Источник не вернул проверяемые плееры; содержимое не подтверждено."
-        validate_result_payload(payload, anime_id, allowed_hosts, max_episode_id=2**53)
+        validate_result_payload(payload, anime_id, allowed_hosts, max_episode_id=2**53,
+                                max_providers=MAX_SOURCE_PROVIDERS if source["source"] == "yummyanime" else MAX_RESULT_PROVIDERS)
     except Exception as exc:
         # A page, query, or exception may contain raw player tokens.
         if not source_verified:
@@ -1797,7 +1807,8 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 discovered_item = json.loads(candidate["item_json"])
                 yummy_discovery = candidate["page"] < 0 and discovered_item.get("source") == "yummyanime"
                 normalized = validate_result_payload(payload, anime_id, allowed_hosts,
-                                                     max_episode_id=2**53 if yummy_discovery else 2_000_000_000)
+                                                     max_episode_id=2**53 if yummy_discovery else 2_000_000_000,
+                                                     max_providers=MAX_SOURCE_PROVIDERS if yummy_discovery and _source_identity is not None else MAX_RESULT_PROVIDERS)
                 expected_source = "yummyanime" if yummy_discovery else "animego"
                 existing = None
                 detail = None
@@ -1857,7 +1868,8 @@ def submit_scan_result(db_path, job_id, token, payload, allowed_hosts, *, now=No
                 raise ValueError("assigned source changed while checking")
             if normalized is None:
                 normalized = validate_result_payload(payload, anime_id, allowed_hosts,
-                                                     max_episode_id=2**53 if anime_row["source"] == "yummyanime" else 2_000_000_000)
+                                                     max_episode_id=2**53 if anime_row["source"] == "yummyanime" else 2_000_000_000,
+                                                     max_providers=MAX_SOURCE_PROVIDERS if anime_row["source"] == "yummyanime" and _source_identity is not None else MAX_RESULT_PROVIDERS)
             if anime_row["source"] == "kinogoo":
                 for snapshot in normalized["episodes"]:
                     if not kinogoo.EPISODE_OFFSET < snapshot["episode"]["id"] < 2_000_000_000:

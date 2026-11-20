@@ -3411,7 +3411,11 @@ assert.deepStrictEqual(rankedIds("zz"), []);
         self.assertNotIn("'unsafe-inline'", script_directive)
         for host in server.PLAYER_HOSTS:
             self.assertIn(f"https://{host}", csp)
-            self.assertIn(f"https://*.{host}", csp)
+            if host == server.animego_scans.YOUTUBE_EMBED_HOST:
+                self.assertIn(f"https://{host}/embed/", csp)
+                self.assertNotIn(f"https://*.{host}", csp)
+            else:
+                self.assertIn(f"https://*.{host}", csp)
 
     def test_native_kodik_player_is_authenticated_and_has_scoped_headers(self):
         with tempfile.TemporaryDirectory() as tmpdir:

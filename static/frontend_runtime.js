@@ -266,6 +266,9 @@
       const url = new URL(raw.startsWith("//") ? `https:${raw}` : raw);
       if (url.protocol !== "https:" || url.username || url.password) return null;
       if (!(allowedHostnames || []).some(host => hostnameMatches(url.hostname, host))) return null;
+      if (hostnameMatches(url.hostname, "www.youtube.com")
+          && (url.hostname.toLocaleLowerCase("en-US") !== "www.youtube.com" || url.port
+            || !/^\/embed\/[A-Za-z0-9_-]{11}$/.test(url.pathname))) return null;
       return url.href;
     } catch (error) {
       return null;

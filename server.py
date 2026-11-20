@@ -94,11 +94,13 @@ PLAYER_HOSTS = (
     "aksor.tv",
     "vk.com",
     "api.nextembed.ws",
+    animego_scans.YOUTUBE_EMBED_HOST,
 )
 PLAYER_FRAME_SOURCES = tuple(
     source
     for host in PLAYER_HOSTS
-    for source in (f"https://{host}", f"https://*.{host}")
+    for source in ((f"https://{host}/embed/",) if host == animego_scans.YOUTUBE_EMBED_HOST
+                   else (f"https://{host}", f"https://*.{host}"))
 )
 
 

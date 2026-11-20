@@ -982,6 +982,23 @@ class AnimeGoScansTest(unittest.TestCase):
         provider["translation_id"] += 1
         self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
 
+    def test_youtube_fingerprint_tracks_video_id_without_tracking_query(self):
+        first = self.result_payload(1, 101)["episodes"]
+        second = self.result_payload(1, 101)["episodes"]
+        for snapshots in (first, second):
+            provider = snapshots[0]["providers"][0]
+            provider.update(embed_host="www.youtube.com", embed_url="https://www.youtube.com/embed/R29CU0dg0ts?token=one",
+                            embed_url_redacted="//www.youtube.com/embed/<redacted>?<redacted>")
+        second[0]["providers"][0]["embed_url"] = "https://www.youtube.com/embed/R29CU0dg0ts?token=two"
+        self.assertEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+        second[0]["providers"][0]["embed_url"] = "https://www.youtube.com/embed/abcdefghijk?token=two"
+        self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+        for snapshots in (first, second):
+            provider = snapshots[0]["providers"][0]
+            provider["embed_host"] = "www.youtube.com:443"
+            provider["embed_url"] = provider["embed_url"].replace("www.youtube.com/", "www.youtube.com:443/")
+        self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+
     def test_changed_player_address_resets_monthly_observation(self):
         start = animego_scans.now_utc() + dt.timedelta(days=1)
         end = scan_observations.one_month_after(start)
@@ -1116,6 +1133,64 @@ class AnimeGoScansTest(unittest.TestCase):
         self.assertEqual(result["result"]["new_episode_count"], 1)
         self.assertEqual(result["result"]["new_provider_count"], 1)
 
+    def test_modern_source_accepts_more_than_5000_validated_players(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        videos = [{"number": index // 90 + 1, "video_id": index + 1,
+                   "iframe_url": f"https://kodikplayer.com/serial/{index + 1}/secret/720p",
+                   "data": {"player": "Kodik", "dubbing": "Voice"}} for index in range(5101)]
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture",
+                "episodes": {"count": 57}, "videos": videos}
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+            replay = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_episode_count"], 57)
+        self.assertEqual(result["result"]["new_provider_count"], 5101)
+        self.assertEqual(replay["result"]["status"], "already_processed")
+
+    def test_modern_source_still_rejects_excessive_validated_players(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        videos = [{"number": 1, "video_id": index,
+                   "iframe_url": f"https://kodikplayer.com/serial/{index}/secret/720p",
+                   "data": {"player": "Kodik"}} for index in range(1, 4)]
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture", "episodes": {"count": 1}, "videos": videos}
+        job = self.create_job("full")
+        with patch.object(animego_scans, "MAX_SOURCE_PROVIDERS", 2), patch.object(
+            animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")
+        ):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select count(*) from episodes where anime_id=?", (anime_id,)).fetchone()[0], 0)
+
+    def test_yummy_discovery_accepts_more_than_5000_validated_players(self):
+        job = self.create_job("full")
+        listing = {"response": [{"anime_id": 1, "anime_url": "fixture", "title": "Fixture"}]}
+        with patch.object(animego_scans.yummy, "fetch_json", return_value=listing):
+            found = animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], job["token"], 1)
+        self.assertEqual([task["anime_id"] for task in found["tasks"]], [20_000_001])
+        videos = [{"number": index // 90 + 1, "video_id": index + 1,
+                   "iframe_url": f"https://kodikplayer.com/serial/{index + 1}/secret/720p",
+                   "data": {"player": "Kodik", "dubbing": "Voice"}} for index in range(5001)]
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture",
+                "episodes": {"count": 56}, "videos": videos}
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], 20_000_001, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_episode_count"], 56)
+        self.assertEqual(result["result"]["new_provider_count"], 5001)
+
     def test_modern_source_still_rejects_excessive_raw_videos(self):
         anime_id = 20_000_001
         self.add_title(anime_id, source="yummyanime")
@@ -1136,6 +1211,44 @@ class AnimeGoScansTest(unittest.TestCase):
                     for index in range(51)]
         with self.assertRaisesRegex(ValueError, "too many providers in result"):
             animego_scans.validate_result_payload({"anime_id": 1, "episodes": episodes}, 1, server.PLAYER_HOSTS)
+
+    def test_youtube_player_accepts_only_canonical_video_embeds(self):
+        provider = self.provider()
+        provider["embed_url"] = "https://www.youtube.com/embed/R29CU0dg0ts?start=10"
+        accepted = animego_scans.validated_provider(provider, server.PLAYER_HOSTS)
+        self.assertEqual(accepted["embed_host"], "www.youtube.com")
+        explicit_port = {**provider, "embed_url": "https://www.youtube.com:443/embed/R29CU0dg0ts"}
+        self.assertEqual(animego_scans.validated_provider(explicit_port, server.PLAYER_HOSTS)["embed_host"], "www.youtube.com")
+        for url in (
+            "https://www.youtube.com/watch?v=R29CU0dg0ts",
+            "https://www.youtube.com/embed/too-short",
+            "https://www.youtube.com/embed/R29CU0dg0ts/extra",
+            "https://sub.www.youtube.com/embed/R29CU0dg0ts",
+            "https://www.youtube.com:444/embed/R29CU0dg0ts",
+            "https://user@www.youtube.com/embed/R29CU0dg0ts",
+            "http://www.youtube.com/embed/R29CU0dg0ts",
+        ):
+            with self.subTest(url=url):
+                self.assertIsNone(animego_scans.validated_provider({**provider, "embed_url": url}, server.PLAYER_HOSTS))
+
+    def test_modern_source_saves_youtube_embed_as_a_playable_provider(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture", "episodes": {"count": 1},
+                "videos": [{"number": 1, "video_id": 99, "iframe_url": "https://www.youtube.com/embed/R29CU0dg0ts",
+                            "data": {"player": "Плеер YouTube", "dubbing": "Субтитры"}}]}
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_provider_count"], 1)
+        with closing(server.connect(self.db_path)) as con:
+            row = con.execute("select provider_title,embed_host from video_sources where anime_id=?", (anime_id,)).fetchone()
+        self.assertEqual(tuple(row), ("YouTube", "www.youtube.com"))
 
     def test_legacy_player_parameters_remain_compatible(self):
         soup = animego_scans.yummy.BeautifulSoup('<div class="xfplayer" data-params="mod=kodik-player&amp;id=1"></div>', "lxml")
