@@ -3414,6 +3414,9 @@ assert.deepStrictEqual(rankedIds("zz"), []);
             if host == server.animego_scans.YOUTUBE_EMBED_HOST:
                 self.assertIn(f"https://{host}/embed/", csp)
                 self.assertNotIn(f"https://*.{host}", csp)
+            elif host == server.animego_scans.VKVIDEO_EMBED_HOST:
+                self.assertIn(f"https://{host}/video_ext.php", csp)
+                self.assertNotIn(f"https://*.{host}", csp)
             else:
                 self.assertIn(f"https://*.{host}", csp)
 

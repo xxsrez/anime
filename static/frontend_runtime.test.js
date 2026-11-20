@@ -148,6 +148,16 @@ for (const value of [
   "https://sub.www.youtube.com/embed/R29CU0dg0ts",
   "https://www.youtube.com:444/embed/R29CU0dg0ts",
 ]) assert.equal(runtime.safeHttpsUrl(value, ["www.youtube.com"]), null);
+assert.equal(runtime.safeHttpsUrl("\u2009//vkvideo.ru/video_ext.php?oid=-123&id=456&hash=token", ["vkvideo.ru"]),
+  "https://vkvideo.ru/video_ext.php?oid=-123&id=456&hash=token");
+for (const value of [
+  "https://vkvideo.ru/video_ext.php?oid=-123",
+  "https://vkvideo.ru/video_ext.php?oid=-123&id=456&id=789",
+  "https://vkvideo.ru/video_ext.php?oid=abc&id=456",
+  "https://vkvideo.ru/other?oid=-123&id=456",
+  "https://sub.vkvideo.ru/video_ext.php?oid=-123&id=456",
+  "https://vkvideo.ru:444/video_ext.php?oid=-123&id=456",
+]) assert.equal(runtime.safeHttpsUrl(value, ["vkvideo.ru"]), null);
 assert.equal(
   runtime.safeHttpsUrl("//kodikplayer.com/seria/1/token/720p", ["kodikplayer.com"]),
   "https://kodikplayer.com/seria/1/token/720p",

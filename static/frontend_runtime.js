@@ -269,6 +269,13 @@
       if (hostnameMatches(url.hostname, "www.youtube.com")
           && (url.hostname.toLocaleLowerCase("en-US") !== "www.youtube.com" || url.port
             || !/^\/embed\/[A-Za-z0-9_-]{11}$/.test(url.pathname))) return null;
+      if (hostnameMatches(url.hostname, "vkvideo.ru")) {
+        const owners = url.searchParams.getAll("oid");
+        const videos = url.searchParams.getAll("id");
+        if (url.hostname.toLocaleLowerCase("en-US") !== "vkvideo.ru" || url.port
+            || url.pathname !== "/video_ext.php" || owners.length !== 1 || videos.length !== 1
+            || !/^-?[1-9][0-9]{0,19}$/.test(owners[0]) || !/^[1-9][0-9]{0,19}$/.test(videos[0])) return null;
+      }
       return url.href;
     } catch (error) {
       return null;

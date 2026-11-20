@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+from urllib.parse import parse_qs, urlparse
 
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "migrations/2026-11-16_scan-observations/00_scan_observations.sql"
@@ -45,6 +46,25 @@ def identity(row):
     return json.dumps([row["source"], row["source_id"], row["url"]], ensure_ascii=False, separators=(",", ":"))
 
 
+def stable_vkvideo_address(value):
+    raw = str(value or "").strip()
+    try:
+        parsed = urlparse("https:" + raw if raw.startswith("//") else raw)
+        port = parsed.port
+    except ValueError:
+        return None
+    if (parsed.scheme.casefold() != "https" or parsed.hostname != "vkvideo.ru" or port not in (None, 443)
+            or parsed.username is not None or parsed.password is not None or parsed.path != "/video_ext.php"):
+        return None
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    owners, videos = query.get("oid", []), query.get("id", [])
+    if (len(owners) != 1 or len(videos) != 1 or not re.fullmatch(r"-?[1-9][0-9]{0,19}", owners[0])
+            or not re.fullmatch(r"[1-9][0-9]{0,19}", videos[0])):
+        return None
+    # Video identity is public; omit access hashes and all other parameters.
+    return f"//vkvideo.ru/video_ext.php?oid={owners[0]}&id={videos[0]}"
+
+
 def stable_player_address(provider):
     # A YouTube video ID is a public content identity, not an access token.
     # Include it in the fingerprint while excluding all query parameters.
@@ -53,6 +73,10 @@ def stable_player_address(provider):
                              str(provider.get("embed_url") or ""), flags=re.IGNORECASE)
         if match:
             return "//www.youtube.com" + match.group(1)
+    if str(provider.get("embed_host") or "").casefold() in ("vkvideo.ru", "vkvideo.ru:443"):
+        address = stable_vkvideo_address(provider.get("embed_url"))
+        if address:
+            return address
     return str(provider.get("embed_url_redacted") or "")
 
 

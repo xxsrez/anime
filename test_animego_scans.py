@@ -999,6 +999,19 @@ class AnimeGoScansTest(unittest.TestCase):
             provider["embed_url"] = provider["embed_url"].replace("www.youtube.com/", "www.youtube.com:443/")
         self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
 
+    def test_vkvideo_fingerprint_tracks_video_identity_without_access_hash(self):
+        first = self.result_payload(1, 101)["episodes"]
+        second = self.result_payload(1, 101)["episodes"]
+        for snapshots in (first, second):
+            snapshots[0]["providers"][0].update(
+                embed_host="vkvideo.ru", embed_url="https://vkvideo.ru/video_ext.php?oid=-123&id=456&hash=one",
+                embed_url_redacted="//vkvideo.ru/<redacted>.php?<redacted>",
+            )
+        second[0]["providers"][0]["embed_url"] = "https://vkvideo.ru/video_ext.php?hash=two&id=456&oid=-123"
+        self.assertEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+        second[0]["providers"][0]["embed_url"] = "https://vkvideo.ru/video_ext.php?oid=-123&id=457&hash=two"
+        self.assertNotEqual(scan_observations.fingerprint(first), scan_observations.fingerprint(second))
+
     def test_changed_player_address_resets_monthly_observation(self):
         start = animego_scans.now_utc() + dt.timedelta(days=1)
         end = scan_observations.one_month_after(start)
@@ -1230,6 +1243,46 @@ class AnimeGoScansTest(unittest.TestCase):
         ):
             with self.subTest(url=url):
                 self.assertIsNone(animego_scans.validated_provider({**provider, "embed_url": url}, server.PLAYER_HOSTS))
+
+    def test_vkvideo_accepts_only_video_embeds_with_unambiguous_ids(self):
+        provider = self.provider()
+        provider["embed_url"] = "\u2009//vkvideo.ru/video_ext.php?oid=-123&id=456&hash=token"
+        accepted = animego_scans.validated_provider(provider, server.PLAYER_HOSTS)
+        self.assertEqual(accepted["embed_host"], "vkvideo.ru")
+        self.assertEqual(accepted["embed_url"], "//vkvideo.ru/video_ext.php?oid=-123&id=456&hash=token")
+        explicit_port = {**provider, "embed_url": "https://vkvideo.ru:443/video_ext.php?oid=-123&id=456"}
+        self.assertEqual(animego_scans.validated_provider(explicit_port, server.PLAYER_HOSTS)["embed_host"], "vkvideo.ru")
+        for url in (
+            "https://vkvideo.ru/video_ext.php?oid=-123",
+            "https://vkvideo.ru/video_ext.php?oid=-123&id=456&id=789",
+            "https://vkvideo.ru/video_ext.php?oid=abc&id=456",
+            "https://vkvideo.ru/other?oid=-123&id=456",
+            "https://sub.vkvideo.ru/video_ext.php?oid=-123&id=456",
+            "https://vkvideo.ru:444/video_ext.php?oid=-123&id=456",
+            "https://user@vkvideo.ru/video_ext.php?oid=-123&id=456",
+            "http://vkvideo.ru/video_ext.php?oid=-123&id=456",
+        ):
+            with self.subTest(url=url):
+                self.assertIsNone(animego_scans.validated_provider({**provider, "embed_url": url}, server.PLAYER_HOSTS))
+
+    def test_modern_source_saves_vkvideo_embed_as_a_playable_provider(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture", "episodes": {"count": 1},
+                "videos": [{"number": 1, "video_id": 99, "iframe_url": "\u2009//vkvideo.ru/video_ext.php?oid=-123&id=456",
+                            "data": {"player": "Плеер VK", "dubbing": "Субтитры"}}]}
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_provider_count"], 1)
+        with closing(server.connect(self.db_path)) as con:
+            row = con.execute("select provider_title,embed_host from video_sources where anime_id=?", (anime_id,)).fetchone()
+        self.assertEqual(tuple(row), ("VK", "vkvideo.ru"))
 
     def test_modern_source_saves_youtube_embed_as_a_playable_provider(self):
         anime_id = 20_000_001

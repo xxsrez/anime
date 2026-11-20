@@ -48,6 +48,7 @@ MAX_SOURCE_VIDEOS = 20_000
 MAX_ERROR_TEXT = 2_000
 MAX_PROVIDER_URL = 8_192
 YOUTUBE_EMBED_HOST = "www.youtube.com"
+VKVIDEO_EMBED_HOST = "vkvideo.ru"
 ONGOING_STATUSES = {"ongoing", "онгоинг"}
 SOURCE_FETCH_LIMIT = threading.BoundedSemaphore(1)
 YUMMY_DISCOVERY_PAGE_SIZE = 100
@@ -1052,9 +1053,12 @@ def validated_provider(provider, allowed_hosts):
     if host.rstrip(".") == YOUTUBE_EMBED_HOST or host.rstrip(".").endswith("." + YOUTUBE_EMBED_HOST):
         if host != YOUTUBE_EMBED_HOST or not re.fullmatch(r"/embed/[A-Za-z0-9_-]{11}", parsed.path):
             return None
+    if host.rstrip(".") == VKVIDEO_EMBED_HOST or host.rstrip(".").endswith("." + VKVIDEO_EMBED_HOST):
+        if host != VKVIDEO_EMBED_HOST or not scan_observations.stable_vkvideo_address(normalized_url):
+            return None
     # The browser and urllib can serialize the same URL differently. Derive
     # both stored fields from the validated address on the server.
-    embed_host = host if host == YOUTUBE_EMBED_HOST else animego.embed_host(normalized_url)
+    embed_host = host if host in (YOUTUBE_EMBED_HOST, VKVIDEO_EMBED_HOST) else animego.embed_host(normalized_url)
     redacted = animego.redact_embed_url(normalized_url)
     if not embed_host or not redacted:
         return None
