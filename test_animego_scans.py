@@ -1097,6 +1097,99 @@ class AnimeGoScansTest(unittest.TestCase):
             self.assertEqual(con.execute("select count(*) from episodes where anime_id=?", (anime_id,)).fetchone()[0], 1)
             self.assertEqual(con.execute("select user_id from animego_episode_additions where anime_id=?", (anime_id,)).fetchone()[0], self.user["id"])
 
+    def test_modern_source_accepts_many_raw_videos_when_validated_players_fit_the_limit(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        ignored = {"number": 1, "iframe_url": "", "data": {"player": "Alloha"}}
+        playable = {"number": 1, "video_id": 99, "iframe_url": "https://kodikplayer.com/serial/99/secret/720p",
+                    "data": {"player": "Kodik", "dubbing": "Voice"}}
+        data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture", "episodes": {"count": 1},
+                "videos": [ignored] * 5885 + [playable]}
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "completed")
+        self.assertEqual(result["result"]["new_episode_count"], 1)
+        self.assertEqual(result["result"]["new_provider_count"], 1)
+
+    def test_modern_source_still_rejects_excessive_raw_videos(self):
+        anime_id = 20_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://ru.yummyani.me/catalog/item/fixture"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='yummyani:1' where id=?", (page, anime_id))
+            con.commit()
+        data = {"anime_id": 1, "episodes": {"count": 1}, "videos": [{}] * (animego_scans.MAX_SOURCE_VIDEOS + 1)}
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertEqual(result["job"]["error_count"], 1)
+
+    def test_result_provider_limit_remains_in_force(self):
+        providers = [self.provider(provider_id=f"provider-{index}") for index in range(100)]
+        episodes = [{"episode": {"id": index + 1, "number": str(index + 1)}, "providers": providers}
+                    for index in range(51)]
+        with self.assertRaisesRegex(ValueError, "too many providers in result"):
+            animego_scans.validate_result_payload({"anime_id": 1, "episodes": episodes}, 1, server.PLAYER_HOSTS)
+
+    def test_legacy_player_parameters_remain_compatible(self):
+        soup = animego_scans.yummy.BeautifulSoup('<div class="xfplayer" data-params="mod=kodik-player&amp;id=1"></div>', "lxml")
+        player = animego_scans.yummy.parse_player_params(soup, expected_source_id=1)[0]
+        self.assertEqual(player["provider_id"], "yummy-kodik-player")
+        fetch = Mock(return_value=json.dumps({"success": True, "data": "https://kodikplayer.com/serial/42/secret"}))
+        url = animego_scans.yummy.fetch_player_url(player, "https://yummyanime.tv/1-fixture.html", fetcher=fetch)
+        self.assertEqual(url, "https://kodikplayer.com/serial/42/secret")
+        self.assertEqual(fetch.call_args.args[0], "/engine/ajax/controller.php?mod=kodik-player&id=1")
+
+    def test_legacy_relay_imports_kodik_and_reports_unsupported_or_missing_episodes(self):
+        anime_id = 10_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://yummyanime.tv/1-fixture.html"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='1' where id=?", (page, anime_id))
+            con.commit()
+        page_html = '''<h1>Fixture</h1><div class="inner-page__img"><span class="movie-item__label">3 серии</span></div>
+            <div data-player-anime-id="1"><div data-player-slot="0" data-player-title="Плеер Alloha"></div>
+            <div data-player-slot="1" data-player-title="Плеер Kodik"></div></div>'''
+        player_html = '''<div class="serial-seasons-box"><select><option selected value="1" data-serial-id="42" data-serial-hash="secret">1</option></select></div>
+            <div class="serial-series-box"><select><option value="1">1</option><option value="2">2</option></select></div>'''
+        def fetch(url, **_kwargs):
+            if url == page:
+                return page_html
+            if url == "/engine/ajax/controller.php?mod=player&id=1&slot=1":
+                return json.dumps({"status": True, "data": {"name": "Kodik", "kind": "iframe", "src": "https://kodikplayer.com/serial/42/secret/720p"}})
+            if url.startswith("https://kodikplayer.com/serial/"):
+                return player_html
+            self.fail(f"unexpected upstream request: {url}")
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_text", side_effect=fetch):
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertEqual(result["result"]["new_episode_count"], 2)
+        self.assertIn("Не все серии", result["result"]["error"])
+        self.assertIn("не поддерживаются", result["result"]["error"])
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select count(*) from episodes where anime_id=?", (anime_id,)).fetchone()[0], 2)
+
+    def test_legacy_relay_rejects_a_different_source_identity(self):
+        anime_id = 10_000_001
+        self.add_title(anime_id, source="yummyanime")
+        page = "https://yummyanime.tv/1-fixture.html"
+        with closing(server.connect(self.db_path)) as con:
+            con.execute("update anime set url=?,source_id='1' where id=?", (page, anime_id))
+            con.commit()
+        html = '<h1>Fixture</h1><div data-player-anime-id="2"><div data-player-slot="0" data-player-title="Плеер Kodik"></div></div>'
+        job = self.create_job("full")
+        with patch.object(animego_scans.yummy, "fetch_text", return_value=html) as fetch:
+            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        self.assertEqual(result["result"]["status"], "failed")
+        self.assertEqual(fetch.call_count, 1)
+
     def test_full_yummy_source_authenticates_before_fetch_and_records_unavailable(self):
         anime_id = 20_000_001
         self.add_title(anime_id, source="yummyanime")

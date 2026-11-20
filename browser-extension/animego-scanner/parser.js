@@ -157,6 +157,43 @@ export function parseUnavailableReason(content, Parser = globalThis.DOMParser) {
   return String(documentNode.body?.textContent || "").replace(/\s+/g, " ").trim() || null;
 }
 
+// AnimeGO may list an announced episode before any video exists. Only accept
+// its explicit release-date message, and keep unknown or expired dates as
+// incomplete checks. For unknown time zones, require the date to be in the
+// future even in the world's easternmost time zone.
+export function isFutureRelease(reason, now = Date.now()) {
+  const months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+  const match = String(reason || "").match(/^Эпизод выйдет\s+(\d{1,2})\s+([а-яё]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2}))?(?:\s+\(([^)]+)\))?(?:\s|$)/i);
+  if (!match || !Number.isFinite(now)) return false;
+  const day = Number(match[1]);
+  const month = months.indexOf(match[2].toLowerCase());
+  const year = Number(match[3]);
+  const hour = match[4] === undefined ? null : Number(match[4]);
+  const minute = match[5] === undefined ? null : Number(match[5]);
+  const date = new Date(Date.UTC(year, month, day));
+  if (month < 0 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day
+      || (hour !== null && (hour > 23 || minute > 59))) return false;
+
+  const zones = { "москва": "Europe/Moscow", "чехия": "Europe/Prague", "красноярск": "Asia/Krasnoyarsk" };
+  const zone = zones[(match[6] || "").toLowerCase()];
+  if (!zone) {
+    const earliest = Date.UTC(year, month, day, hour ?? 0, minute ?? 0) - 14 * 60 * 60 * 1000;
+    return earliest > now;
+  }
+  let current;
+  try {
+    current = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date(now)).map(part => [part.type, part.value]));
+  } catch (_error) {
+    return false;
+  }
+  const announcedDate = year * 10000 + (month + 1) * 100 + day;
+  const currentDate = Number(current.year) * 10000 + Number(current.month) * 100 + Number(current.day);
+  if (announcedDate !== currentDate) return announcedDate > currentDate;
+  return Boolean(hour !== null && hour * 60 + minute > Number(current.hour) * 60 + Number(current.minute));
+}
+
 export function unknownEpisodes(episodes, knownEpisodeIds) {
   const known = new Set(
     (Array.isArray(knownEpisodeIds) ? knownEpisodeIds : [])

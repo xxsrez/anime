@@ -1,5 +1,6 @@
 import {
   looksLikeChallenge,
+  isFutureRelease,
   parsePlayerContent,
   parseUnavailableReason,
   shouldUseInitialProviders,
@@ -629,6 +630,8 @@ async function collectTitle(task, runGeneration) {
   const additions = unknownEpisodes(episodes, task.known_episode_ids);
   const collected = [];
   let episodeFetchFailed = false;
+  let incompleteCheck = !episodes.length || Boolean(initial.invalidEpisodeCount || initial.invalidProviderCount);
+  let announcedEpisodes = 0;
   let coverageComplete = episodes.length > 0 && additions.length === episodes.length
     && !initial.invalidEpisodeCount && !initial.invalidProviderCount;
 
@@ -646,7 +649,10 @@ async function collectTitle(task, runGeneration) {
         const videoContent = responseContent(videoResponse, `Серия #${episode.id}`);
         const video = parsePlayerContent(videoContent);
         providers = video.providers;
-        if (video.invalidEpisodeCount || video.invalidProviderCount) coverageComplete = false;
+        if (video.invalidEpisodeCount || video.invalidProviderCount) {
+          coverageComplete = false;
+          incompleteCheck = true;
+        }
         unavailableReason = parseUnavailableReason(videoResponse?.data?.content_online || "");
       } catch (error) {
         if (!(error instanceof UpstreamError)) throw error;
@@ -659,6 +665,8 @@ async function collectTitle(task, runGeneration) {
     }
     if (providers.length === 0) {
       coverageComplete = false;
+      if (isFutureRelease(unavailableReason)) announcedEpisodes += 1;
+      else incompleteCheck = true;
       log(
         `Серия ${episode.number || episode.id} найдена, но playable-плеер пока недоступен${
           unavailableReason ? `: ${unavailableReason}` : "."
@@ -670,6 +678,7 @@ async function collectTitle(task, runGeneration) {
   }
   collected.coverageComplete = coverageComplete;
   collected.episodeFetchFailed = episodeFetchFailed;
+  collected.incompleteCheck = incompleteCheck || (announcedEpisodes > 0 && !collected.length && !(task.known_episode_ids || []).length);
   return collected;
 }
 
@@ -762,7 +771,8 @@ async function processTask(task, index, runGeneration) {
       if (runGeneration !== generation) throw new DOMException("Остановлено", "AbortError");
       body = { anime_id: task.anime_id, episodes, full_content_checked: episodes.coverageComplete === true,
         selection_reason: task.selection_reason || null };
-      if (episodes.episodeFetchFailed || (episodes.coverageComplete === false && !(task.known_episode_ids || []).length)) {
+      const incompleteCheck = episodes.incompleteCheck ?? (episodes.coverageComplete === false && !(task.known_episode_ids || []).length);
+      if (episodes.episodeFetchFailed || incompleteCheck) {
         body.metadata_error = "Не удалось полностью проверить серии или плееры источника.";
       }
     }

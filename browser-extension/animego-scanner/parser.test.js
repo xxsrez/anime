@@ -3,12 +3,30 @@ import test from "node:test";
 
 import {
   looksLikeChallenge,
+  isFutureRelease,
   parsePlayerContent,
   redactEmbedUrl,
   shouldUseInitialProviders,
   syntheticEpisode,
   unknownEpisodes,
 } from "./parser.js";
+
+test("recognizes only a verifiably future AnimeGO release announcement", () => {
+  const now = Date.parse("2026-11-20T12:00:00Z");
+  assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 17:30 (Москва) Указана дата официальной премьеры", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 16:00 (Москва)", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 14:59 (Москва)", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 20:00 (Красноярск)", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 18:00 (Красноярск)", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 21:30 (Другой город)", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 01:30 (Другой город)", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 27 ноября 2026", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 19 ноября 2026", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 31 февраля 2027 10:00 (Москва)", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 25:00 (Москва)", now), false);
+  assert.equal(isFutureRelease("Плеер временно недоступен", now), false);
+});
 
 class FakeNode {
   constructor(attributes = {}, textContent = "") {

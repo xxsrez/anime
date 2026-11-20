@@ -299,9 +299,10 @@ def infer_kind(title):
     return "Сериал"
 
 
-def parse_player_params(soup):
+def parse_player_params(soup, expected_source_id=None):
     players = []
-    for node in soup.select(".xfplayer[data-params]"):
+    legacy_nodes = soup.select(".xfplayer[data-params]")
+    for node in legacy_nodes:
         raw_params = node.get("data-params") or ""
         params = dict(parse_qsl(raw_params.replace("&amp;", "&")))
         mod = params.get("mod") or "player"
@@ -312,15 +313,37 @@ def parse_player_params(soup):
         else:
             title = mod
         players.append({"provider_id": f"yummy-{mod}", "provider_title": title, "params": raw_params})
+    if legacy_nodes:
+        return players
+    for root in soup.select("[data-player-anime-id]"):
+        source_id = root.get("data-player-anime-id") or ""
+        if not re.fullmatch(r"[0-9]+", source_id) or (expected_source_id is not None and int(source_id) != int(expected_source_id)):
+            raise ValueError("legacy player source identity changed")
+        seen_slots = set()
+        for slot in root.select("[data-player-slot]"):
+            index = slot.get("data-player-slot") or ""
+            title = modern_provider_title(slot.get("data-player-title"))
+            if title.lower() != "kodik" or not re.fullmatch(r"[0-9]{1,2}", index) or index in seen_slots:
+                continue
+            seen_slots.add(index)
+            provider_id = "yummy-kodik-player" if not players else f"yummy-kodik-player-slot-{index}"
+            players.append({"provider_id": provider_id, "provider_title": "Kodik",
+                            "params": urlencode({"mod": "player", "id": source_id, "slot": index})})
     return players
 
 
 def fetch_player_url(player, page_url, delay=0.0, *, fetcher=None):
     fetcher = fetcher or fetch_text
     data = json.loads(fetcher(f"/engine/ajax/controller.php?{player['params']}", referer=page_url, delay=delay))
-    if not data.get("success"):
+    if data.get("success") and isinstance(data.get("data"), str):
+        value = data["data"]
+    elif (data.get("status") is True and isinstance(data.get("data"), dict)
+          and data["data"].get("kind") == "iframe" and data["data"].get("name") == "Kodik"
+          and player.get("provider_title") == "Kodik"):
+        value = data["data"].get("src")
+    else:
         return None
-    url = normalize_embed_url(data.get("data"))
+    url = normalize_embed_url(value)
     if not url:
         return None
     parsed = urlparse(url)
@@ -626,7 +649,7 @@ def parse_detail(page_url, html_text, include_embed_urls=True, skip_player=False
 
     providers = []
     if not skip_player:
-        for player in parse_player_params(soup):
+        for player in parse_player_params(soup, expected_source_id=source_id):
             embed_url = fetch_player_url(player, page_url, delay=delay, fetcher=fetcher)
             if not embed_url:
                 continue

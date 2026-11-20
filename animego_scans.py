@@ -2,6 +2,7 @@
 """User-powered, additive-only AnimeGO scan jobs."""
 
 import datetime as dt
+from collections import defaultdict
 import hashlib
 import hmac
 import io
@@ -38,6 +39,9 @@ MAX_COMPLETE_BODY_BYTES = 256 * 1024
 MAX_RESULT_EPISODES = 2_000
 MAX_PROVIDERS_PER_EPISODE = 100
 MAX_RESULT_PROVIDERS = 5_000
+# Raw API entries include unsupported/empty players; the validated result
+# retains its separate, stricter provider limit.
+MAX_SOURCE_VIDEOS = 20_000
 MAX_ERROR_TEXT = 2_000
 MAX_PROVIDER_URL = 8_192
 ONGOING_STATUSES = {"ongoing", "онгоинг"}
@@ -1659,7 +1663,7 @@ def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *,
             counts = data.get("episodes") or {}
             count = int(counts.get("count") or counts.get("aired") or 1)
             videos = data.get("videos") or []
-            if not 0 < count <= MAX_RESULT_EPISODES or not isinstance(videos, list) or len(videos) > MAX_RESULT_PROVIDERS:
+            if not 0 < count <= MAX_RESULT_EPISODES or not isinstance(videos, list) or len(videos) > MAX_SOURCE_VIDEOS:
                 raise ValueError("YummyAni response exceeds scan limits")
             item, detail, episodes, providers = yummy.parse_modern_payload(data, source["url"], api_url)
         elif source["source"] == "yummyanime" and host == "yummyanime.tv" and re.fullmatch(r"/\d+-[^/]+\.html", parsed.path):
@@ -1684,13 +1688,16 @@ def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *,
             label = yummy.clean_text(soup.select_one(".inner-page__img .movie-item__label"))
             if not 0 < yummy.parse_episode_count(label, fields) <= MAX_RESULT_EPISODES:
                 raise ValueError("YummyAnime response exceeds scan limits")
-            if len(yummy.parse_player_params(soup)) > MAX_PROVIDERS_PER_EPISODE:
+            players = yummy.parse_player_params(soup, expected_source_id=source["source_id"])
+            if len(players) > MAX_PROVIDERS_PER_EPISODE:
                 raise ValueError("YummyAnime has too many players")
             item, detail, _, _ = yummy.parse_detail(source["url"], html, skip_player=True)
             if int(item["id"]) != anime_id or str(item.get("source_id")) != str(source["source_id"]):
                 raise ValueError("source identity changed")
             source_verified = True
-            if len(soup.select(".xfplayer[data-params]")) > len(yummy.parse_player_params(soup)):
+            legacy_nodes = soup.select(".xfplayer[data-params]")
+            relay_nodes = soup.select("[data-player-anime-id] [data-player-slot]")
+            if len(legacy_nodes) + len(relay_nodes) > len(players):
                 payload["metadata_error"] = "Некоторые плееры источника не поддерживаются."
             item, detail, episodes, providers = yummy.parse_detail(source["url"], html, include_embed_urls=True,
                                                                    fetcher=fetch_legacy, strict_players=True)
@@ -1708,13 +1715,20 @@ def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *,
         if int(item["id"]) != anime_id or str(item.get("source_id")) != str(source["source_id"]):
             raise ValueError("source identity changed")
         source_verified = True
+        providers_by_episode = defaultdict(list)
+        for provider in providers:
+            providers_by_episode[provider.get("episode_number")].append(provider)
         for episode in episodes:
-            matches = [p for p in providers if p.get("episode_number") == str(episode.get("number"))
-                       or (p.get("episode_number") is None and len(episodes) == 1)]
+            matches = providers_by_episode[str(episode.get("number"))]
+            if len(episodes) == 1:
+                matches = matches + providers_by_episode[None]
             if matches:
                 if episode["id"] != yummy.internal_episode_id(anime_id, episode["number"]):
                     raise ValueError("source episode identity changed")
                 payload["episodes"].append({"episode": episode, "providers": matches})
+        if (source["source"] == "yummyanime" and host == "yummyanime.tv" and payload["episodes"]
+                and len(payload["episodes"]) != len(episodes)):
+            payload["metadata_error"] = add_scan_error("Не все серии источника доступны в поддерживаемых плеерах.", payload.get("metadata_error"))
         source_complete = bool(episodes) and len(payload["episodes"]) == len(episodes) and not payload.get("metadata_error")
         if source["source"] == "yummyanime" and host == "ru.yummyani.me":
             source_complete = source_complete and len(providers) == len(videos) and not detail.get("unsupported_episode_numbers")

@@ -3,12 +3,12 @@ import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import { fetchKinogooHtml, kinogooPlayer, kinogooEpisodes, KINOGOO_ORIGINS } from "./kinogoo.js";
-import { shouldUseInitialProviders, syntheticEpisode, unknownEpisodes } from "./parser.js";
+import { isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes } from "./parser.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
 // browser APIs and collection at the upstream boundary are substituted.
-async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true, parsePlayerContent }) {
+async function scannerHarness({ stored = null, storedTheme, fetch, discovery = false, legacy = false, retired = false, sendMessage = async () => {}, permission = true, fastTimers = false, saveCheckpoint = async () => ({ ok: true }), beforeGet = async () => {}, requestPermission = async () => true, parsePlayerContent, parseUnavailableReason = () => null }) {
   const element = () => ({
     children: [], style: {}, attributes: {}, listeners: {},
     append(...items) { this.children.push(...items); },
@@ -51,7 +51,7 @@ async function scannerHarness({ stored = null, storedTheme, fetch, discovery = f
     }, createElement: element },
     resolveExtensionApi: () => browser, fetch, URL, AbortController, DOMException,
     KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes,
-    parsePlayerContent, parseUnavailableReason: () => null, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes,
+    parsePlayerContent, parseUnavailableReason, isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes,
     hasAnimeGoHostPermission: async () => permission, requestAnimeGoHostPermission: requestPermission,
     setTimeout: fastTimers ? (fn, ms) => setTimeout(fn, ms >= 15000 ? 1 : ms) : setTimeout,
     clearTimeout, queueMicrotask, console, shouldRestartAfterReload,
@@ -911,6 +911,73 @@ test("an unavailable episode leaves later episodes eligible and keeps already co
   assert.equal(body.upstream_status, undefined);
   assert.ok(h.elements.get("log").children.some(item => item.children.some(child =>
     /Сохранено серий: 2/.test(child.textContent))));
+});
+
+test("a future announced episode is not an error or a complete observation", async () => {
+  let body;
+  const h = await scannerHarness({
+    parsePlayerContent: content => content === "first"
+      ? { episodes: [{ id: 10001, number: "1" }, { id: 10002, number: "2" }], providers: [{ provider_id: "fixture" }], selectedEpisodeId: 10001 }
+      : { episodes: [], providers: [] },
+    parseUnavailableReason: () => "Эпизод выйдет 21 ноября 2099 17:30 (Москва)",
+    fetch: async (url, options) => {
+      if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+      return response({ checked_items: 1, error_count: 0 });
+    },
+  });
+  h.driver.upstream(async path => path === "/player/100" ? { data: { content: "first" } }
+    : path.startsWith("/player/videos/") ? { data: { content: "upcoming", content_online: "announcement" } }
+    : "<h1>Fixture</h1>");
+  await h.driver.run();
+  assert.equal(body.episodes.length, 1);
+  assert.equal(body.full_content_checked, false);
+  assert.equal(body.metadata_error, undefined);
+  assert.equal(h.driver.state.error_count, 0);
+});
+
+test("a future announcement cannot conceal an otherwise unreadable source", async () => {
+  let body;
+  const h = await scannerHarness({
+    parsePlayerContent: content => content === "first"
+      ? { episodes: [{ id: 10001, number: "1" }], providers: [], selectedEpisodeId: 10001 }
+      : { episodes: [], providers: [] },
+    parseUnavailableReason: () => "Эпизод выйдет 21 ноября 2099 17:30 (Москва)",
+    fetch: async (url, options) => {
+      if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+      return response({ checked_items: 1, error_count: 1 });
+    },
+  });
+  h.driver.upstream(async path => path === "/player/100" ? { data: { content: "first" } }
+    : path.startsWith("/player/videos/") ? { data: { content: "upcoming", content_online: "announcement" } }
+    : "<h1>Fixture</h1>");
+  await h.driver.run();
+  assert.equal(body.episodes.length, 0);
+  assert.equal(body.full_content_checked, false);
+  assert.match(body.metadata_error, /полностью проверить/);
+});
+
+test("a future announcement does not conceal a different unavailable episode", async () => {
+  let body;
+  const h = await scannerHarness({
+    parsePlayerContent: content => content === "first"
+      ? { episodes: [{ id: 10001, number: "1" }, { id: 10002, number: "2" }, { id: 10003, number: "3" }], providers: [{ provider_id: "fixture" }], selectedEpisodeId: 10001 }
+      : { episodes: [], providers: [] },
+    parseUnavailableReason: content => content,
+    fetch: async (url, options) => {
+      if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+      return response({ checked_items: 1, error_count: 1 });
+    },
+  });
+  h.driver.upstream(async path => {
+    if (path === "/player/100") return { data: { content: "first" } };
+    if (path === "/player/videos/10002") return { data: { content: "upcoming", content_online: "Эпизод выйдет 21 ноября 2099 17:30 (Москва)" } };
+    if (path === "/player/videos/10003") return { data: { content: "unavailable", content_online: "Плеер недоступен" } };
+    return "<h1>Fixture</h1>";
+  });
+  await h.driver.run();
+  assert.equal(body.episodes.length, 1);
+  assert.equal(body.full_content_checked, false);
+  assert.match(body.metadata_error, /полностью проверить/);
 });
 
 test("metadata failure does not discard episodes for an existing title", async () => {
