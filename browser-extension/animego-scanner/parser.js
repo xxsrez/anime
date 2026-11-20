@@ -174,7 +174,13 @@ export function isFutureRelease(reason, now = Date.now()) {
   if (month < 0 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day
       || (hour !== null && (hour > 23 || minute > 59))) return false;
 
-  const zones = { "москва": "Europe/Moscow", "чехия": "Europe/Prague", "красноярск": "Asia/Krasnoyarsk" };
+  const zones = {
+    "москва": "Europe/Moscow",
+    "самара": "Europe/Samara",
+    "екатеринбург": "Asia/Yekaterinburg",
+    "красноярск": "Asia/Krasnoyarsk",
+    "чехия": "Europe/Prague",
+  };
   const zone = zones[(match[6] || "").toLowerCase()];
   if (!zone) {
     const earliest = Date.UTC(year, month, day, hour ?? 0, minute ?? 0) - 14 * 60 * 60 * 1000;
@@ -192,6 +198,10 @@ export function isFutureRelease(reason, now = Date.now()) {
   const currentDate = Number(current.year) * 10000 + Number(current.month) * 100 + Number(current.day);
   if (announcedDate !== currentDate) return announcedDate > currentDate;
   return Boolean(hour !== null && hour * 60 + minute > Number(current.hour) * 60 + Number(current.minute));
+}
+
+export function isAwaitingTranslation(reason) {
+  return /^Серия вышла\s+\d+\s+(?:минут(?:а|ы)?|час(?:а|ов)?|день|дня|дней|недел(?:я|и|ь)|месяц(?:а|ев)?|год(?:а|ов)?|лет)\s+назад\s+Появится здесь сразу как её переведут[.!]?$/i.test(String(reason || "").trim());
 }
 
 export function unknownEpisodes(episodes, knownEpisodeIds) {

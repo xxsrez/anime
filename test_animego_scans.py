@@ -1217,7 +1217,8 @@ class AnimeGoScansTest(unittest.TestCase):
         with closing(server.connect(self.db_path)) as con:
             con.execute("update anime set source_id='yummyani:1' where id=20000001")
             con.commit()
-        job = self.create_job("full")
+        start = animego_scans.now_utc().replace(microsecond=0)
+        job = self.create_job("full", now=start)
         listing = {"response": [
             {"anime_id": 1, "anime_url": "known", "title": "Known"},
             {"anime_id": 2, "anime_url": "new-title", "title": "New"},
@@ -1226,11 +1227,16 @@ class AnimeGoScansTest(unittest.TestCase):
             with self.assertRaises(animego_scans.ScanAuthenticationError):
                 animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], "wrong", 1)
             fetch.assert_not_called()
-            found = animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], job["token"], 1)
-            replay = animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], job["token"], 1)
+            found = animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], job["token"], 1,
+                                                        now=start + dt.timedelta(seconds=1))
+            replay = animego_scans.discover_yummy_titles(self.db_path, job["job"]["id"], job["token"], 1,
+                                                         now=start + dt.timedelta(seconds=2))
         self.assertTrue(found["done"])
         self.assertEqual([task["anime_id"] for task in found["tasks"]], [20_000_002])
         self.assertEqual(replay, found)
+        with closing(server.connect(self.db_path)) as con:
+            self.assertEqual(con.execute("select expires_at from animego_scan_jobs where id=?", (job["job"]["id"],)).fetchone()[0],
+                             replay["job"]["expires_at"])
         data = {"anime_id": 2, "anime_url": "new-title", "title": "New", "episodes": {"count": 1},
                 "anime_status": {"title": "Вышел"}, "videos": [{"number": 1, "video_id": 2,
                 "iframe_url": "https://kodikplayer.com/serial/2/secret/720p", "data": {"player": "Kodik"}}]}

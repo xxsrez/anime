@@ -868,7 +868,11 @@ def discover_yummy_titles(db_path, job_id, token, page, *, now=None):
             raise ValueError("YummyAnime discovery requires a new full scan")
         previous = _yummy_discovery_result(con, job_id, page)
         if previous is not None:
-            return previous
+            # authenticate_job may have renewed the deadline in this
+            # uncommitted connection. A replay is not new progress, so return
+            # the persisted deadline instead of advertising a rolled-back one.
+            con.rollback()
+            return _yummy_discovery_result(con, job_id, page)
         if page > 1:
             predecessor = con.execute("select done from animego_scan_pages where job_id=? and page=?", (job_id, -(page - 1))).fetchone()
             if predecessor is None or predecessor["done"]:

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   looksLikeChallenge,
+  isAwaitingTranslation,
   isFutureRelease,
   parsePlayerContent,
   redactEmbedUrl,
@@ -16,6 +17,9 @@ test("recognizes only a verifiably future AnimeGO release announcement", () => {
   assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 17:30 (Москва) Указана дата официальной премьеры", now), true);
   assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 16:00 (Москва)", now), true);
   assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 14:59 (Москва)", now), false);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 17:30 (Самара)", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 18:30 (Екатеринбург)", now), true);
+  assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 15:59 (Самара)", now), false);
   assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 20:00 (Красноярск)", now), true);
   assert.equal(isFutureRelease("Эпизод выйдет 20 ноября 2026 18:00 (Красноярск)", now), false);
   assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 21:30 (Другой город)", now), true);
@@ -26,6 +30,14 @@ test("recognizes only a verifiably future AnimeGO release announcement", () => {
   assert.equal(isFutureRelease("Эпизод выйдет 31 февраля 2027 10:00 (Москва)", now), false);
   assert.equal(isFutureRelease("Эпизод выйдет 21 ноября 2026 25:00 (Москва)", now), false);
   assert.equal(isFutureRelease("Плеер временно недоступен", now), false);
+});
+
+test("recognizes the source's explicit waiting-for-translation notice", () => {
+  assert.equal(isAwaitingTranslation("Серия вышла 16 часов назад Появится здесь сразу как её переведут"), true);
+  assert.equal(isAwaitingTranslation("Серия вышла 1 час назад Появится здесь сразу как её переведут."), true);
+  assert.equal(isAwaitingTranslation("Серия вышла 2 дня назад Появится здесь сразу как её переведут"), true);
+  assert.equal(isAwaitingTranslation("Серия вышла 16 часов назад Плеер временно недоступен"), false);
+  assert.equal(isAwaitingTranslation("Появится здесь сразу как её переведут"), false);
 });
 
 class FakeNode {

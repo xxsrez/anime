@@ -1,4 +1,5 @@
 import {
+  isAwaitingTranslation,
   looksLikeChallenge,
   isFutureRelease,
   parsePlayerContent,
@@ -631,7 +632,7 @@ async function collectTitle(task, runGeneration) {
   const collected = [];
   let episodeFetchFailed = false;
   let incompleteCheck = !episodes.length || Boolean(initial.invalidEpisodeCount || initial.invalidProviderCount);
-  let announcedEpisodes = 0;
+  let expectedUnavailable = 0;
   let coverageComplete = episodes.length > 0 && additions.length === episodes.length
     && !initial.invalidEpisodeCount && !initial.invalidProviderCount;
 
@@ -665,7 +666,7 @@ async function collectTitle(task, runGeneration) {
     }
     if (providers.length === 0) {
       coverageComplete = false;
-      if (isFutureRelease(unavailableReason)) announcedEpisodes += 1;
+      if (isFutureRelease(unavailableReason) || isAwaitingTranslation(unavailableReason)) expectedUnavailable += 1;
       else incompleteCheck = true;
       log(
         `Серия ${episode.number || episode.id} найдена, но playable-плеер пока недоступен${
@@ -678,7 +679,7 @@ async function collectTitle(task, runGeneration) {
   }
   collected.coverageComplete = coverageComplete;
   collected.episodeFetchFailed = episodeFetchFailed;
-  collected.incompleteCheck = incompleteCheck || (announcedEpisodes > 0 && !collected.length && !(task.known_episode_ids || []).length);
+  collected.incompleteCheck = incompleteCheck || (expectedUnavailable > 0 && !collected.length && !(task.known_episode_ids || []).length);
   return collected;
 }
 

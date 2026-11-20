@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import { fetchKinogooHtml, kinogooPlayer, kinogooEpisodes, KINOGOO_ORIGINS } from "./kinogoo.js";
-import { isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes } from "./parser.js";
+import { isAwaitingTranslation, isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes } from "./parser.js";
 import { shouldRestartAfterReload } from "./scan-state.js";
 
 // Exercise the actual scanner orchestration and checkpoint persistence. Only
@@ -51,7 +51,7 @@ async function scannerHarness({ stored = null, storedTheme, fetch, discovery = f
     }, createElement: element },
     resolveExtensionApi: () => browser, fetch, URL, AbortController, DOMException,
     KINOGOO_ORIGINS, fetchKinogooHtml, kinogooPlayer, kinogooEpisodes,
-    parsePlayerContent, parseUnavailableReason, isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes,
+    parsePlayerContent, parseUnavailableReason, isAwaitingTranslation, isFutureRelease, shouldUseInitialProviders, syntheticEpisode, unknownEpisodes,
     hasAnimeGoHostPermission: async () => permission, requestAnimeGoHostPermission: requestPermission,
     setTimeout: fastTimers ? (fn, ms) => setTimeout(fn, ms >= 15000 ? 1 : ms) : setTimeout,
     clearTimeout, queueMicrotask, console, shouldRestartAfterReload,
@@ -933,6 +933,27 @@ test("a future announced episode is not an error or a complete observation", asy
   assert.equal(body.full_content_checked, false);
   assert.equal(body.metadata_error, undefined);
   assert.equal(h.driver.state.error_count, 0);
+});
+
+test("an episode awaiting translation is not an error or a complete observation", async () => {
+  let body;
+  const h = await scannerHarness({
+    parsePlayerContent: content => content === "first"
+      ? { episodes: [{ id: 10001, number: "1" }, { id: 10002, number: "2" }], providers: [{ provider_id: "fixture" }], selectedEpisodeId: 10001 }
+      : { episodes: [], providers: [] },
+    parseUnavailableReason: () => "Серия вышла 16 часов назад Появится здесь сразу как её переведут",
+    fetch: async (url, options) => {
+      if (url.pathname.endsWith("/results")) body = JSON.parse(options.body);
+      return response({ checked_items: 1, error_count: 0 });
+    },
+  });
+  h.driver.upstream(async path => path === "/player/100" ? { data: { content: "first" } }
+    : path.startsWith("/player/videos/") ? { data: { content: "unavailable", content_online: "notice" } }
+    : "<h1>Fixture</h1>");
+  await h.driver.run();
+  assert.equal(body.episodes.length, 1);
+  assert.equal(body.full_content_checked, false);
+  assert.equal(body.metadata_error, undefined);
 });
 
 test("a future announcement cannot conceal an otherwise unreadable source", async () => {
