@@ -6054,7 +6054,10 @@ def record_watch_event(payload, db_path=None, user_id=None):
         provider_progress = (
             optional_json_boolean(payload, "provider_progress") == 1
             and video_source is not None
-            and video_source["embed_host"] == "api.nextembed.ws"
+            and (
+                video_source["embed_host"] == "api.nextembed.ws"
+                or (video_source["embed_host"] == "ru.yummyani.me" and video_source["provider_title"] == "CVH")
+            )
             and playback_position is not None and playback_duration is not None
             and playback_position <= playback_duration + 2
         )

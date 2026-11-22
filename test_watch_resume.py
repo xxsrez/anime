@@ -5,6 +5,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
+import content_updates
 import server
 import test_algorithm_correctness
 import test_app
@@ -167,6 +168,34 @@ class WatchResumeTest(unittest.TestCase):
                             playback_position_seconds=2470, playback_duration_seconds=2586)
         self.assertEqual(result["episode_state"]["engaged_seconds"], 0)
         self.assertIsNone(result["episode_state"]["completed_at"])
+
+    def test_cvh_progress_in_hidden_tab_completes_episode_in_updates(self):
+        source = next(item for item in self.detail["sources_by_episode"][self.detail["episodes"][21]["id"]]
+                      if item["translation_title"] == "AniDUB")
+        with server.connect(self.db) as con:
+            con.execute("update video_sources set embed_host = ? where id = ?", ("ru.yummyani.me", source["id"]))
+            content_updates.insert_event(con, None, "new_episode", 901, source="animego",
+                                         source_id="901", episode_number="22", title="Resume regression",
+                                         occurred_at=server.now_iso(), dedupe_key="episode-22-cvh")
+        source["embed_host"] = "ru.yummyani.me"
+        self.event(22)
+        hidden_progress = dict(page_visible=False, player_focused=False, provider_progress=True,
+                               engaged_seconds=30, playback_duration_seconds=1372)
+        unverified = self.event(22, "heartbeat", playback_position_seconds=1230, **hidden_progress)
+        self.assertEqual(unverified["episode_state"]["engaged_seconds"], 0)
+
+        with server.connect(self.db) as con:
+            con.execute("update video_sources set provider_title = 'CVH' where id = ?", (source["id"],))
+        source["provider_title"] = "CVH"
+        before = self.event(22, "heartbeat", playback_position_seconds=1234, **hidden_progress)
+        self.assertEqual(before["episode_state"]["engaged_seconds"], 30)
+        self.assertIsNone(before["episode_state"]["completed_at"])
+        self.assertTrue(server.get_content_updates(self.db, user_id=self.user)["items"][0]["is_priority"])
+
+        after = self.event(22, "heartbeat", playback_position_seconds=1264, **hidden_progress)
+        self.assertEqual(after["episode_state"]["engaged_seconds"], 60)
+        self.assertIsNotNone(after["episode_state"]["completed_at"])
+        self.assertFalse(server.get_content_updates(self.db, user_id=self.user)["items"][0]["is_priority"])
 
     def test_known_long_duration_does_not_complete_after_eighteen_minutes(self):
         self.event(22)

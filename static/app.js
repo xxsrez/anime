@@ -4402,12 +4402,13 @@ function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   }
   const observedAt = performanceNow();
   const sparseProgress = provider === "nextembed";
+  const backgroundProgress = sparseProgress || provider === "cvh";
   const engagedSeconds = positionSeconds != null ? frontendRuntime.providerPlaybackEngagedSeconds({
     previousPosition: session.providerPositionSeconds,
     currentPosition: positionSeconds,
     previousObservedAt: session.providerPositionObservedAt,
     currentObservedAt: observedAt,
-    pageHidden: sparseProgress ? false : document.hidden,
+    pageHidden: document.hidden && !backgroundProgress,
     pictureInPicture: session.pictureInPictureActive,
     ...(sparseProgress ? { maximumStepSeconds: 180, maximumWallStepSeconds: 90 } : {}),
   }) : 0;
@@ -4419,15 +4420,16 @@ function handleProviderPlaybackStarted(provider, positionSeconds = null) {
   // provider-independent proof that playback actually advanced.
   if (!(engagedSeconds > 0)) return;
   session.pendingProviderSeconds += engagedSeconds;
-  if (sparseProgress) {
-    // Nextembed has no PiP notification. Its bounded media advancement is
-    // evidence even while the parent tab is hidden. Flush on the message so
-    // background timer throttling cannot discard a whole minute of playback.
-    session.verifiedProviderProgress = true;
+  if (backgroundProgress) {
+    // These players can advance without a PiP notification. Use their time
+    // messages to flush progress even when the browser throttles page timers.
     if (!session.engaged) markWatchEngaged("player_engaged", { providerPlayback: true });
     session.evidenceExpiresAt = observedAt + WATCH_PROVIDER_EVIDENCE_MAX_AGE_MS;
-    sendWatchEvent("heartbeat", { engagedSeconds: consumeWatchEngagedSeconds() }).catch(() => {});
-    session.verifiedProviderProgress = false;
+    if (sparseProgress || session.pendingProviderSeconds >= WATCH_HEARTBEAT_MS / 1000) {
+      session.verifiedProviderProgress = true;
+      sendWatchEvent("heartbeat", { engagedSeconds: consumeWatchEngagedSeconds() }).catch(() => {});
+      session.verifiedProviderProgress = false;
+    }
     return;
   }
   if (session.providerPlaybackActive && session.engaged) {

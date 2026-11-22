@@ -104,6 +104,42 @@ context.handlePlayerMessage({ source: {}, origin: "https://ru.yummyani.me", data
 assert.equal(cvhCalls.length, 0, "CVH messages require the active iframe and exact origin");
 context.handlePlayerMessage({ source: frame, origin: "https://ru.yummyani.me", data: { key: "player_time_update", value: 5 } });
 assert.deepEqual(cvhCalls, [["cvh", 5]]);
+vm.runInContext([
+  block("function consumeWatchEngagedSeconds(", "function startWatchHeartbeat("),
+  block("function handleProviderPlaybackStarted(", "function handleProviderPlaybackStopped("),
+].join("\n"), context);
+context.document.hidden = true;
+context.WATCH_HEARTBEAT_MS = 30000;
+context.WATCH_MAX_DELTA_SECONDS = 300;
+Object.assign(session, {
+  engaged: false, providerPlaybackActive: false, pendingProviderSeconds: 0,
+  providerPositionSeconds: null, providerPositionObservedAt: null,
+  providerDurationSeconds: 1372, pictureInPictureActive: false,
+});
+context.markWatchEngaged = (_type, { providerPlayback }) => {
+  session.engaged = true;
+  session.providerPlaybackActive = providerPlayback;
+};
+const cvhHeartbeats = [];
+context.sendWatchEvent = (type, { engagedSeconds }) => {
+  cvhHeartbeats.push([type, engagedSeconds, session.verifiedProviderProgress]);
+  return Promise.resolve();
+};
+function cvhPosition(value) {
+  testClock += 1000;
+  context.handlePlayerMessage({
+    source: frame, origin: "https://ru.yummyani.me", data: { key: "player_time_update", value },
+  });
+}
+cvhPosition(210);
+for (let position = 211; position < 240; position++) cvhPosition(position);
+assert.deepEqual(cvhHeartbeats, [], "CVH time updates are batched");
+cvhPosition(516);
+assert.deepEqual(cvhHeartbeats, [], "a seek does not count as playback");
+cvhPosition(517);
+assert.deepEqual(cvhHeartbeats, [["heartbeat", 30, true]], "CVH saves verified playback while hidden");
+assert.equal(session.pendingProviderSeconds, 0);
+assert.equal(session.verifiedProviderProgress, false);
 const payloadContext = vm.createContext({
   state: {detail: {id: 1, watch_status: "watching"}, anime: []},
   WATCH_MAX_DELTA_SECONDS: 300, document: {hidden: false},
