@@ -1158,14 +1158,20 @@ class AnimeGoScansTest(unittest.TestCase):
                    "data": {"player": "Kodik", "dubbing": "Voice"}} for index in range(5101)]
         data = {"anime_id": 1, "anime_url": "fixture", "title": "Fixture",
                 "episodes": {"count": 57}, "videos": videos}
-        job = self.create_job("full")
-        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")):
-            result = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
-            replay = animego_scans.resolve_assigned_source(self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        now = dt.datetime(2026, 11, 22, 12, tzinfo=dt.timezone.utc)
+        job = self.create_job("full", now=now)
+        replay_at = now + dt.timedelta(seconds=1)
+        args = (self.db_path, job["job"]["id"], job["token"], anime_id, server.PLAYER_HOSTS)
+        with patch.object(animego_scans.yummy, "fetch_modern_anime", return_value=(data, "https://api.yani.tv/anime/fixture")) as fetch:
+            result = animego_scans.resolve_assigned_source(*args, now=now)
+            replay = animego_scans.resolve_assigned_source(*args, now=replay_at)
+        self.assertEqual(fetch.call_count, 1)
         self.assertEqual(result["result"]["status"], "completed")
         self.assertEqual(result["result"]["new_episode_count"], 57)
         self.assertEqual(result["result"]["new_provider_count"], 5101)
         self.assertEqual(replay["result"]["status"], "already_processed")
+        self.assertEqual(replay["job"]["checked_items"], result["job"]["checked_items"])
+        self.assertEqual(dt.datetime.fromisoformat(replay["job"]["expires_at"]), replay_at + dt.timedelta(hours=24))
 
     def test_modern_source_still_rejects_excessive_validated_players(self):
         anime_id = 20_000_001

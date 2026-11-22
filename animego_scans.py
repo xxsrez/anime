@@ -1646,18 +1646,26 @@ def _resolve_assigned_source(db_path, job_id, token, anime_id, allowed_hosts, *,
         ).fetchone()
         if item is None and candidate is None:
             raise ValueError("anime_id is not assigned to this scan")
-        if (item is not None and item["status"] != "pending") or (candidate is not None and candidate["processed"]):
-            return submit_scan_result(db_path, job_id, token, {"anime_id": anime_id, "episodes": []}, allowed_hosts, now=now)
-        if candidate is not None:
-            source = json.loads(candidate["item_json"])
-            source["source_retired_at"] = None
-        else:
-            row = con.execute("select id, source, source_id, url, source_retired_at from anime where id=?", (anime_id,)).fetchone()
-            if row is None:
-                raise ValueError("assigned title no longer exists")
-            source = dict(row)
+        already_processed = (
+            (item is not None and item["status"] != "pending")
+            or (candidate is not None and candidate["processed"])
+        )
+        if not already_processed:
+            if candidate is not None:
+                source = json.loads(candidate["item_json"])
+                source["source_retired_at"] = None
+            else:
+                row = con.execute("select id, source, source_id, url, source_retired_at from anime where id=?", (anime_id,)).fetchone()
+                if row is None:
+                    raise ValueError("assigned title no longer exists")
+                source = dict(row)
     finally:
         con.close()
+
+    # Authentication can renew the lease in this connection. Close it before
+    # submitting the replay, which acquires its own SQLite write transaction.
+    if already_processed:
+        return submit_scan_result(db_path, job_id, token, {"anime_id": anime_id, "episodes": []}, allowed_hosts, now=now)
 
     detail = None
     source_verified = False
