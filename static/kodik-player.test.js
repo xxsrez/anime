@@ -5,7 +5,7 @@ const { test } = require("node:test");
 
 const source = fs.readFileSync(`${__dirname}/kodik-player.js`, "utf8");
 
-function setup(payload, { serial = null, preferences = new Map(), hlsSupport = false, nativeSupport = true } = {}) {
+function setup(payload, { serial = null, movie = null, sourceId = "123", preferences = new Map(), hlsSupport = false, nativeSupport = true } = {}) {
   const sent = [];
   const requested = [];
   const players = [];
@@ -77,7 +77,7 @@ function setup(payload, { serial = null, preferences = new Map(), hlsSupport = f
   };
   const context = vm.createContext({
     document, window, URL, URLSearchParams,
-    location: { pathname: "/player/kodik/123", origin: "https://catalog.test", search: serial ? `?serial=${serial}` : "" },
+    location: { pathname: `/player/kodik/${sourceId}`, origin: "https://catalog.test", search: serial ? `?serial=${serial}` : movie ? `?movie=${movie}` : "" },
     localStorage: { getItem: key => preferences.get(key), setItem: (key, value) => preferences.set(key, value) },
     fetch: async url => {
       requested.push(url);
@@ -666,6 +666,30 @@ test("serial translation selection survives opening another episode", async () =
   await new Promise(setImmediate);
   assert.match(next.requested[0], /translation=17/);
   assert.equal(next.elements.translation.value, "17");
+});
+
+test("a film remembers its voice independently of serials and other films", async () => {
+  const url = "https://cloud2.solodcdn.com/hls/test/video.m3u8";
+  const preferences = new Map([["kodik-translation-123", "963"]]);
+  const translations = [{ id: "963", title: "First" }, { id: "17", title: "Second" }];
+  const payload = request => ({
+    streams: { "720": url }, translations,
+    translation_id: request.includes("translation=17") ? "17" : "963",
+  });
+  const first = setup(payload, { movie: "123", preferences });
+  await new Promise(setImmediate);
+  assert.doesNotMatch(first.requested[0], /translation=/);
+  first.elements.translation.value = "17";
+  first.elements.translation.dispatch("change");
+  await new Promise(setImmediate);
+  assert.equal(preferences.get("kodik-movie-translation-123"), "17");
+  assert.equal(preferences.get("kodik-translation-123"), "963");
+  const reopened = setup(payload, { movie: "123", preferences });
+  const other = setup(payload, { movie: "124", sourceId: "124", preferences });
+  await new Promise(setImmediate);
+  assert.match(reopened.requested[0], /translation=17/);
+  assert.doesNotMatch(other.requested[0], /translation=/);
+  assert.equal(reopened.elements.translation.value, "17");
 });
 
 test("failed voice selection keeps the playing source and restores both controls", async () => {

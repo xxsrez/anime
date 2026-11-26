@@ -52,7 +52,7 @@ def valid_kodik_episode_url(value):
         valid_host = parsed.hostname == "kodikplayer.com" and parsed.port in (None, 443)
     except ValueError:
         return None
-    match = re.fullmatch(r"/(seria|serial|season)/(\d+)/([A-Za-z0-9_-]+)/(\d+p)/?", parsed.path)
+    match = re.fullmatch(r"/(seria|serial|season|video)/(\d+)/([A-Za-z0-9_-]+)/(\d+p)/?", parsed.path)
     if (
         parsed.scheme != "https" or not valid_host or parsed.username or parsed.password
         or parsed.fragment or not match
@@ -280,6 +280,44 @@ def _season_page_info(page, info, episode_number):
         raise KodikStreamError("provider returned a different episode")
 
 
+def _movie_page_info(page, embed_url, info):
+    """Verify a film's identity and its selectable Kodik translations."""
+    _, _, media_id, media_hash, _ = urlsplit(embed_url).path.rstrip("/").split("/")
+    if (info["type"], info["id"], info["hash"]) != ("video", media_id, media_hash):
+        raise KodikStreamError("provider returned a different movie")
+
+    soup = BeautifulSoup(page, "html.parser")
+    options = soup.select(".movie-translations-box option")
+    if not options:
+        return {}, None
+    translations = {}
+    selected = None
+    for option in options[:100]:
+        translation = option.get("data-id", "")
+        choice_id = option.get("data-media-id", "")
+        choice_hash = option.get("data-media-hash", "")
+        title = option.get("data-title", "").strip()
+        if (not re.fullmatch(r"[1-9]\d{0,9}", translation)
+                or not re.fullmatch(r"[1-9]\d{0,19}", choice_id)
+                or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", choice_hash)
+                or option.get("data-media-type") != "video" or not title or len(title) > 160):
+            if option.has_attr("selected"):
+                raise KodikStreamError("provider returned a different translation")
+            continue
+        if translation in translations:
+            raise KodikStreamError("provider returned duplicate translations")
+        translations[translation] = {
+            "id": translation, "title": title, "media_id": choice_id, "media_hash": choice_hash,
+        }
+        if option.has_attr("selected"):
+            if selected is not None or (choice_id, choice_hash) != (media_id, media_hash):
+                raise KodikStreamError("provider returned a different translation")
+            selected = translation
+    if selected is None:
+        raise KodikStreamError("provider returned no selected translation")
+    return translations, selected
+
+
 def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, expected_episode=None, session=None):
     embed_url = valid_kodik_episode_url(embed_url)
     if not embed_url:
@@ -355,6 +393,35 @@ def resolve_kodik_player(embed_url, *, catalog_origin, translation_id=None, expe
             ) as response:
                 panel = _read_response(response, deadline)
             _season_page_info(panel, info, query["episode"][0])
+        elif media_type == "video":
+            translations, selected = _movie_page_info(page, embed_url, info)
+            if translation_id and translation_id != selected:
+                choice = translations.get(translation_id)
+                if not choice:
+                    raise KodikTranslationUnavailable("translation unavailable")
+                selected_url = (f"{KODIK_ORIGIN}/video/{choice['media_id']}/"
+                                f"{choice['media_hash']}/{quality}")
+                if time.monotonic() > deadline:
+                    raise KodikStreamError("provider response timed out")
+                with client.get(
+                    selected_url,
+                    headers={"User-Agent": USER_AGENT, "Referer": catalog_origin.rstrip("/") + "/"},
+                    timeout=REQUEST_TIMEOUT, allow_redirects=False, stream=True,
+                ) as response:
+                    if response.status_code == 404 or 300 <= response.status_code < 400:
+                        raise KodikTranslationUnavailable("translation unavailable")
+                    page = _read_response(response, deadline)
+                try:
+                    info = {name: _js_string(page, "vInfo." + name) for name in ("type", "hash", "id")}
+                    switched, actual_translation = _movie_page_info(page, selected_url, info)
+                except KodikStreamError:
+                    raise KodikTranslationUnavailable("translation unavailable") from None
+                original = switched.get(selected)
+                if (actual_translation != translation_id or not original
+                        or (original["media_id"], original["media_hash"]) != (media_id, media_hash)):
+                    raise KodikTranslationUnavailable("translation unavailable")
+                embed_url = selected_url
+                selected = translation_id
         elif translation_id or (info["type"], info["id"], info["hash"]) != (media_type, media_id, media_hash):
             raise KodikStreamError("provider returned a different episode")
 

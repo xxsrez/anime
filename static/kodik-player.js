@@ -19,8 +19,11 @@
   const retry = document.getElementById("retry");
   const original = document.getElementById("original");
   const id = location.pathname.match(/^\/player\/kodik\/([1-9]\d{0,18})$/)?.[1];
-  const serial = new URLSearchParams(location.search || "").get("serial");
-  const preferenceKey = /^[1-9]\d{0,19}$/.test(serial || "") ? `kodik-translation-${serial}` : null;
+  const playerParams = new URLSearchParams(location.search || "");
+  const serial = playerParams.get("serial");
+  const movie = playerParams.get("movie");
+  const preferenceKey = /^[1-9]\d{0,19}$/.test(serial || "") ? `kodik-translation-${serial}`
+    : id && movie === id ? `kodik-movie-translation-${id}` : null;
   let streams = {};
   let requestId = 0;
   let mediaGeneration = 0;

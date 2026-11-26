@@ -3921,8 +3921,9 @@ function kodikNativeConfig(source, playerUrl, episode) {
     && url.searchParams.get("only_episode") === "true"
     && url.searchParams.get("only_season") === "true"
     && url.searchParams.get("episode") === expectedEpisode;
-  if (!/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname) && !serialEpisode && !seasonEpisode) return null;
-  return { serialId: serialMatch ? serialMatch[1] : null };
+  const movie = /^\/video\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname);
+  if (!/^\/seria\/\d+\/[A-Za-z0-9_-]+\/\d+p\/?$/.test(url.pathname) && !serialEpisode && !seasonEpisode && !movie) return null;
+  return { serialId: serialMatch ? serialMatch[1] : null, movie };
 }
 
 function setPlayer(source, episode, { forceKodikMode = false } = {}) {
@@ -3964,8 +3965,10 @@ function setPlayer(source, episode, { forceKodikMode = false } = {}) {
     return;
   }
   const sourceId = String(source.id || "");
+  const preferenceQuery = nativeKodik && nativeConfig.serialId ? `?serial=${nativeConfig.serialId}`
+    : nativeKodik && nativeConfig.movie ? `?movie=${sourceId}` : "";
   const frameUrl = nativeKodik
-    ? new URL(`/player/kodik/${sourceId}${nativeConfig.serialId ? `?serial=${nativeConfig.serialId}` : ""}`, window.location.origin).href
+    ? new URL(`/player/kodik/${sourceId}${preferenceQuery}`, window.location.origin).href
     : playerUrl;
   const navigatesPlayer = el.player.getAttribute("src") !== frameUrl;
   state.playerContext = {

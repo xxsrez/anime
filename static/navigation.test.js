@@ -220,6 +220,11 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/12", true]);
   assert.equal(state.playerContext.playerOrigin, "https://catalog.test");
   state.playerContext = null;
+  const movie = { id: 12051, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/video/113503/hash/720p" };
+  context.setPlayer(movie, episode);
+  assert.deepEqual(replaced.pop(), ["https://catalog.test/player/kodik/12051?movie=12051", true]);
+  assert.equal(state.playerContext.kodikNativeAvailable, true);
+  state.playerContext = null;
   context.setPlayer({ id: 13, embed_host: "kodikplayer.com", embed_url: "https://kodikplayer.com/serial/1/hash/720p" }, episode);
   assert.deepEqual(replaced.pop(), ["https://kodikplayer.com/serial/1/hash/720p", false]);
   assert.equal(state.playerContext.isKodik, true);
@@ -264,6 +269,9 @@ test("supported Kodik episodes and explicitly numbered serials use the local nat
   state.playerContext = null;
   context.setPlayer(seasonSource, { id: 7, number: "7" });
   assert.deepEqual(replaced.pop(), [seasonUrl, false], "original mode remains available for season sources");
+  state.playerContext = null;
+  context.setPlayer(movie, episode);
+  assert.deepEqual(replaced.pop(), [movie.embed_url, false], "original mode remains available for films");
 });
 
 test("Kodik player mode changes the frame and starts a fresh watch session", () => {
