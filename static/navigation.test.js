@@ -359,8 +359,27 @@ test("the existing Kodik choice survives without migration", () => {
   assert.equal(context.loadPlayerMode("unknown"), "original");
   assert.deepEqual([...values], before, "unsupported players and modes cannot change stored choices");
   context.window.localStorage = { getItem() { throw Error("denied"); }, setItem() { throw Error("denied"); } };
-  assert.equal(context.loadPlayerMode("kodik"), "original");
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
   assert.doesNotThrow(() => context.savePlayerMode("kodik", "original"));
+});
+
+test("Kodik defaults to ad-free and keeps an explicit original choice", () => {
+  const values = new Map();
+  const context = vm.createContext({
+    window: { localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) } },
+  });
+  vm.runInContext([
+    block("const PLAYER_MODE_STORAGE_KEYS =", "let playerHosts ="),
+    block("function playerModeStorageKey(", "function roundMetric("),
+  ].join("\n"), context);
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
+  assert.equal(values.size, 0, "loading the default does not save a preference");
+  values.set("anime-kodik-player-mode", "invalid");
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
+  context.savePlayerMode("kodik", "original");
+  assert.equal(context.loadPlayerMode("kodik"), "original");
+  context.savePlayerMode("kodik", "adfree");
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
 });
 
 test("registered players have independent mode preferences", () => {
@@ -370,6 +389,8 @@ test("registered players have independent mode preferences", () => {
     window: { localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) } },
   });
   vm.runInContext(block("function playerModeStorageKey(", "function roundMetric("), context);
+  assert.equal(context.loadPlayerMode("kodik"), "adfree");
+  assert.equal(context.loadPlayerMode("another"), "original");
   context.savePlayerMode("kodik", "adfree");
   context.savePlayerMode("another", "original");
   assert.equal(context.loadPlayerMode("kodik"), "adfree");

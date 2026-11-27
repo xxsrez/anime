@@ -88,10 +88,12 @@ function playerModeStorageKey(playerId) {
 function loadPlayerMode(playerId) {
   const key = playerModeStorageKey(playerId);
   if (!key) return "original";
+  const defaultMode = playerId === "kodik" ? "adfree" : "original";
   try {
-    return window.localStorage.getItem(key) === "adfree" ? "adfree" : "original";
+    const savedMode = window.localStorage.getItem(key);
+    return ["adfree", "original"].includes(savedMode) ? savedMode : defaultMode;
   } catch {
-    return "original";
+    return defaultMode;
   }
 }
 
